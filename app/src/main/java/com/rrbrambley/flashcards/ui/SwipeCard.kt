@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun TinderSwipeCard(
+fun SwipeCard(
     modifier: Modifier = Modifier,
     swipeThresholdRatio: Float = 0.25f,
     maxRotationDegrees: Float = 12f,

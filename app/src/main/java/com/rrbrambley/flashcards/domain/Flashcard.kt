@@ -1,6 +1,6 @@
 package com.rrbrambley.flashcards.domain
 
-data class FlashCard(
+data class Flashcard(
     val question: String,
     val answer: String,
     val imageUrl: String? = null,
