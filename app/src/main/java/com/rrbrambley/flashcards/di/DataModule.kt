@@ -1,7 +1,7 @@
 package com.rrbrambley.flashcards.di
 
-import com.rrbrambley.flashcards.data.FlashcardRepositoryImpl
-import com.rrbrambley.flashcards.domain.FlashcardRepository
+import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
+import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

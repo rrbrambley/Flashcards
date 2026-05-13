@@ -1,7 +1,7 @@
-package com.rrbrambley.flashcards.data
+package com.rrbrambley.flashcards.practice.data
 
-import com.rrbrambley.flashcards.domain.Flashcard
-import com.rrbrambley.flashcards.domain.FlashcardRepository
+import com.rrbrambley.flashcards.practice.domain.Flashcard
+import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject

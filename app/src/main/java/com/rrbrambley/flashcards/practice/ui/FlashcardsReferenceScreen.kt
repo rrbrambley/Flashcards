@@ -1,5 +1,6 @@
-package com.rrbrambley.flashcards.ui
+package com.rrbrambley.flashcards.practice.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -56,7 +57,7 @@ fun FlashcardsReferenceScreen(
             color = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
             shadowElevation = 0.dp,
-            border = androidx.compose.foundation.BorderStroke(2.dp, borderColor)
+            border = BorderStroke(2.dp, borderColor)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 ReferenceTopSection(onBack = onBack, onSettings = onSettings)

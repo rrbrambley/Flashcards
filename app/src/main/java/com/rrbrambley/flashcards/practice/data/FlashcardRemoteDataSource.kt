@@ -1,10 +1,12 @@
-package com.rrbrambley.flashcards.data
+package com.rrbrambley.flashcards.practice.data
 
-import com.rrbrambley.flashcards.domain.Flashcard
+import com.rrbrambley.flashcards.practice.domain.Flashcard
 import javax.inject.Inject
 
 
-class FlashcardLocalDataSource @Inject constructor()  {
+class FlashcardRemoteDataSource @Inject constructor(
+    flashcardApiService: FlashcardApiService,
+) {
     fun getFlashcards(): List<Flashcard> = listOf(
         Flashcard(
             "What is this country?",

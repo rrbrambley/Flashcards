@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.di
 
+import com.rrbrambley.flashcards.practice.data.FlashcardApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

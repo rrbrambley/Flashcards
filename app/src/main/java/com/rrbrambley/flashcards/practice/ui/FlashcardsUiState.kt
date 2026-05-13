@@ -1,6 +1,6 @@
-package com.rrbrambley.flashcards.ui
+package com.rrbrambley.flashcards.practice.ui
 
-import com.rrbrambley.flashcards.domain.Flashcard
+import com.rrbrambley.flashcards.practice.domain.Flashcard
 
 sealed interface FlashcardsUiState {
     data object Loading : FlashcardsUiState

@@ -1,4 +1,4 @@
-package com.rrbrambley.flashcards.domain
+package com.rrbrambley.flashcards.practice.domain
 
 import kotlinx.coroutines.flow.Flow
 

@@ -1,5 +1,6 @@
-package com.rrbrambley.flashcards.ui
+package com.rrbrambley.flashcards.practice.ui
 
+import android.R
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.rrbrambley.flashcards.ui.SwipeCard
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -150,14 +152,16 @@ fun QuestionRow(
                         onSwipedLeft = onSwipedLeft,
                         onSwipedRight = onSwipedRight
                     ) {
-                        Card(modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
                             AsyncImage(
                                 model = flashcardsState.flashcard.imageUrl,
                                 contentDescription = flashcardsState.flashcard.question,
                                 contentScale = ContentScale.Fit,
-                                placeholder = painterResource(id = android.R.drawable.ic_menu_gallery),
+                                placeholder = painterResource(id = R.drawable.ic_menu_gallery),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f),
