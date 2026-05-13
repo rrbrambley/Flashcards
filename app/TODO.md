@@ -1,0 +1,3 @@
+- [ ] Home screen, bottom navigation
+- [ ] Local Data source: Room
+- [ ] TopAppBar flash card number - progress through deck

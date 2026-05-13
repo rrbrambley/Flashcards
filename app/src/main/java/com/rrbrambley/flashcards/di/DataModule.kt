@@ -12,7 +12,5 @@ import dagger.hilt.components.SingletonComponent
 abstract class DataModule {
 
     @Binds
-    abstract fun bindMyRepository(
-        myRepositoryImpl: FlashcardRepositoryImpl
-    ): FlashcardRepository
+    abstract fun bindRepository(repository: FlashcardRepositoryImpl): FlashcardRepository
 }
