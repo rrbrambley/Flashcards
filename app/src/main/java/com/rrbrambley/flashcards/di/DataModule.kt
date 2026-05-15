@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.di
 
+import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
+import com.rrbrambley.flashcards.home.domain.HomeRepository
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
 import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
 import dagger.Binds
@@ -12,5 +14,9 @@ import dagger.hilt.components.SingletonComponent
 abstract class DataModule {
 
     @Binds
-    abstract fun bindRepository(repository: FlashcardRepositoryImpl): FlashcardRepository
+    abstract fun bindFlashcardRepository(repository: FlashcardRepositoryImpl): FlashcardRepository
+
+
+    @Binds
+    abstract fun bindHomeRepository(repository: HomeRepositoryImpl): HomeRepository
 }

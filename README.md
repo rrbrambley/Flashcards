@@ -11,7 +11,8 @@ Bottom nav: Home, + New, Library
 - [ ] Add scaffolding - top bar, bottom navigation, and scrollable home screen.
 - [ ] Populate home screen with hardcoded card to launch Flashcard practice screen
 - [ ] Show bottom sheet when + is tapped
-- 
+
+
 
 
 ## Flashcards
@@ -21,3 +22,4 @@ Bottom nav: Home, + New, Library
 - [ ] Add ability to delete flashcards
 - [ ] Add ability to take a quiz
 - [ ] Add ability to view stats
+
