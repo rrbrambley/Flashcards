@@ -6,4 +6,5 @@ import retrofit2.http.GET
 interface FlashcardApiService {
     @GET("dummy/flashcards")
     suspend fun getFlashcards(): List<Flashcard>
+
 }

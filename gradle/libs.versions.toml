@@ -4,7 +4,7 @@ agp = "9.2.1"
 coil = "3.4.0"
 composeBom = "2026.02.01"
 coreKtx = "1.10.1"
-coroutinesAndroid = "1.3.9"
+coroutinesAndroid = "1.10.2"
 espressoCore = "3.5.1"
 hilt = "2.59.2"
 hiltNavigationCompose = "1.3.0"
@@ -42,6 +42,7 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 coil-svg = { group = "io.coil-kt.coil3", name = "coil-svg", version.ref = "coil" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesAndroid" }
+coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesAndroid" }
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-ksp-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

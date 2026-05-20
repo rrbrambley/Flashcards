@@ -71,7 +71,7 @@ class FlashcardsViewModel @Inject constructor(
     private fun goToNextCard() {
         if (currentFlashcardIndex < flashcards.size - 1) {
             currentFlashcardIndex++
-            updateUiState()
         }
+        updateUiState()
     }
 }
