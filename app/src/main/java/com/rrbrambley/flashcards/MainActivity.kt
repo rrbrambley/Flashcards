@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,12 +26,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import com.rrbrambley.flashcards.create.ui.CreateDeckScreen
+import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
@@ -60,7 +68,35 @@ private enum class BottomDestination(
 @Composable
 private fun HomeScaffolding() {
     var currentDestination by rememberSaveable { mutableStateOf(BottomDestination.Home) }
+    var deckTitle by rememberSaveable { mutableStateOf("") }
+    var showDeckValidationErrors by rememberSaveable { mutableStateOf(false) }
+    var nextDraftCardId by rememberSaveable { mutableLongStateOf(2L) }
+    val draftCards = remember { mutableStateListOf(DeckFlashcardDraft(id = 1L)) }
     val context = LocalContext.current
+
+    fun addDraftCard() {
+        draftCards.add(DeckFlashcardDraft(id = nextDraftCardId))
+        nextDraftCardId++
+    }
+
+    fun finishDeckCreation() {
+        val hasTitle = deckTitle.isNotBlank()
+        val completeCards = draftCards.filter { it.term.isNotBlank() && it.definition.isNotBlank() }
+        val hasIncompleteStartedCard = draftCards.any {
+            it.term.isNotBlank() && it.definition.isBlank() || it.term.isBlank() && it.definition.isNotBlank()
+        }
+
+        if (hasTitle && completeCards.isNotEmpty() && !hasIncompleteStartedCard) {
+            currentDestination = BottomDestination.Home
+            deckTitle = ""
+            draftCards.clear()
+            draftCards.add(DeckFlashcardDraft(id = 1L))
+            nextDraftCardId = 2L
+            showDeckValidationErrors = false
+        } else {
+            showDeckValidationErrors = true
+        }
+    }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -68,14 +104,29 @@ private fun HomeScaffolding() {
             TopAppBar(
                 title = {
                     Text(
-                        text = "Flashcards",
+                        text = when (currentDestination) {
+                            BottomDestination.Home -> "Flashcards"
+                            BottomDestination.New -> "New deck"
+                            BottomDestination.Library -> "Library"
+                        },
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 ),
+                actions = {
+                    if (currentDestination == BottomDestination.New) {
+                        IconButton(onClick = ::finishDeckCreation) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Finish deck creation",
+                            )
+                        }
+                    }
+                },
             )
         },
         bottomBar = {
@@ -93,7 +144,17 @@ private fun HomeScaffolding() {
                     )
                 }
             }
-        }
+        },
+        floatingActionButton = {
+            if (currentDestination == BottomDestination.New) {
+                FloatingActionButton(onClick = ::addDraftCard) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add flashcard",
+                    )
+                }
+            }
+        },
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -114,7 +175,30 @@ private fun HomeScaffolding() {
                         }
                     }
                 )
-                BottomDestination.New -> Text("New")
+                BottomDestination.New -> CreateDeckScreen(
+                    deckTitle = deckTitle,
+                    cards = draftCards,
+                    showValidationErrors = showDeckValidationErrors,
+                    onDeckTitleChange = {
+                        deckTitle = it
+                        showDeckValidationErrors = false
+                    },
+                    onTermChange = { cardId, term ->
+                        val cardIndex = draftCards.indexOfFirst { it.id == cardId }
+                        if (cardIndex >= 0) {
+                            draftCards[cardIndex] = draftCards[cardIndex].copy(term = term)
+                            showDeckValidationErrors = false
+                        }
+                    },
+                    onDefinitionChange = { cardId, definition ->
+                        val cardIndex = draftCards.indexOfFirst { it.id == cardId }
+                        if (cardIndex >= 0) {
+                            draftCards[cardIndex] = draftCards[cardIndex].copy(definition = definition)
+                            showDeckValidationErrors = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
                 BottomDestination.Library -> Text("Library")
             }
         }
