@@ -25,18 +25,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.create.ui.CreateDeckScreen
-import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
+import com.rrbrambley.flashcards.create.ui.CreateDeckViewModel
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
@@ -66,35 +66,17 @@ private enum class BottomDestination(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeScaffolding() {
+private fun HomeScaffolding(
+    createDeckViewModel: CreateDeckViewModel = hiltViewModel(),
+) {
     var currentDestination by rememberSaveable { mutableStateOf(BottomDestination.Home) }
-    var deckTitle by rememberSaveable { mutableStateOf("") }
-    var showDeckValidationErrors by rememberSaveable { mutableStateOf(false) }
-    var nextDraftCardId by rememberSaveable { mutableLongStateOf(2L) }
-    val draftCards = remember { mutableStateListOf(DeckFlashcardDraft(id = 1L)) }
+    val createDeckUiState by createDeckViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    fun addDraftCard() {
-        draftCards.add(DeckFlashcardDraft(id = nextDraftCardId))
-        nextDraftCardId++
-    }
-
-    fun finishDeckCreation() {
-        val hasTitle = deckTitle.isNotBlank()
-        val completeCards = draftCards.filter { it.term.isNotBlank() && it.definition.isNotBlank() }
-        val hasIncompleteStartedCard = draftCards.any {
-            it.term.isNotBlank() && it.definition.isBlank() || it.term.isBlank() && it.definition.isNotBlank()
-        }
-
-        if (hasTitle && completeCards.isNotEmpty() && !hasIncompleteStartedCard) {
+    LaunchedEffect(createDeckUiState.deckSaved) {
+        if (createDeckUiState.deckSaved) {
             currentDestination = BottomDestination.Home
-            deckTitle = ""
-            draftCards.clear()
-            draftCards.add(DeckFlashcardDraft(id = 1L))
-            nextDraftCardId = 2L
-            showDeckValidationErrors = false
-        } else {
-            showDeckValidationErrors = true
+            createDeckViewModel.onDeckSavedHandled()
         }
     }
 
@@ -119,7 +101,7 @@ private fun HomeScaffolding() {
                 ),
                 actions = {
                     if (currentDestination == BottomDestination.New) {
-                        IconButton(onClick = ::finishDeckCreation) {
+                        IconButton(onClick = createDeckViewModel::finishDeckCreation) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = "Finish deck creation",
@@ -138,16 +120,16 @@ private fun HomeScaffolding() {
                         icon = {
                             Icon(
                                 imageVector = destination.icon,
-                                contentDescription = destination.label
+                                contentDescription = destination.label,
                             )
-                        }
+                        },
                     )
                 }
             }
         },
         floatingActionButton = {
             if (currentDestination == BottomDestination.New) {
-                FloatingActionButton(onClick = ::addDraftCard) {
+                FloatingActionButton(onClick = createDeckViewModel::addDraftCard) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Add flashcard",
@@ -159,7 +141,7 @@ private fun HomeScaffolding() {
         Box(
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
+                .fillMaxSize(),
         ) {
             when (currentDestination) {
                 BottomDestination.Home -> HomeScreen(
@@ -173,30 +155,10 @@ private fun HomeScaffolding() {
                                 currentDestination = BottomDestination.New
                             }
                         }
-                    }
+                    },
                 )
                 BottomDestination.New -> CreateDeckScreen(
-                    deckTitle = deckTitle,
-                    cards = draftCards,
-                    showValidationErrors = showDeckValidationErrors,
-                    onDeckTitleChange = {
-                        deckTitle = it
-                        showDeckValidationErrors = false
-                    },
-                    onTermChange = { cardId, term ->
-                        val cardIndex = draftCards.indexOfFirst { it.id == cardId }
-                        if (cardIndex >= 0) {
-                            draftCards[cardIndex] = draftCards[cardIndex].copy(term = term)
-                            showDeckValidationErrors = false
-                        }
-                    },
-                    onDefinitionChange = { cardId, definition ->
-                        val cardIndex = draftCards.indexOfFirst { it.id == cardId }
-                        if (cardIndex >= 0) {
-                            draftCards[cardIndex] = draftCards[cardIndex].copy(definition = definition)
-                            showDeckValidationErrors = false
-                        }
-                    },
+                    createDeckViewModel = createDeckViewModel,
                     modifier = Modifier.fillMaxSize(),
                 )
                 BottomDestination.Library -> Text("Library")

@@ -1,0 +1,29 @@
+package com.rrbrambley.flashcards.di
+
+import android.content.Context
+import androidx.room.Room
+import com.rrbrambley.flashcards.practice.data.FlashcardDao
+import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+class DatabaseModule {
+    @Provides
+    @Singleton
+    fun provideFlashcardsDatabase(
+        @ApplicationContext context: Context,
+    ): FlashcardsDatabase = Room.databaseBuilder(
+        context,
+        FlashcardsDatabase::class.java,
+        "flashcards.db",
+    ).build()
+
+    @Provides
+    fun provideFlashcardDao(database: FlashcardsDatabase): FlashcardDao = database.flashcardDao()
+}

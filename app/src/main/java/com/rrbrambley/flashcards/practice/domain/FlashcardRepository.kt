@@ -4,4 +4,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface FlashcardRepository {
     suspend fun getFlashcards(): Flow<List<Flashcard>>
+    suspend fun saveFlashcardDeck(deck: FlashcardDeck)
 }

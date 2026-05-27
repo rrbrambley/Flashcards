@@ -13,10 +13,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
 private const val MinimumCompleteCardCount = 1
@@ -29,6 +32,24 @@ data class DeckFlashcardDraft(
 
 @Composable
 fun CreateDeckScreen(
+    modifier: Modifier = Modifier,
+    createDeckViewModel: CreateDeckViewModel = hiltViewModel(),
+) {
+    val uiState by createDeckViewModel.uiState.collectAsState()
+
+    CreateDeckContent(
+        deckTitle = uiState.deckTitle,
+        cards = uiState.cards,
+        showValidationErrors = uiState.showValidationErrors,
+        onDeckTitleChange = createDeckViewModel::onDeckTitleChange,
+        onTermChange = createDeckViewModel::onTermChange,
+        onDefinitionChange = createDeckViewModel::onDefinitionChange,
+        modifier = modifier,
+    )
+}
+
+@Composable
+fun CreateDeckContent(
     deckTitle: String,
     cards: List<DeckFlashcardDraft>,
     showValidationErrors: Boolean,
@@ -174,7 +195,7 @@ private fun FlashcardDraftCard(
 @Composable
 private fun CreateDeckScreenPreview() {
     FlashcardsTheme {
-        CreateDeckScreen(
+        CreateDeckContent(
             deckTitle = "Spanish basics",
             cards = listOf(
                 DeckFlashcardDraft(

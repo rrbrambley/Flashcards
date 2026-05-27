@@ -1,7 +1,10 @@
 package com.rrbrambley.flashcards.practice.data
 
 import com.rrbrambley.flashcards.practice.domain.Flashcard
+import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -11,52 +14,46 @@ class FlashcardsRepositoryTest {
     @Test
     fun getFlashcards_emitsLocalFlashcards() {
         runTest {
-            val localDataSource = FlashcardLocalDataSource()
+            val localFlashcards = listOf(Flashcard(question = "Question", answer = "Answer"))
+            val localDataSource = FakeFlashcardLocalDataSource(localFlashcards)
             val repository = FlashcardRepositoryImpl(
                 flashcardLocalDataSource = localDataSource,
-                flashcardRemoteDataSource = FlashcardRemoteDataSource(FakeFlashcardApiService()),
             )
 
             val flashcards = repository.getFlashcards().first()
 
-            assertEquals(localDataSource.getFlashcards(), flashcards)
+            assertEquals(localFlashcards, flashcards)
         }
     }
 
     @Test
-    fun getFlashcards_includesExpectedFlagCards() {
+    fun saveFlashcardDeck_savesToLocalDataSource() {
         runTest {
+            val localDataSource = FakeFlashcardLocalDataSource(emptyList())
             val repository = FlashcardRepositoryImpl(
-                flashcardLocalDataSource = FlashcardLocalDataSource(),
-                flashcardRemoteDataSource = FlashcardRemoteDataSource(FakeFlashcardApiService()),
+                flashcardLocalDataSource = localDataSource,
+            )
+            val deck = FlashcardDeck(
+                title = "Spanish basics",
+                flashcards = listOf(Flashcard(question = "Hola", answer = "Hello")),
             )
 
-            val flashcards = repository.getFlashcards().first()
+            repository.saveFlashcardDeck(deck)
 
-            assertEquals(
-                listOf(
-                    Flashcard(
-                        question = "What is this country?",
-                        answer = "Canada",
-                        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/d/d9/Flag_of_Canada_%28Pantone%29.svg",
-                    ),
-                    Flashcard(
-                        question = "What is this country?",
-                        answer = "Kenya",
-                        imageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Flag_of_Kenya.svg/1920px-Flag_of_Kenya.svg.png",
-                    ),
-                    Flashcard(
-                        question = "What is this country?",
-                        answer = "India",
-                        imageUrl = "https://upload.wikimedia.org/wikipedia/en/4/41/Flag_of_India.svg",
-                    ),
-                ),
-                flashcards,
-            )
+            assertEquals(deck, localDataSource.savedDeck)
         }
     }
 
-    private class FakeFlashcardApiService : FlashcardApiService {
-        override suspend fun getFlashcards(): List<Flashcard> = emptyList()
+    private class FakeFlashcardLocalDataSource(
+        private val flashcards: List<Flashcard>,
+    ) : FlashcardLocalDataSourceContract {
+        var savedDeck: FlashcardDeck? = null
+
+        override fun getFlashcards(): Flow<List<Flashcard>> = flowOf(flashcards)
+
+        override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
+            savedDeck = deck
+        }
     }
+
 }

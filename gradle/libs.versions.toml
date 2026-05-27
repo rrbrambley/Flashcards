@@ -15,6 +15,7 @@ ksp = "2.2.10-2.0.2"
 lifecycleRuntimeKtx = "2.8.7"
 navigationCompose = "2.9.8"
 retrofit = "3.0.0"
+room = "2.8.4"
 serializationJson = "1.11.0"
 
 [libraries]
@@ -46,6 +47,8 @@ coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-ksp-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

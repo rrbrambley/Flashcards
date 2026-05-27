@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.practice.ui
 
 import com.rrbrambley.flashcards.practice.domain.Flashcard
+import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
 import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -183,5 +184,7 @@ class FlashcardsViewModelTest {
         private val flashcards: List<Flashcard>,
     ) : FlashcardRepository {
         override suspend fun getFlashcards(): Flow<List<Flashcard>> = flowOf(flashcards)
+
+        override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
     }
 }
