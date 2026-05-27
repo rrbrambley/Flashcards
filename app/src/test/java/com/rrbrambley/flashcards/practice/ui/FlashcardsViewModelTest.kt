@@ -185,6 +185,8 @@ class FlashcardsViewModelTest {
     ) : FlashcardRepository {
         override suspend fun getFlashcards(): Flow<List<Flashcard>> = flowOf(flashcards)
 
+        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(emptyList())
+
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
     }
 }

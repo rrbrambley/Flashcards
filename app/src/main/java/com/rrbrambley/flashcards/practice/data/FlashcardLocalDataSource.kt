@@ -15,6 +15,10 @@ class FlashcardLocalDataSource @Inject constructor(
         }
     }
 
+    override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flashcardDao.observeDecks().map { decks ->
+        decks.map { it.toDomain() }
+    }
+
     override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
         flashcardDao.insertDeckWithFlashcards(
             deck = FlashcardDeckEntity(title = deck.title),
@@ -28,6 +32,12 @@ class FlashcardLocalDataSource @Inject constructor(
             },
         )
     }
+
+    private fun FlashcardDeckWithCards.toDomain(): FlashcardDeck = FlashcardDeck(
+        id = deck.id,
+        title = deck.title,
+        flashcards = flashcards.map { it.toDomain() },
+    )
 
     private fun FlashcardEntity.toDomain(): Flashcard = Flashcard(
         question = question,

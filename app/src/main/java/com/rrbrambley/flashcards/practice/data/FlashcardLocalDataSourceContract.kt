@@ -6,5 +6,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface FlashcardLocalDataSourceContract {
     fun getFlashcards(): Flow<List<Flashcard>>
+    fun observeFlashcardDecks(): Flow<List<FlashcardDeck>>
     suspend fun saveFlashcardDeck(deck: FlashcardDeck)
 }

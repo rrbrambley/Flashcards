@@ -81,6 +81,8 @@ class CreateDeckViewModelTest {
 
         override suspend fun getFlashcards(): Flow<List<Flashcard>> = flowOf(emptyList())
 
+        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(emptyList())
+
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
             savedDeck = deck
         }

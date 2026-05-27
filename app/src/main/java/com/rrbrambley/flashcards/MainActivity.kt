@@ -39,6 +39,7 @@ import com.rrbrambley.flashcards.create.ui.CreateDeckScreen
 import com.rrbrambley.flashcards.create.ui.CreateDeckViewModel
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
+import com.rrbrambley.flashcards.library.ui.LibraryScreen
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -161,7 +162,7 @@ private fun HomeScaffolding(
                     createDeckViewModel = createDeckViewModel,
                     modifier = Modifier.fillMaxSize(),
                 )
-                BottomDestination.Library -> Text("Library")
+                BottomDestination.Library -> LibraryScreen(modifier = Modifier.fillMaxSize())
             }
         }
     }

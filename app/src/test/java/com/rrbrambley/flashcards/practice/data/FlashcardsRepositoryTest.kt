@@ -27,6 +27,30 @@ class FlashcardsRepositoryTest {
     }
 
     @Test
+    fun observeFlashcardDecks_emitsLocalDecks() {
+        runTest {
+            val localDecks = listOf(
+                FlashcardDeck(
+                    id = 1L,
+                    title = "Spanish basics",
+                    flashcards = listOf(Flashcard(question = "Hola", answer = "Hello")),
+                ),
+            )
+            val localDataSource = FakeFlashcardLocalDataSource(
+                flashcards = emptyList(),
+                decks = localDecks,
+            )
+            val repository = FlashcardRepositoryImpl(
+                flashcardLocalDataSource = localDataSource,
+            )
+
+            val decks = repository.observeFlashcardDecks().first()
+
+            assertEquals(localDecks, decks)
+        }
+    }
+
+    @Test
     fun saveFlashcardDeck_savesToLocalDataSource() {
         runTest {
             val localDataSource = FakeFlashcardLocalDataSource(emptyList())
@@ -46,10 +70,13 @@ class FlashcardsRepositoryTest {
 
     private class FakeFlashcardLocalDataSource(
         private val flashcards: List<Flashcard>,
+        private val decks: List<FlashcardDeck> = emptyList(),
     ) : FlashcardLocalDataSourceContract {
         var savedDeck: FlashcardDeck? = null
 
         override fun getFlashcards(): Flow<List<Flashcard>> = flowOf(flashcards)
+
+        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(decks)
 
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
             savedDeck = deck
