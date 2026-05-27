@@ -1,7 +1,7 @@
 package com.rrbrambley.flashcards.practice.ui
 
-import android.R
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,8 +26,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -148,6 +152,13 @@ fun QuestionRow(
                 }
 
                 is FlashcardsUiState.ShowFlashcard -> {
+                    val flashcard = flashcardsState.flashcard
+                    var isShowingAnswer by remember(flashcard) { mutableStateOf(false) }
+
+                    LaunchedEffect(flashcard) {
+                        isShowingAnswer = false
+                    }
+
                     SwipeCard(
                         onSwipedLeft = onSwipedLeft,
                         onSwipedRight = onSwipedRight
@@ -156,23 +167,28 @@ fun QuestionRow(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp)
+                                .clickable { isShowingAnswer = !isShowingAnswer }
                         ) {
                             AsyncImage(
-                                model = flashcardsState.flashcard.imageUrl,
-                                contentDescription = flashcardsState.flashcard.question,
+                                model = flashcard.imageUrl,
+                                contentDescription = flashcard.question,
                                 contentScale = ContentScale.Fit,
-                                placeholder = painterResource(id = R.drawable.ic_menu_gallery),
+                                placeholder = painterResource(id = android.R.drawable.ic_menu_gallery),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .aspectRatio(1f),
                             )
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = flashcardsState.flashcard.question,
+                                    text = if (isShowingAnswer) flashcard.answer else flashcard.question,
                                     style = MaterialTheme.typography.headlineSmall
                                 )
                                 Text(
-                                    text = "Swipe right if you know it, left if you don't.",
+                                    text = if (isShowingAnswer) {
+                                        "Tap to see the question again."
+                                    } else {
+                                        "Tap to reveal the answer. Swipe right if you know it, left if you don't."
+                                    },
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
