@@ -51,6 +51,25 @@ class FlashcardsRepositoryTest {
     }
 
     @Test
+    fun updateFlashcardDeck_updatesLocalDataSource() {
+        runTest {
+            val localDataSource = FakeFlashcardLocalDataSource(emptyList())
+            val repository = FlashcardRepositoryImpl(
+                flashcardLocalDataSource = localDataSource,
+            )
+            val deck = FlashcardDeck(
+                id = 1L,
+                title = "Spanish basics",
+                flashcards = listOf(Flashcard(question = "Hola", answer = "Hello")),
+            )
+
+            repository.updateFlashcardDeck(deck)
+
+            assertEquals(deck, localDataSource.updatedDeck)
+        }
+    }
+
+    @Test
     fun saveFlashcardDeck_savesToLocalDataSource() {
         runTest {
             val localDataSource = FakeFlashcardLocalDataSource(emptyList())
@@ -73,6 +92,7 @@ class FlashcardsRepositoryTest {
         private val decks: List<FlashcardDeck> = emptyList(),
     ) : FlashcardLocalDataSourceContract {
         var savedDeck: FlashcardDeck? = null
+        var updatedDeck: FlashcardDeck? = null
 
         override fun getFlashcards(): Flow<List<Flashcard>> = flowOf(flashcards)
 
@@ -80,6 +100,10 @@ class FlashcardsRepositoryTest {
 
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
             savedDeck = deck
+        }
+
+        override suspend fun updateFlashcardDeck(deck: FlashcardDeck) {
+            updatedDeck = deck
         }
     }
 

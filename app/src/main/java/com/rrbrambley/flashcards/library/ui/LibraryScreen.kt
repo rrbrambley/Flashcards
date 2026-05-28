@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.library.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 fun LibraryScreen(
     modifier: Modifier = Modifier,
     libraryViewModel: LibraryViewModel = hiltViewModel(),
+    onDeckClick: (FlashcardDeck) -> Unit = {},
 ) {
     val uiState by libraryViewModel.uiState.collectAsState()
 
@@ -40,6 +42,7 @@ fun LibraryScreen(
         LibraryUiState.LoadingFailed -> LibraryErrorMessage(modifier = modifier)
         is LibraryUiState.ShowDecks -> LibraryContent(
             decks = state.decks,
+            onDeckClick = onDeckClick,
             modifier = modifier,
         )
     }
@@ -69,6 +72,7 @@ private fun LibraryErrorMessage(modifier: Modifier = Modifier) {
 fun LibraryContent(
     decks: List<FlashcardDeck>,
     modifier: Modifier = Modifier,
+    onDeckClick: (FlashcardDeck) -> Unit = {},
 ) {
     if (decks.isEmpty()) {
         EmptyLibraryMessage(modifier = modifier)
@@ -82,7 +86,10 @@ fun LibraryContent(
                 items = decks,
                 key = { deck -> deck.id },
             ) { deck ->
-                LibraryDeckCard(deck = deck)
+                LibraryDeckCard(
+                    deck = deck,
+                    onClick = { onDeckClick(deck) },
+                )
             }
         }
     }
@@ -118,9 +125,12 @@ private fun EmptyLibraryMessage(modifier: Modifier = Modifier) {
 private fun LibraryDeckCard(
     deck: FlashcardDeck,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
         ),

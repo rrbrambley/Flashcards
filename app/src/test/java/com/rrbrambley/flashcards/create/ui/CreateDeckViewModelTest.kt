@@ -86,5 +86,7 @@ class CreateDeckViewModelTest {
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
             savedDeck = deck
         }
+
+        override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
     }
 }

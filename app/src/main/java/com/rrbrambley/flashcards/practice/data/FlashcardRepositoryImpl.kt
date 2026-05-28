@@ -16,4 +16,8 @@ class FlashcardRepositoryImpl @Inject constructor(
     override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
         flashcardLocalDataSource.saveFlashcardDeck(deck)
     }
+
+    override suspend fun updateFlashcardDeck(deck: FlashcardDeck) {
+        flashcardLocalDataSource.updateFlashcardDeck(deck)
+    }
 }

@@ -71,5 +71,7 @@ class LibraryViewModelTest {
         override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(decks)
 
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
+
+        override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
     }
 }

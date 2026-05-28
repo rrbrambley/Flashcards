@@ -22,14 +22,23 @@ class FlashcardLocalDataSource @Inject constructor(
     override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
         flashcardDao.insertDeckWithFlashcards(
             deck = FlashcardDeckEntity(title = deck.title),
-            flashcards = deck.flashcards.map { flashcard ->
-                FlashcardEntity(
-                    deckId = 0L,
-                    question = flashcard.question,
-                    answer = flashcard.answer,
-                    imageUrl = flashcard.imageUrl,
-                )
-            },
+            flashcards = deck.flashcards.toEntities(deckId = 0L),
+        )
+    }
+
+    override suspend fun updateFlashcardDeck(deck: FlashcardDeck) {
+        flashcardDao.updateDeckWithFlashcards(
+            deck = FlashcardDeckEntity(id = deck.id, title = deck.title),
+            flashcards = deck.flashcards.toEntities(deckId = deck.id),
+        )
+    }
+
+    private fun List<Flashcard>.toEntities(deckId: Long): List<FlashcardEntity> = map { flashcard ->
+        FlashcardEntity(
+            deckId = deckId,
+            question = flashcard.question,
+            answer = flashcard.answer,
+            imageUrl = flashcard.imageUrl,
         )
     }
 

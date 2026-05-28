@@ -38,6 +38,8 @@ fun CreateDeckScreen(
     val uiState by createDeckViewModel.uiState.collectAsState()
 
     CreateDeckContent(
+        title = "Create deck",
+        description = "Add a title, then create the terms and definitions you want to practice.",
         deckTitle = uiState.deckTitle,
         cards = uiState.cards,
         showValidationErrors = uiState.showValidationErrors,
@@ -50,6 +52,8 @@ fun CreateDeckScreen(
 
 @Composable
 fun CreateDeckContent(
+    title: String,
+    description: String,
     deckTitle: String,
     cards: List<DeckFlashcardDraft>,
     showValidationErrors: Boolean,
@@ -76,12 +80,12 @@ fun CreateDeckContent(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = "Create deck",
+                    text = title,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "Add a title, then create the terms and definitions you want to practice.",
+                    text = description,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -196,6 +200,8 @@ private fun FlashcardDraftCard(
 private fun CreateDeckScreenPreview() {
     FlashcardsTheme {
         CreateDeckContent(
+            title = "Create deck",
+            description = "Add a title, then create the terms and definitions you want to practice.",
             deckTitle = "Spanish basics",
             cards = listOf(
                 DeckFlashcardDraft(

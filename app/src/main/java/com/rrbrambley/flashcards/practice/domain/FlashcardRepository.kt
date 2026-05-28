@@ -6,4 +6,5 @@ interface FlashcardRepository {
     suspend fun getFlashcards(): Flow<List<Flashcard>>
     fun observeFlashcardDecks(): Flow<List<FlashcardDeck>>
     suspend fun saveFlashcardDeck(deck: FlashcardDeck)
+    suspend fun updateFlashcardDeck(deck: FlashcardDeck)
 }
