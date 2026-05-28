@@ -13,6 +13,9 @@ class FlashcardRepositoryImpl @Inject constructor(
 
     override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flashcardLocalDataSource.observeFlashcardDecks()
 
+    override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> =
+        flashcardLocalDataSource.observeFlashcardDeck(deckId)
+
     override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
         flashcardLocalDataSource.saveFlashcardDeck(deck)
     }

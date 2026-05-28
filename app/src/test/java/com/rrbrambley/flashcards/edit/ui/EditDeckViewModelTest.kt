@@ -35,11 +35,11 @@ class EditDeckViewModelTest {
     }
 
     @Test
-    fun loadDeck_populatesUiStateFromDeck() {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository())
-        val deck = testDeck()
+    fun loadDeck_populatesUiStateFromRepositoryDeckId() = runTest(testDispatcher) {
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()))
 
-        viewModel.loadDeck(deck)
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(
             EditDeckUiState(
@@ -48,15 +48,38 @@ class EditDeckViewModelTest {
                     DeckFlashcardDraft(id = 1L, term = "Hola", definition = "Hello"),
                     DeckFlashcardDraft(id = 2L, term = "Gracias", definition = "Thank you"),
                 ),
+                isLoading = false,
             ),
             viewModel.uiState.value,
         )
     }
 
     @Test
-    fun addDraftCard_addsEmptyCardAfterLoadedDeckCards() {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository())
-        viewModel.loadDeck(testDeck())
+    fun unchangedLoadedDeck_isNotDirty() = runTest(testDispatcher) {
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()))
+
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isDirty)
+    }
+
+    @Test
+    fun changingField_marksUiStateDirty() = runTest(testDispatcher) {
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()))
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onDeckTitleChange("Spanish greetings")
+
+        assertTrue(viewModel.uiState.value.isDirty)
+    }
+
+    @Test
+    fun addDraftCard_addsEmptyCardAfterLoadedDeckCardsAndMarksDirty() = runTest(testDispatcher) {
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()))
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.addDraftCard()
 
@@ -64,13 +87,15 @@ class EditDeckViewModelTest {
             DeckFlashcardDraft(id = 3L),
             viewModel.uiState.value.cards.last(),
         )
+        assertTrue(viewModel.uiState.value.isDirty)
     }
 
     @Test
-    fun finishDeckEditing_withInvalidDeck_showsValidationErrors() {
-        val repository = FakeFlashcardRepository()
+    fun finishDeckEditing_withInvalidDeck_showsValidationErrors() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository(testDeck())
         val viewModel = EditDeckViewModel(repository)
-        viewModel.loadDeck(testDeck())
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
         viewModel.onDeckTitleChange("")
 
         viewModel.finishDeckEditing()
@@ -81,9 +106,10 @@ class EditDeckViewModelTest {
 
     @Test
     fun finishDeckEditing_withValidDeck_updatesExistingDeckAndMarksSaved() = runTest(testDispatcher) {
-        val repository = FakeFlashcardRepository()
+        val repository = FakeFlashcardRepository(testDeck())
         val viewModel = EditDeckViewModel(repository)
-        viewModel.loadDeck(testDeck())
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
         viewModel.onDeckTitleChange(" Spanish greetings ")
         viewModel.onTermChange(1L, " Hola ")
         viewModel.onDefinitionChange(1L, " Hi ")
@@ -104,6 +130,7 @@ class EditDeckViewModelTest {
         )
         assertTrue(viewModel.uiState.value.deckSaved)
         assertFalse(viewModel.uiState.value.showValidationErrors)
+        assertFalse(viewModel.uiState.value.isDirty)
     }
 
     private fun testDeck(): FlashcardDeck = FlashcardDeck(
@@ -115,12 +142,16 @@ class EditDeckViewModelTest {
         ),
     )
 
-    private class FakeFlashcardRepository : FlashcardRepository {
+    private class FakeFlashcardRepository(
+        private val deck: FlashcardDeck,
+    ) : FlashcardRepository {
         var updatedDeck: FlashcardDeck? = null
 
         override suspend fun getFlashcards(): Flow<List<Flashcard>> = flowOf(emptyList())
 
-        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(emptyList())
+        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(listOf(deck))
+
+        override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(deck.takeIf { it.id == deckId })
 
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
 

@@ -7,6 +7,7 @@ import com.rrbrambley.flashcards.practice.domain.Flashcard
 import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
 import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,27 +26,36 @@ class EditDeckViewModel @Inject constructor(
 
     private var deckId: Long? = null
     private var nextDraftCardId = 1L
+    private var initialSnapshot: EditDeckFormSnapshot? = null
+    private var loadDeckJob: Job? = null
 
-    fun loadDeck(deck: FlashcardDeck) {
-        if (deckId == deck.id) return
+    fun loadDeck(deckId: Long) {
+        if (this.deckId == deckId) return
 
-        deckId = deck.id
-        val drafts = deck.flashcards.mapIndexed { index, flashcard ->
-            DeckFlashcardDraft(
-                id = index + 1L,
-                term = flashcard.question,
-                definition = flashcard.answer,
-            )
-        }.ifEmpty {
-            listOf(DeckFlashcardDraft(id = 1L))
-        }
-        nextDraftCardId = (drafts.maxOfOrNull { it.id } ?: 0L) + 1L
+        this.deckId = deckId
+        initialSnapshot = null
+        loadDeckJob?.cancel()
+        _uiState.update { EditDeckUiState() }
 
-        _uiState.update {
-            EditDeckUiState(
-                deckTitle = deck.title,
-                cards = drafts,
-            )
+        loadDeckJob = viewModelScope.launch {
+            flashcardRepository.observeFlashcardDeck(deckId).collect { deck ->
+                if (deck == null) return@collect
+                val drafts = deck.toDrafts()
+                nextDraftCardId = (drafts.maxOfOrNull { it.id } ?: 0L) + 1L
+                val snapshot = EditDeckFormSnapshot(
+                    deckTitle = deck.title,
+                    cards = drafts,
+                )
+                initialSnapshot = snapshot
+                _uiState.update {
+                    EditDeckUiState(
+                        deckTitle = deck.title,
+                        cards = drafts,
+                        isLoading = false,
+                    )
+                }
+                loadDeckJob?.cancel()
+            }
         }
     }
 
@@ -53,6 +63,7 @@ class EditDeckViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 deckTitle = deckTitle,
+                isDirty = isDirty(deckTitle = deckTitle, cards = it.cards),
                 showValidationErrors = false,
                 deckSaved = false,
             )
@@ -69,8 +80,10 @@ class EditDeckViewModel @Inject constructor(
 
     fun addDraftCard() {
         _uiState.update {
+            val updatedCards = it.cards + DeckFlashcardDraft(id = nextDraftCardId)
             it.copy(
-                cards = it.cards + DeckFlashcardDraft(id = nextDraftCardId),
+                cards = updatedCards,
+                isDirty = isDirty(deckTitle = it.deckTitle, cards = updatedCards),
                 deckSaved = false,
             )
         }
@@ -104,7 +117,18 @@ class EditDeckViewModel @Inject constructor(
                     },
                 ),
             )
-            _uiState.update { it.copy(deckSaved = true, showValidationErrors = false) }
+            val snapshot = EditDeckFormSnapshot(
+                deckTitle = currentState.deckTitle,
+                cards = currentState.cards,
+            )
+            initialSnapshot = snapshot
+            _uiState.update {
+                it.copy(
+                    deckSaved = true,
+                    isDirty = false,
+                    showValidationErrors = false,
+                )
+            }
         }
     }
 
@@ -117,14 +141,31 @@ class EditDeckViewModel @Inject constructor(
         update: (DeckFlashcardDraft) -> DeckFlashcardDraft,
     ) {
         _uiState.update { state ->
+            val updatedCards = state.cards.map { card ->
+                if (card.id == cardId) update(card) else card
+            }
             state.copy(
-                cards = state.cards.map { card ->
-                    if (card.id == cardId) update(card) else card
-                },
+                cards = updatedCards,
+                isDirty = isDirty(deckTitle = state.deckTitle, cards = updatedCards),
                 showValidationErrors = false,
                 deckSaved = false,
             )
         }
+    }
+
+    private fun isDirty(deckTitle: String, cards: List<DeckFlashcardDraft>): Boolean {
+        val snapshot = initialSnapshot ?: return false
+        return snapshot != EditDeckFormSnapshot(deckTitle = deckTitle, cards = cards)
+    }
+
+    private fun FlashcardDeck.toDrafts(): List<DeckFlashcardDraft> = flashcards.mapIndexed { index, flashcard ->
+        DeckFlashcardDraft(
+            id = index + 1L,
+            term = flashcard.question,
+            definition = flashcard.answer,
+        )
+    }.ifEmpty {
+        listOf(DeckFlashcardDraft(id = 1L))
     }
 
     private fun EditDeckUiState.completeCards(): List<DeckFlashcardDraft> = cards.filter {
@@ -133,4 +174,9 @@ class EditDeckViewModel @Inject constructor(
 
     private fun DeckFlashcardDraft.isIncompleteStartedCard(): Boolean =
         term.isNotBlank() && definition.isBlank() || term.isBlank() && definition.isNotBlank()
+
+    private data class EditDeckFormSnapshot(
+        val deckTitle: String,
+        val cards: List<DeckFlashcardDraft>,
+    )
 }

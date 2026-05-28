@@ -12,6 +12,10 @@ interface FlashcardDao {
     @Query("SELECT * FROM flashcard_decks ORDER BY id DESC")
     fun observeDecks(): Flow<List<FlashcardDeckWithCards>>
 
+    @Transaction
+    @Query("SELECT * FROM flashcard_decks WHERE id = :deckId")
+    fun observeDeck(deckId: Long): Flow<FlashcardDeckWithCards?>
+
     @Insert
     suspend fun insertDeck(deck: FlashcardDeckEntity): Long
 

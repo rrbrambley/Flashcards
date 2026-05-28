@@ -19,6 +19,10 @@ class FlashcardLocalDataSource @Inject constructor(
         decks.map { it.toDomain() }
     }
 
+    override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flashcardDao.observeDeck(deckId).map { deck ->
+        deck?.toDomain()
+    }
+
     override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
         flashcardDao.insertDeckWithFlashcards(
             deck = FlashcardDeckEntity(title = deck.title),

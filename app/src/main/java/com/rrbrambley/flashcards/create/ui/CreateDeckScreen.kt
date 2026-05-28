@@ -52,15 +52,15 @@ fun CreateDeckScreen(
 
 @Composable
 fun CreateDeckContent(
-    title: String,
-    description: String,
     deckTitle: String,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    description: String? = null,
     cards: List<DeckFlashcardDraft>,
     showValidationErrors: Boolean,
     onDeckTitleChange: (String) -> Unit,
     onTermChange: (Long, String) -> Unit,
     onDefinitionChange: (Long, String) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     val completeCardCount = cards.count { it.term.isNotBlank() && it.definition.isNotBlank() }
     val hasIncompleteStartedCard = cards.any {
@@ -75,20 +75,26 @@ fun CreateDeckContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        if (title != null || description != null) {
+            item {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    title?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    description?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
 

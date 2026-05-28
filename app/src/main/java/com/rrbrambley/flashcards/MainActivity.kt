@@ -29,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -38,12 +37,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.create.ui.CreateDeckScreen
 import com.rrbrambley.flashcards.create.ui.CreateDeckViewModel
-import com.rrbrambley.flashcards.edit.ui.EditDeckScreen
-import com.rrbrambley.flashcards.edit.ui.EditDeckViewModel
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.library.ui.LibraryScreen
-import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -67,33 +63,21 @@ private enum class BottomDestination(
     Home("Home", Icons.Default.Home),
     New("New", Icons.Default.Add),
     Library("Library", Icons.Default.Menu),
-    Edit("Edit", Icons.Default.Menu),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScaffolding(
     createDeckViewModel: CreateDeckViewModel = hiltViewModel(),
-    editDeckViewModel: EditDeckViewModel = hiltViewModel(),
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(BottomDestination.Home) }
-    var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
     val createDeckUiState by createDeckViewModel.uiState.collectAsState()
-    val editDeckUiState by editDeckViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(createDeckUiState.deckSaved) {
         if (createDeckUiState.deckSaved) {
             currentDestination = BottomDestination.Home
             createDeckViewModel.onDeckSavedHandled()
-        }
-    }
-
-    LaunchedEffect(editDeckUiState.deckSaved) {
-        if (editDeckUiState.deckSaved) {
-            currentDestination = BottomDestination.Library
-            selectedDeck = null
-            editDeckViewModel.onDeckSavedHandled()
         }
     }
 
@@ -107,7 +91,6 @@ private fun HomeScaffolding(
                             BottomDestination.Home -> "Flashcards"
                             BottomDestination.New -> "New deck"
                             BottomDestination.Library -> "Library"
-                            BottomDestination.Edit -> "Edit Flashcards"
                         },
                         style = MaterialTheme.typography.headlineSmall,
                     )
@@ -127,14 +110,6 @@ private fun HomeScaffolding(
                                 )
                             }
                         }
-                        BottomDestination.Edit -> {
-                            IconButton(onClick = editDeckViewModel::finishDeckEditing) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = "Finish deck editing",
-                                )
-                            }
-                        }
                         BottomDestination.Home,
                         BottomDestination.Library,
                         -> Unit
@@ -144,7 +119,7 @@ private fun HomeScaffolding(
         },
         bottomBar = {
             NavigationBar {
-                BottomDestination.entries.filterNot { it == BottomDestination.Edit }.forEach { destination ->
+                BottomDestination.entries.forEach { destination ->
                     NavigationBarItem(
                         selected = currentDestination == destination,
                         onClick = {
@@ -164,14 +139,6 @@ private fun HomeScaffolding(
             when (currentDestination) {
                 BottomDestination.New -> {
                     FloatingActionButton(onClick = createDeckViewModel::addDraftCard) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Add flashcard",
-                        )
-                    }
-                }
-                BottomDestination.Edit -> {
-                    FloatingActionButton(onClick = editDeckViewModel::addDraftCard) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add flashcard",
@@ -210,18 +177,12 @@ private fun HomeScaffolding(
                 BottomDestination.Library -> LibraryScreen(
                     modifier = Modifier.fillMaxSize(),
                     onDeckClick = { deck ->
-                        selectedDeck = deck
-                        editDeckViewModel.loadDeck(deck)
-                        currentDestination = BottomDestination.Edit
+                        val intent = Intent(context, EditDeckActivity::class.java).apply {
+                            putExtra(EditDeckActivity.DECK_ID_EXTRA, deck.id)
+                        }
+                        context.startActivity(intent)
                     },
                 )
-                BottomDestination.Edit -> selectedDeck?.let { deck ->
-                    EditDeckScreen(
-                        deck = deck,
-                        editDeckViewModel = editDeckViewModel,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
             }
         }
     }
