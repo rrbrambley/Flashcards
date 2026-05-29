@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.home.domain
 
+import kotlinx.coroutines.flow.Flow
 
 interface HomeRepository {
-    suspend fun getHomeData(): List<HomeData>
+    fun observeHomeData(): Flow<List<HomeData>>
 }

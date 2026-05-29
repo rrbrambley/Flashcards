@@ -167,6 +167,12 @@ private fun HomeScaffolding(
                             HomeButtonAction.CreateNewFlashcardSet -> {
                                 currentDestination = BottomDestination.New
                             }
+                            is HomeButtonAction.ContinuePractice -> {
+                                val intent = Intent(context, FlashcardsActivity::class.java).apply {
+                                    putExtra(FlashcardsActivity.SESSION_ID_EXTRA, action.sessionId)
+                                }
+                                context.startActivity(intent)
+                            }
                         }
                     },
                 )
@@ -176,7 +182,13 @@ private fun HomeScaffolding(
                 )
                 BottomDestination.Library -> LibraryScreen(
                     modifier = Modifier.fillMaxSize(),
-                    onDeckClick = { deck ->
+                    onPracticeDeck = { sessionId ->
+                        val intent = Intent(context, FlashcardsActivity::class.java).apply {
+                            putExtra(FlashcardsActivity.SESSION_ID_EXTRA, sessionId)
+                        }
+                        context.startActivity(intent)
+                    },
+                    onEditDeck = { deck ->
                         val intent = Intent(context, EditDeckActivity::class.java).apply {
                             putExtra(EditDeckActivity.DECK_ID_EXTRA, deck.id)
                         }

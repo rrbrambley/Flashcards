@@ -6,8 +6,9 @@ data class HomeData(
 )
 
 sealed interface HomeButtonAction {
-    object NavigateToPractice : HomeButtonAction
-    object CreateNewFlashcardSet : HomeButtonAction
+    data object NavigateToPractice : HomeButtonAction
+    data object CreateNewFlashcardSet : HomeButtonAction
+    data class ContinuePractice(val sessionId: Long) : HomeButtonAction
 }
 
 data class HomeButton(

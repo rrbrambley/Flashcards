@@ -6,6 +6,8 @@ import com.rrbrambley.flashcards.home.domain.HomeData
 import com.rrbrambley.flashcards.home.domain.HomeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -61,6 +63,6 @@ class HomeViewModelTest {
     private class FakeHomeRepository(
         private val homeData: List<HomeData>,
     ) : HomeRepository {
-        override suspend fun getHomeData(): List<HomeData> = homeData
+        override fun observeHomeData(): Flow<List<HomeData>> = flowOf(homeData)
     }
 }

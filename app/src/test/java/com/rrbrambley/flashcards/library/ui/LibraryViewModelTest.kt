@@ -3,6 +3,8 @@ package com.rrbrambley.flashcards.library.ui
 import com.rrbrambley.flashcards.practice.domain.Flashcard
 import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
 import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
+import com.rrbrambley.flashcards.practice.domain.PracticeSession
+import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -33,7 +35,10 @@ class LibraryViewModelTest {
 
     @Test
     fun uiState_startsAsLoading() {
-        val viewModel = LibraryViewModel(FakeFlashcardRepository(emptyList()))
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(emptyList()),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+        )
 
         assertEquals(LibraryUiState.Loading, viewModel.uiState.value)
     }
@@ -47,7 +52,10 @@ class LibraryViewModelTest {
                 flashcards = listOf(Flashcard(question = "Hola", answer = "Hello")),
             ),
         )
-        val viewModel = LibraryViewModel(FakeFlashcardRepository(decks))
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(decks),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+        )
 
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -56,11 +64,30 @@ class LibraryViewModelTest {
 
     @Test
     fun uiState_showsEmptyDeckListFromRepository() = runTest(testDispatcher) {
-        val viewModel = LibraryViewModel(FakeFlashcardRepository(emptyList()))
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(emptyList()),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+        )
 
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(LibraryUiState.ShowDecks(emptyList()), viewModel.uiState.value)
+    }
+
+    @Test
+    fun startPractice_startsSessionAndInvokesCallback() = runTest(testDispatcher) {
+        val practiceSessionRepository = FakePracticeSessionRepository(sessionId = 42L)
+        var startedSessionId: Long? = null
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(emptyList()),
+            practiceSessionRepository = practiceSessionRepository,
+        )
+
+        viewModel.startPractice(deckId = 7L) { startedSessionId = it }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(7L, practiceSessionRepository.startedDeckId)
+        assertEquals(42L, startedSessionId)
     }
 
     private class FakeFlashcardRepository(
@@ -75,5 +102,29 @@ class LibraryViewModelTest {
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
 
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
+    }
+
+    private class FakePracticeSessionRepository(
+        private val sessionId: Long = 0L,
+    ) : PracticeSessionRepository {
+        var startedDeckId: Long? = null
+
+        override suspend fun startOrResumeSession(deckId: Long): Long {
+            startedDeckId = deckId
+            return sessionId
+        }
+
+        override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(emptyList())
+
+        override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(null)
+
+        override suspend fun updateProgress(
+            sessionId: Long,
+            currentCardIndex: Int,
+            numCorrect: Int,
+            numIncorrect: Int,
+        ) = Unit
+
+        override suspend fun completeSession(sessionId: Long) = Unit
     }
 }

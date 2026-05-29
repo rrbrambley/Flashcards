@@ -7,10 +7,12 @@ import androidx.room.RoomDatabase
     entities = [
         FlashcardDeckEntity::class,
         FlashcardEntity::class,
+        PracticeSessionEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 abstract class FlashcardsDatabase : RoomDatabase() {
     abstract fun flashcardDao(): FlashcardDao
+    abstract fun practiceSessionDao(): PracticeSessionDao
 }

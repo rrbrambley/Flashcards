@@ -57,9 +57,13 @@ import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlashcardsScreen(
+    sessionId: Long? = null,
     flashcardsViewModel: FlashcardsViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
 ) {
+    LaunchedEffect(sessionId) {
+        flashcardsViewModel.loadSession(sessionId)
+    }
     val flashcardsState by flashcardsViewModel.uiState.collectAsState()
     val showHelpDialog = remember { mutableStateOf(false) }
 
@@ -138,8 +142,20 @@ private fun FlashcardsHelpDialog(
 
 @Composable
 fun ScoreRow(flashcardsState: FlashcardsUiState) {
-    val numIncorrect = (flashcardsState as? FlashcardsUiState.ShowFlashcard)?.numIncorrect ?: 0
-    val numCorrect = (flashcardsState as? FlashcardsUiState.ShowFlashcard)?.numCorrect ?: 0
+    val numIncorrect = when (flashcardsState) {
+        is FlashcardsUiState.ShowFlashcard -> flashcardsState.numIncorrect
+        is FlashcardsUiState.SessionCompleted -> flashcardsState.numIncorrect
+        FlashcardsUiState.Loading,
+        FlashcardsUiState.LoadingFailed,
+        -> 0
+    }
+    val numCorrect = when (flashcardsState) {
+        is FlashcardsUiState.ShowFlashcard -> flashcardsState.numCorrect
+        is FlashcardsUiState.SessionCompleted -> flashcardsState.numCorrect
+        FlashcardsUiState.Loading,
+        FlashcardsUiState.LoadingFailed,
+        -> 0
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -206,6 +222,53 @@ fun QuestionRow(
                         onClick = { isShowingAnswer = !isShowingAnswer },
                     )
                 }
+            }
+            is FlashcardsUiState.SessionCompleted -> {
+                FlashcardsCompletionCard(
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 20.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FlashcardsCompletionCard(
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .aspectRatio(0.68f),
+        shape = RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 1.dp,
+        shadowElevation = 10.dp,
+        border = CardDefaults.outlinedCardBorder(),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(32.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = "Practice complete",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    text = "Nice work reviewing this deck.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }

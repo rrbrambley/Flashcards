@@ -5,7 +5,9 @@ import com.rrbrambley.flashcards.home.domain.HomeRepository
 import com.rrbrambley.flashcards.practice.data.FlashcardLocalDataSource
 import com.rrbrambley.flashcards.practice.data.FlashcardLocalDataSourceContract
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
+import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
 import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
+import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -20,6 +22,9 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindFlashcardLocalDataSource(dataSource: FlashcardLocalDataSource): FlashcardLocalDataSourceContract
+
+    @Binds
+    abstract fun bindPracticeSessionRepository(repository: PracticeSessionRepositoryImpl): PracticeSessionRepository
 
     @Binds
     abstract fun bindHomeRepository(repository: HomeRepositoryImpl): HomeRepository
