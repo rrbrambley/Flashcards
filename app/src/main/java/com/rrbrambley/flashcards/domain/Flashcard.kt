@@ -1,4 +1,4 @@
-package com.rrbrambley.flashcards.practice.domain
+package com.rrbrambley.flashcards.domain
 
 data class Flashcard(
     val question: String,

@@ -2,8 +2,8 @@ package com.rrbrambley.flashcards.practice.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rrbrambley.flashcards.practice.domain.Flashcard
-import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
+import com.rrbrambley.flashcards.domain.Flashcard
+import com.rrbrambley.flashcards.domain.FlashcardRepository
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job

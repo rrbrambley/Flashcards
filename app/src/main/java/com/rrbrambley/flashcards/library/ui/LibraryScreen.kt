@@ -33,8 +33,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.rrbrambley.flashcards.practice.domain.Flashcard
-import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
+import com.rrbrambley.flashcards.domain.Flashcard
+import com.rrbrambley.flashcards.domain.FlashcardDeck
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)

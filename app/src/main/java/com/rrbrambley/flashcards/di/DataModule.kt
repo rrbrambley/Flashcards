@@ -6,7 +6,7 @@ import com.rrbrambley.flashcards.practice.data.FlashcardLocalDataSource
 import com.rrbrambley.flashcards.practice.data.FlashcardLocalDataSourceContract
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
-import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
+import com.rrbrambley.flashcards.domain.FlashcardRepository
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import dagger.Binds
 import dagger.Module

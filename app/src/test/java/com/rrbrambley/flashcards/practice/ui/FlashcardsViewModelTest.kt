@@ -1,8 +1,8 @@
 package com.rrbrambley.flashcards.practice.ui
 
-import com.rrbrambley.flashcards.practice.domain.Flashcard
-import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
-import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
+import com.rrbrambley.flashcards.domain.Flashcard
+import com.rrbrambley.flashcards.domain.FlashcardDeck
+import com.rrbrambley.flashcards.domain.FlashcardRepository
 import com.rrbrambley.flashcards.practice.domain.PracticeSession
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import kotlinx.coroutines.Dispatchers

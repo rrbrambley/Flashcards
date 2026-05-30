@@ -1,6 +1,6 @@
 package com.rrbrambley.flashcards.practice.data
 
-import com.rrbrambley.flashcards.practice.domain.Flashcard
+import com.rrbrambley.flashcards.domain.Flashcard
 import javax.inject.Inject
 
 

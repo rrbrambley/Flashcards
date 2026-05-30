@@ -1,9 +1,9 @@
 package com.rrbrambley.flashcards.edit.ui
 
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
-import com.rrbrambley.flashcards.practice.domain.Flashcard
-import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
-import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
+import com.rrbrambley.flashcards.domain.Flashcard
+import com.rrbrambley.flashcards.domain.FlashcardDeck
+import com.rrbrambley.flashcards.domain.FlashcardRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

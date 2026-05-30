@@ -2,9 +2,9 @@ package com.rrbrambley.flashcards.create.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rrbrambley.flashcards.practice.domain.Flashcard
-import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
-import com.rrbrambley.flashcards.practice.domain.FlashcardRepository
+import com.rrbrambley.flashcards.domain.Flashcard
+import com.rrbrambley.flashcards.domain.FlashcardDeck
+import com.rrbrambley.flashcards.domain.FlashcardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

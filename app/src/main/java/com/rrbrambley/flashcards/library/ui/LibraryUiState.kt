@@ -1,6 +1,6 @@
 package com.rrbrambley.flashcards.library.ui
 
-import com.rrbrambley.flashcards.practice.domain.FlashcardDeck
+import com.rrbrambley.flashcards.domain.FlashcardDeck
 
 sealed interface LibraryUiState {
     data object Loading : LibraryUiState
