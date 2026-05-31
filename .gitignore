@@ -2,6 +2,9 @@
 .gradle/
 build/
 
+# Kotlin Multiplatform / Kotlin compiler caches
+.kotlin/
+
 # Local configuration (SDK path, etc.)
 local.properties
 

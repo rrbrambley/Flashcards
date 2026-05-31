@@ -42,6 +42,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.ksp.compiler)
 
