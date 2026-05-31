@@ -14,7 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Flashcards">
         <activity
-            android:name=".EditDeckActivity"
+            android:name=".edit.ui.EditDeckActivity"
             android:exported="false"
             android:theme="@style/Theme.Flashcards" />
         <activity

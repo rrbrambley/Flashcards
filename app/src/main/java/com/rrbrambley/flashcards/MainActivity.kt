@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.create.ui.CreateDeckScreen
 import com.rrbrambley.flashcards.create.ui.CreateDeckViewModel
+import com.rrbrambley.flashcards.edit.ui.EditDeckActivity
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.library.ui.LibraryScreen

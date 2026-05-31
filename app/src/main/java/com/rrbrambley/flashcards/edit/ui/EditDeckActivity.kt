@@ -1,4 +1,4 @@
-package com.rrbrambley.flashcards
+package com.rrbrambley.flashcards.edit.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,8 +31,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.rrbrambley.flashcards.edit.ui.EditDeckScreen
-import com.rrbrambley.flashcards.edit.ui.EditDeckViewModel
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
