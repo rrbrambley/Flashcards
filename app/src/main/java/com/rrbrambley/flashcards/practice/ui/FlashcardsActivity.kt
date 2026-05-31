@@ -1,10 +1,9 @@
-package com.rrbrambley.flashcards
+package com.rrbrambley.flashcards.practice.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.rrbrambley.flashcards.practice.ui.FlashcardsScreen
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import dagger.hilt.android.AndroidEntryPoint
 

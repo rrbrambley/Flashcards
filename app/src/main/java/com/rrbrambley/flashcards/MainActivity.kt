@@ -41,6 +41,7 @@ import com.rrbrambley.flashcards.edit.ui.EditDeckActivity
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.library.ui.LibraryScreen
+import com.rrbrambley.flashcards.practice.ui.FlashcardsActivity
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
