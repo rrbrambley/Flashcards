@@ -3,8 +3,10 @@ package com.rrbrambley.flashcards.backend
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
 import com.rrbrambley.flashcards.shared.api.AuthResponse
+import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
+import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.HomeDataDto
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
@@ -15,6 +17,7 @@ import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -178,6 +181,81 @@ class ApplicationFlowTest {
 
         val bobView = client.get("/sessions/${aliceSession.id}") { bearerAuth(bob.token) }
         assertEquals(HttpStatusCode.NotFound, bobView.status)
+    }
+
+    @Test
+    fun create_deck_then_list_and_practice_it() = runApp { client ->
+        val auth = client.register("frank", "pw")
+        val created = client.post("/decks") {
+            bearerAuth(auth.token)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest(
+                        title = "World Capitals",
+                        flashcards = listOf(
+                            FlashcardDto("Capital of France?", "Paris"),
+                            FlashcardDto("Capital of Japan?", "Tokyo"),
+                        ),
+                    ),
+                ),
+            )
+        }
+        assertEquals(HttpStatusCode.Created, created.status)
+        val deck = created.decode<FlashcardDeckDto>()
+        assertEquals("World Capitals", deck.title)
+        assertEquals(listOf("Paris", "Tokyo"), deck.flashcards.map { it.answer })
+        assertTrue(deck.id > 0)
+
+        // Appears in the user's library...
+        val decks = client.get("/decks") { bearerAuth(auth.token) }.decode<List<FlashcardDeckDto>>()
+        assertTrue(decks.any { it.id == deck.id && it.title == "World Capitals" })
+
+        // ...and a session can be started on it.
+        val session = client.createSession(auth.token, deck.id)
+        assertEquals(deck.id, session.deckId)
+    }
+
+    @Test
+    fun update_deck_replaces_title_and_cards() = runApp { client ->
+        val auth = client.register("grace", "pw")
+        val deck = client.post("/decks") {
+            bearerAuth(auth.token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Draft", listOf(FlashcardDto("q1", "a1")))))
+        }.decode<FlashcardDeckDto>()
+
+        val updated = client.put("/decks/${deck.id}") {
+            bearerAuth(auth.token)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest("Renamed", listOf(FlashcardDto("q1", "a1"), FlashcardDto("q2", "a2"))),
+                ),
+            )
+        }.decode<FlashcardDeckDto>()
+        assertEquals("Renamed", updated.title)
+        assertEquals(2, updated.flashcards.size)
+
+        val refetched = client.get("/decks/${deck.id}") { bearerAuth(auth.token) }.decode<FlashcardDeckDto>()
+        assertEquals("Renamed", refetched.title)
+        assertEquals(listOf("a1", "a2"), refetched.flashcards.map { it.answer })
+    }
+
+    @Test
+    fun cannot_edit_a_deck_you_do_not_own() = runApp { client ->
+        val auth = client.register("heidi", "pw")
+        // The seeded global Country Flags deck has no owner, so it is read-only.
+        val globalDeck = client.get("/decks") { bearerAuth(auth.token) }
+            .decode<List<FlashcardDeckDto>>()
+            .single { it.title == "Country Flags" }
+
+        val response = client.put("/decks/${globalDeck.id}") {
+            bearerAuth(auth.token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Hijacked", listOf(FlashcardDto("q", "a")))))
+        }
+        assertEquals(HttpStatusCode.NotFound, response.status)
     }
 
     private suspend fun HttpClient.createSession(token: String, deckId: Long): PracticeSessionDto =

@@ -66,18 +66,21 @@ class CreateDeckViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            flashcardRepository.saveFlashcardDeck(
-                FlashcardDeck(
-                    title = currentState.deckTitle.trim(),
-                    flashcards = completeCards.map { card ->
-                        Flashcard(
-                            question = card.term.trim(),
-                            answer = card.definition.trim(),
-                        )
-                    },
-                ),
-            )
-            resetDeckCreation()
+            val saved = runCatching {
+                flashcardRepository.saveFlashcardDeck(
+                    FlashcardDeck(
+                        title = currentState.deckTitle.trim(),
+                        flashcards = completeCards.map { card ->
+                            Flashcard(
+                                question = card.term.trim(),
+                                answer = card.definition.trim(),
+                            )
+                        },
+                    ),
+                )
+            }.isSuccess
+            // On failure (e.g. offline) keep the form so the user can retry.
+            if (saved) resetDeckCreation()
         }
     }
 

@@ -2,34 +2,40 @@ package com.rrbrambley.flashcards.practice.data
 
 import com.rrbrambley.flashcards.practice.domain.PracticeSession
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
+import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+/**
+ * Sessions are owned by the backend. Writes (start/resume, progress, complete) hit the
+ * server first and cache the returned state; reads refresh from the server then serve Room.
+ */
 class PracticeSessionRepositoryImpl @Inject constructor(
+    private val apiClient: FlashcardApiClient,
     private val practiceSessionDao: PracticeSessionDao,
+    private val flashcardDao: FlashcardDao,
 ) : PracticeSessionRepository {
-    override suspend fun startOrResumeSession(deckId: Long): Long {
-        val activeSession = practiceSessionDao.getActiveSessionForDeck(deckId)
-        if (activeSession != null) return activeSession.id
 
-        val now = System.currentTimeMillis()
-        return practiceSessionDao.insertSession(
-            PracticeSessionEntity(
-                deckId = deckId,
-                createdAtMillis = now,
-                updatedAtMillis = now,
-            ),
-        )
+    override suspend fun startOrResumeSession(deckId: Long): Long {
+        val session = apiClient.createSession(deckId)
+        cache(session)
+        return session.id
     }
 
-    override fun observeActiveSessions(): Flow<List<PracticeSession>> =
-        practiceSessionDao.observeActiveSessions().map { sessions ->
-            sessions.map { it.toDomain() }
-        }
+    override fun observeActiveSessions(): Flow<List<PracticeSession>> = flow {
+        runCatching { apiClient.getSessions(activeOnly = true).forEach { cache(it) } }
+        emitAll(practiceSessionDao.observeActiveSessions().map { sessions -> sessions.map { it.toDomain() } })
+    }
 
-    override fun observeSession(sessionId: Long): Flow<PracticeSession?> =
-        practiceSessionDao.observeSession(sessionId).map { it?.toDomain() }
+    override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flow {
+        runCatching { cache(apiClient.getSession(sessionId)) }
+        emitAll(practiceSessionDao.observeSession(sessionId).map { it?.toDomain() })
+    }
 
     override suspend fun updateProgress(
         sessionId: Long,
@@ -37,31 +43,21 @@ class PracticeSessionRepositoryImpl @Inject constructor(
         numCorrect: Int,
         numIncorrect: Int,
     ) {
-        practiceSessionDao.updateProgress(
-            sessionId = sessionId,
-            currentCardIndex = currentCardIndex,
-            numCorrect = numCorrect,
-            numIncorrect = numIncorrect,
-            updatedAtMillis = System.currentTimeMillis(),
+        cache(
+            apiClient.updateProgress(
+                sessionId,
+                UpdateProgressRequest(currentCardIndex, numCorrect, numIncorrect),
+            ),
         )
     }
 
     override suspend fun completeSession(sessionId: Long) {
-        practiceSessionDao.completeSession(
-            sessionId = sessionId,
-            updatedAtMillis = System.currentTimeMillis(),
-        )
+        cache(apiClient.completeSession(sessionId))
     }
 
-    private fun PracticeSessionWithDeck.toDomain(): PracticeSession = PracticeSession(
-        id = session.id,
-        deckId = session.deckId,
-        deckTitle = deck.title,
-        currentCardIndex = session.currentCardIndex,
-        numCorrect = session.numCorrect,
-        numIncorrect = session.numIncorrect,
-        isCompleted = session.isCompleted,
-        createdAtMillis = session.createdAtMillis,
-        updatedAtMillis = session.updatedAtMillis,
-    )
+    private suspend fun cache(session: PracticeSessionDto) {
+        // Ensure the session's deck exists locally (FK + relation) before caching the session.
+        flashcardDao.insertDeckIfAbsent(session.toDeckStubEntity())
+        practiceSessionDao.upsertSession(session.toEntity())
+    }
 }

@@ -18,6 +18,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // The Android emulator reaches the host machine at 10.0.2.2.
+        buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:8080\"")
     }
 
     buildTypes {
@@ -38,6 +41,7 @@ android {
 //    }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -64,9 +68,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
-    implementation(libs.retrofit)
-    implementation(libs.converter.kotlinx.serialization)
-    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.coroutines.android)
 

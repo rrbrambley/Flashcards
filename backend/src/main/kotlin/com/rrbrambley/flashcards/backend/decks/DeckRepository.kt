@@ -3,13 +3,21 @@ package com.rrbrambley.flashcards.backend.decks
 import com.rrbrambley.flashcards.backend.db.Decks
 import com.rrbrambley.flashcards.backend.db.Flashcards
 import com.rrbrambley.flashcards.backend.db.dbQuery
+import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.mapping.toFlashcardDto
+import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
+import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 
 object DeckRepository {
 
@@ -29,6 +37,41 @@ object DeckRepository {
             }
             .firstOrNull()
             ?.toDeckDtoWithCards()
+    }
+
+    suspend fun createDeck(userId: Long, request: CreateDeckRequest): FlashcardDeckDto = dbQuery {
+        val deckId = Decks.insertAndGetId {
+            it[title] = request.title
+            it[ownerUserId] = userId
+            it[createdAtMillis] = System.currentTimeMillis()
+        }.value
+        insertFlashcards(deckId, request.flashcards)
+        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards)
+    }
+
+    /** Only the deck's owner may edit it; the global catalog deck (NULL owner) is read-only. */
+    suspend fun updateDeck(userId: Long, deckId: Long, request: CreateDeckRequest): FlashcardDeckDto = dbQuery {
+        val owned = Decks.selectAll()
+            .where { (Decks.id eq deckId) and (Decks.ownerUserId eq userId) }
+            .any()
+        if (!owned) throw NotFoundException("Deck $deckId not found")
+
+        Decks.update({ Decks.id eq deckId }) { it[title] = request.title }
+        Flashcards.deleteWhere { Flashcards.deckId eq deckId }
+        insertFlashcards(deckId, request.flashcards)
+        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards)
+    }
+
+    private fun insertFlashcards(deckId: Long, cards: List<FlashcardDto>) {
+        cards.forEachIndexed { index, card ->
+            Flashcards.insert {
+                it[Flashcards.deckId] = deckId
+                it[question] = card.question
+                it[answer] = card.answer
+                it[imageUrl] = card.imageUrl
+                it[position] = index
+            }
+        }
     }
 
     private fun ResultRow.toDeckDtoWithCards(): FlashcardDeckDto {
