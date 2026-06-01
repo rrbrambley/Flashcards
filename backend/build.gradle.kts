@@ -91,8 +91,8 @@ jacoco {
 tasks.named<JacocoReport>("jacocoTestReport") {
     dependsOn(tasks.named("test"))
     reports {
-        xml.required.set(true)   // consumed by the CI coverage comment
-        html.required.set(true)  // for humans
+        xml.required.set(true) // consumed by the CI coverage comment
+        html.required.set(true) // for humans
         csv.required.set(false)
     }
 }

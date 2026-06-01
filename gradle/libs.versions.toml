@@ -3,6 +3,8 @@ activityCompose = "1.8.0"
 agp = "9.2.1"
 coil = "3.4.0"
 jacoco = "0.8.13"
+ktlint = "1.5.0"
+ktlintPlugin = "12.1.2"
 composeBom = "2026.02.01"
 coreKtx = "1.10.1"
 coroutinesAndroid = "1.10.2"
@@ -115,3 +117,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }

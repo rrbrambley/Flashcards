@@ -11,16 +11,15 @@ import kotlinx.serialization.json.Json
  * Each platform passes its own engine (OkHttp on Android/JVM, Darwin on iOS),
  * keeping the configuration shared while the transport stays native.
  */
-fun createFlashcardHttpClient(engine: HttpClientEngine): HttpClient =
-    HttpClient(engine) {
-        // Throw ClientRequestException / ServerResponseException on non-2xx responses.
-        expectSuccess = true
-        install(ContentNegotiation) {
-            json(
-                Json {
-                    ignoreUnknownKeys = true
-                    encodeDefaults = true
-                },
-            )
-        }
+fun createFlashcardHttpClient(engine: HttpClientEngine): HttpClient = HttpClient(engine) {
+    // Throw ClientRequestException / ServerResponseException on non-2xx responses.
+    expectSuccess = true
+    install(ContentNegotiation) {
+        json(
+            Json {
+                ignoreUnknownKeys = true
+                encodeDefaults = true
+            },
+        )
     }
+}

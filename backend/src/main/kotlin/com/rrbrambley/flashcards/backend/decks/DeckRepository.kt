@@ -6,8 +6,8 @@ import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.mapping.toFlashcardDto
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
-import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
+import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq

@@ -1,0 +1,10 @@
+root = true
+
+[*.{kt,kts}]
+# Match the IntelliJ/Android Studio "official" Kotlin style the project already uses
+# (kotlin.code.style=official), so ktlint doesn't fight the IDE formatter.
+ktlint_code_style = intellij_idea
+max_line_length = 120
+# DTO/request files are grouped by purpose (e.g. *Dto.kt) rather than named after their
+# single class, so don't enforce filename == class name.
+ktlint_standard_filename = disabled

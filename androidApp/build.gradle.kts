@@ -41,7 +41,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -117,8 +117,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     description = "Generates a Jacoco coverage report from the debug unit tests."
 
     reports {
-        xml.required.set(true)   // consumed by the CI coverage comment
-        html.required.set(true)  // for humans
+        xml.required.set(true) // consumed by the CI coverage comment
+        html.required.set(true) // for humans
         csv.required.set(false)
     }
 
