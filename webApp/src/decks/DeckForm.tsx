@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { api } from '../api/client';
+import type { FlashcardDto } from '../api/types';
 
 interface CardDraft {
   id: number;
@@ -9,19 +9,30 @@ interface CardDraft {
 
 const MINIMUM_COMPLETE_CARDS = 1;
 
-export function CreateDeckForm({ onCreated }: { onCreated: () => void }) {
-  const [title, setTitle] = useState('');
-  const [cards, setCards] = useState<CardDraft[]>([{ id: 1, term: '', definition: '' }]);
-  const [nextId, setNextId] = useState(2);
+interface DeckFormProps {
+  submitLabel: string;
+  initialTitle?: string;
+  initialCards?: { term: string; definition: string }[];
+  /** Receives validated values (term -> question, definition -> answer). Throw to surface an error. */
+  onSubmit: (title: string, flashcards: FlashcardDto[]) => Promise<void>;
+}
+
+export function DeckForm({ submitLabel, initialTitle = '', initialCards, onSubmit }: DeckFormProps) {
+  const seededCards: CardDraft[] = (initialCards && initialCards.length > 0
+    ? initialCards
+    : [{ term: '', definition: '' }]
+  ).map((card, index) => ({ id: index + 1, term: card.term, definition: card.definition }));
+
+  const [title, setTitle] = useState(initialTitle);
+  const [cards, setCards] = useState<CardDraft[]>(seededCards);
+  const [nextId, setNextId] = useState(seededCards.length + 1);
   const [showErrors, setShowErrors] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<string | null>(null);
 
   const updateCard = (id: number, patch: Partial<CardDraft>) => {
     setCards((current) => current.map((card) => (card.id === id ? { ...card, ...patch } : card)));
     setShowErrors(false);
-    setCreated(null);
   };
 
   const addCard = () => {
@@ -40,7 +51,6 @@ export function CreateDeckForm({ onCreated }: { onCreated: () => void }) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    setCreated(null);
     const valid =
       title.trim().length > 0 &&
       completeCards.length >= MINIMUM_COMPLETE_CARDS &&
@@ -52,21 +62,15 @@ export function CreateDeckForm({ onCreated }: { onCreated: () => void }) {
     setSubmitting(true);
     setError(null);
     try {
-      const deck = await api.createDeck({
-        title: title.trim(),
-        // term -> question, definition -> answer (same mapping as Android).
-        flashcards: completeCards.map((c) => ({ question: c.term.trim(), answer: c.definition.trim() })),
-      });
-      setTitle('');
-      setCards([{ id: nextId, term: '', definition: '' }]);
-      setNextId((n) => n + 1);
-      setShowErrors(false);
-      setCreated(deck.title);
-      onCreated();
+      // term -> question, definition -> answer (same mapping as Android).
+      await onSubmit(
+        title.trim(),
+        completeCards.map((c) => ({ question: c.term.trim(), answer: c.definition.trim() })),
+      );
+      // On success the page navigates away; keep the button disabled until then.
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create the deck.');
-    } finally {
       setSubmitting(false);
+      setError(err instanceof Error ? err.message : 'Could not save the deck.');
     }
   };
 
@@ -80,7 +84,6 @@ export function CreateDeckForm({ onCreated }: { onCreated: () => void }) {
           onChange={(e) => {
             setTitle(e.target.value);
             setShowErrors(false);
-            setCreated(null);
           }}
           aria-invalid={titleError}
         />
@@ -125,10 +128,9 @@ export function CreateDeckForm({ onCreated }: { onCreated: () => void }) {
       {cardCountError && <p className="error">Add at least one complete card (term and definition).</p>}
       {incompleteError && <p className="error">Finish or clear the started card(s).</p>}
       {error && <p className="error">{error}</p>}
-      {created && <p className="success">Created “{created}” ✓</p>}
 
       <button type="submit" disabled={submitting}>
-        {submitting ? 'Creating…' : 'Create deck'}
+        {submitting ? 'Saving…' : submitLabel}
       </button>
     </form>
   );

@@ -1,15 +1,28 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthForm } from './auth/AuthForm';
 import { useAuth } from './auth/AuthContext';
-import { HomePage } from './decks/HomePage';
+import { LibraryPage } from './decks/LibraryPage';
+import { CreateDeckPage } from './decks/CreateDeckPage';
+import { EditDeckPage } from './decks/EditDeckPage';
 
 export default function App() {
   const { token } = useAuth();
+
+  if (!token) {
+    return (
+      <Routes>
+        <Route path="/login" element={<AuthForm mode="login" />} />
+        <Route path="/register" element={<AuthForm mode="register" />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
-      <Route path="/login" element={token ? <Navigate to="/" replace /> : <AuthForm mode="login" />} />
-      <Route path="/register" element={token ? <Navigate to="/" replace /> : <AuthForm mode="register" />} />
-      <Route path="/" element={token ? <HomePage /> : <Navigate to="/login" replace />} />
+      <Route path="/" element={<LibraryPage />} />
+      <Route path="/create" element={<CreateDeckPage />} />
+      <Route path="/decks/:id/edit" element={<EditDeckPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
