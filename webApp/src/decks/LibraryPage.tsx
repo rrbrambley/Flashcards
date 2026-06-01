@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { FlashcardDeckDto } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
-import { CreateDeckForm } from './CreateDeckForm';
 
-export function HomePage() {
+export function LibraryPage() {
   const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [decks, setDecks] = useState<FlashcardDeckDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,39 +30,37 @@ export function HomePage() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Flashcards</h1>
+        <h1>Library</h1>
         <button className="link-btn" onClick={signOut}>
           Sign out
         </button>
       </header>
 
-      <main className="layout">
-        <section className="panel">
-          <h2>Your decks</h2>
-          {loading ? (
-            <p className="muted">Loading…</p>
-          ) : error ? (
-            <p className="error">{error}</p>
-          ) : decks.length === 0 ? (
-            <p className="muted">No decks yet — create one on the right.</p>
-          ) : (
-            <ul className="deck-list">
-              {decks.map((deck) => (
-                <li key={deck.id}>
+      <main className="container">
+        <div className="library-actions">
+          <button onClick={() => navigate('/create')}>+ Create deck</button>
+        </div>
+
+        {loading ? (
+          <p className="muted">Loading…</p>
+        ) : error ? (
+          <p className="error">{error}</p>
+        ) : decks.length === 0 ? (
+          <p className="muted">No decks yet — create your first one.</p>
+        ) : (
+          <ul className="deck-list">
+            {decks.map((deck) => (
+              <li key={deck.id}>
+                <button className="deck-row" onClick={() => navigate(`/decks/${deck.id}/edit`)}>
                   <span className="deck-title">{deck.title}</span>
                   <span className="muted">
-                    {deck.flashcards.length} card{deck.flashcards.length === 1 ? '' : 's'}
+                    {deck.flashcards.length} card{deck.flashcards.length === 1 ? '' : 's'} ›
                   </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        <section className="panel">
-          <h2>Create a deck</h2>
-          <CreateDeckForm onCreated={loadDecks} />
-        </section>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </main>
     </div>
   );

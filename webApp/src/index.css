@@ -162,41 +162,48 @@ button.link-btn {
 }
 .app-header h1 {
   margin: 0;
+  font-size: 1.3rem;
 }
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  max-width: 960px;
+.header-spacer {
+  width: 64px;
+}
+.container {
+  max-width: 640px;
   margin: 0 auto;
-}
-@media (max-width: 720px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-}
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
   padding: 1.5rem;
+}
+.library-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
 .deck-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
-.deck-list li {
+.deck-row {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border);
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
 }
-.deck-list li:last-child {
-  border-bottom: none;
+.deck-row:hover {
+  border-color: var(--primary);
+  background: var(--panel);
 }
 .deck-title {
   font-weight: 600;
