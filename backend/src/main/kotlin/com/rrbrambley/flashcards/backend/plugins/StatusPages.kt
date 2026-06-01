@@ -2,8 +2,10 @@ package com.rrbrambley.flashcards.backend.plugins
 
 import com.rrbrambley.flashcards.backend.error.ConflictException
 import com.rrbrambley.flashcards.backend.error.NotFoundException
+import com.rrbrambley.flashcards.backend.error.PayloadTooLargeException
 import com.rrbrambley.flashcards.backend.error.ServiceUnavailableException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
+import com.rrbrambley.flashcards.backend.error.UnsupportedMediaTypeException
 import com.rrbrambley.flashcards.shared.api.ErrorResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
@@ -25,6 +27,12 @@ fun Application.configureStatusPages() {
         }
         exception<ServiceUnavailableException> { call, cause ->
             call.respond(HttpStatusCode.ServiceUnavailable, ErrorResponse("unavailable", cause.message))
+        }
+        exception<PayloadTooLargeException> { call, cause ->
+            call.respond(HttpStatusCode.PayloadTooLarge, ErrorResponse("payload_too_large", cause.message))
+        }
+        exception<UnsupportedMediaTypeException> { call, cause ->
+            call.respond(HttpStatusCode.UnsupportedMediaType, ErrorResponse("unsupported_media_type", cause.message))
         }
         exception<BadRequestException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("bad_request", cause.message))

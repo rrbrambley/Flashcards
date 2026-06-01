@@ -35,6 +35,9 @@ dependencies {
     implementation(libs.bcrypt)
     implementation(libs.google.api.client)
 
+    // Storage (S3 / CloudFront)
+    implementation(libs.aws.s3)
+
     // Logging
     implementation(libs.logback.classic)
 

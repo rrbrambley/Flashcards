@@ -1,25 +1,44 @@
 package com.rrbrambley.flashcards.create.ui
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil3.compose.AsyncImage
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
 private const val MinimumCompleteCardCount = 1
@@ -28,7 +47,16 @@ data class DeckFlashcardDraft(
     val id: Long,
     val term: String = "",
     val definition: String = "",
+    val imageUrl: String? = null,
+    val uploading: Boolean = false,
 )
+
+/** A card needs a definition plus either a term or an image (image-only cards are allowed). */
+fun DeckFlashcardDraft.isComplete(): Boolean =
+    definition.isNotBlank() && (term.isNotBlank() || imageUrl != null)
+
+fun DeckFlashcardDraft.isStarted(): Boolean =
+    term.isNotBlank() || definition.isNotBlank() || imageUrl != null
 
 @Composable
 fun CreateDeckScreen(
@@ -46,6 +74,8 @@ fun CreateDeckScreen(
         onDeckTitleChange = createDeckViewModel::onDeckTitleChange,
         onTermChange = createDeckViewModel::onTermChange,
         onDefinitionChange = createDeckViewModel::onDefinitionChange,
+        onImageSelected = createDeckViewModel::onImagePicked,
+        onRemoveImage = createDeckViewModel::onRemoveImage,
         modifier = modifier,
     )
 }
@@ -61,11 +91,11 @@ fun CreateDeckContent(
     onDeckTitleChange: (String) -> Unit,
     onTermChange: (Long, String) -> Unit,
     onDefinitionChange: (Long, String) -> Unit,
+    onImageSelected: (Long, Uri) -> Unit,
+    onRemoveImage: (Long) -> Unit,
 ) {
-    val completeCardCount = cards.count { it.term.isNotBlank() && it.definition.isNotBlank() }
-    val hasIncompleteStartedCard = cards.any {
-        it.term.isNotBlank() && it.definition.isBlank() || it.term.isBlank() && it.definition.isNotBlank()
-    }
+    val completeCardCount = cards.count { it.isComplete() }
+    val hasIncompleteStartedCard = cards.any { it.isStarted() && !it.isComplete() }
     val showDeckTitleError = showValidationErrors && deckTitle.isBlank()
     val showCardCountError = showValidationErrors && completeCardCount < MinimumCompleteCardCount
     val showIncompleteCardError = showValidationErrors && hasIncompleteStartedCard
@@ -118,8 +148,8 @@ fun CreateDeckContent(
             item {
                 Text(
                     text = when {
-                        showCardCountError -> "Add at least one complete term and definition."
-                        else -> "Complete both fields on any card you started."
+                        showCardCountError -> "Add at least one card with a definition and a term or image."
+                        else -> "Finish each started card: a definition plus a term or image."
                     },
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
@@ -137,6 +167,8 @@ fun CreateDeckContent(
                 showValidationErrors = showValidationErrors,
                 onTermChange = onTermChange,
                 onDefinitionChange = onDefinitionChange,
+                onImageSelected = onImageSelected,
+                onRemoveImage = onRemoveImage,
             )
         }
     }
@@ -149,11 +181,20 @@ private fun FlashcardDraftCard(
     showValidationErrors: Boolean,
     onTermChange: (Long, String) -> Unit,
     onDefinitionChange: (Long, String) -> Unit,
+    onImageSelected: (Long, Uri) -> Unit,
+    onRemoveImage: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cardHasStarted = card.term.isNotBlank() || card.definition.isNotBlank()
-    val showTermError = showValidationErrors && cardHasStarted && card.term.isBlank()
-    val showDefinitionError = showValidationErrors && cardHasStarted && card.definition.isBlank()
+    val started = card.isStarted()
+    // Term is only required when there's no image.
+    val showTermError = showValidationErrors && started && card.term.isBlank() && card.imageUrl == null
+    val showDefinitionError = showValidationErrors && started && card.definition.isBlank()
+
+    val pickImage = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? ->
+        if (uri != null) onImageSelected(card.id, uri)
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -167,20 +208,60 @@ private fun FlashcardDraftCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = "Card $cardNumber",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Card $cardNumber",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+                when {
+                    card.uploading -> CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                    card.imageUrl == null -> IconButton(
+                        onClick = {
+                            pickImage.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                            )
+                        },
+                    ) {
+                        Icon(Icons.Default.Image, contentDescription = "Add image")
+                    }
+                    else -> Unit
+                }
+            }
+
+            if (card.imageUrl != null) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    AsyncImage(
+                        model = card.imageUrl,
+                        contentDescription = "Card image",
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(12.dp)),
+                    )
+                    IconButton(
+                        onClick = { onRemoveImage(card.id) },
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    ) {
+                        Icon(Icons.Default.Close, contentDescription = "Remove image")
+                    }
+                }
+            }
+
             OutlinedTextField(
                 value = card.term,
                 onValueChange = { onTermChange(card.id, it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Term") },
+                label = { Text(if (card.imageUrl != null) "Term (optional)" else "Term") },
                 isError = showTermError,
                 supportingText = {
                     if (showTermError) {
-                        Text("Enter a term")
+                        Text("Add a term or an image")
                     }
                 },
             )
@@ -210,17 +291,15 @@ private fun CreateDeckScreenPreview() {
             description = "Add a title, then create the terms and definitions you want to practice.",
             deckTitle = "Spanish basics",
             cards = listOf(
-                DeckFlashcardDraft(
-                    id = 1L,
-                    term = "Hola",
-                    definition = "Hello",
-                ),
+                DeckFlashcardDraft(id = 1L, term = "Hola", definition = "Hello"),
                 DeckFlashcardDraft(id = 2L),
             ),
             showValidationErrors = false,
             onDeckTitleChange = {},
             onTermChange = { _, _ -> },
             onDefinitionChange = { _, _ -> },
+            onImageSelected = { _, _ -> },
+            onRemoveImage = {},
         )
     }
 }

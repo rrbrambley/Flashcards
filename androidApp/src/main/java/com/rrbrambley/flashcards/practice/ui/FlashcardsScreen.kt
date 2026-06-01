@@ -316,9 +316,16 @@ private fun FlashcardImageQuestionFace(
 ) {
     Column(
         modifier = modifier.padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        // Term (optional) sits above the image, which fills the card width.
+        if (flashcard.question.isNotBlank()) {
+            FlashcardText(
+                text = flashcard.question,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         AsyncImage(
             model = flashcard.imageUrl,
             contentDescription = flashcard.question,
@@ -328,10 +335,6 @@ private fun FlashcardImageQuestionFace(
                 .fillMaxWidth()
                 .aspectRatio(1.2f)
                 .clip(RoundedCornerShape(20.dp)),
-        )
-        FlashcardText(
-            text = flashcard.question,
-            modifier = Modifier.fillMaxWidth(),
         )
     }
 }

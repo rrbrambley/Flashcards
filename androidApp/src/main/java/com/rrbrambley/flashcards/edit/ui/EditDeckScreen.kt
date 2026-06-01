@@ -27,6 +27,8 @@ fun EditDeckScreen(
         onDeckTitleChange = editDeckViewModel::onDeckTitleChange,
         onTermChange = editDeckViewModel::onTermChange,
         onDefinitionChange = editDeckViewModel::onDefinitionChange,
+        onImageSelected = editDeckViewModel::onImagePicked,
+        onRemoveImage = editDeckViewModel::onRemoveImage,
         modifier = modifier,
     )
 }
