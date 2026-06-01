@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
     application
+    jacoco
 }
 
 kotlin {
@@ -81,4 +82,17 @@ tasks.test {
     // docker-java reads the negotiated API version from the `api.version` system property,
     // not an env var; map DOCKER_API_VERSION through for engines that pin a minimum (e.g. Colima).
     System.getenv("DOCKER_API_VERSION")?.let { systemProperty("api.version", it) }
+}
+
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.named("test"))
+    reports {
+        xml.required.set(true)   // consumed by the CI coverage comment
+        html.required.set(true)  // for humans
+        csv.required.set(false)
+    }
 }

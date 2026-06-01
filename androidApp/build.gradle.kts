@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     id("kotlin-parcelize")
+    jacoco
 }
 
 android {
@@ -32,6 +33,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Produce Jacoco coverage data from testDebugUnitTest.
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -98,4 +103,56 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+// AGP doesn't emit a usable Jacoco report for unit tests on its own; this reads the exec
+// data produced by `enableUnitTestCoverage` (debug) against the compiled debug classes.
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+    group = "verification"
+    description = "Generates a Jacoco coverage report from the debug unit tests."
+
+    reports {
+        xml.required.set(true)   // consumed by the CI coverage comment
+        html.required.set(true)  // for humans
+        csv.required.set(false)
+    }
+
+    val coverageExclusions = listOf(
+        "**/R.class", "**/R$*.class", "**/BuildConfig.*", "**/Manifest*.*",
+        // Hilt / Dagger generated
+        "**/*_Hilt*.*", "hilt_aggregated_deps/**", "**/*_Factory.*", "**/Dagger*.*",
+        "**/*_MembersInjector.*", "**/*_Provide*Factory*.*", "**/*_GeneratedInjector.*",
+        // Room generated
+        "**/*_Impl.*",
+        // Compose tooling/preview noise
+        "**/*ComposableSingletons*.*", "**/*Preview*.*",
+    )
+
+    classDirectories.setFrom(
+        files(
+            // AGP 9 built-in Kotlin compiler output; tmp/kotlin-classes is the older AGP location.
+            fileTree(layout.buildDirectory.dir("intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes")) {
+                exclude(coverageExclusions)
+            },
+            fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug")) { exclude(coverageExclusions) },
+            fileTree(layout.buildDirectory.dir("intermediates/javac/debug/compileDebugJavaWithJavac/classes")) {
+                exclude(coverageExclusions)
+            },
+        ),
+    )
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include(
+                "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
+                "jacoco/testDebugUnitTest.exec",
+                "outputs/code_coverage/debugUnitTest/**/*.ec",
+            )
+        },
+    )
 }
