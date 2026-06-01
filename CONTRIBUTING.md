@@ -28,11 +28,15 @@ Android app, a Ktor backend, a shared KMP library, and a React/TypeScript web ap
 Run the checks for the area you changed:
 
 ```bash
+./gradlew ktlintCheck                      # Kotlin style (./gradlew ktlintFormat auto-fixes)
 ./gradlew :androidApp:testDebugUnitTest   # Android unit tests
 ./gradlew :shared:build                   # shared library (android/iOS/JVM)
 ./gradlew :backend:test                   # backend integration tests (needs Docker)
 cd webApp && npm run build && npm run lint # web app
 ```
+
+CI runs these on every PR (see `.github/workflows/ci.yml`). Kotlin style is enforced by
+[ktlint](https://pinterest.github.io/ktlint/) (configured in `.editorconfig`).
 
 - Keep changes focused and described in the PR body.
 - **Never commit secrets** or account-specific identifiers. Personal config goes in

@@ -4,16 +4,10 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class HomeDataDto(
-    val title: String,
-    val button: HomeButtonDto? = null,
-)
+data class HomeDataDto(val title: String, val button: HomeButtonDto? = null)
 
 @Serializable
-data class HomeButtonDto(
-    val message: String,
-    val action: HomeButtonActionDto,
-)
+data class HomeButtonDto(val message: String, val action: HomeButtonActionDto)
 
 @Serializable
 sealed interface HomeButtonActionDto {

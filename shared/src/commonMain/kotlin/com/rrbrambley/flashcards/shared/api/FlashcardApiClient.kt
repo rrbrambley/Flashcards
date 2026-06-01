@@ -33,11 +33,13 @@ class FlashcardApiClient(
     suspend fun register(request: RegisterRequest): AuthResponse =
         client.post(url("/auth/register")) { jsonBody(request) }.body()
 
-    suspend fun login(request: LoginRequest): AuthResponse =
-        client.post(url("/auth/login")) { jsonBody(request) }.body()
+    suspend fun login(request: LoginRequest): AuthResponse = client.post(url("/auth/login")) {
+        jsonBody(request)
+    }.body()
 
-    suspend fun googleSignIn(request: GoogleAuthRequest): AuthResponse =
-        client.post(url("/auth/google")) { jsonBody(request) }.body()
+    suspend fun googleSignIn(request: GoogleAuthRequest): AuthResponse = client.post(url("/auth/google")) {
+        jsonBody(request)
+    }.body()
 
     // --- Images ---
     /** Uploads an image and returns its public (CDN) URL to store as a flashcard's imageUrl. */
@@ -57,40 +59,45 @@ class FlashcardApiClient(
         ) { auth() }.body()
 
     // --- Decks ---
-    suspend fun getDecks(): List<FlashcardDeckDto> =
-        client.get(url("/decks")) { auth() }.body()
+    suspend fun getDecks(): List<FlashcardDeckDto> = client.get(url("/decks")) { auth() }.body()
 
-    suspend fun getDeck(deckId: Long): FlashcardDeckDto =
-        client.get(url("/decks/$deckId")) { auth() }.body()
+    suspend fun getDeck(deckId: Long): FlashcardDeckDto = client.get(url("/decks/$deckId")) { auth() }.body()
 
-    suspend fun createDeck(request: CreateDeckRequest): FlashcardDeckDto =
-        client.post(url("/decks")) { jsonBody(request) }.body()
+    suspend fun createDeck(request: CreateDeckRequest): FlashcardDeckDto = client.post(url("/decks")) {
+        jsonBody(request)
+    }.body()
 
     suspend fun updateDeck(deckId: Long, request: CreateDeckRequest): FlashcardDeckDto =
-        client.put(url("/decks/$deckId")) { jsonBody(request) }.body()
-
-    // --- Sessions ---
-    suspend fun getSessions(activeOnly: Boolean = true): List<PracticeSessionDto> =
-        client.get(url("/sessions")) {
-            auth()
-            parameter("active", activeOnly)
+        client.put(url("/decks/$deckId")) {
+            jsonBody(request)
         }.body()
 
-    suspend fun getSession(sessionId: Long): PracticeSessionDto =
-        client.get(url("/sessions/$sessionId")) { auth() }.body()
+    // --- Sessions ---
+    suspend fun getSessions(activeOnly: Boolean = true): List<PracticeSessionDto> = client.get(url("/sessions")) {
+        auth()
+        parameter("active", activeOnly)
+    }.body()
 
-    suspend fun createSession(deckId: Long): PracticeSessionDto =
-        client.post(url("/sessions")) { jsonBody(CreateSessionRequest(deckId)) }.body()
+    suspend fun getSession(sessionId: Long): PracticeSessionDto = client.get(url("/sessions/$sessionId")) {
+        auth()
+    }.body()
+
+    suspend fun createSession(deckId: Long): PracticeSessionDto = client.post(url("/sessions")) {
+        jsonBody(CreateSessionRequest(deckId))
+    }.body()
 
     suspend fun updateProgress(sessionId: Long, request: UpdateProgressRequest): PracticeSessionDto =
-        client.patch(url("/sessions/$sessionId")) { jsonBody(request) }.body()
+        client.patch(url("/sessions/$sessionId")) {
+            jsonBody(request)
+        }.body()
 
     suspend fun completeSession(sessionId: Long): PracticeSessionDto =
-        client.post(url("/sessions/$sessionId/complete")) { auth() }.body()
+        client.post(url("/sessions/$sessionId/complete")) {
+            auth()
+        }.body()
 
     // --- Home ---
-    suspend fun getHome(): List<HomeDataDto> =
-        client.get(url("/home")) { auth() }.body()
+    suspend fun getHome(): List<HomeDataDto> = client.get(url("/home")) { auth() }.body()
 
     private fun url(path: String): String = "${baseUrl.trimEnd('/')}$path"
 

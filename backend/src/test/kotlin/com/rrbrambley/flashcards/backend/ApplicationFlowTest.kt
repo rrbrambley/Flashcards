@@ -11,6 +11,7 @@ import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.HomeDataDto
+import com.rrbrambley.flashcards.shared.api.ImageUploadResponse
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
@@ -31,7 +32,6 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
-import com.rrbrambley.flashcards.shared.api.ImageUploadResponse
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
@@ -87,8 +87,7 @@ class ApplicationFlowTest {
         return json.decodeFromString(response.bodyAsText())
     }
 
-    private suspend inline fun <reified T> HttpResponse.decode(): T =
-        json.decodeFromString(bodyAsText())
+    private suspend inline fun <reified T> HttpResponse.decode(): T = json.decodeFromString(bodyAsText())
 
     @Test
     fun register_then_login_issue_tokens() = runApp { client ->
@@ -351,24 +350,22 @@ class ApplicationFlowTest {
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
-    private fun multipart(filename: String, contentType: String, bytes: ByteArray) =
-        MultiPartFormDataContent(
-            formData {
-                append(
-                    "file",
-                    bytes,
-                    Headers.build {
-                        append(HttpHeaders.ContentType, contentType)
-                        append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
-                    },
-                )
-            },
-        )
+    private fun multipart(filename: String, contentType: String, bytes: ByteArray) = MultiPartFormDataContent(
+        formData {
+            append(
+                "file",
+                bytes,
+                Headers.build {
+                    append(HttpHeaders.ContentType, contentType)
+                    append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
+                },
+            )
+        },
+    )
 
-    private suspend fun HttpClient.createSession(token: String, deckId: Long): PracticeSessionDto =
-        post("/sessions") {
-            bearerAuth(token)
-            contentType(ContentType.Application.Json)
-            setBody(json.encodeToString(CreateSessionRequest(deckId)))
-        }.decode()
+    private suspend fun HttpClient.createSession(token: String, deckId: Long): PracticeSessionDto = post("/sessions") {
+        bearerAuth(token)
+        contentType(ContentType.Application.Json)
+        setBody(json.encodeToString(CreateSessionRequest(deckId)))
+    }.decode()
 }

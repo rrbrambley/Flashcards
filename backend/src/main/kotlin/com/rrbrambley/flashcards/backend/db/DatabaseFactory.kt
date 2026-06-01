@@ -11,12 +11,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
-data class DbConfig(
-    val jdbcUrl: String,
-    val user: String,
-    val password: String,
-    val maxPoolSize: Int = 5,
-)
+data class DbConfig(val jdbcUrl: String, val user: String, val password: String, val maxPoolSize: Int = 5)
 
 object DatabaseFactory {
     /** Fixed dev token mapped to the seeded demo user, so curl/tests can skip login. */

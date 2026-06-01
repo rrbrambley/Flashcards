@@ -68,22 +68,19 @@ object SessionRepository {
         fetchSession(userId, sessionId) ?: throw NotFoundException("Session $sessionId not found")
     }
 
-    suspend fun updateProgress(
-        userId: Long,
-        sessionId: Long,
-        request: UpdateProgressRequest,
-    ): PracticeSessionDto = dbQuery {
-        val updated = PracticeSessions.update({
-            (PracticeSessions.id eq sessionId) and (PracticeSessions.userId eq userId)
-        }) {
-            it[currentCardIndex] = request.currentCardIndex
-            it[numCorrect] = request.numCorrect
-            it[numIncorrect] = request.numIncorrect
-            it[updatedAtMillis] = System.currentTimeMillis()
+    suspend fun updateProgress(userId: Long, sessionId: Long, request: UpdateProgressRequest): PracticeSessionDto =
+        dbQuery {
+            val updated = PracticeSessions.update({
+                (PracticeSessions.id eq sessionId) and (PracticeSessions.userId eq userId)
+            }) {
+                it[currentCardIndex] = request.currentCardIndex
+                it[numCorrect] = request.numCorrect
+                it[numIncorrect] = request.numIncorrect
+                it[updatedAtMillis] = System.currentTimeMillis()
+            }
+            if (updated == 0) throw NotFoundException("Session $sessionId not found")
+            fetchSession(userId, sessionId)!!
         }
-        if (updated == 0) throw NotFoundException("Session $sessionId not found")
-        fetchSession(userId, sessionId)!!
-    }
 
     suspend fun complete(userId: Long, sessionId: Long): PracticeSessionDto = dbQuery {
         val updated = PracticeSessions.update({
@@ -96,18 +93,16 @@ object SessionRepository {
         fetchSession(userId, sessionId)!!
     }
 
-    private fun fetchSession(userId: Long, sessionId: Long): PracticeSessionDto? =
-        (PracticeSessions innerJoin Decks)
-            .selectAll()
-            .where { (PracticeSessions.id eq sessionId) and (PracticeSessions.userId eq userId) }
-            .firstOrNull()
-            ?.let { it.toPracticeSessionDto(it[Decks.title]) }
+    private fun fetchSession(userId: Long, sessionId: Long): PracticeSessionDto? = (PracticeSessions innerJoin Decks)
+        .selectAll()
+        .where { (PracticeSessions.id eq sessionId) and (PracticeSessions.userId eq userId) }
+        .firstOrNull()
+        ?.let { it.toPracticeSessionDto(it[Decks.title]) }
 
-    private fun visibleDeckTitle(userId: Long, deckId: Long): String? =
-        Decks.selectAll()
-            .where {
-                (Decks.id eq deckId) and ((Decks.ownerUserId eq userId) or Decks.ownerUserId.isNull())
-            }
-            .firstOrNull()
-            ?.get(Decks.title)
+    private fun visibleDeckTitle(userId: Long, deckId: Long): String? = Decks.selectAll()
+        .where {
+            (Decks.id eq deckId) and ((Decks.ownerUserId eq userId) or Decks.ownerUserId.isNull())
+        }
+        .firstOrNull()
+        ?.get(Decks.title)
 }

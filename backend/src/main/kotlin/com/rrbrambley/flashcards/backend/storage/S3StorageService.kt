@@ -12,12 +12,8 @@ import java.util.UUID
  *
  * @param endpoint optional S3 endpoint override (e.g. a local MinIO); null = real AWS.
  */
-class S3StorageService(
-    private val bucket: String,
-    private val cdnBaseUrl: String,
-    region: String,
-    endpoint: String?,
-) : StorageService {
+class S3StorageService(private val bucket: String, private val cdnBaseUrl: String, region: String, endpoint: String?) :
+    StorageService {
 
     private val client = S3Client {
         this.region = region
