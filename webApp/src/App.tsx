@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthForm } from './auth/AuthForm';
-import { useAuth } from './auth/AuthContext';
+import { useAuth } from './auth/auth-context';
 import { LibraryPage } from './decks/LibraryPage';
 import { CreateDeckPage } from './decks/CreateDeckPage';
 import { EditDeckPage } from './decks/EditDeckPage';

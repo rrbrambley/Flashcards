@@ -47,7 +47,7 @@ export function EditDeckPage() {
               } catch (err) {
                 // The seeded global deck isn't owned by the user, so the server rejects edits.
                 if (err instanceof ApiError && err.status === 404) {
-                  throw new Error("This deck can't be edited.");
+                  throw new Error("This deck can't be edited.", { cause: err });
                 }
                 throw err;
               }

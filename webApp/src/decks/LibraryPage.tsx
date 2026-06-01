@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { FlashcardDeckDto } from '../api/types';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/auth-context';
 
 export function LibraryPage() {
   const { signOut } = useAuth();
@@ -12,7 +12,8 @@ export function LibraryPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadDecks = useCallback(async () => {
-    setLoading(true);
+    // `loading` starts true; all state writes happen after the await so the mount
+    // effect doesn't set state synchronously.
     try {
       setDecks(await api.getDecks());
       setError(null);
@@ -24,6 +25,9 @@ export function LibraryPage() {
   }, []);
 
   useEffect(() => {
+    // Legitimate fetch-on-mount: loadDecks only writes state after its await, but this
+    // lint rule is conservative about effects that call a state-setting function.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadDecks();
   }, [loadDecks]);
 

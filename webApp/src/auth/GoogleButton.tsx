@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from './auth-context';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID;
 
@@ -29,12 +29,15 @@ export function GoogleButton({ onError }: { onError: (message: string) => void }
   const { googleSignIn } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Always point the (single) GIS callback at the latest handlers.
-  handleCredential = (idToken: string) => {
-    googleSignIn(idToken).catch((err: unknown) => {
-      onError(err instanceof Error ? err.message : 'Google sign-in failed.');
-    });
-  };
+  // Point the (single) global GIS callback at the latest handlers. Done in an effect
+  // — not during render — since it mutates module-level state.
+  useEffect(() => {
+    handleCredential = (idToken: string) => {
+      googleSignIn(idToken).catch((err: unknown) => {
+        onError(err instanceof Error ? err.message : 'Google sign-in failed.');
+      });
+    };
+  });
 
   useEffect(() => {
     const element = containerRef.current;

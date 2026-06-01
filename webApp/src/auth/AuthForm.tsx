@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError } from '../api/client';
-import { useAuth } from './AuthContext';
+import { useAuth } from './auth-context';
 import { GoogleButton } from './GoogleButton';
 
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
