@@ -32,6 +32,9 @@ class FlashcardApiClient(
     suspend fun login(request: LoginRequest): AuthResponse =
         client.post(url("/auth/login")) { jsonBody(request) }.body()
 
+    suspend fun googleSignIn(request: GoogleAuthRequest): AuthResponse =
+        client.post(url("/auth/google")) { jsonBody(request) }.body()
+
     // --- Decks ---
     suspend fun getDecks(): List<FlashcardDeckDto> =
         client.get(url("/decks")) { auth() }.body()

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -31,10 +32,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rrbrambley.flashcards.auth.AuthState
+import com.rrbrambley.flashcards.auth.AuthViewModel
+import com.rrbrambley.flashcards.auth.ui.AuthHost
 import com.rrbrambley.flashcards.create.ui.CreateDeckScreen
 import com.rrbrambley.flashcards.create.ui.CreateDeckViewModel
 import com.rrbrambley.flashcards.edit.ui.EditDeckActivity
@@ -52,9 +57,30 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FlashcardsTheme {
-                HomeScaffolding()
+                FlashcardsApp()
             }
         }
+    }
+}
+
+/** Gates the app: logged-out shows the auth flow; logged-in shows the main scaffolding. */
+@Composable
+private fun FlashcardsApp(authViewModel: AuthViewModel = hiltViewModel()) {
+    val authState by authViewModel.authState.collectAsState()
+    when (authState) {
+        AuthState.Loading -> Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            CircularProgressIndicator()
+        }
+
+        AuthState.LoggedOut -> AuthHost(
+            authViewModel = authViewModel,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        AuthState.LoggedIn -> HomeScaffolding()
     }
 }
 

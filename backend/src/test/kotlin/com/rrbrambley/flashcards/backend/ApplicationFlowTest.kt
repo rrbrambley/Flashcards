@@ -7,6 +7,7 @@ import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
+import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.HomeDataDto
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
@@ -62,10 +63,12 @@ class ApplicationFlowTest {
         block(client)
     }
 
-    private suspend fun HttpClient.register(username: String, password: String): AuthResponse {
+    private fun emailFor(name: String) = "$name@example.com"
+
+    private suspend fun HttpClient.register(name: String, password: String): AuthResponse {
         val response = post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(json.encodeToString(RegisterRequest(username, password)))
+            setBody(json.encodeToString(RegisterRequest(emailFor(name), password)))
         }
         assertEquals(HttpStatusCode.Created, response.status)
         return json.decodeFromString(response.bodyAsText())
@@ -81,7 +84,7 @@ class ApplicationFlowTest {
 
         val loginResponse = client.post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(json.encodeToString(LoginRequest("alice", "s3cret")))
+            setBody(json.encodeToString(LoginRequest(emailFor("alice"), "s3cret")))
         }
         assertEquals(HttpStatusCode.OK, loginResponse.status)
         val loggedIn = loginResponse.decode<AuthResponse>()
@@ -93,9 +96,29 @@ class ApplicationFlowTest {
         client.register("bob", "correct")
         val response = client.post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(json.encodeToString(LoginRequest("bob", "wrong")))
+            setBody(json.encodeToString(LoginRequest(emailFor("bob"), "wrong")))
         }
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun duplicate_email_registration_is_conflict() = runApp { client ->
+        client.register("dupe", "pw")
+        val second = client.post("/auth/register") {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(RegisterRequest(emailFor("dupe"), "pw")))
+        }
+        assertEquals(HttpStatusCode.Conflict, second.status)
+    }
+
+    @Test
+    fun google_signin_unconfigured_returns_503() = runApp { client ->
+        // The test app never calls GoogleTokenVerifier.configure(), so Google is unconfigured.
+        val response = client.post("/auth/google") {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(GoogleAuthRequest("any-token")))
+        }
+        assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
     }
 
     @Test

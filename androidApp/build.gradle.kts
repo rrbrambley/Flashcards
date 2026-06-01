@@ -21,6 +21,14 @@ android {
 
         // The Android emulator reaches the host machine at 10.0.2.2.
         buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:8080\"")
+
+        // Google OAuth Web client ID (server client ID) for Sign in with Google.
+        // Set GOOGLE_WEB_CLIENT_ID in gradle.properties or the environment; blank = Google disabled.
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${providers.gradleProperty("GOOGLE_WEB_CLIENT_ID").getOrElse("")}\"",
+        )
     }
 
     buildTypes {
@@ -70,6 +78,9 @@ dependencies {
 
     implementation(libs.ktor.client.okhttp)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 
     implementation(libs.coroutines.android)
 

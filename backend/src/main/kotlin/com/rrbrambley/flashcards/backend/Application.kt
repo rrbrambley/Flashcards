@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.backend
 
+import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
 import com.rrbrambley.flashcards.backend.plugins.configureMonitoring
@@ -24,6 +25,8 @@ fun main() {
             maxPoolSize = config.property("db.maxPoolSize").getString().toInt(),
         ),
     )
+
+    GoogleTokenVerifier.configure(config.propertyOrNull("auth.googleWebClientId")?.getString())
 
     val port = config.property("ktor.deployment.port").getString().toInt()
     embeddedServer(Netty, port = port) { module() }.start(wait = true)
