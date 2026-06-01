@@ -32,6 +32,7 @@ dependencies {
 
     // Auth
     implementation(libs.bcrypt)
+    implementation(libs.google.api.client)
 
     // Logging
     implementation(libs.logback.classic)

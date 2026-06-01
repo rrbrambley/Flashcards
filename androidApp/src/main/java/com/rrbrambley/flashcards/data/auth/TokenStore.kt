@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -15,9 +16,8 @@ import javax.inject.Singleton
 private val Context.authDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth")
 
 /**
- * Persists the bearer token used for backend calls. Until a real login flow
- * exists (a later PR), this seeds the backend's demo token so the app is
- * authenticated out of the box.
+ * Persists the bearer token returned by login/registration. A null token means the
+ * user is logged out, which gates the app onto the login screen.
  */
 @Singleton
 class TokenStore @Inject constructor(
@@ -25,15 +25,16 @@ class TokenStore @Inject constructor(
 ) {
     private val tokenKey = stringPreferencesKey("bearer_token")
 
-    suspend fun currentToken(): String =
-        context.authDataStore.data.map { it[tokenKey] }.first() ?: DEMO_TOKEN
+    /** Emits the current token, then every change (null = logged out). */
+    fun tokenFlow(): Flow<String?> = context.authDataStore.data.map { it[tokenKey] }
+
+    suspend fun currentToken(): String? = tokenFlow().first()
 
     suspend fun setToken(token: String) {
         context.authDataStore.edit { it[tokenKey] = token }
     }
 
-    private companion object {
-        // Matches the seeded token in the backend's DatabaseFactory.
-        const val DEMO_TOKEN = "demo-token"
+    suspend fun clearToken() {
+        context.authDataStore.edit { it.remove(tokenKey) }
     }
 }

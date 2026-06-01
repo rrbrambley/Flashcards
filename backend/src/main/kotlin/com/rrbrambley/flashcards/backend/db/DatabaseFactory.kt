@@ -21,7 +21,7 @@ data class DbConfig(
 object DatabaseFactory {
     /** Fixed dev token mapped to the seeded demo user, so curl/tests can skip login. */
     const val DEMO_TOKEN = "demo-token"
-    const val DEMO_USERNAME = "demo"
+    const val DEMO_EMAIL = "demo@flashcards.dev"
     private const val DEMO_PASSWORD = "demo"
 
     fun init(config: DbConfig) {
@@ -49,12 +49,12 @@ object DatabaseFactory {
 
         val demoUserId = Users
             .selectAll()
-            .where { Users.username eq DEMO_USERNAME }
+            .where { Users.email eq DEMO_EMAIL }
             .firstOrNull()
             ?.get(Users.id)
             ?.value
             ?: Users.insertAndGetId {
-                it[username] = DEMO_USERNAME
+                it[email] = DEMO_EMAIL
                 it[passwordHash] = Passwords.hash(DEMO_PASSWORD)
                 it[createdAtMillis] = now
             }.value

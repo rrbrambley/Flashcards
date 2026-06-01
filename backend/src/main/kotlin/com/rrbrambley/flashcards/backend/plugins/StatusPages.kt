@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.backend.plugins
 
 import com.rrbrambley.flashcards.backend.error.ConflictException
 import com.rrbrambley.flashcards.backend.error.NotFoundException
+import com.rrbrambley.flashcards.backend.error.ServiceUnavailableException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
 import com.rrbrambley.flashcards.shared.api.ErrorResponse
 import io.ktor.http.HttpStatusCode
@@ -21,6 +22,9 @@ fun Application.configureStatusPages() {
         }
         exception<UnauthorizedException> { call, cause ->
             call.respond(HttpStatusCode.Unauthorized, ErrorResponse("unauthorized", cause.message))
+        }
+        exception<ServiceUnavailableException> { call, cause ->
+            call.respond(HttpStatusCode.ServiceUnavailable, ErrorResponse("unavailable", cause.message))
         }
         exception<BadRequestException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("bad_request", cause.message))

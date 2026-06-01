@@ -4,8 +4,13 @@ import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
 
 object Users : LongIdTable("users") {
-    val username = varchar("username", 255).uniqueIndex()
-    val passwordHash = varchar("password_hash", 100)
+    val email = varchar("email", 255).uniqueIndex()
+
+    // Null for Google-only accounts (no password set).
+    val passwordHash = varchar("password_hash", 100).nullable()
+
+    // The Google subject id for accounts created/linked via Sign in with Google.
+    val googleSub = varchar("google_sub", 255).nullable()
     val createdAtMillis = long("created_at_millis")
 }
 

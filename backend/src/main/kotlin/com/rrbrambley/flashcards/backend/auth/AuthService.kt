@@ -9,33 +9,56 @@ import com.rrbrambley.flashcards.shared.api.AuthResponse
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import java.security.SecureRandom
 import java.util.Base64
 
 object AuthService {
     private val secureRandom = SecureRandom()
 
-    suspend fun register(username: String, password: String): AuthResponse = dbQuery {
-        val taken = Users.selectAll().where { Users.username eq username }.any()
-        if (taken) throw ConflictException("Username '$username' is already taken")
+    suspend fun register(email: String, password: String): AuthResponse = dbQuery {
+        val taken = Users.selectAll().where { Users.email eq email }.any()
+        if (taken) throw ConflictException("An account with email '$email' already exists")
 
         val now = System.currentTimeMillis()
         val userId = Users.insertAndGetId {
-            it[Users.username] = username
+            it[Users.email] = email
             it[passwordHash] = Passwords.hash(password)
             it[createdAtMillis] = now
         }.value
         AuthResponse(token = mintToken(userId, now), userId = userId)
     }
 
-    suspend fun login(username: String, password: String): AuthResponse = dbQuery {
-        val row = Users.selectAll().where { Users.username eq username }.firstOrNull()
-            ?: throw UnauthorizedException("Invalid username or password")
-        if (!Passwords.verify(password, row[Users.passwordHash])) {
-            throw UnauthorizedException("Invalid username or password")
+    suspend fun login(email: String, password: String): AuthResponse = dbQuery {
+        val row = Users.selectAll().where { Users.email eq email }.firstOrNull()
+            ?: throw UnauthorizedException("Invalid email or password")
+        val hash = row[Users.passwordHash]
+            ?: throw UnauthorizedException("Invalid email or password") // Google-only account
+        if (!Passwords.verify(password, hash)) {
+            throw UnauthorizedException("Invalid email or password")
         }
         val userId = row[Users.id].value
         AuthResponse(token = mintToken(userId, System.currentTimeMillis()), userId = userId)
+    }
+
+    /** Find-or-create by verified Google email (links googleSub onto an existing account). */
+    suspend fun signInWithGoogle(email: String, googleSub: String): AuthResponse = dbQuery {
+        val now = System.currentTimeMillis()
+        val existing = Users.selectAll().where { Users.email eq email }.firstOrNull()
+        val userId = if (existing != null) {
+            val id = existing[Users.id].value
+            if (existing[Users.googleSub] == null) {
+                Users.update({ Users.id eq id }) { it[Users.googleSub] = googleSub }
+            }
+            id
+        } else {
+            Users.insertAndGetId {
+                it[Users.email] = email
+                it[Users.googleSub] = googleSub
+                it[createdAtMillis] = now
+            }.value
+        }
+        AuthResponse(token = mintToken(userId, now), userId = userId)
     }
 
     /** Resolves a bearer token to its user id, or null if unknown. */
@@ -47,7 +70,7 @@ object AuthService {
             ?.value
     }
 
-    /** Must be called inside an active transaction (register/login run within dbQuery). */
+    /** Must be called inside an active transaction (callers run within dbQuery). */
     private fun mintToken(userId: Long, now: Long): String {
         val token = generateToken()
         AuthTokens.insert {
