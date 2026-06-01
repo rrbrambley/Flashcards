@@ -1,73 +1,46 @@
-# React + TypeScript + Vite
+# Flashcards — Web App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React + TypeScript + Vite single-page app for Flashcards. It's a thin client over the
+backend API (auth, deck library, deck create/edit with optional front-of-card images).
+Practice isn't implemented on the web yet — tapping a deck opens it for editing.
 
-Currently, two official plugins are available:
+This app has its **own npm toolchain** and is **not** part of the repo's Gradle build.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run it
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+cp .env.example .env     # then fill in values if needed
+npm run dev              # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Start the backend first (see the [root README](../README.md)). The dev server's origin
+(`http://localhost:5173`) is in the backend's default CORS allow-list.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Scripts
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Vite dev server with HMR |
+| `npm run build` | Type-check + production build to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | ESLint |
+
+## Configuration
+
+Copy `.env.example` to `.env` (gitignored) and set:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VITE_API_BASE_URL` | `http://localhost:8080` | Backend base URL |
+| `VITE_GOOGLE_WEB_CLIENT_ID` | *(blank)* | OAuth Web client ID; blank hides the Google button |
+
+Use the **same** Google client ID the backend verifies against. See the root README's
+"Optional features" for the full Google/AWS setup. **Never commit `.env`.**
+
+## Structure
+
+- `src/api/` — `types.ts` (hand-written mirrors of the shared API DTOs) and `client.ts`
+  (fetch-based API client; bearer token in `localStorage`).
+- `src/auth/` — login/register + Google sign-in (Google Identity Services).
+- `src/decks/` — library list and the create/edit deck form (`DeckForm`).

@@ -25,3 +25,8 @@ dist-ssr
 
 # Vite cache
 .vite
+
+# Local environment config (copy .env.example -> .env and fill in your values)
+.env
+.env.*
+!.env.example
