@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.edit.ui
 
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
+import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.domain.FlashcardDeck
 import com.rrbrambley.flashcards.domain.FlashcardRepository
@@ -19,6 +20,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+/** These tests don't exercise image picking, so the uploader is never invoked. */
+private val NoOpImageUploader = ImageUploader { "" }
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditDeckViewModelTest {
 
@@ -36,7 +40,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun loadDeck_populatesUiStateFromRepositoryDeckId() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()))
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
 
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -56,7 +60,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun unchangedLoadedDeck_isNotDirty() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()))
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
 
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -66,7 +70,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun changingField_marksUiStateDirty() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()))
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -77,7 +81,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun addDraftCard_addsEmptyCardAfterLoadedDeckCardsAndMarksDirty() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()))
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -93,7 +97,7 @@ class EditDeckViewModelTest {
     @Test
     fun finishDeckEditing_withInvalidDeck_showsValidationErrors() = runTest(testDispatcher) {
         val repository = FakeFlashcardRepository(testDeck())
-        val viewModel = EditDeckViewModel(repository)
+        val viewModel = EditDeckViewModel(repository, NoOpImageUploader)
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.onDeckTitleChange("")
@@ -107,7 +111,7 @@ class EditDeckViewModelTest {
     @Test
     fun finishDeckEditing_withValidDeck_updatesExistingDeckAndMarksSaved() = runTest(testDispatcher) {
         val repository = FakeFlashcardRepository(testDeck())
-        val viewModel = EditDeckViewModel(repository)
+        val viewModel = EditDeckViewModel(repository, NoOpImageUploader)
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.onDeckTitleChange(" Spanish greetings ")

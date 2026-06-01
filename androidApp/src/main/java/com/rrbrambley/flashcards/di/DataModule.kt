@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.di
 
+import com.rrbrambley.flashcards.data.image.AndroidImageUploader
+import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
 import com.rrbrambley.flashcards.home.domain.HomeRepository
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
@@ -23,4 +25,7 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindHomeRepository(repository: HomeRepositoryImpl): HomeRepository
+
+    @Binds
+    abstract fun bindImageUploader(uploader: AndroidImageUploader): ImageUploader
 }
