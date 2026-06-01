@@ -11,3 +11,9 @@ class UnauthorizedException(message: String) : RuntimeException(message)
 
 /** Mapped to 503 by StatusPages (e.g. Google auth not configured on the server). */
 class ServiceUnavailableException(message: String) : RuntimeException(message)
+
+/** Mapped to 413 by StatusPages (upload exceeds the size limit). */
+class PayloadTooLargeException(message: String) : RuntimeException(message)
+
+/** Mapped to 415 by StatusPages (unsupported image content type). */
+class UnsupportedMediaTypeException(message: String) : RuntimeException(message)

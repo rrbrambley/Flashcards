@@ -39,7 +39,7 @@ export function EditDeckPage() {
           <DeckForm
             submitLabel="Save changes"
             initialTitle={deck.title}
-            initialCards={deck.flashcards.map((f) => ({ term: f.question, definition: f.answer }))}
+            initialCards={deck.flashcards.map((f) => ({ term: f.question, definition: f.answer, imageUrl: f.imageUrl }))}
             onSubmit={async (title, flashcards) => {
               try {
                 await api.updateDeck(deckId, { title, flashcards });

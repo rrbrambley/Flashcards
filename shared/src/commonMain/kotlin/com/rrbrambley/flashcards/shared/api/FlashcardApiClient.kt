@@ -4,6 +4,8 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.patch
@@ -11,6 +13,8 @@ import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 
 /**
@@ -34,6 +38,23 @@ class FlashcardApiClient(
 
     suspend fun googleSignIn(request: GoogleAuthRequest): AuthResponse =
         client.post(url("/auth/google")) { jsonBody(request) }.body()
+
+    // --- Images ---
+    /** Uploads an image and returns its public (CDN) URL to store as a flashcard's imageUrl. */
+    suspend fun uploadImage(bytes: ByteArray, filename: String, contentType: String): ImageUploadResponse =
+        client.submitFormWithBinaryData(
+            url = url("/images"),
+            formData = formData {
+                append(
+                    key = "file",
+                    value = bytes,
+                    headers = Headers.build {
+                        append(HttpHeaders.ContentType, contentType)
+                        append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
+                    },
+                )
+            },
+        ) { auth() }.body()
 
     // --- Decks ---
     suspend fun getDecks(): List<FlashcardDeckDto> =

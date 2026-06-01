@@ -227,3 +227,28 @@ button.link-btn {
   font-weight: 600;
   padding: 0 0.4rem;
 }
+.card-image {
+  display: flex;
+  align-items: center;
+}
+.image-button {
+  display: inline-block;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+}
+.thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+.card-thumb {
+  max-width: 100%;
+  max-height: 160px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}

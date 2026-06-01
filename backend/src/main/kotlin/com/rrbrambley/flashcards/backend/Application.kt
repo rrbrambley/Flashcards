@@ -3,6 +3,8 @@ package com.rrbrambley.flashcards.backend
 import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.storage.S3StorageService
+import com.rrbrambley.flashcards.backend.storage.Storage
 import com.rrbrambley.flashcards.backend.plugins.configureCors
 import com.rrbrambley.flashcards.backend.plugins.configureMonitoring
 import com.rrbrambley.flashcards.backend.plugins.configureRouting
@@ -28,6 +30,17 @@ fun main() {
     )
 
     GoogleTokenVerifier.configure(config.propertyOrNull("auth.googleWebClientId")?.getString())
+
+    val bucket = config.propertyOrNull("storage.bucket")?.getString()
+    val cdnBaseUrl = config.propertyOrNull("storage.cdnBaseUrl")?.getString()
+    if (!bucket.isNullOrBlank() && !cdnBaseUrl.isNullOrBlank()) {
+        Storage.service = S3StorageService(
+            bucket = bucket,
+            cdnBaseUrl = cdnBaseUrl,
+            region = config.propertyOrNull("storage.region")?.getString() ?: "us-east-1",
+            endpoint = config.propertyOrNull("storage.endpoint")?.getString(),
+        )
+    }
 
     val port = config.property("ktor.deployment.port").getString().toInt()
     embeddedServer(Netty, port = port) { module() }.start(wait = true)

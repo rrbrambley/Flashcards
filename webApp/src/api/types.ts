@@ -27,3 +27,7 @@ export interface ErrorResponse {
   error: string;
   message?: string | null;
 }
+
+export interface ImageUploadResponse {
+  url: string;
+}

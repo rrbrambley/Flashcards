@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.backend
 
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.storage.Storage
+import com.rrbrambley.flashcards.backend.storage.StorageService
 import com.rrbrambley.flashcards.shared.api.AuthResponse
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
@@ -15,6 +17,8 @@ import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
 import io.ktor.client.request.patch
 import io.ktor.client.request.post
@@ -23,8 +27,11 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import com.rrbrambley.flashcards.shared.api.ImageUploadResponse
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
@@ -53,6 +60,11 @@ class ApplicationFlowTest {
                     password = postgres.password,
                 ),
             )
+            // Fake storage so image-upload tests don't touch S3.
+            Storage.service = object : StorageService {
+                override suspend fun upload(bytes: ByteArray, contentType: String, extension: String): String =
+                    "https://cdn.test/images/uploaded.$extension"
+            }
         }
     }
 
@@ -280,6 +292,62 @@ class ApplicationFlowTest {
         }
         assertEquals(HttpStatusCode.NotFound, response.status)
     }
+
+    @Test
+    fun image_upload_returns_url() = runApp { client ->
+        val auth = client.register("imguser", "pw")
+        val response = client.post("/images") {
+            bearerAuth(auth.token)
+            setBody(multipart("photo.png", "image/png", ByteArray(64) { 1 }))
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        val body = response.decode<ImageUploadResponse>()
+        assertTrue(body.url.startsWith("https://cdn.test/images/"))
+        assertTrue(body.url.endsWith(".png"))
+    }
+
+    @Test
+    fun image_upload_rejects_unsupported_type() = runApp { client ->
+        val auth = client.register("imgtype", "pw")
+        val response = client.post("/images") {
+            bearerAuth(auth.token)
+            setBody(multipart("note.txt", "text/plain", "hello".encodeToByteArray()))
+        }
+        assertEquals(HttpStatusCode.UnsupportedMediaType, response.status)
+    }
+
+    @Test
+    fun image_upload_rejects_oversize() = runApp { client ->
+        val auth = client.register("imgbig", "pw")
+        val tooBig = ByteArray(5 * 1024 * 1024 + 1)
+        val response = client.post("/images") {
+            bearerAuth(auth.token)
+            setBody(multipart("big.png", "image/png", tooBig))
+        }
+        assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
+    }
+
+    @Test
+    fun image_upload_requires_auth() = runApp { client ->
+        val response = client.post("/images") {
+            setBody(multipart("photo.png", "image/png", ByteArray(8)))
+        }
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    private fun multipart(filename: String, contentType: String, bytes: ByteArray) =
+        MultiPartFormDataContent(
+            formData {
+                append(
+                    "file",
+                    bytes,
+                    Headers.build {
+                        append(HttpHeaders.ContentType, contentType)
+                        append(HttpHeaders.ContentDisposition, "filename=\"$filename\"")
+                    },
+                )
+            },
+        )
 
     private suspend fun HttpClient.createSession(token: String, deckId: Long): PracticeSessionDto =
         post("/sessions") {

@@ -1,5 +1,11 @@
 import { getToken } from '../auth/token';
-import type { AuthResponse, CreateDeckRequest, ErrorResponse, FlashcardDeckDto } from './types';
+import type {
+  AuthResponse,
+  CreateDeckRequest,
+  ErrorResponse,
+  FlashcardDeckDto,
+  ImageUploadResponse,
+} from './types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
 
@@ -66,4 +72,25 @@ export const api = {
     request<FlashcardDeckDto>('/decks', { method: 'POST', body: deck, auth: true }),
   updateDeck: (id: number, deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>(`/decks/${id}`, { method: 'PUT', body: deck, auth: true }),
+
+  // Multipart upload — let the browser set the Content-Type (with the boundary).
+  uploadImage: async (file: File): Promise<ImageUploadResponse> => {
+    const headers: Record<string, string> = {};
+    const token = getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const form = new FormData();
+    form.append('file', file);
+    const response = await fetch(`${BASE_URL}/images`, { method: 'POST', headers, body: form });
+    if (!response.ok) {
+      let message = `Upload failed (${response.status})`;
+      try {
+        const error = (await response.json()) as ErrorResponse;
+        if (error?.message) message = error.message;
+      } catch {
+        // keep default
+      }
+      throw new ApiError(response.status, message);
+    }
+    return (await response.json()) as ImageUploadResponse;
+  },
 };

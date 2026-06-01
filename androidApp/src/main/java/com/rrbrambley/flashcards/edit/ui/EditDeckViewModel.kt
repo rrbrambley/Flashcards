@@ -1,18 +1,26 @@
 package com.rrbrambley.flashcards.edit.ui
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
+import com.rrbrambley.flashcards.create.ui.isComplete
+import com.rrbrambley.flashcards.create.ui.isStarted
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.domain.FlashcardDeck
 import com.rrbrambley.flashcards.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 private const val MinimumCompleteCardCount = 1
@@ -20,6 +28,8 @@ private const val MinimumCompleteCardCount = 1
 @HiltViewModel
 class EditDeckViewModel @Inject constructor(
     private val flashcardRepository: FlashcardRepository,
+    private val apiClient: FlashcardApiClient,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EditDeckUiState())
     val uiState: StateFlow<EditDeckUiState> = _uiState.asStateFlow()
@@ -78,6 +88,19 @@ class EditDeckViewModel @Inject constructor(
         updateCard(cardId) { card -> card.copy(definition = definition) }
     }
 
+    fun onImagePicked(cardId: Long, uri: Uri) {
+        updateCard(cardId) { it.copy(uploading = true) }
+        viewModelScope.launch {
+            runCatching { uploadImage(uri) }
+                .onSuccess { url -> updateCard(cardId) { it.copy(imageUrl = url, uploading = false) } }
+                .onFailure { updateCard(cardId) { it.copy(uploading = false) } }
+        }
+    }
+
+    fun onRemoveImage(cardId: Long) {
+        updateCard(cardId) { it.copy(imageUrl = null) }
+    }
+
     fun addDraftCard() {
         _uiState.update {
             val updatedCards = it.cards + DeckFlashcardDraft(id = nextDraftCardId)
@@ -93,8 +116,8 @@ class EditDeckViewModel @Inject constructor(
     fun finishDeckEditing() {
         val currentDeckId = deckId ?: return
         val currentState = _uiState.value
-        val completeCards = currentState.completeCards()
-        val hasIncompleteStartedCard = currentState.cards.any { it.isIncompleteStartedCard() }
+        val completeCards = currentState.cards.filter { it.isComplete() }
+        val hasIncompleteStartedCard = currentState.cards.any { it.isStarted() && !it.isComplete() }
         val isValid = currentState.deckTitle.isNotBlank() &&
             completeCards.size >= MinimumCompleteCardCount &&
             !hasIncompleteStartedCard
@@ -114,6 +137,7 @@ class EditDeckViewModel @Inject constructor(
                             Flashcard(
                                 question = card.term.trim(),
                                 answer = card.definition.trim(),
+                                imageUrl = card.imageUrl,
                             )
                         },
                     ),
@@ -168,17 +192,20 @@ class EditDeckViewModel @Inject constructor(
             id = index + 1L,
             term = flashcard.question,
             definition = flashcard.answer,
+            imageUrl = flashcard.imageUrl,
         )
     }.ifEmpty {
         listOf(DeckFlashcardDraft(id = 1L))
     }
 
-    private fun EditDeckUiState.completeCards(): List<DeckFlashcardDraft> = cards.filter {
-        it.term.isNotBlank() && it.definition.isNotBlank()
+    private suspend fun uploadImage(uri: Uri): String {
+        val bytes = withContext(Dispatchers.IO) {
+            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+        } ?: error("Could not read the selected image")
+        val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
+        val filename = "image.${mime.substringAfterLast('/')}"
+        return apiClient.uploadImage(bytes, filename, mime).url
     }
-
-    private fun DeckFlashcardDraft.isIncompleteStartedCard(): Boolean =
-        term.isNotBlank() && definition.isBlank() || term.isBlank() && definition.isNotBlank()
 
     private data class EditDeckFormSnapshot(
         val deckTitle: String,
