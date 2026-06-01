@@ -2,8 +2,10 @@ package com.rrbrambley.flashcards.practice.data
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -16,29 +18,30 @@ interface FlashcardDao {
     @Query("SELECT * FROM flashcard_decks WHERE id = :deckId")
     fun observeDeck(deckId: Long): Flow<FlashcardDeckWithCards?>
 
-    @Insert
-    suspend fun insertDeck(deck: FlashcardDeckEntity): Long
+    // Updates the row in place (no REPLACE, which would cascade-delete child sessions/cards).
+    @Upsert
+    suspend fun upsertDeck(deck: FlashcardDeckEntity)
+
+    // Inserts a stub deck only if missing (used when caching a session whose deck isn't local yet).
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertDeckIfAbsent(deck: FlashcardDeckEntity)
 
     @Insert
     suspend fun insertFlashcards(flashcards: List<FlashcardEntity>)
 
-    @Query("UPDATE flashcard_decks SET title = :title WHERE id = :deckId")
-    suspend fun updateDeckTitle(deckId: Long, title: String)
-
     @Query("DELETE FROM flashcards WHERE deckId = :deckId")
     suspend fun deleteFlashcardsForDeck(deckId: Long)
 
+    /** Caches a backend deck (and its cards) under its backend id. */
     @Transaction
-    suspend fun insertDeckWithFlashcards(deck: FlashcardDeckEntity, flashcards: List<FlashcardEntity>): Long {
-        val deckId = insertDeck(deck)
-        insertFlashcards(flashcards.map { it.copy(deckId = deckId) })
-        return deckId
+    suspend fun cacheDeck(deck: FlashcardDeckEntity, flashcards: List<FlashcardEntity>) {
+        upsertDeck(deck)
+        deleteFlashcardsForDeck(deck.id)
+        insertFlashcards(flashcards.map { it.copy(deckId = deck.id) })
     }
 
     @Transaction
-    suspend fun updateDeckWithFlashcards(deck: FlashcardDeckEntity, flashcards: List<FlashcardEntity>) {
-        updateDeckTitle(deck.id, deck.title)
-        deleteFlashcardsForDeck(deck.id)
-        insertFlashcards(flashcards.map { it.copy(deckId = deck.id) })
+    suspend fun cacheDecks(decksWithCards: List<Pair<FlashcardDeckEntity, List<FlashcardEntity>>>) {
+        decksWithCards.forEach { (deck, cards) -> cacheDeck(deck, cards) }
     }
 }

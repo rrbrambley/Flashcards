@@ -1,40 +1,33 @@
 package com.rrbrambley.flashcards.di
 
-import com.rrbrambley.flashcards.practice.data.FlashcardApiService
+import com.rrbrambley.flashcards.BuildConfig
+import com.rrbrambley.flashcards.data.auth.TokenStore
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import kotlinx.serialization.json.Json
-import okhttp3.MediaType.Companion.toMediaType
-import retrofit2.Retrofit
-import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 import javax.inject.Singleton
-
 
 @Module
 @InstallIn(SingletonComponent::class)
-class NetworkModule {
-    @Provides
-    @Singleton
-    fun provideJson(): Json = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-    }
+object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(json: Json): Retrofit {
-        val jsonConverterFactory = json.asConverterFactory("application/json".toMediaType())
-        return Retrofit.Builder()
-            .baseUrl("https://api.example.com/")
-            .addConverterFactory(jsonConverterFactory)
-            .build()
-    }
+    fun provideHttpClient(): HttpClient = createFlashcardHttpClient(OkHttp.create())
 
     @Provides
     @Singleton
-    fun provideApiService(retrofit: Retrofit): FlashcardApiService {
-        return retrofit.create(FlashcardApiService::class.java)
-    }
+    fun provideFlashcardApiClient(
+        httpClient: HttpClient,
+        tokenStore: TokenStore,
+    ): FlashcardApiClient = FlashcardApiClient(
+        client = httpClient,
+        baseUrl = BuildConfig.BACKEND_BASE_URL,
+        tokenProvider = { tokenStore.currentToken() },
+    )
 }

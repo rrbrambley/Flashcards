@@ -105,18 +105,23 @@ class EditDeckViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            flashcardRepository.updateFlashcardDeck(
-                FlashcardDeck(
-                    id = currentDeckId,
-                    title = currentState.deckTitle.trim(),
-                    flashcards = completeCards.map { card ->
-                        Flashcard(
-                            question = card.term.trim(),
-                            answer = card.definition.trim(),
-                        )
-                    },
-                ),
-            )
+            val saved = runCatching {
+                flashcardRepository.updateFlashcardDeck(
+                    FlashcardDeck(
+                        id = currentDeckId,
+                        title = currentState.deckTitle.trim(),
+                        flashcards = completeCards.map { card ->
+                            Flashcard(
+                                question = card.term.trim(),
+                                answer = card.definition.trim(),
+                            )
+                        },
+                    ),
+                )
+            }.isSuccess
+            // On failure (e.g. offline, or the read-only global deck) keep the form for retry.
+            if (!saved) return@launch
+
             val snapshot = EditDeckFormSnapshot(
                 deckTitle = currentState.deckTitle,
                 cards = currentState.cards,
