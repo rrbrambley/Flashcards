@@ -49,6 +49,14 @@ application {
     mainClass.set("com.rrbrambley.flashcards.backend.ApplicationKt")
 }
 
+tasks.named<JavaExec>("run") {
+    // Let `./gradlew :backend:run` pick up the Google Web client ID from gradle.properties
+    // (an explicit env var still wins for prod). Enables Sign in with Google locally.
+    providers.gradleProperty("GOOGLE_WEB_CLIENT_ID").orNull?.let {
+        environment("GOOGLE_WEB_CLIENT_ID", it)
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
     // Forward Docker/Testcontainers env (e.g. a Colima or rootless socket) into the
