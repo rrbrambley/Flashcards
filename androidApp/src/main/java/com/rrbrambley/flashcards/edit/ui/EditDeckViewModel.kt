@@ -1,26 +1,22 @@
 package com.rrbrambley.flashcards.edit.ui
 
-import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.create.ui.isComplete
 import com.rrbrambley.flashcards.create.ui.isStarted
+import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.domain.FlashcardDeck
 import com.rrbrambley.flashcards.domain.FlashcardRepository
-import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 private const val MinimumCompleteCardCount = 1
@@ -28,8 +24,7 @@ private const val MinimumCompleteCardCount = 1
 @HiltViewModel
 class EditDeckViewModel @Inject constructor(
     private val flashcardRepository: FlashcardRepository,
-    private val apiClient: FlashcardApiClient,
-    @ApplicationContext private val context: Context,
+    private val imageUploader: ImageUploader,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EditDeckUiState())
     val uiState: StateFlow<EditDeckUiState> = _uiState.asStateFlow()
@@ -91,7 +86,7 @@ class EditDeckViewModel @Inject constructor(
     fun onImagePicked(cardId: Long, uri: Uri) {
         updateCard(cardId) { it.copy(uploading = true) }
         viewModelScope.launch {
-            runCatching { uploadImage(uri) }
+            runCatching { imageUploader.upload(uri) }
                 .onSuccess { url -> updateCard(cardId) { it.copy(imageUrl = url, uploading = false) } }
                 .onFailure { updateCard(cardId) { it.copy(uploading = false) } }
         }
@@ -196,15 +191,6 @@ class EditDeckViewModel @Inject constructor(
         )
     }.ifEmpty {
         listOf(DeckFlashcardDraft(id = 1L))
-    }
-
-    private suspend fun uploadImage(uri: Uri): String {
-        val bytes = withContext(Dispatchers.IO) {
-            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-        } ?: error("Could not read the selected image")
-        val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
-        val filename = "image.${mime.substringAfterLast('/')}"
-        return apiClient.uploadImage(bytes, filename, mime).url
     }
 
     private data class EditDeckFormSnapshot(

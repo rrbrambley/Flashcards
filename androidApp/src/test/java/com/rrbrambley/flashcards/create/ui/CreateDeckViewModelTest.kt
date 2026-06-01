@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.create.ui
 
+import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.domain.FlashcardDeck
 import com.rrbrambley.flashcards.domain.FlashcardRepository
@@ -18,6 +19,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+/** These tests don't exercise image picking, so the uploader is never invoked. */
+private val NoOpImageUploader = ImageUploader { "" }
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class CreateDeckViewModelTest {
 
@@ -35,7 +39,7 @@ class CreateDeckViewModelTest {
 
     @Test
     fun addDraftCard_addsEmptyCard() {
-        val viewModel = CreateDeckViewModel(FakeFlashcardRepository())
+        val viewModel = CreateDeckViewModel(FakeFlashcardRepository(), NoOpImageUploader)
 
         viewModel.addDraftCard()
 
@@ -45,7 +49,7 @@ class CreateDeckViewModelTest {
     @Test
     fun finishDeckCreation_withInvalidDeck_showsValidationErrors() {
         val repository = FakeFlashcardRepository()
-        val viewModel = CreateDeckViewModel(repository)
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader)
 
         viewModel.finishDeckCreation()
 
@@ -56,7 +60,7 @@ class CreateDeckViewModelTest {
     @Test
     fun finishDeckCreation_withValidDeck_savesDeckAndResetsState() = runTest(testDispatcher) {
         val repository = FakeFlashcardRepository()
-        val viewModel = CreateDeckViewModel(repository)
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader)
         viewModel.onDeckTitleChange(" Spanish basics ")
         viewModel.onTermChange(1L, " Hola ")
         viewModel.onDefinitionChange(1L, " Hello ")

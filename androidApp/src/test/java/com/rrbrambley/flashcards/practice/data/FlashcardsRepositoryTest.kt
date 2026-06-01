@@ -2,133 +2,194 @@ package com.rrbrambley.flashcards.practice.data
 
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.request.HttpRequestData
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Exercises the offline-first pipeline of [FlashcardRepositoryImpl]: a best-effort remote
+ * refresh through a real [FlashcardApiClient] (backed by a Ktor [MockEngine]), then reads
+ * and writes against an in-memory [FlashcardDao] cache.
+ */
 class FlashcardsRepositoryTest {
 
     @Test
-    fun getFlashcards_emitsLocalFlashcards() {
-        runTest {
-            val localFlashcards = listOf(Flashcard(question = "Question", answer = "Answer"))
-            val localDataSource = FakeFlashcardLocalDataSource(localFlashcards)
-            val repository = FlashcardRepositoryImpl(
-                flashcardLocalDataSource = localDataSource,
-            )
+    fun observeFlashcardDecks_emitsDecksCachedFromTheBackend() = runWithDao { dao ->
+        val engine = mockEngine(
+            HttpMethod.Get to "/decks" to json("""[${deckJson(1, "Spanish basics", "Hola" to "Hello")}]"""),
+        )
+        val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
 
-            val flashcards = repository.getFlashcards().first()
+        val decks = repository.observeFlashcardDecks().first()
 
-            assertEquals(localFlashcards, flashcards)
-        }
-    }
-
-    @Test
-    fun observeFlashcardDecks_emitsLocalDecks() {
-        runTest {
-            val localDecks = listOf(
+        assertEquals(
+            listOf(
                 FlashcardDeck(
                     id = 1L,
                     title = "Spanish basics",
                     flashcards = listOf(Flashcard(question = "Hola", answer = "Hello")),
                 ),
-            )
-            val localDataSource = FakeFlashcardLocalDataSource(
-                flashcards = emptyList(),
-                decks = localDecks,
-            )
-            val repository = FlashcardRepositoryImpl(
-                flashcardLocalDataSource = localDataSource,
-            )
-
-            val decks = repository.observeFlashcardDecks().first()
-
-            assertEquals(localDecks, decks)
-        }
+            ),
+            decks,
+        )
     }
 
     @Test
-    fun observeFlashcardDeck_emitsLocalDeck() {
-        runTest {
-            val localDeck = FlashcardDeck(
-                id = 1L,
-                title = "Spanish basics",
-                flashcards = listOf(Flashcard(question = "Hola", answer = "Hello")),
-            )
-            val localDataSource = FakeFlashcardLocalDataSource(
-                flashcards = emptyList(),
-                decks = listOf(localDeck),
-            )
-            val repository = FlashcardRepositoryImpl(
-                flashcardLocalDataSource = localDataSource,
-            )
+    fun observeFlashcardDeck_emitsTheRequestedDeck() = runWithDao { dao ->
+        val engine = mockEngine(
+            HttpMethod.Get to "/decks/7" to json(deckJson(7, "Capitals", "France?" to "Paris")),
+        )
+        val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
 
-            val deck = repository.observeFlashcardDeck(localDeck.id).first()
+        val deck = repository.observeFlashcardDeck(7L).first()
 
-            assertEquals(localDeck, deck)
-        }
+        assertEquals("Capitals", deck?.title)
+        assertEquals(listOf("Paris"), deck?.flashcards?.map { it.answer })
     }
 
     @Test
-    fun updateFlashcardDeck_updatesLocalDataSource() {
-        runTest {
-            val localDataSource = FakeFlashcardLocalDataSource(emptyList())
-            val repository = FlashcardRepositoryImpl(
-                flashcardLocalDataSource = localDataSource,
-            )
-            val deck = FlashcardDeck(
-                id = 1L,
-                title = "Spanish basics",
-                flashcards = listOf(Flashcard(question = "Hola", answer = "Hello")),
-            )
+    fun saveFlashcardDeck_createsRemotelyThenCachesUnderTheBackendId() = runWithDao { dao ->
+        val engine = mockEngine(
+            HttpMethod.Post to "/decks" to json(deckJson(5, "New deck", "Q" to "A"), HttpStatusCode.Created),
+        )
+        val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
 
-            repository.updateFlashcardDeck(deck)
+        repository.saveFlashcardDeck(
+            FlashcardDeck(title = "New deck", flashcards = listOf(Flashcard("Q", "A"))),
+        )
 
-            assertEquals(deck, localDataSource.updatedDeck)
-        }
+        // It POSTed to the backend...
+        assertTrue(engine.requestHistory.any { it.method == HttpMethod.Post && it.url.encodedPath == "/decks" })
+        // ...and cached the returned deck under its backend id (5), not the local 0.
+        val cached = dao.observeDecks().first()
+        assertEquals(listOf(5L), cached.map { it.deck.id })
+        assertEquals("New deck", cached.single().deck.title)
     }
 
     @Test
-    fun saveFlashcardDeck_savesToLocalDataSource() {
-        runTest {
-            val localDataSource = FakeFlashcardLocalDataSource(emptyList())
-            val repository = FlashcardRepositoryImpl(
-                flashcardLocalDataSource = localDataSource,
-            )
-            val deck = FlashcardDeck(
-                title = "Spanish basics",
-                flashcards = listOf(Flashcard(question = "Hola", answer = "Hello")),
-            )
+    fun updateFlashcardDeck_putsRemotelyThenRefreshesTheCache() = runWithDao { dao ->
+        val engine = mockEngine(
+            HttpMethod.Put to "/decks/5" to json(deckJson(5, "Renamed", "Q1" to "A1", "Q2" to "A2")),
+        )
+        val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
 
-            repository.saveFlashcardDeck(deck)
+        repository.updateFlashcardDeck(
+            FlashcardDeck(id = 5L, title = "Renamed", flashcards = listOf(Flashcard("Q1", "A1"), Flashcard("Q2", "A2"))),
+        )
 
-            assertEquals(deck, localDataSource.savedDeck)
+        assertTrue(engine.requestHistory.any { it.method == HttpMethod.Put && it.url.encodedPath == "/decks/5" })
+        val cached = dao.observeDeck(5L).first()
+        assertEquals("Renamed", cached?.deck?.title)
+        assertEquals(listOf("A1", "A2"), cached?.flashcards?.map { it.answer })
+    }
+
+    @Test
+    fun getFlashcards_prefersTheCountryFlagsDeck() = runWithDao { dao ->
+        val engine = mockEngine(
+            HttpMethod.Get to "/decks" to json(
+                """[
+                    ${deckJson(1, "Spanish basics", "Hola" to "Hello")},
+                    ${deckJson(2, "Country Flags", "Canada flag" to "Canada")}
+                ]""",
+            ),
+        )
+        val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
+
+        val flashcards = repository.getFlashcards().first()
+
+        assertEquals(listOf("Canada"), flashcards.map { it.answer })
+    }
+
+    // --- Helpers ---
+
+    /** Runs the test body with a fresh in-memory DAO. */
+    private fun runWithDao(block: suspend (FakeFlashcardDao) -> Unit) = runTest { block(FakeFlashcardDao()) }
+
+    private fun apiClient(engine: MockEngine): FlashcardApiClient =
+        FlashcardApiClient(
+            client = createFlashcardHttpClient(engine),
+            baseUrl = "http://localhost",
+            tokenProvider = { "test-token" },
+        )
+
+    /** A MockEngine that maps (method, path) -> a canned JSON response; unmatched requests 404. */
+    private fun mockEngine(
+        vararg routes: Pair<Pair<HttpMethod, String>, MockResponse>,
+    ): MockEngine {
+        val table = routes.toMap()
+        return MockEngine { request: HttpRequestData ->
+            val response = table[request.method to request.url.encodedPath]
+            if (response != null) {
+                respond(response.body, response.status, jsonHeaders)
+            } else {
+                respond("not found", HttpStatusCode.NotFound)
+            }
         }
     }
 
-    private class FakeFlashcardLocalDataSource(
-        private val flashcards: List<Flashcard>,
-        private val decks: List<FlashcardDeck> = emptyList(),
-    ) : FlashcardLocalDataSourceContract {
-        var savedDeck: FlashcardDeck? = null
-        var updatedDeck: FlashcardDeck? = null
+    private val jsonHeaders = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
 
-        override fun getFlashcards(): Flow<List<Flashcard>> = flowOf(flashcards)
+    private class MockResponse(val body: String, val status: HttpStatusCode)
 
-        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(decks)
+    private fun json(body: String, status: HttpStatusCode = HttpStatusCode.OK) = MockResponse(body, status)
 
-        override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(decks.firstOrNull { it.id == deckId })
-
-        override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
-            savedDeck = deck
+    private fun deckJson(id: Long, title: String, vararg cards: Pair<String, String>): String {
+        val cardsJson = cards.joinToString(",") { (q, a) ->
+            """{"question":"$q","answer":"$a","imageUrl":null}"""
         }
-
-        override suspend fun updateFlashcardDeck(deck: FlashcardDeck) {
-            updatedDeck = deck
-        }
+        return """{"id":$id,"title":"$title","flashcards":[$cardsJson]}"""
     }
 
+    /** In-memory [FlashcardDao]; the default cacheDeck/cacheDecks compose the overridden methods. */
+    private class FakeFlashcardDao : FlashcardDao {
+        private val decks = linkedMapOf<Long, FlashcardDeckEntity>()
+        private val cards = mutableListOf<FlashcardEntity>()
+        private val state = MutableStateFlow<List<FlashcardDeckWithCards>>(emptyList())
+
+        private fun publish() {
+            state.value = decks.values
+                .sortedByDescending { it.id }
+                .map { deck -> FlashcardDeckWithCards(deck, cards.filter { it.deckId == deck.id }) }
+        }
+
+        override fun observeDecks(): Flow<List<FlashcardDeckWithCards>> = state
+
+        override fun observeDeck(deckId: Long): Flow<FlashcardDeckWithCards?> =
+            state.map { list -> list.firstOrNull { it.deck.id == deckId } }
+
+        override suspend fun upsertDeck(deck: FlashcardDeckEntity) {
+            decks[deck.id] = deck
+            publish()
+        }
+
+        override suspend fun insertDeckIfAbsent(deck: FlashcardDeckEntity) {
+            decks.putIfAbsent(deck.id, deck)
+            publish()
+        }
+
+        override suspend fun insertFlashcards(flashcards: List<FlashcardEntity>) {
+            cards.addAll(flashcards)
+            publish()
+        }
+
+        override suspend fun deleteFlashcardsForDeck(deckId: Long) {
+            cards.removeAll { it.deckId == deckId }
+            publish()
+        }
+    }
 }

@@ -3,6 +3,11 @@ package com.rrbrambley.flashcards.home.data
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.practice.domain.PracticeSession
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -13,10 +18,16 @@ import org.junit.Test
 
 class HomeRepositoryTest {
 
+    // The feed prefers GET /home; these tests cover the offline fallback, so the client always fails.
+    private fun offlineApiClient(): FlashcardApiClient {
+        val engine = MockEngine { respond("unavailable", HttpStatusCode.ServiceUnavailable) }
+        return FlashcardApiClient(createFlashcardHttpClient(engine), baseUrl = "http://localhost", tokenProvider = { null })
+    }
+
     @Test
     fun observeHomeData_returnsPracticeCardWhenNoActiveSessions() {
         runTest {
-            val repository = HomeRepositoryImpl(FakePracticeSessionRepository(emptyList()))
+            val repository = HomeRepositoryImpl(offlineApiClient(), FakePracticeSessionRepository(emptyList()))
 
             val homeData = repository.observeHomeData().first()
 
@@ -30,7 +41,7 @@ class HomeRepositoryTest {
     @Test
     fun observeHomeData_returnsCreateFlashcardSetCardSecondWhenNoActiveSessions() {
         runTest {
-            val repository = HomeRepositoryImpl(FakePracticeSessionRepository(emptyList()))
+            val repository = HomeRepositoryImpl(offlineApiClient(), FakePracticeSessionRepository(emptyList()))
 
             val homeData = repository.observeHomeData().first()
 
@@ -44,7 +55,7 @@ class HomeRepositoryTest {
     @Test
     fun observeHomeData_prependsActivePracticeSessions() {
         runTest {
-            val repository = HomeRepositoryImpl(
+            val repository = HomeRepositoryImpl(offlineApiClient(), 
                 FakePracticeSessionRepository(
                     listOf(
                         PracticeSession(
