@@ -99,7 +99,7 @@ private fun EditDeckScaffold(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Edit Flashcards",
+                        text = if (uiState.isEditable) "Edit Flashcards" else "Flashcards",
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -118,21 +118,25 @@ private fun EditDeckScaffold(
                     }
                 },
                 actions = {
-                    IconButton(onClick = editDeckViewModel::finishDeckEditing) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Save deck changes",
-                        )
+                    if (uiState.isEditable) {
+                        IconButton(onClick = editDeckViewModel::finishDeckEditing) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Save deck changes",
+                            )
+                        }
                     }
                 },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = editDeckViewModel::addDraftCard) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add flashcard",
-                )
+            if (uiState.isEditable) {
+                FloatingActionButton(onClick = editDeckViewModel::addDraftCard) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add flashcard",
+                    )
+                }
             }
         },
     ) { innerPadding ->

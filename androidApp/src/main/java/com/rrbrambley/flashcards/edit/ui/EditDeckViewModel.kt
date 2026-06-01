@@ -62,6 +62,7 @@ class EditDeckViewModel @Inject constructor(
                         deckTitle = deck.title,
                         cards = drafts,
                         isLoading = false,
+                        isEditable = deck.isEditable,
                     )
                 }
                 loadDeckJob?.cancel()
@@ -102,6 +103,7 @@ class EditDeckViewModel @Inject constructor(
     }
 
     fun addDraftCard() {
+        if (!_uiState.value.isEditable) return
         _uiState.update {
             val updatedCards = it.cards + DeckFlashcardDraft(id = nextDraftCardId)
             it.copy(
@@ -116,6 +118,7 @@ class EditDeckViewModel @Inject constructor(
     fun finishDeckEditing() {
         val currentDeckId = deckId ?: return
         val currentState = _uiState.value
+        if (!currentState.isEditable) return
         val completeCards = currentState.cards.filter { it.isComplete() }
         val hasIncompleteStartedCard = currentState.cards.any { it.isStarted() && !it.isComplete() }
         val isValid = currentState.deckTitle.isNotBlank() &&

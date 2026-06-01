@@ -27,7 +27,7 @@ object DeckRepository {
             .where { (Decks.ownerUserId eq userId) or Decks.ownerUserId.isNull() }
             .orderBy(Decks.id to SortOrder.DESC)
             .toList()
-        deckRows.map { it.toDeckDtoWithCards() }
+        deckRows.map { it.toDeckDtoWithCards(userId) }
     }
 
     suspend fun getDeck(userId: Long, deckId: Long): FlashcardDeckDto? = dbQuery {
@@ -36,7 +36,7 @@ object DeckRepository {
                 (Decks.id eq deckId) and ((Decks.ownerUserId eq userId) or Decks.ownerUserId.isNull())
             }
             .firstOrNull()
-            ?.toDeckDtoWithCards()
+            ?.toDeckDtoWithCards(userId)
     }
 
     suspend fun createDeck(userId: Long, request: CreateDeckRequest): FlashcardDeckDto = dbQuery {
@@ -74,7 +74,7 @@ object DeckRepository {
         }
     }
 
-    private fun ResultRow.toDeckDtoWithCards(): FlashcardDeckDto {
+    private fun ResultRow.toDeckDtoWithCards(userId: Long): FlashcardDeckDto {
         val deckId = this[Decks.id].value
         val cards = Flashcards.selectAll()
             .where { Flashcards.deckId eq deckId }
@@ -84,6 +84,8 @@ object DeckRepository {
             id = deckId,
             title = this[Decks.title],
             flashcards = cards,
+            // Only the owner may edit; the global catalog deck (NULL owner) is read-only.
+            editable = this[Decks.ownerUserId]?.value == userId,
         )
     }
 }

@@ -9,4 +9,6 @@ data class EditDeckUiState(
     val isDirty: Boolean = false,
     val showValidationErrors: Boolean = false,
     val deckSaved: Boolean = false,
+    /** Read-only decks (e.g. the global catalog) are shown but can't be edited. */
+    val isEditable: Boolean = true,
 )

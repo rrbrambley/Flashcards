@@ -19,7 +19,7 @@ fun FlashcardDto.toDomain(): Flashcard = Flashcard(question, answer, imageUrl)
 fun Flashcard.toDto(): FlashcardDto = FlashcardDto(question, answer, imageUrl)
 
 fun FlashcardDeckDto.toDomain(): FlashcardDeck =
-    FlashcardDeck(id = id, title = title, flashcards = flashcards.map { it.toDomain() })
+    FlashcardDeck(id = id, title = title, flashcards = flashcards.map { it.toDomain() }, isEditable = editable)
 
 fun FlashcardDeck.toCreateRequest(): CreateDeckRequest =
     CreateDeckRequest(title = title, flashcards = flashcards.map { it.toDto() })

@@ -252,3 +252,10 @@ button.link-btn {
   border-radius: 10px;
   border: 1px solid var(--border);
 }
+.read-only-note {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
