@@ -39,6 +39,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ApplicationFlowTest {
@@ -149,6 +150,21 @@ class ApplicationFlowTest {
         assertEquals(3, flags.flashcards.size)
         assertEquals(listOf("Canada", "Kenya", "India"), flags.flashcards.map { it.answer })
         assertTrue(flags.flashcards.all { it.imageUrl != null })
+        // The global catalog deck has no owner, so it is read-only for every user.
+        assertFalse(flags.editable)
+    }
+
+    @Test
+    fun decks_owned_by_user_are_editable() = runApp { client ->
+        val auth = client.register("edith", "pw")
+        val created = client.post("/decks") {
+            bearerAuth(auth.token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Mine", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+
+        val mine = client.get("/decks/${created.id}") { bearerAuth(auth.token) }.decode<FlashcardDeckDto>()
+        assertTrue(mine.editable)
     }
 
     @Test

@@ -11,6 +11,9 @@ export interface FlashcardDeckDto {
   id: number;
   title: string;
   flashcards: FlashcardDto[];
+  // Whether the current user may edit this deck. Omitted (treated as true) for older payloads;
+  // false for the read-only global catalog deck.
+  editable?: boolean;
 }
 
 export interface CreateDeckRequest {

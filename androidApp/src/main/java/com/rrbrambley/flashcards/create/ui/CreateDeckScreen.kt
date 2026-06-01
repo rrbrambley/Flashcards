@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -93,6 +94,7 @@ fun CreateDeckContent(
     onDefinitionChange: (Long, String) -> Unit,
     onImageSelected: (Long, Uri) -> Unit,
     onRemoveImage: (Long) -> Unit,
+    editable: Boolean = true,
 ) {
     val completeCardCount = cards.count { it.isComplete() }
     val hasIncompleteStartedCard = cards.any { it.isStarted() && !it.isComplete() }
@@ -105,6 +107,21 @@ fun CreateDeckContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        if (!editable) {
+            item {
+                Text(
+                    text = "This deck is read-only and can't be edited.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(12.dp),
+                )
+            }
+        }
+
         if (title != null || description != null) {
             item {
                 Column(
@@ -135,6 +152,7 @@ fun CreateDeckContent(
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Deck title") },
                 singleLine = true,
+                enabled = editable,
                 isError = showDeckTitleError,
                 supportingText = {
                     if (showDeckTitleError) {
@@ -165,6 +183,7 @@ fun CreateDeckContent(
                 cardNumber = index + 1,
                 card = card,
                 showValidationErrors = showValidationErrors,
+                editable = editable,
                 onTermChange = onTermChange,
                 onDefinitionChange = onDefinitionChange,
                 onImageSelected = onImageSelected,
@@ -184,6 +203,7 @@ private fun FlashcardDraftCard(
     onImageSelected: (Long, Uri) -> Unit,
     onRemoveImage: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    editable: Boolean = true,
 ) {
     val started = card.isStarted()
     // Term is only required when there's no image.
@@ -220,7 +240,7 @@ private fun FlashcardDraftCard(
                 )
                 when {
                     card.uploading -> CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    card.imageUrl == null -> IconButton(
+                    card.imageUrl == null && editable -> IconButton(
                         onClick = {
                             pickImage.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
@@ -244,11 +264,13 @@ private fun FlashcardDraftCard(
                             .aspectRatio(16f / 9f)
                             .clip(RoundedCornerShape(12.dp)),
                     )
-                    IconButton(
-                        onClick = { onRemoveImage(card.id) },
-                        modifier = Modifier.align(Alignment.TopEnd),
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Remove image")
+                    if (editable) {
+                        IconButton(
+                            onClick = { onRemoveImage(card.id) },
+                            modifier = Modifier.align(Alignment.TopEnd),
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Remove image")
+                        }
                     }
                 }
             }
@@ -258,6 +280,7 @@ private fun FlashcardDraftCard(
                 onValueChange = { onTermChange(card.id, it) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(if (card.imageUrl != null) "Term (optional)" else "Term") },
+                enabled = editable,
                 isError = showTermError,
                 supportingText = {
                     if (showTermError) {
@@ -270,6 +293,7 @@ private fun FlashcardDraftCard(
                 onValueChange = { onDefinitionChange(card.id, it) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text("Definition") },
+                enabled = editable,
                 isError = showDefinitionError,
                 supportingText = {
                     if (showDefinitionError) {

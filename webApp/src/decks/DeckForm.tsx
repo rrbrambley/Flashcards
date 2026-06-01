@@ -23,6 +23,8 @@ interface DeckFormProps {
   submitLabel: string;
   initialTitle?: string;
   initialCards?: InitialCard[];
+  /** Read-only decks (e.g. the global catalog) are shown but can't be edited. */
+  readOnly?: boolean;
   /** Receives validated values (term -> question, definition -> answer). Throw to surface an error. */
   onSubmit: (title: string, flashcards: FlashcardDto[]) => Promise<void>;
 }
@@ -31,7 +33,7 @@ interface DeckFormProps {
 const isComplete = (c: CardDraft) => c.definition.trim() !== '' && (c.term.trim() !== '' || c.imageUrl != null);
 const isStarted = (c: CardDraft) => c.term.trim() !== '' || c.definition.trim() !== '' || c.imageUrl != null;
 
-export function DeckForm({ submitLabel, initialTitle = '', initialCards, onSubmit }: DeckFormProps) {
+export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnly = false, onSubmit }: DeckFormProps) {
   const seededCards: CardDraft[] = (initialCards && initialCards.length > 0
     ? initialCards
     : [{ term: '', definition: '' }]
@@ -107,11 +109,13 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, onSubmi
 
   return (
     <form className="create-form" onSubmit={submit}>
+      {readOnly && <p className="muted read-only-note">This deck is read-only and can't be edited.</p>}
       <label>
         Deck title
         <input
           type="text"
           value={title}
+          disabled={readOnly}
           onChange={(e) => {
             setTitle(e.target.value);
             setShowErrors(false);
@@ -129,38 +133,43 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, onSubmi
           <fieldset className="card-draft" key={card.id}>
             <legend>Card {index + 1}</legend>
 
-            <div className="card-image">
-              {card.imageUrl ? (
-                <div className="thumb-wrap">
-                  <img src={card.imageUrl} alt="card" className="card-thumb" />
-                  <button type="button" className="link-btn" onClick={() => updateCard(card.id, { imageUrl: null })}>
-                    Remove image
-                  </button>
-                </div>
-              ) : card.uploading ? (
-                <span className="muted">Uploading…</span>
-              ) : (
-                <label className="image-button">
-                  🖼 Add image
-                  <input
-                    type="file"
-                    accept={ACCEPT}
-                    hidden
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      e.target.value = '';
-                      if (file) handleImage(card.id, file);
-                    }}
-                  />
-                </label>
-              )}
-            </div>
+            {(card.imageUrl || !readOnly) && (
+              <div className="card-image">
+                {card.imageUrl ? (
+                  <div className="thumb-wrap">
+                    <img src={card.imageUrl} alt="card" className="card-thumb" />
+                    {!readOnly && (
+                      <button type="button" className="link-btn" onClick={() => updateCard(card.id, { imageUrl: null })}>
+                        Remove image
+                      </button>
+                    )}
+                  </div>
+                ) : card.uploading ? (
+                  <span className="muted">Uploading…</span>
+                ) : (
+                  <label className="image-button">
+                    🖼 Add image
+                    <input
+                      type="file"
+                      accept={ACCEPT}
+                      hidden
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (file) handleImage(card.id, file);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
 
             <label>
               {card.imageUrl ? 'Term (optional)' : 'Term'}
               <input
                 type="text"
                 value={card.term}
+                disabled={readOnly}
                 onChange={(e) => updateCard(card.id, { term: e.target.value })}
                 aria-invalid={termError}
               />
@@ -171,6 +180,7 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, onSubmi
               <textarea
                 value={card.definition}
                 rows={2}
+                disabled={readOnly}
                 onChange={(e) => updateCard(card.id, { definition: e.target.value })}
                 aria-invalid={definitionError}
               />
@@ -180,17 +190,21 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, onSubmi
         );
       })}
 
-      <button type="button" className="secondary" onClick={addCard}>
-        + Add card
-      </button>
+      {!readOnly && (
+        <button type="button" className="secondary" onClick={addCard}>
+          + Add card
+        </button>
+      )}
 
       {cardCountError && <p className="error">Add at least one card with a definition and a term or image.</p>}
       {incompleteError && <p className="error">Finish each started card: a definition plus a term or image.</p>}
       {error && <p className="error">{error}</p>}
 
-      <button type="submit" disabled={submitting}>
-        {submitting ? 'Saving…' : submitLabel}
-      </button>
+      {!readOnly && (
+        <button type="submit" disabled={submitting}>
+          {submitting ? 'Saving…' : submitLabel}
+        </button>
+      )}
     </form>
   );
 }

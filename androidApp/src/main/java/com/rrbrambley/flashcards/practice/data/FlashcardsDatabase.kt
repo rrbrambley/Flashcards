@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase
         FlashcardEntity::class,
         PracticeSessionEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class FlashcardsDatabase : RoomDatabase() {
