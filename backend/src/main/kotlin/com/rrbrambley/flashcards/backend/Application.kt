@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.backend
 import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.plugins.configureCors
 import com.rrbrambley.flashcards.backend.plugins.configureMonitoring
 import com.rrbrambley.flashcards.backend.plugins.configureRouting
 import com.rrbrambley.flashcards.backend.plugins.configureSecurity
@@ -36,6 +37,7 @@ fun main() {
 fun Application.module() {
     configureSerialization()
     configureMonitoring()
+    configureCors()
     configureStatusPages()
     configureSecurity()
     configureRouting()

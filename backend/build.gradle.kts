@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.cors)
 
     // Serialization + coroutines
     implementation(libs.kotlinx.serialization.json)
