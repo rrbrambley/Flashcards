@@ -19,35 +19,47 @@ declare global {
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 
+// `google.accounts.id.initialize()` is global and only keeps the last config, so it must
+// run exactly once for the page. These module-level holders let a single init delegate to
+// the current component's callbacks (which change across renders/remounts).
+let gisInitialized = false;
+let handleCredential: (idToken: string) => void = () => {};
+
 export function GoogleButton({ onError }: { onError: (message: string) => void }) {
   const { googleSignIn } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!CLIENT_ID || !containerRef.current) return;
+  // Always point the (single) GIS callback at the latest handlers.
+  handleCredential = (idToken: string) => {
+    googleSignIn(idToken).catch((err: unknown) => {
+      onError(err instanceof Error ? err.message : 'Google sign-in failed.');
+    });
+  };
 
-    const renderInto = (element: HTMLElement) => {
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!CLIENT_ID || !element) return;
+
+    const render = () => {
       if (!window.google) return;
-      window.google.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: (response) => {
-          googleSignIn(response.credential).catch((err: unknown) => {
-            onError(err instanceof Error ? err.message : 'Google sign-in failed.');
-          });
-        },
-      });
+      if (!gisInitialized) {
+        window.google.accounts.id.initialize({
+          client_id: CLIENT_ID,
+          callback: (response) => handleCredential(response.credential),
+        });
+        gisInitialized = true;
+      }
       window.google.accounts.id.renderButton(element, { theme: 'outline', size: 'large', width: 320 });
     };
 
-    const element = containerRef.current;
     if (window.google) {
-      renderInto(element);
+      render();
       return;
     }
 
     const existing = document.getElementById('gis-script') as HTMLScriptElement | null;
     if (existing) {
-      existing.addEventListener('load', () => renderInto(element), { once: true });
+      existing.addEventListener('load', render, { once: true });
       return;
     }
 
@@ -55,9 +67,9 @@ export function GoogleButton({ onError }: { onError: (message: string) => void }
     script.src = GIS_SRC;
     script.async = true;
     script.id = 'gis-script';
-    script.onload = () => renderInto(element);
+    script.onload = render;
     document.body.appendChild(script);
-  }, [googleSignIn, onError]);
+  }, []);
 
   if (!CLIENT_ID) {
     return <p className="muted">Google sign-in isn't configured.</p>;
