@@ -54,10 +54,18 @@ application {
 }
 
 tasks.named<JavaExec>("run") {
-    // Let `./gradlew :backend:run` pick up the Google Web client ID from gradle.properties
-    // (an explicit env var still wins for prod). Enables Sign in with Google locally.
-    providers.gradleProperty("GOOGLE_WEB_CLIENT_ID").orNull?.let {
-        environment("GOOGLE_WEB_CLIENT_ID", it)
+    // Forward config from gradle.properties (committed or in ~/.gradle/gradle.properties) to the
+    // run env, so `./gradlew :backend:run` works without inline env vars. Secrets (AWS creds) still
+    // come from the default AWS chain (~/.aws / env), never from gradle properties.
+    listOf(
+        "GOOGLE_WEB_CLIENT_ID",
+        "S3_BUCKET",
+        "S3_REGION",
+        "CDN_BASE_URL",
+        "S3_ENDPOINT",
+        "DB_JDBC_URL",
+    ).forEach { key ->
+        providers.gradleProperty(key).orNull?.let { environment(key, it) }
     }
 }
 
