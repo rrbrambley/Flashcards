@@ -34,3 +34,25 @@ export interface ErrorResponse {
 export interface ImageUploadResponse {
   url: string;
 }
+
+export interface PracticeSessionDto {
+  id: number;
+  deckId: number;
+  deckTitle: string;
+  currentCardIndex: number;
+  numCorrect: number;
+  numIncorrect: number;
+  isCompleted: boolean;
+  createdAtMillis: number;
+  updatedAtMillis: number;
+}
+
+export interface CreateSessionRequest {
+  deckId: number;
+}
+
+export interface UpdateProgressRequest {
+  currentCardIndex: number;
+  numCorrect: number;
+  numIncorrect: number;
+}

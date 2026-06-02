@@ -97,4 +97,39 @@ describe('api client', () => {
     expect(init.headers['Content-Type']).toBeUndefined();
     expect(init.headers.Authorization).toBe('Bearer tok');
   });
+
+  it('createSession posts the deckId to /sessions', async () => {
+    setToken('tok');
+    const fetchMock = stubFetch({ json: () => Promise.resolve({ id: 7, deckId: 3 }) });
+
+    const session = await api.createSession(3);
+
+    expect(session).toMatchObject({ id: 7, deckId: 3 });
+    const { url, init } = lastCall(fetchMock);
+    expect(url).toContain('/sessions');
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3 });
+  });
+
+  it('updateProgress PATCHes the session with progress', async () => {
+    const fetchMock = stubFetch({ json: () => Promise.resolve({ id: 7 }) });
+
+    await api.updateProgress(7, { currentCardIndex: 2, numCorrect: 1, numIncorrect: 1 });
+
+    const { url, init } = lastCall(fetchMock);
+    expect(url).toContain('/sessions/7');
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body as string)).toEqual({ currentCardIndex: 2, numCorrect: 1, numIncorrect: 1 });
+  });
+
+  it('completeSession posts to /sessions/{id}/complete', async () => {
+    const fetchMock = stubFetch({ json: () => Promise.resolve({ id: 7, isCompleted: true }) });
+
+    await api.completeSession(7);
+
+    const { url, init } = lastCall(fetchMock);
+    expect(url).toContain('/sessions/7/complete');
+    expect(init.method).toBe('POST');
+  });
 });
