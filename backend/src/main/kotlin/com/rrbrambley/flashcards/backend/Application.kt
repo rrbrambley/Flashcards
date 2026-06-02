@@ -5,6 +5,7 @@ import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
 import com.rrbrambley.flashcards.backend.plugins.configureCors
 import com.rrbrambley.flashcards.backend.plugins.configureMonitoring
+import com.rrbrambley.flashcards.backend.plugins.configureRequestLimits
 import com.rrbrambley.flashcards.backend.plugins.configureRouting
 import com.rrbrambley.flashcards.backend.plugins.configureSecurity
 import com.rrbrambley.flashcards.backend.plugins.configureSerialization
@@ -60,6 +61,7 @@ fun Application.module() {
     configureMonitoring()
     configureCors()
     configureStatusPages()
+    configureRequestLimits()
     configureSecurity()
     configureRouting()
 }

@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.backend.auth
 
 import com.rrbrambley.flashcards.backend.error.ServiceUnavailableException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
+import com.rrbrambley.flashcards.backend.validation.Validation
 import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.LogoutRequest
@@ -19,9 +20,10 @@ fun Route.authRoutes() {
     route("/auth") {
         post("/register") {
             val request = call.receive<RegisterRequest>()
-            require(request.email.contains("@")) { "a valid email is required" }
-            require(request.password.isNotBlank()) { "password must not be blank" }
-            val response = AuthService.register(request.email.trim(), request.password)
+            val email = request.email.trim()
+            Validation.validateEmail(email)
+            Validation.validatePassword(request.password)
+            val response = AuthService.register(email, request.password)
             call.respond(HttpStatusCode.Created, response)
         }
         post("/login") {
