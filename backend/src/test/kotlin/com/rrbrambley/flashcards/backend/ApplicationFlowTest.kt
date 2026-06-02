@@ -148,6 +148,13 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun health_endpoint_reports_ok_without_auth() = runApp { client ->
+        val response = client.get("/health")
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertTrue(response.bodyAsText().contains("\"status\":\"ok\""))
+    }
+
+    @Test
     fun register_with_invalid_email_is_bad_request() = runApp { client ->
         val response = client.post("/auth/register") {
             contentType(ContentType.Application.Json)
