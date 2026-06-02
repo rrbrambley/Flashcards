@@ -14,6 +14,8 @@ import com.rrbrambley.flashcards.backend.storage.Storage
 import com.typesafe.config.ConfigFactory
 import io.ktor.server.application.Application
 import io.ktor.server.config.HoconApplicationConfig
+import io.ktor.server.engine.applicationEnvironment
+import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
@@ -43,7 +45,13 @@ fun main() {
     }
 
     val port = config.property("ktor.deployment.port").getString().toInt()
-    embeddedServer(Netty, port = port) { module() }.start(wait = true)
+    // Hand the loaded config to the server environment so module() (e.g. configureSecurity's
+    // jwt block) can read environment.config — embeddedServer(port = …) alone leaves it empty.
+    embeddedServer(
+        Netty,
+        environment = applicationEnvironment { this.config = config },
+        configure = { connector { this.port = port } },
+    ) { module() }.start(wait = true)
 }
 
 /** Wires plugins and routes. The database must be initialized before this runs. */
