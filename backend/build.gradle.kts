@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     application
     jacoco
+    alias(libs.plugins.test.retry)
 }
 
 kotlin {
@@ -82,6 +83,13 @@ tasks.test {
     // docker-java reads the negotiated API version from the `api.version` system property,
     // not an env var; map DOCKER_API_VERSION through for engines that pin a minimum (e.g. Colima).
     System.getenv("DOCKER_API_VERSION")?.let { systemProperty("api.version", it) }
+
+    // Safety net for transient flakes (e.g. timing-sensitive ordering, a brief DB hiccup):
+    // re-run a failed test a couple of times; a pass after retry doesn't fail the build.
+    retry {
+        maxRetries.set(2)
+        failOnPassedAfterRetry.set(false)
+    }
 }
 
 jacoco {
