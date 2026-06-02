@@ -105,6 +105,7 @@ class FlashcardsViewModel @Inject constructor(
                 numIncorrect = numIncorrect,
                 numCorrect = numCorrect,
                 flashcard = flashcards[currentFlashcardIndex],
+                canGoBack = currentFlashcardIndex > 0,
             )
         }
     }

@@ -72,6 +72,7 @@ class FlashcardsViewModelTest {
                 numIncorrect = 0,
                 numCorrect = 1,
                 flashcard = flashcards[1],
+                canGoBack = true,
             ),
             viewModel.uiState.value,
         )
@@ -91,6 +92,7 @@ class FlashcardsViewModelTest {
                 numIncorrect = 1,
                 numCorrect = 0,
                 flashcard = flashcards[1],
+                canGoBack = true,
             ),
             viewModel.uiState.value,
         )
@@ -110,6 +112,7 @@ class FlashcardsViewModelTest {
                 numIncorrect = 0,
                 numCorrect = 0,
                 flashcard = flashcards[1],
+                canGoBack = true,
             ),
             viewModel.uiState.value,
         )
@@ -179,6 +182,7 @@ class FlashcardsViewModelTest {
                 numIncorrect = 1,
                 numCorrect = 0,
                 flashcard = flashcards.last(),
+                canGoBack = true,
             ),
             viewModel.uiState.value,
         )
@@ -211,6 +215,7 @@ class FlashcardsViewModelTest {
                 numIncorrect = 1,
                 numCorrect = 2,
                 flashcard = flashcards[1],
+                canGoBack = true,
             ),
             viewModel.uiState.value,
         )
