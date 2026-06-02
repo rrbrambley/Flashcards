@@ -1,5 +1,8 @@
 package com.rrbrambley.flashcards.practice.ui
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +43,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -283,28 +288,42 @@ private fun FlashcardPracticeCard(
 ) {
     val hasImage = !flashcard.imageUrl.isNullOrBlank()
 
+    // A fresh Animatable per card starts at the front (0°), so advancing never animates a flip-back.
+    val rotation = remember(flashcard) { Animatable(0f) }
+    LaunchedEffect(isShowingAnswer) {
+        rotation.animateTo(
+            targetValue = if (isShowingAnswer) 180f else 0f,
+            animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
+        )
+    }
+    val density = LocalDensity.current.density
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(0.68f)
+            .graphicsLayer {
+                rotationY = rotation.value
+                cameraDistance = 14f * density
+            }
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 1.dp,
-//        shadowElevation = 10.dp,
         border = CardDefaults.outlinedCardBorder(),
     ) {
-        if (isShowingAnswer || !hasImage) {
-            FlashcardCenteredText(
-                text = if (isShowingAnswer) flashcard.answer else flashcard.question,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            FlashcardImageQuestionFace(
-                flashcard = flashcard,
-                modifier = Modifier.fillMaxWidth(),
-            )
+        when {
+            // Back (answer): counter-rotate so the parent's 180° flip doesn't mirror the text.
+            rotation.value > 90f -> Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { rotationY = 180f },
+            ) {
+                FlashcardCenteredText(text = flashcard.answer, modifier = Modifier.fillMaxSize())
+            }
+            hasImage -> FlashcardImageQuestionFace(flashcard = flashcard, modifier = Modifier.fillMaxWidth())
+            else -> FlashcardCenteredText(text = flashcard.question, modifier = Modifier.fillMaxSize())
         }
     }
 }
