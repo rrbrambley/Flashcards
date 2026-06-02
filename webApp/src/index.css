@@ -260,6 +260,11 @@ button.danger:hover:not(:disabled) {
   font-weight: 600;
   padding: 0 0.4rem;
 }
+.card-remove {
+  align-self: flex-end;
+  color: var(--error);
+  padding: 0;
+}
 .card-image {
   display: flex;
   align-items: center;

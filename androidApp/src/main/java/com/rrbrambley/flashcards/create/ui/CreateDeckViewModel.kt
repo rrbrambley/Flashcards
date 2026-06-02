@@ -61,6 +61,16 @@ class CreateDeckViewModel @Inject constructor(
         nextDraftCardId++
     }
 
+    fun removeCard(cardId: Long) {
+        _uiState.update { state ->
+            state.copy(
+                cards = state.cards.filterNot { it.id == cardId },
+                showValidationErrors = false,
+                deckSaved = false,
+            )
+        }
+    }
+
     fun finishDeckCreation() {
         val currentState = _uiState.value
         val completeCards = currentState.cards.filter { it.isComplete() }

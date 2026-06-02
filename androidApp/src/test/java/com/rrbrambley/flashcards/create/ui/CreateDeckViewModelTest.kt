@@ -47,6 +47,16 @@ class CreateDeckViewModelTest {
     }
 
     @Test
+    fun removeCard_removesOnlyTheCardWithThatId() {
+        val viewModel = CreateDeckViewModel(FakeFlashcardRepository(), NoOpImageUploader)
+        viewModel.addDraftCard() // cards now have ids 1 and 2
+
+        viewModel.removeCard(1L)
+
+        assertEquals(listOf(2L), viewModel.uiState.value.cards.map { it.id })
+    }
+
+    @Test
     fun finishDeckCreation_withInvalidDeck_showsValidationErrors() {
         val repository = FakeFlashcardRepository()
         val viewModel = CreateDeckViewModel(repository, NoOpImageUploader)

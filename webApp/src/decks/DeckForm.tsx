@@ -59,6 +59,11 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnl
     setNextId((n) => n + 1);
   };
 
+  const removeCard = (id: number) => {
+    setCards((current) => current.filter((card) => card.id !== id));
+    setShowErrors(false);
+  };
+
   const handleImage = async (id: number, file: File) => {
     updateCard(id, { uploading: true });
     try {
@@ -129,6 +134,18 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnl
         return (
           <fieldset className="card-draft" key={card.id}>
             <legend>Card {index + 1}</legend>
+
+            {/* Keep at least one card; the remove control appears once there's more than one. */}
+            {!readOnly && cards.length > 1 && (
+              <button
+                type="button"
+                className="link-btn card-remove"
+                aria-label={`Remove card ${index + 1}`}
+                onClick={() => removeCard(card.id)}
+              >
+                Remove card
+              </button>
+            )}
 
             {(card.imageUrl || !readOnly) && (
               <div className="card-image">

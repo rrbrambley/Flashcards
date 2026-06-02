@@ -30,6 +30,28 @@ describe('DeckForm', () => {
     );
   });
 
+  it('removes an individual card, and hides the remove control when only one remains', async () => {
+    render(
+      <DeckForm
+        submitLabel="Create deck"
+        onSubmit={vi.fn()}
+        initialCards={[
+          { term: 'Hola', definition: 'Hello' },
+          { term: 'Gracias', definition: 'Thanks' },
+        ]}
+      />,
+    );
+
+    // Two cards → each has a remove control.
+    expect(screen.getByDisplayValue('Hola')).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Remove card 1'));
+
+    // The first card is gone; with one card left the remove control disappears.
+    expect(screen.queryByDisplayValue('Hola')).toBeNull();
+    expect(screen.getByDisplayValue('Gracias')).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Remove card/)).toBeNull();
+  });
+
   it('read-only mode shows the note, disables the title, and hides submit', () => {
     render(
       <DeckForm
