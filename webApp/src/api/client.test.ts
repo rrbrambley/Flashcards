@@ -29,6 +29,18 @@ describe('api client', () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.unstubAllGlobals());
 
+  it('getHome sends an authed GET to /home', async () => {
+    setToken('tok');
+    const fetchMock = stubFetch({ json: () => Promise.resolve([]) });
+
+    await api.getHome();
+
+    const { url, init } = lastCall(fetchMock);
+    expect(url).toContain('/home');
+    expect(init.method).toBe('GET');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+  });
+
   it('getDecks sends an authed GET to /decks', async () => {
     setToken('tok');
     const fetchMock = stubFetch({ json: () => Promise.resolve([]) });

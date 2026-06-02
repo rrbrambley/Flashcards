@@ -74,7 +74,7 @@ export function PracticePage() {
             cards={data.cards}
             session={data.session}
             onAgain={() => setReloadToken((t) => t + 1)}
-            onExit={() => navigate('/')}
+            onExit={() => navigate('/library')}
           />
         )}
       </main>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { FlashcardDeckDto } from '../api/types';
 import { useAuth } from '../auth/auth-context';
@@ -35,9 +35,14 @@ export function LibraryPage() {
     <div className="app">
       <header className="app-header">
         <h1>Library</h1>
-        <button className="link-btn" onClick={signOut}>
-          Sign out
-        </button>
+        <nav className="app-header-nav">
+          <Link to="/" className="link-btn">
+            Home
+          </Link>
+          <button className="link-btn" onClick={signOut}>
+            Sign out
+          </button>
+        </nav>
       </header>
 
       <main className="container">

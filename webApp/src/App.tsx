@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthForm } from './auth/AuthForm';
 import { useAuth } from './auth/auth-context';
+import { HomePage } from './home/HomePage';
 import { LibraryPage } from './decks/LibraryPage';
 import { CreateDeckPage } from './decks/CreateDeckPage';
 import { EditDeckPage } from './decks/EditDeckPage';
@@ -21,7 +22,8 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<LibraryPage />} />
+      <Route path="/" element={<HomePage />} />
+      <Route path="/library" element={<LibraryPage />} />
       <Route path="/create" element={<CreateDeckPage />} />
       <Route path="/decks/:id/edit" element={<EditDeckPage />} />
       <Route path="/decks/:id/practice" element={<PracticePage />} />

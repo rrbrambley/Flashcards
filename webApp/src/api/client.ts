@@ -4,6 +4,7 @@ import type {
   CreateDeckRequest,
   ErrorResponse,
   FlashcardDeckDto,
+  HomeData,
   ImageUploadResponse,
   PracticeSessionDto,
   UpdateProgressRequest,
@@ -144,6 +145,7 @@ export const api = {
   // Revokes the refresh token server-side; needs the access bearer (auth: true) too.
   logout: (refreshToken: string) =>
     request<void>('/auth/logout', { method: 'POST', body: { refreshToken }, auth: true }),
+  getHome: () => request<HomeData[]>('/home', { auth: true }),
   getDecks: () => request<FlashcardDeckDto[]>('/decks', { auth: true }),
   getDeck: (id: number) => request<FlashcardDeckDto>(`/decks/${id}`, { auth: true }),
   createDeck: (deck: CreateDeckRequest) =>

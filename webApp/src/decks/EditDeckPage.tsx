@@ -35,7 +35,7 @@ export function EditDeckPage() {
     setDeleteError(null);
     try {
       await api.deleteDeck(deckId);
-      navigate('/');
+      navigate('/library');
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Could not delete the deck.');
       setDeleting(false);
@@ -70,7 +70,7 @@ export function EditDeckPage() {
                   }
                   throw err;
                 }
-                navigate('/');
+                navigate('/library');
               }}
             />
             {canDelete && (

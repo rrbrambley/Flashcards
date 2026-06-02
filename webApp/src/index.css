@@ -184,8 +184,39 @@ button.danger:hover:not(:disabled) {
   margin: 0;
   font-size: 1.3rem;
 }
+.app-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
 .header-spacer {
   width: 64px;
+}
+
+.home-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.25rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.home-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.home-card button {
+  align-self: stretch;
 }
 .container {
   max-width: 640px;

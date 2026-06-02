@@ -16,7 +16,7 @@ function renderPage() {
     <MemoryRouter initialEntries={['/decks/5/edit']}>
       <Routes>
         <Route path="/decks/:id/edit" element={<EditDeckPage />} />
-        <Route path="/" element={<div>home</div>} />
+        <Route path="/library" element={<div>library</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -72,7 +72,7 @@ describe('EditDeckPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Delete deck' }));
 
     expect(api.deleteDeck).toHaveBeenCalledWith(5);
-    expect(await screen.findByText('home')).toBeInTheDocument();
+    expect(await screen.findByText('library')).toBeInTheDocument();
   });
 
   it('does not offer delete for a read-only deck', async () => {
