@@ -29,6 +29,7 @@ fun EditDeckScreen(
         onDefinitionChange = editDeckViewModel::onDefinitionChange,
         onImageSelected = editDeckViewModel::onImagePicked,
         onRemoveImage = editDeckViewModel::onRemoveImage,
+        onRemoveCard = editDeckViewModel::removeCard,
         editable = uiState.isEditable,
         modifier = modifier,
     )

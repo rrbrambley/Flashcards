@@ -110,6 +110,19 @@ class EditDeckViewModel @Inject constructor(
         nextDraftCardId++
     }
 
+    fun removeCard(cardId: Long) {
+        if (!_uiState.value.isEditable) return
+        _uiState.update { state ->
+            val updatedCards = state.cards.filterNot { it.id == cardId }
+            state.copy(
+                cards = updatedCards,
+                isDirty = isDirty(deckTitle = state.deckTitle, cards = updatedCards),
+                showValidationErrors = false,
+                deckSaved = false,
+            )
+        }
+    }
+
     fun finishDeckEditing() {
         val currentDeckId = deckId ?: return
         val currentState = _uiState.value

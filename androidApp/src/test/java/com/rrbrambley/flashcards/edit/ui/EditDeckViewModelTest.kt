@@ -95,6 +95,33 @@ class EditDeckViewModelTest {
     }
 
     @Test
+    fun removeCard_removesTheCardAndMarksDirty() = runTest(testDispatcher) {
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.removeCard(1L)
+
+        assertEquals(
+            listOf(DeckFlashcardDraft(id = 2L, term = "Gracias", definition = "Thank you")),
+            viewModel.uiState.value.cards,
+        )
+        assertTrue(viewModel.uiState.value.isDirty)
+    }
+
+    @Test
+    fun removeCard_onReadOnlyDeck_isIgnored() = runTest(testDispatcher) {
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck(editable = false)), NoOpImageUploader)
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        val cardsBefore = viewModel.uiState.value.cards
+
+        viewModel.removeCard(1L)
+
+        assertEquals(cardsBefore, viewModel.uiState.value.cards)
+    }
+
+    @Test
     fun finishDeckEditing_withInvalidDeck_showsValidationErrors() = runTest(testDispatcher) {
         val repository = FakeFlashcardRepository(testDeck())
         val viewModel = EditDeckViewModel(repository, NoOpImageUploader)
@@ -137,13 +164,14 @@ class EditDeckViewModelTest {
         assertFalse(viewModel.uiState.value.isDirty)
     }
 
-    private fun testDeck(): FlashcardDeck = FlashcardDeck(
+    private fun testDeck(editable: Boolean = true): FlashcardDeck = FlashcardDeck(
         id = 42L,
         title = "Spanish basics",
         flashcards = listOf(
             Flashcard(question = "Hola", answer = "Hello"),
             Flashcard(question = "Gracias", answer = "Thank you"),
         ),
+        isEditable = editable,
     )
 
     private class FakeFlashcardRepository(

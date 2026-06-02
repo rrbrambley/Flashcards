@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -77,6 +78,7 @@ fun CreateDeckScreen(
         onDefinitionChange = createDeckViewModel::onDefinitionChange,
         onImageSelected = createDeckViewModel::onImagePicked,
         onRemoveImage = createDeckViewModel::onRemoveImage,
+        onRemoveCard = createDeckViewModel::removeCard,
         modifier = modifier,
     )
 }
@@ -94,6 +96,7 @@ fun CreateDeckContent(
     onDefinitionChange: (Long, String) -> Unit,
     onImageSelected: (Long, Uri) -> Unit,
     onRemoveImage: (Long) -> Unit,
+    onRemoveCard: (Long) -> Unit = {},
     editable: Boolean = true,
 ) {
     val completeCardCount = cards.count { it.isComplete() }
@@ -184,10 +187,13 @@ fun CreateDeckContent(
                 card = card,
                 showValidationErrors = showValidationErrors,
                 editable = editable,
+                // Keep at least one card row; the trash affordance appears once there's more than one.
+                canRemove = editable && cards.size > 1,
                 onTermChange = onTermChange,
                 onDefinitionChange = onDefinitionChange,
                 onImageSelected = onImageSelected,
                 onRemoveImage = onRemoveImage,
+                onRemoveCard = onRemoveCard,
             )
         }
     }
@@ -202,8 +208,10 @@ private fun FlashcardDraftCard(
     onDefinitionChange: (Long, String) -> Unit,
     onImageSelected: (Long, Uri) -> Unit,
     onRemoveImage: (Long) -> Unit,
+    onRemoveCard: (Long) -> Unit,
     modifier: Modifier = Modifier,
     editable: Boolean = true,
+    canRemove: Boolean = false,
 ) {
     val started = card.isStarted()
     // Term is only required when there's no image.
@@ -238,18 +246,29 @@ private fun FlashcardDraftCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                 )
-                when {
-                    card.uploading -> CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                    card.imageUrl == null && editable -> IconButton(
-                        onClick = {
-                            pickImage.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
-                            )
-                        },
-                    ) {
-                        Icon(Icons.Default.Image, contentDescription = "Add image")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    when {
+                        card.uploading -> CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        card.imageUrl == null && editable -> IconButton(
+                            onClick = {
+                                pickImage.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
+                                )
+                            },
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = "Add image")
+                        }
+                        else -> Unit
                     }
-                    else -> Unit
+                    if (canRemove) {
+                        IconButton(onClick = { onRemoveCard(card.id) }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Remove card $cardNumber",
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
                 }
             }
 
@@ -324,6 +343,7 @@ private fun CreateDeckScreenPreview() {
             onDefinitionChange = { _, _ -> },
             onImageSelected = { _, _ -> },
             onRemoveImage = {},
+            onRemoveCard = {},
         )
     }
 }
