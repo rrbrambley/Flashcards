@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.di
 
+import com.rrbrambley.flashcards.data.auth.DataStoreTokenStore
+import com.rrbrambley.flashcards.data.auth.TokenStore
 import com.rrbrambley.flashcards.data.image.AndroidImageUploader
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
@@ -28,4 +30,7 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindImageUploader(uploader: AndroidImageUploader): ImageUploader
+
+    @Binds
+    abstract fun bindTokenStore(store: DataStoreTokenStore): TokenStore
 }
