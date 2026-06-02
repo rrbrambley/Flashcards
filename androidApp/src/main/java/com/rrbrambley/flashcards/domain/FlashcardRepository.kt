@@ -9,4 +9,5 @@ interface FlashcardRepository {
     fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?>
     suspend fun saveFlashcardDeck(deck: FlashcardDeck)
     suspend fun updateFlashcardDeck(deck: FlashcardDeck)
+    suspend fun deleteFlashcardDeck(deckId: Long)
 }

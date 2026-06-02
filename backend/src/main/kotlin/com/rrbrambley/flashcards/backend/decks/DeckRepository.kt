@@ -62,6 +62,19 @@ object DeckRepository {
         FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards)
     }
 
+    /**
+     * Only the deck's owner may delete it; the global catalog deck (NULL owner) is undeletable.
+     * The DB cascades the delete to the deck's flashcards and any practice sessions.
+     */
+    suspend fun deleteDeck(userId: Long, deckId: Long): Unit = dbQuery {
+        val owned = Decks.selectAll()
+            .where { (Decks.id eq deckId) and (Decks.ownerUserId eq userId) }
+            .any()
+        if (!owned) throw NotFoundException("Deck $deckId not found")
+
+        Decks.deleteWhere { Decks.id eq deckId }
+    }
+
     private fun insertFlashcards(deckId: Long, cards: List<FlashcardDto>) {
         cards.forEachIndexed { index, card ->
             Flashcards.insert {

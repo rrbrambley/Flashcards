@@ -90,9 +90,25 @@ class LibraryViewModelTest {
         assertEquals(42L, startedSessionId)
     }
 
+    @Test
+    fun deleteDeck_delegatesToRepository() = runTest(testDispatcher) {
+        val flashcardRepository = FakeFlashcardRepository(emptyList())
+        val viewModel = LibraryViewModel(
+            flashcardRepository = flashcardRepository,
+            practiceSessionRepository = FakePracticeSessionRepository(),
+        )
+
+        viewModel.deleteDeck(deckId = 5L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(5L, flashcardRepository.deletedDeckId)
+    }
+
     private class FakeFlashcardRepository(
         private val decks: List<FlashcardDeck>,
     ) : FlashcardRepository {
+        var deletedDeckId: Long? = null
+
         override suspend fun getFlashcards(): Flow<List<Flashcard>> = flowOf(emptyList())
 
         override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(decks)
@@ -102,6 +118,10 @@ class LibraryViewModelTest {
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
 
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
+
+        override suspend fun deleteFlashcardDeck(deckId: Long) {
+            deletedDeckId = deckId
+        }
     }
 
     private class FakePracticeSessionRepository(

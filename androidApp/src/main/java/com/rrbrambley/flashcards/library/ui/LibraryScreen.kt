@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,6 +50,7 @@ fun LibraryScreen(
 ) {
     val uiState by libraryViewModel.uiState.collectAsState()
     var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
+    var deckPendingDeletion by remember { mutableStateOf<FlashcardDeck?>(null) }
 
     selectedDeck?.let { deck ->
         LibraryDeckActionsSheet(
@@ -60,6 +64,21 @@ fun LibraryScreen(
                 selectedDeck = null
                 onEditDeck(deck)
             },
+            onDeleteClick = {
+                selectedDeck = null
+                deckPendingDeletion = deck
+            },
+        )
+    }
+
+    deckPendingDeletion?.let { deck ->
+        DeleteDeckConfirmationDialog(
+            deck = deck,
+            onConfirm = {
+                libraryViewModel.deleteDeck(deck.id)
+                deckPendingDeletion = null
+            },
+            onDismiss = { deckPendingDeletion = null },
         )
     }
 
@@ -192,6 +211,7 @@ private fun LibraryDeckActionsSheet(
     onDismissRequest: () -> Unit,
     onPracticeClick: () -> Unit,
     onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit,
 ) {
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
         Column(
@@ -224,8 +244,46 @@ private fun LibraryDeckActionsSheet(
             ) {
                 Text("Edit deck")
             }
+            // Delete only applies to decks the user owns; the global catalog deck is undeletable.
+            if (deck.isEditable) {
+                OutlinedButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
+                    Text("Delete deck")
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun DeleteDeckConfirmationDialog(
+    deck: FlashcardDeck,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete deck?") },
+        text = { Text("\"${deck.title}\" and its cards will be permanently deleted. This can't be undone.") },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Text("Delete")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    )
 }
 
 @Preview(showBackground = true)

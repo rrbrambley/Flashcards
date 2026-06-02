@@ -150,6 +150,7 @@ export const api = {
     request<FlashcardDeckDto>('/decks', { method: 'POST', body: deck, auth: true }),
   updateDeck: (id: number, deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>(`/decks/${id}`, { method: 'PUT', body: deck, auth: true }),
+  deleteDeck: (id: number) => request<void>(`/decks/${id}`, { method: 'DELETE', auth: true }),
 
   // Practice sessions
   createSession: (deckId: number) =>

@@ -99,6 +99,27 @@ class FlashcardsRepositoryTest {
     }
 
     @Test
+    fun deleteFlashcardDeck_deletesRemotelyThenEvictsFromTheCache() = runWithDao { dao ->
+        // Seed the cache with a deck, then delete it.
+        dao.cacheDeck(FlashcardDeckEntity(id = 3L, title = "Temp"), listOf(FlashcardEntity(deckId = 3L, question = "Q", answer = "A")))
+        var deleteCalled = false
+        val engine = MockEngine { request ->
+            if (request.method == HttpMethod.Delete && request.url.encodedPath == "/decks/3") {
+                deleteCalled = true
+                respond("", HttpStatusCode.NoContent)
+            } else {
+                respond("not found", HttpStatusCode.NotFound)
+            }
+        }
+        val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
+
+        repository.deleteFlashcardDeck(3L)
+
+        assertTrue(deleteCalled)
+        assertTrue(dao.observeDecks().first().isEmpty())
+    }
+
+    @Test
     fun getFlashcards_prefersTheCountryFlagsDeck() = runWithDao { dao ->
         val engine = mockEngine(
             HttpMethod.Get to "/decks" to json(
@@ -188,6 +209,12 @@ class FlashcardsRepositoryTest {
         }
 
         override suspend fun deleteFlashcardsForDeck(deckId: Long) {
+            cards.removeAll { it.deckId == deckId }
+            publish()
+        }
+
+        override suspend fun deleteDeck(deckId: Long) {
+            decks.remove(deckId)
             cards.removeAll { it.deckId == deckId }
             publish()
         }
