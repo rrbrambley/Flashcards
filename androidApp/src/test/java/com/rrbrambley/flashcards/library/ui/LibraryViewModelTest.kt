@@ -9,7 +9,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -104,8 +106,27 @@ class LibraryViewModelTest {
         assertEquals(5L, flashcardRepository.deletedDeckId)
     }
 
+    @Test
+    fun deleteDeck_whenItFails_emitsAUserMessage() = runTest(testDispatcher) {
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(emptyList(), deleteShouldFail = true),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+        )
+        val messages = mutableListOf<String>()
+        // Unconfined so the collector subscribes eagerly (before we emit) — SharedFlow has no replay.
+        backgroundScope.launch(UnconfinedTestDispatcher(testDispatcher.scheduler)) {
+            viewModel.userMessages.collect { messages.add(it) }
+        }
+
+        viewModel.deleteDeck(deckId = 5L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, messages.size)
+    }
+
     private class FakeFlashcardRepository(
         private val decks: List<FlashcardDeck>,
+        private val deleteShouldFail: Boolean = false,
     ) : FlashcardRepository {
         var deletedDeckId: Long? = null
 
@@ -120,6 +141,7 @@ class LibraryViewModelTest {
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
 
         override suspend fun deleteFlashcardDeck(deckId: Long) {
+            if (deleteShouldFail) throw RuntimeException("delete failed")
             deletedDeckId = deckId
         }
     }

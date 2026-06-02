@@ -61,6 +61,24 @@ class TokenRefreshAuthTest {
     }
 
     @Test
+    fun clearsTokensWhenThereIsNoRefreshToken() = runTest {
+        val store = FakeTokenStore()
+        store.setToken("stale-access") // an access token but no refresh token to recover with
+
+        val engine = MockEngine {
+            respond("""{"error":"unauthorized"}""", HttpStatusCode.Unauthorized, unauthorizedHeaders)
+        }
+        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, refreshUrl) }
+
+        val thrown = runCatching { client.get("http://localhost/decks") }.exceptionOrNull()
+
+        assertTrue(thrown is ClientRequestException)
+        // No refresh possible → tokens cleared so the app gates back to sign-in.
+        assertNull(store.currentToken())
+        assertNull(store.currentRefreshToken())
+    }
+
+    @Test
     fun clearsTokensWhenRefreshIsRejected() = runTest {
         val store = FakeTokenStore()
         store.setTokens("expired-access", "revoked-refresh")

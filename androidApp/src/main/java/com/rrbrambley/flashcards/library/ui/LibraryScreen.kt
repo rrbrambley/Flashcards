@@ -20,9 +20,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -82,14 +85,21 @@ fun LibraryScreen(
         )
     }
 
-    when (val state = uiState) {
-        LibraryUiState.Loading -> LibraryLoadingIndicator(modifier = modifier)
-        LibraryUiState.LoadingFailed -> LibraryErrorMessage(modifier = modifier)
-        is LibraryUiState.ShowDecks -> LibraryContent(
-            decks = state.decks,
-            onDeckClick = { selectedDeck = it },
-            modifier = modifier,
-        )
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        libraryViewModel.userMessages.collect { snackbarHostState.showSnackbar(it) }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        when (val state = uiState) {
+            LibraryUiState.Loading -> LibraryLoadingIndicator()
+            LibraryUiState.LoadingFailed -> LibraryErrorMessage()
+            is LibraryUiState.ShowDecks -> LibraryContent(
+                decks = state.decks,
+                onDeckClick = { selectedDeck = it },
+            )
+        }
+        SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
 
