@@ -178,13 +178,20 @@ class AuthViewModelTest {
 
     private class FakeTokenStore : TokenStore {
         private val tokens = MutableStateFlow<String?>(null)
+        private var refreshToken: String? = null
         override fun tokenFlow(): Flow<String?> = tokens
         override suspend fun currentToken(): String? = tokens.value
+        override suspend fun currentRefreshToken(): String? = refreshToken
         override suspend fun setToken(token: String) {
             tokens.value = token
         }
+        override suspend fun setTokens(accessToken: String, refreshToken: String) {
+            tokens.value = accessToken
+            this.refreshToken = refreshToken
+        }
         override suspend fun clearToken() {
             tokens.value = null
+            refreshToken = null
         }
     }
 }

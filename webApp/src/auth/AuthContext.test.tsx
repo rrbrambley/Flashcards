@@ -8,6 +8,7 @@ import { getToken } from './token';
 
 vi.mock('../api/client', () => ({
   api: { login: vi.fn(), register: vi.fn(), googleSignIn: vi.fn(), logout: vi.fn(() => Promise.resolve()) },
+  setUnauthorizedHandler: vi.fn(),
 }));
 
 function Consumer() {
@@ -37,7 +38,7 @@ describe('AuthProvider / useAuth', () => {
   });
 
   it('login persists the returned token to context and storage', async () => {
-    vi.mocked(api.login).mockResolvedValue({ token: 'tok', userId: 1 });
+    vi.mocked(api.login).mockResolvedValue({ accessToken: 'tok', refreshToken: 'r', userId: 1 });
     render(
       <AuthProvider>
         <Consumer />
@@ -52,7 +53,7 @@ describe('AuthProvider / useAuth', () => {
   });
 
   it('signOut clears the token', async () => {
-    vi.mocked(api.login).mockResolvedValue({ token: 'tok', userId: 1 });
+    vi.mocked(api.login).mockResolvedValue({ accessToken: 'tok', refreshToken: 'r', userId: 1 });
     render(
       <AuthProvider>
         <Consumer />

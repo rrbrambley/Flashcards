@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.auth)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)

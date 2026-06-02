@@ -22,12 +22,16 @@ class AuthRepositoryTest {
     @Test
     fun register_success_persistsTokenAndReturnsSuccess() = runTest {
         val tokenStore = FakeTokenStore()
-        val repository = repository(tokenStore, jsonEngine(HttpStatusCode.OK, """{"token":"tok-123","userId":1}"""))
+        val repository = repository(
+            tokenStore,
+            jsonEngine(HttpStatusCode.OK, """{"accessToken":"tok-123","refreshToken":"ref-123","userId":1}"""),
+        )
 
         val outcome = repository.register("a@b.com", "pw123456")
 
         assertEquals(AuthOutcome.Success, outcome)
         assertEquals("tok-123", tokenStore.currentToken())
+        assertEquals("ref-123", tokenStore.currentRefreshToken())
     }
 
     @Test
@@ -54,10 +58,13 @@ class AuthRepositoryTest {
     @Test
     fun login_success_persistsToken() = runTest {
         val tokenStore = FakeTokenStore()
-        val outcome = repository(tokenStore, jsonEngine(HttpStatusCode.OK, """{"token":"abc","userId":2}"""))
-            .login("a@b.com", "pw123456")
+        val outcome = repository(
+            tokenStore,
+            jsonEngine(HttpStatusCode.OK, """{"accessToken":"abc","refreshToken":"ref","userId":2}"""),
+        ).login("a@b.com", "pw123456")
         assertEquals(AuthOutcome.Success, outcome)
         assertEquals("abc", tokenStore.currentToken())
+        assertEquals("ref", tokenStore.currentRefreshToken())
     }
 
     @Test
@@ -96,30 +103,36 @@ class AuthRepositoryTest {
     }
 
     @Test
-    fun logout_revokesServerSideAndClearsToken() = runTest {
+    fun logout_revokesServerSideAndClearsTokens() = runTest {
         val tokenStore = FakeTokenStore()
-        tokenStore.setToken("tok")
-        val fetched = mutableListOf<String>()
+        tokenStore.setTokens("tok", "ref")
+        val requests = mutableListOf<String>()
+        val bodies = mutableListOf<String>()
         val engine = MockEngine { request ->
-            fetched += "${request.method.value} ${request.url.encodedPath}"
+            requests += "${request.method.value} ${request.url.encodedPath}"
+            bodies += (request.body as? io.ktor.http.content.TextContent)?.text.orEmpty()
             respond("", HttpStatusCode.NoContent)
         }
 
         repository(tokenStore, engine).logout()
 
         assertNull(tokenStore.currentToken())
-        assertTrue(fetched.contains("POST /auth/logout"))
+        assertNull(tokenStore.currentRefreshToken())
+        assertTrue(requests.contains("POST /auth/logout"))
+        // The refresh token is the one revoked server-side.
+        assertTrue(bodies.any { it.contains("ref") })
     }
 
     @Test
-    fun logout_clearsTokenEvenWhenRevokeFails() = runTest {
+    fun logout_clearsTokensEvenWhenRevokeFails() = runTest {
         val tokenStore = FakeTokenStore()
-        tokenStore.setToken("tok")
+        tokenStore.setTokens("tok", "ref")
         val offline = MockEngine { throw IOException("offline") }
 
         repository(tokenStore, offline).logout()
 
         assertNull(tokenStore.currentToken())
+        assertNull(tokenStore.currentRefreshToken())
     }
 
     // --- Helpers ---
@@ -140,13 +153,20 @@ class AuthRepositoryTest {
 
     private class FakeTokenStore : TokenStore {
         private val tokens = MutableStateFlow<String?>(null)
+        private var refreshToken: String? = null
         override fun tokenFlow(): Flow<String?> = tokens
         override suspend fun currentToken(): String? = tokens.value
+        override suspend fun currentRefreshToken(): String? = refreshToken
         override suspend fun setToken(token: String) {
             tokens.value = token
         }
+        override suspend fun setTokens(accessToken: String, refreshToken: String) {
+            tokens.value = accessToken
+            this.refreshToken = refreshToken
+        }
         override suspend fun clearToken() {
             tokens.value = null
+            refreshToken = null
         }
     }
 

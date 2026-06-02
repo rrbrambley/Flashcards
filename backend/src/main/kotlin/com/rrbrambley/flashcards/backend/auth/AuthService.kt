@@ -1,12 +1,15 @@
 package com.rrbrambley.flashcards.backend.auth
 
-import com.rrbrambley.flashcards.backend.db.AuthTokens
+import com.rrbrambley.flashcards.backend.db.RefreshTokens
 import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.ConflictException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
 import com.rrbrambley.flashcards.shared.api.AuthResponse
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
@@ -28,7 +31,7 @@ object AuthService {
             it[passwordHash] = Passwords.hash(password)
             it[createdAtMillis] = now
         }.value
-        AuthResponse(token = mintToken(userId, now), userId = userId)
+        issueTokens(userId, now)
     }
 
     suspend fun login(email: String, password: String): AuthResponse = dbQuery {
@@ -39,8 +42,7 @@ object AuthService {
         if (!Passwords.verify(password, hash)) {
             throw UnauthorizedException("Invalid email or password")
         }
-        val userId = row[Users.id].value
-        AuthResponse(token = mintToken(userId, System.currentTimeMillis()), userId = userId)
+        issueTokens(row[Users.id].value, System.currentTimeMillis())
     }
 
     /** Find-or-create by verified Google email (links googleSub onto an existing account). */
@@ -60,35 +62,62 @@ object AuthService {
                 it[createdAtMillis] = now
             }.value
         }
-        AuthResponse(token = mintToken(userId, now), userId = userId)
+        issueTokens(userId, now)
     }
 
-    /** Resolves a bearer token to its user id, or null if unknown. */
-    suspend fun resolveUser(token: String): Long? = dbQuery {
-        AuthTokens.selectAll()
-            .where { AuthTokens.token eq token }
+    /**
+     * Exchanges a valid, non-revoked, non-expired refresh token for a fresh access token.
+     * The refresh token itself is returned unchanged (no rotation in this pass — see FLA-6).
+     * Throws [UnauthorizedException] if the refresh token is unknown or expired.
+     */
+    suspend fun refresh(refreshToken: String): AuthResponse = dbQuery {
+        val now = System.currentTimeMillis()
+        val userId = RefreshTokens
+            .selectAll()
+            .where { (RefreshTokens.token eq refreshToken) and (RefreshTokens.expiresAtMillis greater now) }
             .firstOrNull()
-            ?.get(AuthTokens.userId)
+            ?.get(RefreshTokens.userId)
             ?.value
+            ?: throw UnauthorizedException("Invalid or expired refresh token")
+        AuthResponse(
+            accessToken = TokenService.generateAccessToken(userId),
+            refreshToken = refreshToken,
+            userId = userId,
+        )
     }
 
-    /** Revokes (deletes) a bearer token so it can no longer authenticate. */
-    suspend fun revokeToken(token: String) {
-        dbQuery { AuthTokens.deleteWhere { AuthTokens.token eq token } }
-    }
-
-    /** Must be called inside an active transaction (callers run within dbQuery). */
-    private fun mintToken(userId: Long, now: Long): String {
-        val token = generateToken()
-        AuthTokens.insert {
-            it[AuthTokens.token] = token
-            it[AuthTokens.userId] = userId
-            it[createdAtMillis] = now
+    /**
+     * Revokes a refresh token so the session can no longer be refreshed (logout).
+     * Scoped to [userId] so a caller can only revoke its own session.
+     */
+    suspend fun revokeRefreshToken(refreshToken: String, userId: Long) {
+        dbQuery {
+            RefreshTokens.deleteWhere { (token eq refreshToken) and (RefreshTokens.userId eq userId) }
         }
-        return token
     }
 
-    private fun generateToken(): String {
+    /** Deletes expired refresh-token rows. Safe to call periodically; returns the number removed. */
+    suspend fun pruneExpiredRefreshTokens(now: Long = System.currentTimeMillis()): Int = dbQuery {
+        RefreshTokens.deleteWhere { expiresAtMillis less now }
+    }
+
+    /** Mints an access-token JWT plus a stored, opaque refresh token. Runs inside a transaction. */
+    private fun issueTokens(userId: Long, now: Long): AuthResponse {
+        val refreshToken = generateOpaqueToken()
+        RefreshTokens.insert {
+            it[token] = refreshToken
+            it[RefreshTokens.userId] = userId
+            it[createdAtMillis] = now
+            it[expiresAtMillis] = now + TokenService.refreshTtlMillis
+        }
+        return AuthResponse(
+            accessToken = TokenService.generateAccessToken(userId),
+            refreshToken = refreshToken,
+            userId = userId,
+        )
+    }
+
+    private fun generateOpaqueToken(): String {
         val bytes = ByteArray(32)
         secureRandom.nextBytes(bytes)
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)

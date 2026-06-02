@@ -4,9 +4,11 @@ import com.rrbrambley.flashcards.backend.error.ServiceUnavailableException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
 import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.LoginRequest
+import com.rrbrambley.flashcards.shared.api.LogoutRequest
+import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
@@ -39,19 +41,21 @@ fun Route.authRoutes() {
             }
             call.respond(AuthService.signInWithGoogle(identity.email, identity.sub))
         }
+        // Public: an expired access token can't authenticate, so refresh is exchanged by token alone.
+        post("/refresh") {
+            val request = call.receive<RefreshRequest>()
+            call.respond(AuthService.refresh(request.refreshToken))
+        }
     }
 }
 
-/** Authenticated: revokes the caller's bearer token. Registered inside the bearer-auth block. */
+/** Authenticated: revokes the caller's refresh token so the session can't be refreshed. */
 fun Route.logoutRoute() {
     route("/auth") {
         post("/logout") {
-            val token = call.request.headers[HttpHeaders.Authorization]
-                ?.removePrefix("Bearer ")
-                ?.trim()
-            if (!token.isNullOrBlank()) {
-                AuthService.revokeToken(token)
-            }
+            val userId = call.principal<UserPrincipal>()!!.userId
+            val request = call.receive<LogoutRequest>()
+            AuthService.revokeRefreshToken(request.refreshToken, userId)
             call.respond(HttpStatusCode.NoContent)
         }
     }

@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.di
 
 import com.rrbrambley.flashcards.BuildConfig
 import com.rrbrambley.flashcards.data.auth.TokenStore
+import com.rrbrambley.flashcards.data.auth.installTokenRefreshAuth
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import dagger.Module
@@ -18,16 +19,17 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideHttpClient(): HttpClient = createFlashcardHttpClient(OkHttp.create())
+    fun provideHttpClient(tokenStore: TokenStore): HttpClient =
+        createFlashcardHttpClient(OkHttp.create()) {
+            installTokenRefreshAuth(tokenStore, "${BuildConfig.BACKEND_BASE_URL.trimEnd('/')}/auth/refresh")
+        }
 
     @Provides
     @Singleton
-    fun provideFlashcardApiClient(
-        httpClient: HttpClient,
-        tokenStore: TokenStore,
-    ): FlashcardApiClient = FlashcardApiClient(
+    fun provideFlashcardApiClient(httpClient: HttpClient): FlashcardApiClient = FlashcardApiClient(
         client = httpClient,
         baseUrl = BuildConfig.BACKEND_BASE_URL,
-        tokenProvider = { tokenStore.currentToken() },
+        // The Auth plugin (above) owns the bearer header, so the client adds none itself.
+        tokenProvider = { null },
     )
 }
