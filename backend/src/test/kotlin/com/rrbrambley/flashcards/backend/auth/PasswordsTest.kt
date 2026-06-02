@@ -28,7 +28,10 @@ class PasswordsTest {
     @Test
     fun verify_rejectsATamperedHash() {
         val hash = Passwords.hash("password")
-        val tampered = hash.dropLast(1) + if (hash.last() == 'a') 'b' else 'a'
+        // Flip a character mid-hash. (Not the final base64 char: bcrypt leaves a few
+        // unused low bits there, so tampering only it can still verify.)
+        val idx = hash.length / 2
+        val tampered = hash.replaceRange(idx, idx + 1, if (hash[idx] == 'a') "b" else "a")
         assertFalse(Passwords.verify("password", tampered))
     }
 
