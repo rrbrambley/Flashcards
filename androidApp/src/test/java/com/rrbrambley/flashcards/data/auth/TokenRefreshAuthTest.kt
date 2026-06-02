@@ -1,9 +1,9 @@
 package com.rrbrambley.flashcards.data.auth
 
+import com.rrbrambley.flashcards.shared.api.ApiError
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.request.get
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -72,7 +72,7 @@ class TokenRefreshAuthTest {
 
         val thrown = runCatching { client.get("http://localhost/decks") }.exceptionOrNull()
 
-        assertTrue(thrown is ClientRequestException)
+        assertTrue(thrown is ApiError.Unauthorized)
         // No refresh possible → tokens cleared so the app gates back to sign-in.
         assertNull(store.currentToken())
         assertNull(store.currentRefreshToken())
@@ -91,7 +91,7 @@ class TokenRefreshAuthTest {
 
         // The original request still fails (expectSuccess throws on the final 401)...
         val thrown = runCatching { client.get("http://localhost/decks") }.exceptionOrNull()
-        assertTrue(thrown is ClientRequestException)
+        assertTrue(thrown is ApiError.Unauthorized)
         // ...and the session is ended locally so the app gates back to sign-in.
         assertNull(store.currentToken())
         assertNull(store.currentRefreshToken())
