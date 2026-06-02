@@ -41,6 +41,11 @@ class FlashcardApiClient(
         jsonBody(request)
     }.body()
 
+    /** Revokes the current bearer token server-side. */
+    suspend fun logout() {
+        client.post(url("/auth/logout")) { auth() }
+    }
+
     // --- Images ---
     /** Uploads an image and returns its public (CDN) URL to store as a flashcard's imageUrl. */
     suspend fun uploadImage(bytes: ByteArray, filename: String, contentType: String): ImageUploadResponse =

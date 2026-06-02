@@ -68,6 +68,7 @@ export const api = {
     request<AuthResponse>('/auth/login', { method: 'POST', body: { email, password } }),
   googleSignIn: (idToken: string) =>
     request<AuthResponse>('/auth/google', { method: 'POST', body: { idToken } }),
+  logout: () => request<void>('/auth/logout', { method: 'POST', auth: true }),
   getDecks: () => request<FlashcardDeckDto[]>('/decks', { auth: true }),
   getDeck: (id: number) => request<FlashcardDeckDto>(`/decks/${id}`, { auth: true }),
   createDeck: (deck: CreateDeckRequest) =>

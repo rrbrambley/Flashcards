@@ -17,6 +17,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register: async (email, password) => persist((await api.register(email, password)).token),
     googleSignIn: async (idToken) => persist((await api.googleSignIn(idToken)).token),
     signOut: () => {
+      // Best-effort server-side revoke (request() reads the token before we clear it);
+      // the local token is always cleared so logout works even if the call fails.
+      void api.logout().catch(() => {});
       clearToken();
       setTokenState(null);
     },

@@ -6,6 +6,8 @@ import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.ConflictException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
 import com.rrbrambley.flashcards.shared.api.AuthResponse
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
@@ -68,6 +70,11 @@ object AuthService {
             .firstOrNull()
             ?.get(AuthTokens.userId)
             ?.value
+    }
+
+    /** Revokes (deletes) a bearer token so it can no longer authenticate. */
+    suspend fun revokeToken(token: String) {
+        dbQuery { AuthTokens.deleteWhere { AuthTokens.token eq token } }
     }
 
     /** Must be called inside an active transaction (callers run within dbQuery). */
