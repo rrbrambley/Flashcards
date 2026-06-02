@@ -8,6 +8,7 @@ import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -124,15 +125,38 @@ class LibraryViewModelTest {
         assertEquals(1, messages.size)
     }
 
+    @Test
+    fun retry_afterFailure_reloadsDecks() = runTest(testDispatcher) {
+        val decks = listOf(FlashcardDeck(id = 1L, title = "Spanish basics", flashcards = emptyList()))
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(decks, failFirstSubscription = true),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(LibraryUiState.LoadingFailed, viewModel.uiState.value)
+
+        viewModel.retry()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(LibraryUiState.ShowDecks(decks), viewModel.uiState.value)
+    }
+
     private class FakeFlashcardRepository(
         private val decks: List<FlashcardDeck>,
         private val deleteShouldFail: Boolean = false,
+        private var failFirstSubscription: Boolean = false,
     ) : FlashcardRepository {
         var deletedDeckId: Long? = null
 
         override suspend fun getFlashcards(): Flow<List<Flashcard>> = flowOf(emptyList())
 
-        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(decks)
+        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flow {
+            if (failFirstSubscription) {
+                failFirstSubscription = false
+                throw RuntimeException("deck load failed")
+            }
+            emit(decks)
+        }
 
         override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(decks.firstOrNull { it.id == deckId })
 

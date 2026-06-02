@@ -13,7 +13,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -30,27 +32,25 @@ import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.domain.HomeData
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     homeViewModel: HomeViewModel = hiltViewModel(),
     onButtonAction: (HomeButtonAction) -> Unit = {},
 ) {
     val uiState by homeViewModel.uiState.collectAsState()
+    val isRefreshing by homeViewModel.isRefreshing.collectAsState()
 
-    when (uiState) {
-        HomeUiState.Loading -> {
-            // Show loading indicator
-            LoadingIndicator()
-        }
-        HomeUiState.LoadingFailed -> {
-            // Show error message
-            ErrorMessage()
-        }
-        is HomeUiState.ShowHome -> {
-            val cards = (uiState as HomeUiState.ShowHome).cards
-            // Show home screen with cards
-            HomeScreenContent(
-                cards = cards,
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = homeViewModel::refresh,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        when (val state = uiState) {
+            HomeUiState.Loading -> LoadingIndicator()
+            HomeUiState.LoadingFailed -> ErrorMessage(onRetry = homeViewModel::retry)
+            is HomeUiState.ShowHome -> HomeScreenContent(
+                cards = state.cards,
                 onButtonAction = onButtonAction,
             )
         }
@@ -68,12 +68,20 @@ private fun LoadingIndicator() {
 }
 
 @Composable
-private fun ErrorMessage() {
+private fun ErrorMessage(onRetry: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = "Error loading home data")
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(text = "Couldn't load your home feed. Check your connection.")
+            Button(onClick = onRetry) {
+                Text("Retry")
+            }
+        }
     }
 }
 

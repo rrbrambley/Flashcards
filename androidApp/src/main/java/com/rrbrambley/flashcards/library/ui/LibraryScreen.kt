@@ -24,6 +24,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -86,18 +87,25 @@ fun LibraryScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val isRefreshing by libraryViewModel.isRefreshing.collectAsState()
     LaunchedEffect(Unit) {
         libraryViewModel.userMessages.collect { snackbarHostState.showSnackbar(it) }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        when (val state = uiState) {
-            LibraryUiState.Loading -> LibraryLoadingIndicator()
-            LibraryUiState.LoadingFailed -> LibraryErrorMessage()
-            is LibraryUiState.ShowDecks -> LibraryContent(
-                decks = state.decks,
-                onDeckClick = { selectedDeck = it },
-            )
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = libraryViewModel::refresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            when (val state = uiState) {
+                LibraryUiState.Loading -> LibraryLoadingIndicator()
+                LibraryUiState.LoadingFailed -> LibraryErrorMessage(onRetry = libraryViewModel::retry)
+                is LibraryUiState.ShowDecks -> LibraryContent(
+                    decks = state.decks,
+                    onDeckClick = { selectedDeck = it },
+                )
+            }
         }
         SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
@@ -114,12 +122,20 @@ private fun LibraryLoadingIndicator(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun LibraryErrorMessage(modifier: Modifier = Modifier) {
+private fun LibraryErrorMessage(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = "Error loading saved decks")
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(text = "Couldn't load your decks. Check your connection.")
+            Button(onClick = onRetry) {
+                Text("Retry")
+            }
+        }
     }
 }
 
