@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 export function BackHeader({ title }: { title: string }) {
   return (
     <header className="app-header">
-      <Link to="/" className="link-btn">
+      <Link to="/library" className="link-btn">
         ← Library
       </Link>
       <h1>{title}</h1>

@@ -57,3 +57,20 @@ export interface UpdateProgressRequest {
   numCorrect: number;
   numIncorrect: number;
 }
+
+// Home feed (GET /home). The action is a discriminated union mirroring the backend's
+// sealed HomeButtonActionDto (kotlinx default class discriminator: "type").
+export type HomeButtonAction =
+  | { type: 'navigate_to_practice' }
+  | { type: 'create_new_flashcard_set' }
+  | { type: 'continue_practice'; sessionId: number };
+
+export interface HomeButton {
+  message: string;
+  action: HomeButtonAction;
+}
+
+export interface HomeData {
+  title: string;
+  button?: HomeButton | null;
+}

@@ -13,7 +13,7 @@ export function CreateDeckPage() {
           submitLabel="Create deck"
           onSubmit={async (title, flashcards) => {
             await api.createDeck({ title, flashcards });
-            navigate('/');
+            navigate('/library');
           }}
         />
       </main>
