@@ -103,5 +103,4 @@ JVM unit tests in `androidApp/src/test` focus on ViewModels and repositories wit
 
 ## Notes
 
-- Planning docs for features live in `.firebender/plans/*.plan.md` — useful context for in-progress/recent work.
 - `androidApp`: `minSdk = 26`, `compileSdk/targetSdk = 36`, Java/JVM 11. `shared` matches (`compileSdk = 36`, `minSdk = 26`); `backend` is JVM toolchain 11. Kotlin 2.2.10, Ktor 3.2.x (pinned — newer Ktor/serialization versions break the Kotlin/Native 2.2.10 iOS klibs).
