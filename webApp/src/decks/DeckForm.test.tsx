@@ -2,10 +2,34 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DeckForm } from './DeckForm';
+import { api } from '../api/client';
 
 vi.mock('../api/client', () => ({ api: { uploadImage: vi.fn() } }));
 
 describe('DeckForm', () => {
+  it('rejects an oversized image client-side without calling the server', async () => {
+    const { container } = render(<DeckForm submitLabel="Create deck" onSubmit={vi.fn()} />);
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const big = new File(['x'], 'big.png', { type: 'image/png' });
+    Object.defineProperty(big, 'size', { value: 6 * 1024 * 1024 });
+
+    await userEvent.upload(input, big);
+
+    expect(api.uploadImage).not.toHaveBeenCalled();
+    expect(screen.getByText(/under 5 MB/i)).toBeInTheDocument();
+  });
+
+  it('shows a per-card error when the upload fails', async () => {
+    vi.mocked(api.uploadImage).mockRejectedValue(new Error('Image rejected'));
+    const { container } = render(<DeckForm submitLabel="Create deck" onSubmit={vi.fn()} />);
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File(['x'], 'img.png', { type: 'image/png' });
+
+    await userEvent.upload(input, file);
+
+    expect(await screen.findByText('Image rejected')).toBeInTheDocument();
+  });
+
   it('blocks an invalid submit and shows validation errors', async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     render(<DeckForm submitLabel="Create deck" onSubmit={onSubmit} />);

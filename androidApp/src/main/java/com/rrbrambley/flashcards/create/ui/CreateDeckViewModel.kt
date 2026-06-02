@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val MinimumCompleteCardCount = 1
+private const val IMAGE_UPLOAD_ERROR =
+    "Couldn't add the image. Use a JPEG, PNG, WebP or GIF under 5 MB and try again."
 
 @HiltViewModel
 class CreateDeckViewModel @Inject constructor(
@@ -42,11 +44,13 @@ class CreateDeckViewModel @Inject constructor(
     }
 
     fun onImagePicked(cardId: Long, uri: Uri) {
-        updateCard(cardId) { it.copy(uploading = true) }
+        updateCard(cardId) { it.copy(uploading = true, uploadError = null) }
         viewModelScope.launch {
             runCatching { imageUploader.upload(uri) }
-                .onSuccess { url -> updateCard(cardId) { it.copy(imageUrl = url, uploading = false) } }
-                .onFailure { updateCard(cardId) { it.copy(uploading = false) } }
+                .onSuccess { url ->
+                    updateCard(cardId) { it.copy(imageUrl = url, uploading = false, uploadError = null) }
+                }
+                .onFailure { updateCard(cardId) { it.copy(uploading = false, uploadError = IMAGE_UPLOAD_ERROR) } }
         }
     }
 

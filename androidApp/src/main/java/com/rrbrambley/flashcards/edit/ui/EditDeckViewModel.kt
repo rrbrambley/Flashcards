@@ -20,6 +20,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val MinimumCompleteCardCount = 1
+private const val IMAGE_UPLOAD_ERROR =
+    "Couldn't add the image. Use a JPEG, PNG, WebP or GIF under 5 MB and try again."
 
 @HiltViewModel
 class EditDeckViewModel @Inject constructor(
@@ -85,11 +87,13 @@ class EditDeckViewModel @Inject constructor(
     }
 
     fun onImagePicked(cardId: Long, uri: Uri) {
-        updateCard(cardId) { it.copy(uploading = true) }
+        updateCard(cardId) { it.copy(uploading = true, uploadError = null) }
         viewModelScope.launch {
             runCatching { imageUploader.upload(uri) }
-                .onSuccess { url -> updateCard(cardId) { it.copy(imageUrl = url, uploading = false) } }
-                .onFailure { updateCard(cardId) { it.copy(uploading = false) } }
+                .onSuccess { url ->
+                    updateCard(cardId) { it.copy(imageUrl = url, uploading = false, uploadError = null) }
+                }
+                .onFailure { updateCard(cardId) { it.copy(uploading = false, uploadError = IMAGE_UPLOAD_ERROR) } }
         }
     }
 
@@ -159,7 +163,7 @@ class EditDeckViewModel @Inject constructor(
 
             val snapshot = EditDeckFormSnapshot(
                 deckTitle = currentState.deckTitle,
-                cards = currentState.cards,
+                cards = currentState.cards.stableForDirtyCheck(),
             )
             initialSnapshot = snapshot
             _uiState.update {
@@ -195,8 +199,12 @@ class EditDeckViewModel @Inject constructor(
 
     private fun isDirty(deckTitle: String, cards: List<DeckFlashcardDraft>): Boolean {
         val snapshot = initialSnapshot ?: return false
-        return snapshot != EditDeckFormSnapshot(deckTitle = deckTitle, cards = cards)
+        return snapshot != EditDeckFormSnapshot(deckTitle = deckTitle, cards = cards.stableForDirtyCheck())
     }
+
+    /** Drops transient per-card UI state (upload progress/errors) so it can't mark the form dirty. */
+    private fun List<DeckFlashcardDraft>.stableForDirtyCheck(): List<DeckFlashcardDraft> =
+        map { it.copy(uploading = false, uploadError = null) }
 
     private fun FlashcardDeck.toDrafts(): List<DeckFlashcardDraft> = flashcards.mapIndexed { index, flashcard ->
         DeckFlashcardDraft(

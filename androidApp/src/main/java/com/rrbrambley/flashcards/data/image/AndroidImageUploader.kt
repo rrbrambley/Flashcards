@@ -14,11 +14,18 @@ class AndroidImageUploader @Inject constructor(
     private val apiClient: FlashcardApiClient,
 ) : ImageUploader {
     override suspend fun upload(uri: Uri): String {
+        val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
+        require(mime in ALLOWED_TYPES) { "Unsupported image type" }
         val bytes = withContext(Dispatchers.IO) {
             context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
         } ?: error("Could not read the selected image")
-        val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
+        require(bytes.size <= MAX_IMAGE_BYTES) { "Image is too large" }
         val filename = "image.${mime.substringAfterLast('/')}"
         return apiClient.uploadImage(bytes, filename, mime).url
+    }
+
+    private companion object {
+        const val MAX_IMAGE_BYTES = 5 * 1024 * 1024
+        val ALLOWED_TYPES = setOf("image/jpeg", "image/png", "image/webp", "image/gif")
     }
 }
