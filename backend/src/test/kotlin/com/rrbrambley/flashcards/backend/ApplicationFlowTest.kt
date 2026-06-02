@@ -101,14 +101,14 @@ class ApplicationFlowTest {
 
     @Test
     fun register_then_login_issue_tokens() = runApp { client ->
-        val registered = client.register("alice", "s3cret")
+        val registered = client.register("alice", "s3cretpw1")
         assertTrue(registered.accessToken.isNotBlank())
         assertTrue(registered.refreshToken.isNotBlank())
         assertNotEquals(registered.accessToken, registered.refreshToken)
 
         val loginResponse = client.post("/auth/login") {
             contentType(ContentType.Application.Json)
-            setBody(json.encodeToString(LoginRequest(emailFor("alice"), "s3cret")))
+            setBody(json.encodeToString(LoginRequest(emailFor("alice"), "s3cretpw1")))
         }
         assertEquals(HttpStatusCode.OK, loginResponse.status)
         val loggedIn = loginResponse.decode<AuthResponse>()
@@ -119,7 +119,7 @@ class ApplicationFlowTest {
 
     @Test
     fun login_with_bad_password_is_unauthorized() = runApp { client ->
-        client.register("bob", "correct")
+        client.register("bob", "correctpw")
         val response = client.post("/auth/login") {
             contentType(ContentType.Application.Json)
             setBody(json.encodeToString(LoginRequest(emailFor("bob"), "wrong")))
@@ -129,10 +129,10 @@ class ApplicationFlowTest {
 
     @Test
     fun duplicate_email_registration_is_conflict() = runApp { client ->
-        client.register("dupe", "pw")
+        client.register("dupe", "password1")
         val second = client.post("/auth/register") {
             contentType(ContentType.Application.Json)
-            setBody(json.encodeToString(RegisterRequest(emailFor("dupe"), "pw")))
+            setBody(json.encodeToString(RegisterRequest(emailFor("dupe"), "password1")))
         }
         assertEquals(HttpStatusCode.Conflict, second.status)
     }
@@ -145,6 +145,69 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(GoogleAuthRequest("any-token")))
         }
         assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+    }
+
+    @Test
+    fun register_with_invalid_email_is_bad_request() = runApp { client ->
+        val response = client.post("/auth/register") {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(RegisterRequest("not-an-email", "password1")))
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun register_with_short_password_is_bad_request() = runApp { client ->
+        val response = client.post("/auth/register") {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(RegisterRequest("shorty@example.com", "short")))
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun create_deck_with_blank_title_is_bad_request() = runApp { client ->
+        val auth = client.register("val1", "password1")
+        val response = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("   ", listOf(FlashcardDto("Q", "A")))))
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun create_deck_with_no_cards_is_bad_request() = runApp { client ->
+        val auth = client.register("val2", "password1")
+        val response = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("No cards", emptyList())))
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun create_deck_trims_the_title() = runApp { client ->
+        val auth = client.register("val3", "password1")
+        val deck = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("  Spaced  ", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        assertEquals("Spaced", deck.title)
+    }
+
+    @Test
+    fun oversized_request_body_is_rejected_with_413() = runApp { client ->
+        val auth = client.register("val4", "password1")
+        val huge = "x".repeat(6 * 1024 * 1024 + 1) // just over the 6 MB cap
+        val response = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest(huge, listOf(FlashcardDto("Q", "A")))))
+        }
+        assertEquals(HttpStatusCode.PayloadTooLarge, response.status)
     }
 
     @Test
@@ -163,7 +226,7 @@ class ApplicationFlowTest {
 
     @Test
     fun expired_access_token_is_rejected() = runApp { client ->
-        val auth = client.register("xavier", "pw")
+        val auth = client.register("xavier", "password1")
         // Sanity: a normal access token works.
         assertEquals(HttpStatusCode.OK, client.get("/decks") { bearerAuth(auth.accessToken) }.status)
         // An already-expired JWT for the same user does not.
@@ -173,7 +236,7 @@ class ApplicationFlowTest {
 
     @Test
     fun refresh_issues_a_new_working_access_token() = runApp { client ->
-        val auth = client.register("yara", "pw")
+        val auth = client.register("yara", "password1")
         val refreshed = client.refresh(auth.refreshToken)
         assertEquals(HttpStatusCode.OK, refreshed.status)
         val body = refreshed.decode<AuthResponse>()
@@ -190,7 +253,7 @@ class ApplicationFlowTest {
 
     @Test
     fun logout_revokes_refresh_token_so_session_cannot_be_refreshed() = runApp { client ->
-        val auth = client.register("nora", "pw")
+        val auth = client.register("nora", "password1")
         // The access token still authenticates before logout.
         assertEquals(HttpStatusCode.OK, client.get("/decks") { bearerAuth(auth.accessToken) }.status)
 
@@ -212,7 +275,7 @@ class ApplicationFlowTest {
 
     @Test
     fun decks_returns_seeded_country_flags_deck() = runApp { client ->
-        val auth = client.register("carol", "pw")
+        val auth = client.register("carol", "password1")
         val response = client.get("/decks") { bearerAuth(auth.accessToken) }
         assertEquals(HttpStatusCode.OK, response.status)
         val decks = response.decode<List<FlashcardDeckDto>>()
@@ -227,7 +290,7 @@ class ApplicationFlowTest {
 
     @Test
     fun decks_owned_by_user_are_editable() = runApp { client ->
-        val auth = client.register("edith", "pw")
+        val auth = client.register("edith", "password1")
         val created = client.post("/decks") {
             bearerAuth(auth.accessToken)
             contentType(ContentType.Application.Json)
@@ -240,7 +303,7 @@ class ApplicationFlowTest {
 
     @Test
     fun session_create_is_start_or_resume() = runApp { client ->
-        val auth = client.register("dave", "pw")
+        val auth = client.register("dave", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<List<FlashcardDeckDto>>().first().id
 
@@ -252,7 +315,7 @@ class ApplicationFlowTest {
 
     @Test
     fun progress_then_complete_updates_state_and_home_feed() = runApp { client ->
-        val auth = client.register("erin", "pw")
+        val auth = client.register("erin", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<List<FlashcardDeckDto>>().first().id
         val session = client.createSession(auth.accessToken, deckId)
@@ -295,8 +358,8 @@ class ApplicationFlowTest {
 
     @Test
     fun sessions_are_isolated_between_users() = runApp { client ->
-        val alice = client.register("alice2", "pw")
-        val bob = client.register("bob2", "pw")
+        val alice = client.register("alice2", "password1")
+        val bob = client.register("bob2", "password1")
         val deckId = client.get("/decks") { bearerAuth(alice.accessToken) }
             .decode<List<FlashcardDeckDto>>().first().id
         val aliceSession = client.createSession(alice.accessToken, deckId)
@@ -307,7 +370,7 @@ class ApplicationFlowTest {
 
     @Test
     fun update_or_complete_nonexistent_session_returns_404() = runApp { client ->
-        val auth = client.register("ivan", "pw")
+        val auth = client.register("ivan", "password1")
 
         val patch = client.patch("/sessions/999999") {
             bearerAuth(auth.accessToken)
@@ -322,8 +385,8 @@ class ApplicationFlowTest {
 
     @Test
     fun cannot_update_or_complete_another_users_session() = runApp { client ->
-        val owner = client.register("judy", "pw")
-        val intruder = client.register("kevin", "pw")
+        val owner = client.register("judy", "password1")
+        val intruder = client.register("kevin", "password1")
         val deckId = client.get("/decks") { bearerAuth(owner.accessToken) }
             .decode<List<FlashcardDeckDto>>().first().id
         val session = client.createSession(owner.accessToken, deckId)
@@ -350,7 +413,7 @@ class ApplicationFlowTest {
 
     @Test
     fun start_or_resume_after_complete_creates_a_new_session() = runApp { client ->
-        val auth = client.register("mallory", "pw")
+        val auth = client.register("mallory", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<List<FlashcardDeckDto>>().first().id
 
@@ -365,7 +428,7 @@ class ApplicationFlowTest {
 
     @Test
     fun home_feed_orders_active_sessions_by_recency() = runApp { client ->
-        val auth = client.register("olivia", "pw")
+        val auth = client.register("olivia", "password1")
         val flagsDeckId = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<List<FlashcardDeckDto>>().first().id
         val capitals = client.post("/decks") {
@@ -391,7 +454,7 @@ class ApplicationFlowTest {
 
     @Test
     fun create_deck_then_list_and_practice_it() = runApp { client ->
-        val auth = client.register("frank", "pw")
+        val auth = client.register("frank", "password1")
         val created = client.post("/decks") {
             bearerAuth(auth.accessToken)
             contentType(ContentType.Application.Json)
@@ -424,7 +487,7 @@ class ApplicationFlowTest {
 
     @Test
     fun update_deck_replaces_title_and_cards() = runApp { client ->
-        val auth = client.register("grace", "pw")
+        val auth = client.register("grace", "password1")
         val deck = client.post("/decks") {
             bearerAuth(auth.accessToken)
             contentType(ContentType.Application.Json)
@@ -450,7 +513,7 @@ class ApplicationFlowTest {
 
     @Test
     fun cannot_edit_a_deck_you_do_not_own() = runApp { client ->
-        val auth = client.register("heidi", "pw")
+        val auth = client.register("heidi", "password1")
         // The seeded global Country Flags deck has no owner, so it is read-only.
         val globalDeck = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<List<FlashcardDeckDto>>()
@@ -466,7 +529,7 @@ class ApplicationFlowTest {
 
     @Test
     fun delete_deck_removes_it_and_cascades_to_cards_and_sessions() = runApp { client ->
-        val auth = client.register("nadia", "pw")
+        val auth = client.register("nadia", "password1")
         val deck = client.post("/decks") {
             bearerAuth(auth.accessToken)
             contentType(ContentType.Application.Json)
@@ -495,8 +558,8 @@ class ApplicationFlowTest {
 
     @Test
     fun cannot_delete_a_deck_you_do_not_own() = runApp { client ->
-        val owner = client.register("olga", "pw")
-        val intruder = client.register("peter", "pw")
+        val owner = client.register("olga", "password1")
+        val intruder = client.register("peter", "password1")
         val deck = client.post("/decks") {
             bearerAuth(owner.accessToken)
             contentType(ContentType.Application.Json)
@@ -513,7 +576,7 @@ class ApplicationFlowTest {
 
     @Test
     fun cannot_delete_the_global_deck() = runApp { client ->
-        val auth = client.register("quinn", "pw")
+        val auth = client.register("quinn", "password1")
         val globalDeck = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<List<FlashcardDeckDto>>()
             .single { it.title == "Country Flags" }
@@ -526,7 +589,7 @@ class ApplicationFlowTest {
 
     @Test
     fun delete_nonexistent_deck_returns_404() = runApp { client ->
-        val auth = client.register("rita", "pw")
+        val auth = client.register("rita", "password1")
         assertEquals(
             HttpStatusCode.NotFound,
             client.delete("/decks/999999") { bearerAuth(auth.accessToken) }.status,
@@ -535,7 +598,7 @@ class ApplicationFlowTest {
 
     @Test
     fun image_upload_returns_url() = runApp { client ->
-        val auth = client.register("imguser", "pw")
+        val auth = client.register("imguser", "password1")
         val response = client.post("/images") {
             bearerAuth(auth.accessToken)
             setBody(multipart("photo.png", "image/png", ByteArray(64) { 1 }))
@@ -548,7 +611,7 @@ class ApplicationFlowTest {
 
     @Test
     fun image_upload_rejects_unsupported_type() = runApp { client ->
-        val auth = client.register("imgtype", "pw")
+        val auth = client.register("imgtype", "password1")
         val response = client.post("/images") {
             bearerAuth(auth.accessToken)
             setBody(multipart("note.txt", "text/plain", "hello".encodeToByteArray()))
@@ -558,7 +621,7 @@ class ApplicationFlowTest {
 
     @Test
     fun image_upload_rejects_oversize() = runApp { client ->
-        val auth = client.register("imgbig", "pw")
+        val auth = client.register("imgbig", "password1")
         val tooBig = ByteArray(5 * 1024 * 1024 + 1)
         val response = client.post("/images") {
             bearerAuth(auth.accessToken)

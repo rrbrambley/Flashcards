@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.backend.decks
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.routes.pathLong
 import com.rrbrambley.flashcards.backend.routes.userId
+import com.rrbrambley.flashcards.backend.validation.Validation
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
@@ -26,13 +27,13 @@ fun Route.deckRoutes() {
             call.respond(deck)
         }
         post {
-            val request = call.receive<CreateDeckRequest>()
-            require(request.title.isNotBlank()) { "title must not be blank" }
+            val request = call.receive<CreateDeckRequest>().let { it.copy(title = it.title.trim()) }
+            Validation.validateDeck(request)
             call.respond(HttpStatusCode.Created, DeckRepository.createDeck(call.userId(), request))
         }
         put("/{id}") {
-            val request = call.receive<CreateDeckRequest>()
-            require(request.title.isNotBlank()) { "title must not be blank" }
+            val request = call.receive<CreateDeckRequest>().let { it.copy(title = it.title.trim()) }
+            Validation.validateDeck(request)
             call.respond(DeckRepository.updateDeck(call.userId(), call.pathLong("id"), request))
         }
         delete("/{id}") {
