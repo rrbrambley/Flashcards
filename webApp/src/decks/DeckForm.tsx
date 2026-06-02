@@ -9,10 +9,14 @@ interface CardDraft {
   definition: string;
   imageUrl: string | null;
   uploading: boolean;
+  uploadError?: string | null;
 }
 
 const MINIMUM_COMPLETE_CARDS = 1;
 const ACCEPT = 'image/png,image/jpeg,image/webp,image/gif';
+const ALLOWED_TYPES = ACCEPT.split(',');
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_ERROR = 'Use a JPEG, PNG, WebP or GIF under 5 MB.';
 
 interface InitialCard {
   term: string;
@@ -65,13 +69,20 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnl
   };
 
   const handleImage = async (id: number, file: File) => {
-    updateCard(id, { uploading: true });
+    // Fail fast on the obvious cases instead of round-tripping to the server.
+    if (!ALLOWED_TYPES.includes(file.type) || file.size > MAX_IMAGE_BYTES) {
+      updateCard(id, { uploadError: IMAGE_ERROR });
+      return;
+    }
+    updateCard(id, { uploading: true, uploadError: null });
     try {
       const { url } = await api.uploadImage(file);
-      updateCard(id, { imageUrl: url, uploading: false });
+      updateCard(id, { imageUrl: url, uploading: false, uploadError: null });
     } catch (err) {
-      updateCard(id, { uploading: false });
-      setError(err instanceof Error ? err.message : 'Image upload failed.');
+      updateCard(id, {
+        uploading: false,
+        uploadError: err instanceof Error ? err.message : 'Image upload failed.',
+      });
     }
   };
 
@@ -177,6 +188,8 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnl
                 )}
               </div>
             )}
+
+            {card.uploadError && <span className="field-error">{card.uploadError}</span>}
 
             <label>
               {card.imageUrl ? 'Term (optional)' : 'Term'}

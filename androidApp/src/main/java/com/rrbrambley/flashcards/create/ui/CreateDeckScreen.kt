@@ -51,6 +51,8 @@ data class DeckFlashcardDraft(
     val definition: String = "",
     val imageUrl: String? = null,
     val uploading: Boolean = false,
+    /** Transient: set when the last image upload for this card failed, so the UI can show it. */
+    val uploadError: String? = null,
 )
 
 /** A card needs a definition plus either a term or an image (image-only cards are allowed). */
@@ -270,6 +272,14 @@ private fun FlashcardDraftCard(
                         }
                     }
                 }
+            }
+
+            if (card.uploadError != null) {
+                Text(
+                    text = card.uploadError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
 
             if (card.imageUrl != null) {
