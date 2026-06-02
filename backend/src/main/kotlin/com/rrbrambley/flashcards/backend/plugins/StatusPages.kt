@@ -10,8 +10,11 @@ import com.rrbrambley.flashcards.shared.api.ErrorResponse
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
+import io.ktor.server.application.log
 import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.statuspages.StatusPages
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
 import io.ktor.server.response.respond
 
 fun Application.configureStatusPages() {
@@ -40,7 +43,14 @@ fun Application.configureStatusPages() {
         exception<IllegalArgumentException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("bad_request", cause.message))
         }
-        exception<Throwable> { call, _ ->
+        exception<Throwable> { call, cause ->
+            // Log the full stack trace (with the request id from MDC) so 500s are debuggable.
+            call.application.log.error(
+                "Unhandled error: {} {}",
+                call.request.httpMethod.value,
+                call.request.path(),
+                cause,
+            )
             call.respond(HttpStatusCode.InternalServerError, ErrorResponse("internal_error"))
         }
     }
