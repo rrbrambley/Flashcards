@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.auth.jwt)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.call.logging)
     implementation(libs.ktor.server.cors)
@@ -66,6 +67,11 @@ tasks.named<JavaExec>("run") {
         "CDN_BASE_URL",
         "S3_ENDPOINT",
         "DB_JDBC_URL",
+        "JWT_SECRET",
+        "JWT_ISSUER",
+        "JWT_AUDIENCE",
+        "JWT_ACCESS_TTL_SECONDS",
+        "JWT_REFRESH_TTL_SECONDS",
     ).forEach { key ->
         providers.gradleProperty(key).orNull?.let { environment(key, it) }
     }

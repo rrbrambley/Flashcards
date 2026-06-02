@@ -58,10 +58,34 @@ class FlashcardApiClientTest {
 
     @Test
     fun noBearerHeaderWhenTokenProviderReturnsNull() = runTest {
-        val engine = jsonEngine("""{"token":"t","userId":1}""")
+        val engine = jsonEngine("""{"accessToken":"t","refreshToken":"r","userId":1}""")
         apiClient(engine, token = null).register(RegisterRequest("a@b.com", "pw"))
 
         assertNull(engine.requestHistory.last().headers[HttpHeaders.Authorization])
+    }
+
+    @Test
+    fun refresh_postsRefreshTokenToRefreshEndpointWithoutBearer() = runTest {
+        val engine = jsonEngine("""{"accessToken":"new-access","refreshToken":"r","userId":1}""")
+        val response = apiClient(engine, token = "stale-access").refresh("r")
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Post, request.method)
+        assertEquals("/auth/refresh", request.url.encodedPath)
+        // Refresh authenticates by the refresh token in the body, not the (possibly expired) bearer.
+        assertNull(request.headers[HttpHeaders.Authorization])
+        assertEquals("new-access", response.accessToken)
+    }
+
+    @Test
+    fun logout_postsRefreshTokenWithBearer() = runTest {
+        val engine = jsonEngine("{}")
+        apiClient(engine, token = "tok-1").logout("r")
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Post, request.method)
+        assertEquals("/auth/logout", request.url.encodedPath)
+        assertEquals("Bearer tok-1", request.headers[HttpHeaders.Authorization])
     }
 
     @Test

@@ -14,10 +14,14 @@ import org.jetbrains.exposed.sql.transactions.transaction
 data class DbConfig(val jdbcUrl: String, val user: String, val password: String, val maxPoolSize: Int = 5)
 
 object DatabaseFactory {
-    /** Fixed dev token mapped to the seeded demo user, so curl/tests can skip login. */
+    /**
+     * Fixed dev *refresh* token for the seeded demo user. Exchange it at POST /auth/refresh for an
+     * access-token JWT (curl/local dev convenience). Seeded with a far-future expiry.
+     */
     const val DEMO_TOKEN = "demo-token"
     const val DEMO_EMAIL = "demo@flashcards.dev"
     private const val DEMO_PASSWORD = "demo"
+    private const val TEN_YEARS_MILLIS = 10L * 365 * 24 * 60 * 60 * 1000
 
     fun init(config: DbConfig) {
         val hikari = HikariConfig().apply {
@@ -33,7 +37,7 @@ object DatabaseFactory {
         Database.connect(HikariDataSource(hikari))
 
         transaction {
-            SchemaUtils.create(Users, AuthTokens, Decks, Flashcards, PracticeSessions)
+            SchemaUtils.create(Users, RefreshTokens, Decks, Flashcards, PracticeSessions)
             seed()
         }
     }
@@ -54,15 +58,16 @@ object DatabaseFactory {
                 it[createdAtMillis] = now
             }.value
 
-        val hasDemoToken = AuthTokens
+        val hasDemoToken = RefreshTokens
             .selectAll()
-            .where { AuthTokens.token eq DEMO_TOKEN }
+            .where { RefreshTokens.token eq DEMO_TOKEN }
             .any()
         if (!hasDemoToken) {
-            AuthTokens.insert {
+            RefreshTokens.insert {
                 it[token] = DEMO_TOKEN
                 it[userId] = demoUserId
                 it[createdAtMillis] = now
+                it[expiresAtMillis] = now + TEN_YEARS_MILLIS
             }
         }
 

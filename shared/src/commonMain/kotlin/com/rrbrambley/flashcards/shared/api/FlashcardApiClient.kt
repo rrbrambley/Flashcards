@@ -41,9 +41,18 @@ class FlashcardApiClient(
         jsonBody(request)
     }.body()
 
-    /** Revokes the current bearer token server-side. */
-    suspend fun logout() {
-        client.post(url("/auth/logout")) { auth() }
+    /**
+     * Exchanges a refresh token for a fresh access token. Public endpoint — deliberately does NOT
+     * send the (possibly expired) access bearer, since the refresh token alone authenticates here.
+     */
+    suspend fun refresh(refreshToken: String): AuthResponse = client.post(url("/auth/refresh")) {
+        contentType(ContentType.Application.Json)
+        setBody(RefreshRequest(refreshToken))
+    }.body()
+
+    /** Revokes the given refresh token server-side, ending the session (logout). */
+    suspend fun logout(refreshToken: String) {
+        client.post(url("/auth/logout")) { jsonBody(LogoutRequest(refreshToken)) }
     }
 
     // --- Images ---

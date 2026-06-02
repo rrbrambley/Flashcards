@@ -33,7 +33,7 @@ class DefaultAuthRepository @Inject constructor(
     override suspend fun register(email: String, password: String): AuthOutcome = run {
         try {
             val response = apiClient.register(RegisterRequest(email.trim(), password))
-            tokenStore.setToken(response.token)
+            tokenStore.setTokens(response.accessToken, response.refreshToken)
             AuthOutcome.Success
         } catch (e: ResponseException) {
             AuthOutcome.Error(
@@ -51,7 +51,7 @@ class DefaultAuthRepository @Inject constructor(
     override suspend fun login(email: String, password: String): AuthOutcome = run {
         try {
             val response = apiClient.login(LoginRequest(email.trim(), password))
-            tokenStore.setToken(response.token)
+            tokenStore.setTokens(response.accessToken, response.refreshToken)
             AuthOutcome.Success
         } catch (e: ResponseException) {
             AuthOutcome.Error(
@@ -69,7 +69,7 @@ class DefaultAuthRepository @Inject constructor(
     override suspend fun signInWithGoogle(idToken: String): AuthOutcome = run {
         try {
             val response = apiClient.googleSignIn(GoogleAuthRequest(idToken))
-            tokenStore.setToken(response.token)
+            tokenStore.setTokens(response.accessToken, response.refreshToken)
             AuthOutcome.Success
         } catch (e: ResponseException) {
             AuthOutcome.Error(
@@ -85,10 +85,14 @@ class DefaultAuthRepository @Inject constructor(
     }
 
     override suspend fun logout() {
-        // Best-effort server-side revoke; the local token is always cleared so logout works offline.
-        try {
-            apiClient.logout()
-        } catch (_: Exception) {
+        // Best-effort server-side revoke of the refresh token; the local tokens are always cleared
+        // so logout works offline.
+        val refreshToken = tokenStore.currentRefreshToken()
+        if (refreshToken != null) {
+            try {
+                apiClient.logout(refreshToken)
+            } catch (_: Exception) {
+            }
         }
         tokenStore.clearToken()
     }

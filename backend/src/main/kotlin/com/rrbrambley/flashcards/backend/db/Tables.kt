@@ -14,10 +14,21 @@ object Users : LongIdTable("users") {
     val createdAtMillis = long("created_at_millis")
 }
 
-object AuthTokens : LongIdTable("auth_tokens") {
+/**
+ * Opaque, revocable refresh tokens. Access is via short-lived JWTs (stateless, no row here);
+ * a refresh token is exchanged at POST /auth/refresh for a new access token, and logout deletes
+ * the row so the session can no longer be refreshed.
+ */
+object RefreshTokens : LongIdTable("refresh_tokens") {
     val token = varchar("token", 64).uniqueIndex()
     val userId = reference("user_id", Users, onDelete = ReferenceOption.CASCADE)
     val createdAtMillis = long("created_at_millis")
+    val expiresAtMillis = long("expires_at_millis")
+
+    init {
+        // Revoke-all-for-user and expired-row cleanup.
+        index(false, userId)
+    }
 }
 
 object Decks : LongIdTable("decks") {

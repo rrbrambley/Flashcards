@@ -49,7 +49,7 @@ Run a single unit test class or method:
 
 Dependencies are managed through the version catalog at `gradle/libs.versions.toml` — add/upgrade libraries and plugins there, not inline in a module's `build.gradle.kts`. `local.properties` (SDK path) is gitignored and machine-specific.
 
-> **Backend tests need Docker.** Under Colima, also export `DOCKER_HOST=unix://$HOME/.colima/default/docker.sock` and `DOCKER_API_VERSION=1.44` (the `:backend:test` task forwards these into the test workers). The local Postgres for `:backend:run` is started via `docker-compose.yml`; if 5432 is taken, run with `POSTGRES_PORT=5433` and pass `DB_JDBC_URL=jdbc:postgresql://localhost:5433/flashcards`.
+> **Backend tests need Docker.** Under Colima, also export `DOCKER_HOST=unix://$HOME/.colima/default/docker.sock`, `DOCKER_API_VERSION=1.44`, and `TESTCONTAINERS_RYUK_DISABLED=true` (the `:backend:test` task forwards these into the test workers). Ryuk must be disabled because it can't bind-mount Colima's socket path (`operation not supported`); leaving it on makes every Testcontainers test fail at container startup. The local Postgres for `:backend:run` is started via `docker-compose.yml`; if 5432 is taken, run with `POSTGRES_PORT=5433` and pass `DB_JDBC_URL=jdbc:postgresql://localhost:5433/flashcards`.
 
 ## The `shared` module
 
@@ -95,7 +95,7 @@ Ktor (Netty) under `backend/src/main/kotlin/com/rrbrambley/flashcards/backend/`.
 
 ## Architecture (webApp)
 
-React 19 + TypeScript + Vite SPA in `webApp/` (react-router). `src/api/` has hand-written TS mirrors of the shared DTOs (`types.ts`) and a fetch-based `client.ts` (bearer token in `localStorage`). `src/auth/` handles email/password + Google sign-in (Google Identity Services); `src/decks/` is the library + create/edit (`DeckForm` mirrors the Android fields, including front-of-card image upload via `POST /images`). Config comes from `import.meta.env` (`VITE_API_BASE_URL`, `VITE_GOOGLE_WEB_CLIENT_ID`) loaded from `webApp/.env` (gitignored; template in `.env.example`). Web practice isn't implemented yet — tapping a deck opens it for editing.
+React 19 + TypeScript + Vite SPA in `webApp/` (react-router). `src/api/` has hand-written TS mirrors of the shared DTOs (`types.ts`) and a fetch-based `client.ts` (bearer token in `localStorage`). `src/auth/` handles email/password + Google sign-in (Google Identity Services); `src/decks/` is the library + create/edit (`DeckForm` mirrors the Android fields, including front-of-card image upload via `POST /images`). Config comes from `import.meta.env` (`VITE_API_BASE_URL`, `VITE_GOOGLE_WEB_CLIENT_ID`) loaded from `webApp/.env` (gitignored; template in `.env.example`). `src/practice/` is the practice flow (a card-flip + reducer, parity with Android), routed at `/decks/:id/practice`.
 
 ## Testing conventions
 

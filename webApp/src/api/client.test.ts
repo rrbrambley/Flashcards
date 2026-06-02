@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ApiError, api } from './client';
-import { setToken } from '../auth/token';
+import { ApiError, api, setUnauthorizedHandler } from './client';
+import { getToken, setToken, setTokens } from '../auth/token';
 
 type Init = RequestInit & { headers: Record<string, string> };
 
@@ -133,15 +133,54 @@ describe('api client', () => {
     expect(init.method).toBe('POST');
   });
 
-  it('logout posts to /auth/logout with the bearer token', async () => {
-    setToken('tok');
+  it('logout posts the refresh token to /auth/logout with the bearer token', async () => {
+    setTokens('tok', 'refresh-1');
     const fetchMock = stubFetch({ ok: true, status: 204, json: () => Promise.reject(new Error('no body')) });
 
-    await api.logout();
+    await api.logout('refresh-1');
 
     const { url, init } = lastCall(fetchMock);
     expect(url).toContain('/auth/logout');
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBe('Bearer tok');
+    expect(JSON.parse(init.body as string)).toEqual({ refreshToken: 'refresh-1' });
+  });
+
+  it('transparently refreshes on a 401 and retries the original request', async () => {
+    setTokens('expired-access', 'refresh-1');
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: () => Promise.resolve({ error: 'unauthorized' }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ accessToken: 'fresh-access', refreshToken: 'refresh-2', userId: 1 }),
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve([{ id: 1 }]) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const decks = await api.getDecks();
+
+    expect(decks).toEqual([{ id: 1 }]);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect((fetchMock.mock.calls[1] as [string])[0]).toContain('/auth/refresh');
+    // The refreshed access token is persisted and used for the retry.
+    expect(getToken()).toBe('fresh-access');
+    expect((fetchMock.mock.calls[2] as [string, Init])[1].headers.Authorization).toBe('Bearer fresh-access');
+  });
+
+  it('on a 401 with no refresh token, clears auth and invokes the unauthorized handler', async () => {
+    setToken('tok'); // access token only, no refresh token
+    const onUnauthorized = vi.fn();
+    setUnauthorizedHandler(onUnauthorized);
+    stubFetch({ ok: false, status: 401, json: () => Promise.resolve({ error: 'unauthorized', message: 'nope' }) });
+
+    const err = await api.getDecks().catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(401);
+    expect(onUnauthorized).toHaveBeenCalled();
+    expect(getToken()).toBeNull();
+    setUnauthorizedHandler(null);
   });
 });
