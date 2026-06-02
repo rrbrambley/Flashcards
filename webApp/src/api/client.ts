@@ -5,6 +5,8 @@ import type {
   ErrorResponse,
   FlashcardDeckDto,
   ImageUploadResponse,
+  PracticeSessionDto,
+  UpdateProgressRequest,
 } from './types';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
@@ -72,6 +74,15 @@ export const api = {
     request<FlashcardDeckDto>('/decks', { method: 'POST', body: deck, auth: true }),
   updateDeck: (id: number, deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>(`/decks/${id}`, { method: 'PUT', body: deck, auth: true }),
+
+  // Practice sessions
+  createSession: (deckId: number) =>
+    request<PracticeSessionDto>('/sessions', { method: 'POST', body: { deckId }, auth: true }),
+  getSession: (id: number) => request<PracticeSessionDto>(`/sessions/${id}`, { auth: true }),
+  updateProgress: (id: number, progress: UpdateProgressRequest) =>
+    request<PracticeSessionDto>(`/sessions/${id}`, { method: 'PATCH', body: progress, auth: true }),
+  completeSession: (id: number) =>
+    request<PracticeSessionDto>(`/sessions/${id}/complete`, { method: 'POST', auth: true }),
 
   // Multipart upload — let the browser set the Content-Type (with the boundary).
   uploadImage: async (file: File): Promise<ImageUploadResponse> => {

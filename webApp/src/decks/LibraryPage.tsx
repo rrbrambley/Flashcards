@@ -54,13 +54,18 @@ export function LibraryPage() {
         ) : (
           <ul className="deck-list">
             {decks.map((deck) => (
-              <li key={deck.id}>
-                <button className="deck-row" onClick={() => navigate(`/decks/${deck.id}/edit`)}>
+              <li key={deck.id} className="deck-row">
+                <button className="deck-row-main" onClick={() => navigate(`/decks/${deck.id}/edit`)}>
                   <span className="deck-title">{deck.title}</span>
                   <span className="muted">
-                    {deck.flashcards.length} card{deck.flashcards.length === 1 ? '' : 's'} ›
+                    {deck.flashcards.length} card{deck.flashcards.length === 1 ? '' : 's'}
                   </span>
                 </button>
+                {deck.flashcards.length > 0 && (
+                  <button className="secondary deck-practice" onClick={() => navigate(`/decks/${deck.id}/practice`)}>
+                    Practice
+                  </button>
+                )}
               </li>
             ))}
           </ul>

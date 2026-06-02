@@ -4,6 +4,7 @@ import { useAuth } from './auth/auth-context';
 import { LibraryPage } from './decks/LibraryPage';
 import { CreateDeckPage } from './decks/CreateDeckPage';
 import { EditDeckPage } from './decks/EditDeckPage';
+import { PracticePage } from './practice/PracticePage';
 
 export default function App() {
   const { token } = useAuth();
@@ -23,6 +24,7 @@ export default function App() {
       <Route path="/" element={<LibraryPage />} />
       <Route path="/create" element={<CreateDeckPage />} />
       <Route path="/decks/:id/edit" element={<EditDeckPage />} />
+      <Route path="/decks/:id/practice" element={<PracticePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
