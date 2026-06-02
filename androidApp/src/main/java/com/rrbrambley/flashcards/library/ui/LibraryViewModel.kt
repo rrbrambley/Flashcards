@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.domain.FlashcardRepository
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -27,14 +29,41 @@ class LibraryViewModel @Inject constructor(
     private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val userMessages: SharedFlow<String> = _userMessages.asSharedFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    private var observeJob: Job? = null
+
     init {
-        viewModelScope.launch {
+        observeDecks()
+    }
+
+    /** (Re)subscribes to the deck stream, which best-effort re-syncs from the backend first. */
+    private fun observeDecks() {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch {
             flashcardRepository.observeFlashcardDecks()
-                .catch { _uiState.update { LibraryUiState.LoadingFailed } }
+                .catch {
+                    _uiState.update { LibraryUiState.LoadingFailed }
+                    _isRefreshing.value = false
+                }
                 .collect { decks ->
                     _uiState.update { LibraryUiState.ShowDecks(decks) }
+                    _isRefreshing.value = false
                 }
         }
+    }
+
+    /** Pull-to-refresh: keep the current decks visible while we re-sync. */
+    fun refresh() {
+        _isRefreshing.value = true
+        observeDecks()
+    }
+
+    /** Retry after a load failure: show the loading state, then re-subscribe. */
+    fun retry() {
+        _uiState.update { LibraryUiState.Loading }
+        observeDecks()
     }
 
     fun startPractice(deckId: Long, onSessionStarted: (Long) -> Unit) {

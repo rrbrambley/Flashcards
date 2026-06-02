@@ -7,7 +7,7 @@ import com.rrbrambley.flashcards.home.domain.HomeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -60,9 +60,30 @@ class HomeViewModelTest {
         assertEquals(HomeUiState.ShowHome(homeData), viewModel.uiState.value)
     }
 
+    @Test
+    fun retry_afterFailure_reloadsHomeData() = runTest(testDispatcher) {
+        val homeData = listOf(HomeData(title = "Practice", button = null))
+        val repository = FakeHomeRepository(homeData = homeData, failFirstSubscription = true)
+        val viewModel = HomeViewModel(repository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(HomeUiState.LoadingFailed, viewModel.uiState.value)
+
+        viewModel.retry()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(HomeUiState.ShowHome(homeData), viewModel.uiState.value)
+    }
+
     private class FakeHomeRepository(
         private val homeData: List<HomeData>,
+        private var failFirstSubscription: Boolean = false,
     ) : HomeRepository {
-        override fun observeHomeData(): Flow<List<HomeData>> = flowOf(homeData)
+        override fun observeHomeData(): Flow<List<HomeData>> = flow {
+            if (failFirstSubscription) {
+                failFirstSubscription = false
+                throw RuntimeException("home load failed")
+            }
+            emit(homeData)
+        }
     }
 }
