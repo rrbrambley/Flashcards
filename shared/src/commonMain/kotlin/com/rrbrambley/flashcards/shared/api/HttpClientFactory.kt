@@ -2,22 +2,28 @@ package com.rrbrambley.flashcards.shared.api
 
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
+import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpResponseValidator
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.ResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 /**
- * Builds an [HttpClient] with the JSON content negotiation the API expects.
+ * Builds an [HttpClient] with the JSON content negotiation the API expects, request timeouts,
+ * retry-with-backoff for transient failures, and typed [ApiError] mapping.
  * Each platform passes its own engine (OkHttp on Android/JVM, Darwin on iOS),
  * keeping the configuration shared while the transport stays native.
  *
  * [configure] lets a platform add extra plugins (e.g. Android installs bearer Auth for
- * transparent token refresh) without duplicating the shared JSON setup.
+ * transparent token refresh) without duplicating the shared setup.
  */
 fun createFlashcardHttpClient(engine: HttpClientEngine, configure: HttpClientConfig<*>.() -> Unit = {}): HttpClient =
     HttpClient(engine) {
-        // Throw ClientRequestException / ServerResponseException on non-2xx responses.
+        // Non-2xx throws (mapped to ApiError by the validator below).
         expectSuccess = true
         install(ContentNegotiation) {
             json(
@@ -27,5 +33,38 @@ fun createFlashcardHttpClient(engine: HttpClientEngine, configure: HttpClientCon
                 },
             )
         }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000
+            connectTimeoutMillis = 15_000
+            socketTimeoutMillis = 30_000
+        }
+        // Retry transient failures (5xx + connection/timeout errors); 4xx are not retried.
+        install(HttpRequestRetry) {
+            retryOnServerErrors(maxRetries = 2)
+            retryOnException(maxRetries = 2, retryOnTimeout = true)
+            exponentialDelay()
+        }
+        // Surface non-2xx responses as a typed ApiError instead of a raw Ktor ResponseException.
+        HttpResponseValidator {
+            handleResponseExceptionWithRequest { cause, _ ->
+                if (cause is ResponseException) throw cause.toApiError()
+            }
+        }
         configure()
     }
+
+private suspend fun ResponseException.toApiError(): ApiError {
+    val status = response.status.value
+    val message = runCatching { response.body<ErrorResponse>().message }.getOrNull()
+    return when (status) {
+        400 -> ApiError.Validation(message)
+        401 -> ApiError.Unauthorized(message)
+        404 -> ApiError.NotFound(message)
+        409 -> ApiError.Conflict(message)
+        413 -> ApiError.PayloadTooLarge(message)
+        415 -> ApiError.UnsupportedMediaType(message)
+        503 -> ApiError.ServiceUnavailable(message)
+        in 500..599 -> ApiError.Server(status, message)
+        else -> ApiError.Client(status, message)
+    }
+}

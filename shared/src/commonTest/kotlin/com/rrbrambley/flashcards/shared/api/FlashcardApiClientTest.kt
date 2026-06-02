@@ -10,6 +10,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -118,6 +119,40 @@ class FlashcardApiClientTest {
         assertEquals("/images", request.url.encodedPath)
         assertTrue(request.body.contentType.toString().startsWith("multipart/form-data"))
         assertEquals("https://cdn/x.png", response.url)
+    }
+
+    @Test
+    fun retriesOnServerErrorThenSucceeds() = runTest {
+        var calls = 0
+        val engine = MockEngine {
+            calls++
+            if (calls == 1) {
+                respond("boom", HttpStatusCode.InternalServerError)
+            } else {
+                respond("[]", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            }
+        }
+
+        val decks = apiClient(engine).getDecks()
+
+        assertEquals(emptyList(), decks)
+        assertEquals(2, calls) // one failure + one successful retry
+    }
+
+    @Test
+    fun mapsNonSuccessResponsesToTypedApiError() = runTest {
+        val engine = MockEngine {
+            respond(
+                """{"error":"not_found","message":"Deck 7 not found"}""",
+                HttpStatusCode.NotFound,
+                headersOf(HttpHeaders.ContentType, "application/json"),
+            )
+        }
+
+        val error = runCatching { apiClient(engine).getDeck(7L) }.exceptionOrNull()
+
+        val notFound = assertIs<ApiError.NotFound>(error)
+        assertEquals("Deck 7 not found", notFound.message)
     }
 
     // --- Helpers ---
