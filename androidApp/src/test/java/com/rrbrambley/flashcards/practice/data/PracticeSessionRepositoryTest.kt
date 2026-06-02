@@ -162,6 +162,7 @@ class PracticeSessionRepositoryTest {
         }
         override suspend fun insertFlashcards(flashcards: List<FlashcardEntity>) = Unit
         override suspend fun deleteFlashcardsForDeck(deckId: Long) = Unit
+        override suspend fun deleteDeck(deckId: Long) = Unit
     }
 
     private class FakePracticeSessionDao(

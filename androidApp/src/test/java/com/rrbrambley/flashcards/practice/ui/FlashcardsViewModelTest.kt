@@ -300,6 +300,8 @@ class FlashcardsViewModelTest {
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
 
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
+
+        override suspend fun deleteFlashcardDeck(deckId: Long) = Unit
     }
 
     private class FakePracticeSessionRepository(

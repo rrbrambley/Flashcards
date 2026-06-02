@@ -22,6 +22,7 @@ import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import com.typesafe.config.ConfigFactory
 import io.ktor.client.HttpClient
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.get
@@ -461,6 +462,75 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(CreateDeckRequest("Hijacked", listOf(FlashcardDto("q", "a")))))
         }
         assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun delete_deck_removes_it_and_cascades_to_cards_and_sessions() = runApp { client ->
+        val auth = client.register("nadia", "pw")
+        val deck = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Temp", listOf(FlashcardDto("q", "a")))))
+        }.decode<FlashcardDeckDto>()
+        // Start a session so we can confirm it is cascaded away with the deck.
+        val session = client.createSession(auth.accessToken, deck.id)
+
+        val deleted = client.delete("/decks/${deck.id}") { bearerAuth(auth.accessToken) }
+        assertEquals(HttpStatusCode.NoContent, deleted.status)
+
+        // The deck is gone from the library and by id...
+        assertTrue(
+            client.get("/decks") { bearerAuth(auth.accessToken) }
+                .decode<List<FlashcardDeckDto>>().none { it.id == deck.id },
+        )
+        assertEquals(HttpStatusCode.NotFound, client.get("/decks/${deck.id}") { bearerAuth(auth.accessToken) }.status)
+        // ...and its session was cascaded away.
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.get("/sessions/${session.id}") {
+                bearerAuth(auth.accessToken)
+            }.status,
+        )
+    }
+
+    @Test
+    fun cannot_delete_a_deck_you_do_not_own() = runApp { client ->
+        val owner = client.register("olga", "pw")
+        val intruder = client.register("peter", "pw")
+        val deck = client.post("/decks") {
+            bearerAuth(owner.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Owned", listOf(FlashcardDto("q", "a")))))
+        }.decode<FlashcardDeckDto>()
+
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.delete("/decks/${deck.id}") { bearerAuth(intruder.accessToken) }.status,
+        )
+        // The deck still exists for its owner.
+        assertEquals(HttpStatusCode.OK, client.get("/decks/${deck.id}") { bearerAuth(owner.accessToken) }.status)
+    }
+
+    @Test
+    fun cannot_delete_the_global_deck() = runApp { client ->
+        val auth = client.register("quinn", "pw")
+        val globalDeck = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<List<FlashcardDeckDto>>()
+            .single { it.title == "Country Flags" }
+
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.delete("/decks/${globalDeck.id}") { bearerAuth(auth.accessToken) }.status,
+        )
+    }
+
+    @Test
+    fun delete_nonexistent_deck_returns_404() = runApp { client ->
+        val auth = client.register("rita", "pw")
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.delete("/decks/999999") { bearerAuth(auth.accessToken) }.status,
+        )
     }
 
     @Test

@@ -36,4 +36,11 @@ class LibraryViewModel @Inject constructor(
             onSessionStarted(sessionId)
         }
     }
+
+    /** Deletes an owned deck; the Room flow drops it from the list on success. */
+    fun deleteDeck(deckId: Long) {
+        viewModelScope.launch {
+            runCatching { flashcardRepository.deleteFlashcardDeck(deckId) }
+        }
+    }
 }

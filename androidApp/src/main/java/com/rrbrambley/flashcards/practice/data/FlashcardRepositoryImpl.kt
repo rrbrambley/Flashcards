@@ -49,6 +49,12 @@ class FlashcardRepositoryImpl @Inject constructor(
         cache(apiClient.updateDeck(deck.id, deck.toCreateRequest()))
     }
 
+    override suspend fun deleteFlashcardDeck(deckId: Long) {
+        // Backend first, then drop the local cache (Room cascades to cards + sessions).
+        apiClient.deleteDeck(deckId)
+        flashcardDao.deleteDeck(deckId)
+    }
+
     private suspend fun refreshDecks() {
         val decks = apiClient.getDecks()
         flashcardDao.cacheDecks(decks.map { it.toDeckEntity() to it.toFlashcardEntities() })

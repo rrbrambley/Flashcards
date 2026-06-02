@@ -8,6 +8,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
@@ -33,6 +34,10 @@ fun Route.deckRoutes() {
             val request = call.receive<CreateDeckRequest>()
             require(request.title.isNotBlank()) { "title must not be blank" }
             call.respond(DeckRepository.updateDeck(call.userId(), call.pathLong("id"), request))
+        }
+        delete("/{id}") {
+            DeckRepository.deleteDeck(call.userId(), call.pathLong("id"))
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }

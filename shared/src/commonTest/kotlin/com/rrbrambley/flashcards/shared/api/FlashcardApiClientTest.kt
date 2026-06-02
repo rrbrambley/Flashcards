@@ -57,6 +57,17 @@ class FlashcardApiClientTest {
     }
 
     @Test
+    fun deleteDeck_sendsAuthedDeleteToTheDeckPath() = runTest {
+        val engine = MockEngine { respond("", HttpStatusCode.NoContent) }
+        apiClient(engine, token = "tok-9").deleteDeck(9L)
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Delete, request.method)
+        assertEquals("/decks/9", request.url.encodedPath)
+        assertEquals("Bearer tok-9", request.headers[HttpHeaders.Authorization])
+    }
+
+    @Test
     fun noBearerHeaderWhenTokenProviderReturnsNull() = runTest {
         val engine = jsonEngine("""{"accessToken":"t","refreshToken":"r","userId":1}""")
         apiClient(engine, token = null).register(RegisterRequest("a@b.com", "pw"))

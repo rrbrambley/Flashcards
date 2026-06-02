@@ -94,5 +94,7 @@ class CreateDeckViewModelTest {
         }
 
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
+
+        override suspend fun deleteFlashcardDeck(deckId: Long) = Unit
     }
 }

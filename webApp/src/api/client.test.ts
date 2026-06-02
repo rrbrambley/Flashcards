@@ -123,6 +123,18 @@ describe('api client', () => {
     expect(JSON.parse(init.body as string)).toEqual({ currentCardIndex: 2, numCorrect: 1, numIncorrect: 1 });
   });
 
+  it('deleteDeck sends an authed DELETE to /decks/{id}', async () => {
+    setToken('tok');
+    const fetchMock = stubFetch({ ok: true, status: 204, json: () => Promise.reject(new Error('no body')) });
+
+    await api.deleteDeck(9);
+
+    const { url, init } = lastCall(fetchMock);
+    expect(url).toContain('/decks/9');
+    expect(init.method).toBe('DELETE');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+  });
+
   it('completeSession posts to /sessions/{id}/complete', async () => {
     const fetchMock = stubFetch({ json: () => Promise.resolve({ id: 7, isCompleted: true }) });
 

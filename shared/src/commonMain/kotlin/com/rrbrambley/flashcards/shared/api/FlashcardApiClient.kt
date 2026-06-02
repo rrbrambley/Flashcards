@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
+import io.ktor.client.request.delete
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
@@ -85,6 +86,11 @@ class FlashcardApiClient(
         client.put(url("/decks/$deckId")) {
             jsonBody(request)
         }.body()
+
+    /** Deletes a deck the user owns (the backend cascades to its cards and sessions). */
+    suspend fun deleteDeck(deckId: Long) {
+        client.delete(url("/decks/$deckId")) { auth() }
+    }
 
     // --- Sessions ---
     suspend fun getSessions(activeOnly: Boolean = true): List<PracticeSessionDto> = client.get(url("/sessions")) {
