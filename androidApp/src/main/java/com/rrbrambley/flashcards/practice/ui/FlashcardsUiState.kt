@@ -9,6 +9,8 @@ sealed interface FlashcardsUiState {
         val numIncorrect: Int,
         val numCorrect: Int,
         val flashcard: Flashcard,
+        /** False on the first card, so the UI can disable "Previous". */
+        val canGoBack: Boolean = false,
     ) : FlashcardsUiState
     data class SessionCompleted(
         val numIncorrect: Int,

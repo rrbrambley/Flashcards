@@ -118,7 +118,14 @@ fun FlashcardsScreen(
                 onSwipedLeft = flashcardsViewModel::swipeLeft,
                 onSwipedRight = flashcardsViewModel::swipeRight,
             )
-            NavRow()
+            val showFlashcard = flashcardsState as? FlashcardsUiState.ShowFlashcard
+            NavRow(
+                // Navigation only applies while a card is showing; Previous is disabled on the first card.
+                enabled = showFlashcard != null,
+                canGoBack = showFlashcard?.canGoBack == true,
+                onPrevious = flashcardsViewModel::goBack,
+                onSkip = flashcardsViewModel::goForward,
+            )
         }
     }
 }
@@ -389,7 +396,12 @@ private fun FlashcardText(
 }
 
 @Composable
-fun NavRow() {
+fun NavRow(
+    enabled: Boolean,
+    canGoBack: Boolean,
+    onPrevious: () -> Unit,
+    onSkip: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -397,8 +409,12 @@ fun NavRow() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous")
-        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Skip")
+        IconButton(onClick = onPrevious, enabled = enabled && canGoBack) {
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous card")
+        }
+        IconButton(onClick = onSkip, enabled = enabled) {
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Skip card")
+        }
     }
 }
 
