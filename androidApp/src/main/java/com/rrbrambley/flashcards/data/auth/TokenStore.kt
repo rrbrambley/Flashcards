@@ -13,28 +13,41 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.authDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth")
-
 /**
  * Persists the bearer token returned by login/registration. A null token means the
  * user is logged out, which gates the app onto the login screen.
+ *
+ * Behind an interface (the Android DataStore impl is [DataStoreTokenStore]) so the auth
+ * repository/ViewModel can be unit-tested with an in-memory fake.
  */
+interface TokenStore {
+    /** Emits the current token, then every change (null = logged out). */
+    fun tokenFlow(): Flow<String?>
+
+    suspend fun currentToken(): String?
+
+    suspend fun setToken(token: String)
+
+    suspend fun clearToken()
+}
+
+private val Context.authDataStore: DataStore<Preferences> by preferencesDataStore(name = "auth")
+
 @Singleton
-class TokenStore @Inject constructor(
+class DataStoreTokenStore @Inject constructor(
     @ApplicationContext private val context: Context,
-) {
+) : TokenStore {
     private val tokenKey = stringPreferencesKey("bearer_token")
 
-    /** Emits the current token, then every change (null = logged out). */
-    fun tokenFlow(): Flow<String?> = context.authDataStore.data.map { it[tokenKey] }
+    override fun tokenFlow(): Flow<String?> = context.authDataStore.data.map { it[tokenKey] }
 
-    suspend fun currentToken(): String? = tokenFlow().first()
+    override suspend fun currentToken(): String? = tokenFlow().first()
 
-    suspend fun setToken(token: String) {
+    override suspend fun setToken(token: String) {
         context.authDataStore.edit { it[tokenKey] = token }
     }
 
-    suspend fun clearToken() {
+    override suspend fun clearToken() {
         context.authDataStore.edit { it.remove(tokenKey) }
     }
 }

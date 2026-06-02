@@ -40,6 +40,7 @@ import org.testcontainers.utility.DockerImageName
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class ApplicationFlowTest {
@@ -231,6 +232,90 @@ class ApplicationFlowTest {
 
         val bobView = client.get("/sessions/${aliceSession.id}") { bearerAuth(bob.token) }
         assertEquals(HttpStatusCode.NotFound, bobView.status)
+    }
+
+    @Test
+    fun update_or_complete_nonexistent_session_returns_404() = runApp { client ->
+        val auth = client.register("ivan", "pw")
+
+        val patch = client.patch("/sessions/999999") {
+            bearerAuth(auth.token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(UpdateProgressRequest(currentCardIndex = 1, numCorrect = 1, numIncorrect = 0)))
+        }
+        assertEquals(HttpStatusCode.NotFound, patch.status)
+
+        val complete = client.post("/sessions/999999/complete") { bearerAuth(auth.token) }
+        assertEquals(HttpStatusCode.NotFound, complete.status)
+    }
+
+    @Test
+    fun cannot_update_or_complete_another_users_session() = runApp { client ->
+        val owner = client.register("judy", "pw")
+        val intruder = client.register("kevin", "pw")
+        val deckId = client.get("/decks") { bearerAuth(owner.token) }
+            .decode<List<FlashcardDeckDto>>().first().id
+        val session = client.createSession(owner.token, deckId)
+
+        val patch = client.patch("/sessions/${session.id}") {
+            bearerAuth(intruder.token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(UpdateProgressRequest(currentCardIndex = 1, numCorrect = 1, numIncorrect = 0)))
+        }
+        assertEquals(HttpStatusCode.NotFound, patch.status)
+
+        val complete = client.post("/sessions/${session.id}/complete") { bearerAuth(intruder.token) }
+        assertEquals(HttpStatusCode.NotFound, complete.status)
+    }
+
+    @Test
+    fun login_with_unknown_email_is_unauthorized() = runApp { client ->
+        val response = client.post("/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(LoginRequest("nobody@example.com", "whatever")))
+        }
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun start_or_resume_after_complete_creates_a_new_session() = runApp { client ->
+        val auth = client.register("mallory", "pw")
+        val deckId = client.get("/decks") { bearerAuth(auth.token) }
+            .decode<List<FlashcardDeckDto>>().first().id
+
+        val first = client.createSession(auth.token, deckId)
+        client.post("/sessions/${first.id}/complete") { bearerAuth(auth.token) }
+
+        // The completed session is no longer "active", so a new start creates a fresh session.
+        val second = client.createSession(auth.token, deckId)
+        assertNotEquals(first.id, second.id)
+        assertEquals(false, second.isCompleted)
+    }
+
+    @Test
+    fun home_feed_orders_active_sessions_by_recency() = runApp { client ->
+        val auth = client.register("olivia", "pw")
+        val flagsDeckId = client.get("/decks") { bearerAuth(auth.token) }
+            .decode<List<FlashcardDeckDto>>().first().id
+        val capitals = client.post("/decks") {
+            bearerAuth(auth.token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("World Capitals", listOf(FlashcardDto("France?", "Paris")))))
+        }.decode<FlashcardDeckDto>()
+
+        val capitalsSession = client.createSession(auth.token, capitals.id)
+        client.createSession(auth.token, flagsDeckId) // more recent than capitals
+
+        // Bump the capitals session so it becomes the most recently updated.
+        client.patch("/sessions/${capitalsSession.id}") {
+            bearerAuth(auth.token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(UpdateProgressRequest(currentCardIndex = 1, numCorrect = 1, numIncorrect = 0)))
+        }
+
+        val home = client.get("/home") { bearerAuth(auth.token) }.decode<List<HomeDataDto>>()
+        assertEquals(4, home.size) // 2 continue + 2 static
+        assertEquals("Continue World Capitals practice", home.first().title)
     }
 
     @Test
