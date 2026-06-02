@@ -3,10 +3,10 @@ package com.rrbrambley.flashcards.ui
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -38,7 +38,9 @@ fun SwipeCard(
         val maxWidthPx = with(density) { maxWidth.toPx() }
         val swipeThreshold = maxWidthPx * swipeThresholdRatio
 
-        Surface(
+        // A Box (not a Surface) so the rectangular shape clip doesn't shave the card's
+        // border as it extends past its bounds during the 3D flip / swipe rotation.
+        Box(
             modifier = Modifier
                 .offset {
                     IntOffset(
