@@ -8,20 +8,28 @@ import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import io.ktor.client.plugins.ResponseException
 import io.ktor.http.HttpStatusCode
 import javax.inject.Inject
-import javax.inject.Singleton
 
 sealed interface AuthOutcome {
     data object Success : AuthOutcome
     data class Error(val message: String) : AuthOutcome
 }
 
-/** Performs auth calls and persists the returned bearer token on success. */
-@Singleton
-class AuthRepository @Inject constructor(
+/**
+ * Performs auth calls and persists the returned bearer token on success. Behind an
+ * interface ([DefaultAuthRepository] is the impl) so the ViewModel can be unit-tested
+ * with a synchronous fake.
+ */
+interface AuthRepository {
+    suspend fun register(email: String, password: String): AuthOutcome
+    suspend fun login(email: String, password: String): AuthOutcome
+    suspend fun signInWithGoogle(idToken: String): AuthOutcome
+}
+
+class DefaultAuthRepository @Inject constructor(
     private val apiClient: FlashcardApiClient,
     private val tokenStore: TokenStore,
-) {
-    suspend fun register(email: String, password: String): AuthOutcome = run {
+) : AuthRepository {
+    override suspend fun register(email: String, password: String): AuthOutcome = run {
         try {
             val response = apiClient.register(RegisterRequest(email.trim(), password))
             tokenStore.setToken(response.token)
@@ -39,7 +47,7 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun login(email: String, password: String): AuthOutcome = run {
+    override suspend fun login(email: String, password: String): AuthOutcome = run {
         try {
             val response = apiClient.login(LoginRequest(email.trim(), password))
             tokenStore.setToken(response.token)
@@ -57,7 +65,7 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun signInWithGoogle(idToken: String): AuthOutcome = run {
+    override suspend fun signInWithGoogle(idToken: String): AuthOutcome = run {
         try {
             val response = apiClient.googleSignIn(GoogleAuthRequest(idToken))
             tokenStore.setToken(response.token)

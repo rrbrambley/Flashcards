@@ -1,13 +1,6 @@
 package com.rrbrambley.flashcards.auth
 
 import com.rrbrambley.flashcards.data.auth.TokenStore
-import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
-import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -20,7 +13,6 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -40,9 +32,9 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun login_withBlankFields_showsValidationErrorAndDoesNotCallBackend() = runTest(testDispatcher) {
-        val engine = okEngine()
-        val viewModel = viewModel(engine)
+    fun login_withBlankFields_showsValidationErrorAndDoesNotCallRepository() = runTest(testDispatcher) {
+        val repository = FakeAuthRepository(FakeTokenStore())
+        val viewModel = AuthViewModel(repository, FakeTokenStore())
 
         viewModel.onEmailChange("")
         viewModel.onPasswordChange("")
@@ -50,26 +42,27 @@ class AuthViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals("Enter your email and password.", viewModel.formState.value.errorMessage)
-        assertTrue(engine.requestHistory.isEmpty())
+        assertEquals(0, repository.calls)
     }
 
     @Test
     fun login_isSubmitting_guardsAgainstDoubleSubmit() = runTest(testDispatcher) {
-        val engine = okEngine("""{"token":"t","userId":1}""")
-        val viewModel = viewModel(engine)
+        val repository = FakeAuthRepository(FakeTokenStore())
+        val viewModel = AuthViewModel(repository, FakeTokenStore())
         viewModel.onEmailChange("a@b.com")
         viewModel.onPasswordChange("pw123456")
 
-        viewModel.login() // launches; sets isSubmitting = true
+        viewModel.login() // sets isSubmitting = true, then launches
         viewModel.login() // ignored while the first is in flight
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(1, engine.requestHistory.size)
+        assertEquals(1, repository.calls)
     }
 
     @Test
     fun login_errorOutcome_surfacesMessageAndClearsSubmitting() = runTest(testDispatcher) {
-        val viewModel = viewModel(statusEngine(HttpStatusCode.Unauthorized))
+        val repository = FakeAuthRepository(FakeTokenStore(), outcome = AuthOutcome.Error("Invalid email or password."))
+        val viewModel = AuthViewModel(repository, FakeTokenStore())
         viewModel.onEmailChange("a@b.com")
         viewModel.onPasswordChange("wrong-pw")
 
@@ -83,7 +76,8 @@ class AuthViewModelTest {
     @Test
     fun login_success_persistsTokenAndLeavesNoError() = runTest(testDispatcher) {
         val tokenStore = FakeTokenStore()
-        val viewModel = viewModel(okEngine("""{"token":"tok","userId":1}"""), tokenStore)
+        val repository = FakeAuthRepository(tokenStore, tokenOnSuccess = "tok")
+        val viewModel = AuthViewModel(repository, tokenStore)
         viewModel.onEmailChange("a@b.com")
         viewModel.onPasswordChange("pw123456")
 
@@ -95,21 +89,23 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun register_delegatesToBackend() = runTest(testDispatcher) {
+    fun register_delegatesToRepository() = runTest(testDispatcher) {
         val tokenStore = FakeTokenStore()
-        val viewModel = viewModel(okEngine("""{"token":"reg","userId":3}"""), tokenStore)
+        val repository = FakeAuthRepository(tokenStore, tokenOnSuccess = "reg")
+        val viewModel = AuthViewModel(repository, tokenStore)
         viewModel.onEmailChange("new@b.com")
         viewModel.onPasswordChange("pw123456")
 
         viewModel.register()
         testDispatcher.scheduler.advanceUntilIdle()
 
+        assertEquals(1, repository.calls)
         assertEquals("reg", tokenStore.currentToken())
     }
 
     @Test
     fun onGoogleError_setsMessageAndClearsSubmitting() {
-        val viewModel = viewModel(okEngine())
+        val viewModel = AuthViewModel(FakeAuthRepository(FakeTokenStore()), FakeTokenStore())
         viewModel.onGoogleError("Google sign-in failed.")
         assertEquals("Google sign-in failed.", viewModel.formState.value.errorMessage)
         assertEquals(false, viewModel.formState.value.isSubmitting)
@@ -117,7 +113,7 @@ class AuthViewModelTest {
 
     @Test
     fun resetForm_clearsEmailPasswordAndError() {
-        val viewModel = viewModel(okEngine())
+        val viewModel = AuthViewModel(FakeAuthRepository(FakeTokenStore()), FakeTokenStore())
         viewModel.onEmailChange("a@b.com")
         viewModel.onGoogleError("oops")
 
@@ -129,7 +125,7 @@ class AuthViewModelTest {
     @Test
     fun authState_reflectsTokenPresence() = runTest(testDispatcher) {
         val tokenStore = FakeTokenStore()
-        val viewModel = viewModel(okEngine(), tokenStore)
+        val viewModel = AuthViewModel(FakeAuthRepository(tokenStore), tokenStore)
         backgroundScope.launch { viewModel.authState.collect {} } // keep the WhileSubscribed flow active
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(AuthState.LoggedOut, viewModel.authState.value)
@@ -140,21 +136,25 @@ class AuthViewModelTest {
         assertEquals(AuthState.LoggedIn, viewModel.authState.value)
     }
 
-    // --- Helpers ---
+    // --- Fakes ---
 
-    private fun viewModel(engine: MockEngine, tokenStore: TokenStore = FakeTokenStore()): AuthViewModel {
-        val apiClient = FlashcardApiClient(
-            client = createFlashcardHttpClient(engine),
-            baseUrl = "http://localhost",
-            tokenProvider = { tokenStore.currentToken() },
-        )
-        return AuthViewModel(AuthRepository(apiClient, tokenStore), tokenStore)
-    }
+    private class FakeAuthRepository(
+        private val tokenStore: TokenStore,
+        private val outcome: AuthOutcome = AuthOutcome.Success,
+        private val tokenOnSuccess: String = "tok",
+    ) : AuthRepository {
+        var calls = 0
+            private set
 
-    private fun okEngine(body: String = "{}") = statusEngine(HttpStatusCode.OK, body)
+        override suspend fun register(email: String, password: String) = handle()
+        override suspend fun login(email: String, password: String) = handle()
+        override suspend fun signInWithGoogle(idToken: String) = handle()
 
-    private fun statusEngine(status: HttpStatusCode, body: String = "{}") = MockEngine {
-        respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
+        private suspend fun handle(): AuthOutcome {
+            calls++
+            if (outcome is AuthOutcome.Success) tokenStore.setToken(tokenOnSuccess)
+            return outcome
+        }
     }
 
     private class FakeTokenStore : TokenStore {

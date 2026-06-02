@@ -97,7 +97,7 @@ class AuthRepositoryTest {
     // --- Helpers ---
 
     private fun repository(tokenStore: TokenStore, engine: MockEngine): AuthRepository =
-        AuthRepository(
+        DefaultAuthRepository(
             apiClient = FlashcardApiClient(
                 client = createFlashcardHttpClient(engine),
                 baseUrl = "http://localhost",
