@@ -5,6 +5,7 @@ coil = "3.4.0"
 jacoco = "0.8.13"
 ktlint = "1.5.0"
 ktlintPlugin = "12.1.2"
+testRetry = "1.6.2"
 composeBom = "2026.02.01"
 coreKtx = "1.10.1"
 coroutinesAndroid = "1.10.2"
@@ -118,3 +119,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
+test-retry = { id = "org.gradle.test-retry", version.ref = "testRetry" }

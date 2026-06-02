@@ -44,6 +44,11 @@ jobs:
     permissions:
       contents: read
       pull-requests: write   # for the coverage PR comment
+    env:
+      # Ryuk's sidecar container is the most common Testcontainers CI flake; the runner is
+      # ephemeral and self-cleans, so disabling it is safe. (The :backend:test task forwards
+      # this env var into the test workers.)
+      TESTCONTAINERS_RYUK_DISABLED: 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,6 +66,11 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      # Pre-pull the Postgres image so Testcontainers' timed container start doesn't race on
+      # the image download (a cause of startup-timeout flakes).
+      - name: Pre-pull Postgres image
+        run: docker pull postgres:16-alpine
 
       # Docker is preinstalled on ubuntu-latest, so the backend's Testcontainers
       # (Postgres) work with no extra setup or secrets. Each report task runs its tests.
