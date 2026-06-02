@@ -23,6 +23,7 @@ interface AuthRepository {
     suspend fun register(email: String, password: String): AuthOutcome
     suspend fun login(email: String, password: String): AuthOutcome
     suspend fun signInWithGoogle(idToken: String): AuthOutcome
+    suspend fun logout()
 }
 
 class DefaultAuthRepository @Inject constructor(
@@ -81,6 +82,15 @@ class DefaultAuthRepository @Inject constructor(
         } catch (e: Exception) {
             AuthOutcome.Error(GENERIC_ERROR)
         }
+    }
+
+    override suspend fun logout() {
+        // Best-effort server-side revoke; the local token is always cleared so logout works offline.
+        try {
+            apiClient.logout()
+        } catch (_: Exception) {
+        }
+        tokenStore.clearToken()
     }
 
     private companion object {

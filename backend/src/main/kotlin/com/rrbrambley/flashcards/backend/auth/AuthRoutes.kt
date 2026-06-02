@@ -5,6 +5,7 @@ import com.rrbrambley.flashcards.backend.error.UnauthorizedException
 import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
@@ -37,6 +38,21 @@ fun Route.authRoutes() {
                 throw UnauthorizedException("Google account email is not verified")
             }
             call.respond(AuthService.signInWithGoogle(identity.email, identity.sub))
+        }
+    }
+}
+
+/** Authenticated: revokes the caller's bearer token. Registered inside the bearer-auth block. */
+fun Route.logoutRoute() {
+    route("/auth") {
+        post("/logout") {
+            val token = call.request.headers[HttpHeaders.Authorization]
+                ?.removePrefix("Bearer ")
+                ?.trim()
+            if (!token.isNullOrBlank()) {
+                AuthService.revokeToken(token)
+            }
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }

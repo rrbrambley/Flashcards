@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 
@@ -92,6 +93,33 @@ class AuthRepositoryTest {
         val offline = MockEngine { throw IOException("offline") }
         val outcome = repository(FakeTokenStore(), offline).login("a@b.com", "pw")
         assertEquals(AuthOutcome.Error(GENERIC_ERROR), outcome)
+    }
+
+    @Test
+    fun logout_revokesServerSideAndClearsToken() = runTest {
+        val tokenStore = FakeTokenStore()
+        tokenStore.setToken("tok")
+        val fetched = mutableListOf<String>()
+        val engine = MockEngine { request ->
+            fetched += "${request.method.value} ${request.url.encodedPath}"
+            respond("", HttpStatusCode.NoContent)
+        }
+
+        repository(tokenStore, engine).logout()
+
+        assertNull(tokenStore.currentToken())
+        assertTrue(fetched.contains("POST /auth/logout"))
+    }
+
+    @Test
+    fun logout_clearsTokenEvenWhenRevokeFails() = runTest {
+        val tokenStore = FakeTokenStore()
+        tokenStore.setToken("tok")
+        val offline = MockEngine { throw IOException("offline") }
+
+        repository(tokenStore, offline).logout()
+
+        assertNull(tokenStore.currentToken())
     }
 
     // --- Helpers ---

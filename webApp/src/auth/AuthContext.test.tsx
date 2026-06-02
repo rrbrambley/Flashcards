@@ -7,7 +7,7 @@ import { api } from '../api/client';
 import { getToken } from './token';
 
 vi.mock('../api/client', () => ({
-  api: { login: vi.fn(), register: vi.fn(), googleSignIn: vi.fn() },
+  api: { login: vi.fn(), register: vi.fn(), googleSignIn: vi.fn(), logout: vi.fn(() => Promise.resolve()) },
 }));
 
 function Consumer() {
@@ -65,6 +65,7 @@ describe('AuthProvider / useAuth', () => {
 
     expect(screen.getByTestId('token')).toHaveTextContent('none');
     expect(getToken()).toBeNull();
+    expect(api.logout).toHaveBeenCalled();
   });
 
   it('useAuth throws when used outside a provider', () => {

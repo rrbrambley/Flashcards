@@ -136,6 +136,22 @@ class AuthViewModelTest {
         assertEquals(AuthState.LoggedIn, viewModel.authState.value)
     }
 
+    @Test
+    fun logout_clearsTokenAndReturnsToLoggedOut() = runTest(testDispatcher) {
+        val tokenStore = FakeTokenStore()
+        tokenStore.setToken("tok")
+        val viewModel = AuthViewModel(FakeAuthRepository(tokenStore), tokenStore)
+        backgroundScope.launch { viewModel.authState.collect {} }
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(AuthState.LoggedIn, viewModel.authState.value)
+
+        viewModel.logout()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(tokenStore.currentToken())
+        assertEquals(AuthState.LoggedOut, viewModel.authState.value)
+    }
+
     // --- Fakes ---
 
     private class FakeAuthRepository(
@@ -149,6 +165,9 @@ class AuthViewModelTest {
         override suspend fun register(email: String, password: String) = handle()
         override suspend fun login(email: String, password: String) = handle()
         override suspend fun signInWithGoogle(idToken: String) = handle()
+        override suspend fun logout() {
+            tokenStore.clearToken()
+        }
 
         private suspend fun handle(): AuthOutcome {
             calls++

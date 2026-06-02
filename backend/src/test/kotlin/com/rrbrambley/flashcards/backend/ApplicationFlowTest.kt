@@ -140,6 +140,23 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun logout_revokes_the_token() = runApp { client ->
+        val auth = client.register("nora", "pw")
+        assertEquals(HttpStatusCode.OK, client.get("/decks") { bearerAuth(auth.token) }.status)
+
+        val response = client.post("/auth/logout") { bearerAuth(auth.token) }
+        assertEquals(HttpStatusCode.NoContent, response.status)
+
+        // The revoked token no longer authenticates.
+        assertEquals(HttpStatusCode.Unauthorized, client.get("/decks") { bearerAuth(auth.token) }.status)
+    }
+
+    @Test
+    fun logout_requires_authentication() = runApp { client ->
+        assertEquals(HttpStatusCode.Unauthorized, client.post("/auth/logout").status)
+    }
+
+    @Test
     fun decks_returns_seeded_country_flags_deck() = runApp { client ->
         val auth = client.register("carol", "pw")
         val response = client.get("/decks") { bearerAuth(auth.token) }

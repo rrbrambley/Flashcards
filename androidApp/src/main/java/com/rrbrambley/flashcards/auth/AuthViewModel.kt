@@ -56,6 +56,11 @@ class AuthViewModel @Inject constructor(
 
     fun onGoogleError(message: String) = _formState.update { it.copy(isSubmitting = false, errorMessage = message) }
 
+    /** Clears the token (revoking it server-side); authState then flips to LoggedOut. */
+    fun logout() {
+        viewModelScope.launch { authRepository.logout() }
+    }
+
     private inline fun submitWithCredentials(crossinline call: suspend (AuthFormState) -> AuthOutcome) {
         val current = _formState.value
         if (current.email.isBlank() || current.password.isBlank()) {

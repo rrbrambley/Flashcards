@@ -132,4 +132,16 @@ describe('api client', () => {
     expect(url).toContain('/sessions/7/complete');
     expect(init.method).toBe('POST');
   });
+
+  it('logout posts to /auth/logout with the bearer token', async () => {
+    setToken('tok');
+    const fetchMock = stubFetch({ ok: true, status: 204, json: () => Promise.reject(new Error('no body')) });
+
+    await api.logout();
+
+    const { url, init } = lastCall(fetchMock);
+    expect(url).toContain('/auth/logout');
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+  });
 });

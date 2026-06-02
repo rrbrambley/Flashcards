@@ -13,7 +13,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -30,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -97,8 +101,10 @@ private enum class BottomDestination(
 @Composable
 private fun HomeScaffolding(
     createDeckViewModel: CreateDeckViewModel = hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(BottomDestination.Home) }
+    var showAccountMenu by remember { mutableStateOf(false) }
     val createDeckUiState by createDeckViewModel.uiState.collectAsState()
     val context = LocalContext.current
 
@@ -140,7 +146,26 @@ private fun HomeScaffolding(
                         }
                         BottomDestination.Home,
                         BottomDestination.Library,
-                        -> Unit
+                        -> {
+                            IconButton(onClick = { showAccountMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Account menu",
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showAccountMenu,
+                                onDismissRequest = { showAccountMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Log out") },
+                                    onClick = {
+                                        showAccountMenu = false
+                                        authViewModel.logout()
+                                    },
+                                )
+                            }
+                        }
                     }
                 },
             )
