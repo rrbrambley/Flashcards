@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { api } from '../api/client';
 import type { FlashcardDto } from '../api/types';
+import { isComplete, isStarted } from './cardValidation';
 
 interface CardDraft {
   id: number;
@@ -28,10 +29,6 @@ interface DeckFormProps {
   /** Receives validated values (term -> question, definition -> answer). Throw to surface an error. */
   onSubmit: (title: string, flashcards: FlashcardDto[]) => Promise<void>;
 }
-
-// A card needs a definition plus either a term or an image (image-only cards are allowed).
-const isComplete = (c: CardDraft) => c.definition.trim() !== '' && (c.term.trim() !== '' || c.imageUrl != null);
-const isStarted = (c: CardDraft) => c.term.trim() !== '' || c.definition.trim() !== '' || c.imageUrl != null;
 
 export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnly = false, onSubmit }: DeckFormProps) {
   const seededCards: CardDraft[] = (initialCards && initialCards.length > 0

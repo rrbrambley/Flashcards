@@ -103,8 +103,11 @@ jobs:
           min-coverage-changed-files: 0
 
   web:
-    name: Web (build + lint)
+    name: Web (build + lint + tests)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # for the coverage PR comment
     defaults:
       run:
         working-directory: webApp
@@ -127,3 +130,20 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Tests + coverage
+        run: npm run test:coverage
+
+      - name: Coverage PR comment
+        if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: webApp
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-coverage
+          path: webApp/coverage/
+          if-no-files-found: warn
