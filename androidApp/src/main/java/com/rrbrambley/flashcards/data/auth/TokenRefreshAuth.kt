@@ -30,7 +30,12 @@ fun HttpClientConfig<*>.installTokenRefreshAuth(tokenStore: TokenStore, refreshU
                 if (access != null && refresh != null) BearerTokens(access, refresh) else null
             }
             refreshTokens {
-                val refresh = tokenStore.currentRefreshToken() ?: return@refreshTokens null
+                // No refresh token to recover with: clear any stale access token so the app
+                // gates back to sign-in instead of silently 401-looping with no feedback.
+                val refresh = tokenStore.currentRefreshToken() ?: run {
+                    tokenStore.clearToken()
+                    return@refreshTokens null
+                }
                 try {
                     val response: AuthResponse = client.post(refreshUrl) {
                         markAsRefreshTokenRequest()
