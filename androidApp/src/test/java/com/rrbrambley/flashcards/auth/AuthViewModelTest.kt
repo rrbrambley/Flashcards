@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.auth
 
+import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.core.FakeStringProvider
 import com.rrbrambley.flashcards.data.auth.TokenStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,21 +36,24 @@ class AuthViewModelTest {
     @Test
     fun login_withBlankFields_showsValidationErrorAndDoesNotCallRepository() = runTest(testDispatcher) {
         val repository = FakeAuthRepository(FakeTokenStore())
-        val viewModel = AuthViewModel(repository, FakeTokenStore())
+        val viewModel = AuthViewModel(repository, FakeStringProvider(), FakeTokenStore())
 
         viewModel.onEmailChange("")
         viewModel.onPasswordChange("")
         viewModel.login()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals("Enter your email and password.", viewModel.formState.value.errorMessage)
+        assertEquals(
+            "string:${R.string.auth_error_enter_credentials}",
+            viewModel.formState.value.errorMessage,
+        )
         assertEquals(0, repository.calls)
     }
 
     @Test
     fun login_isSubmitting_guardsAgainstDoubleSubmit() = runTest(testDispatcher) {
         val repository = FakeAuthRepository(FakeTokenStore())
-        val viewModel = AuthViewModel(repository, FakeTokenStore())
+        val viewModel = AuthViewModel(repository, FakeStringProvider(), FakeTokenStore())
         viewModel.onEmailChange("a@b.com")
         viewModel.onPasswordChange("pw123456")
 
@@ -62,7 +67,7 @@ class AuthViewModelTest {
     @Test
     fun login_errorOutcome_surfacesMessageAndClearsSubmitting() = runTest(testDispatcher) {
         val repository = FakeAuthRepository(FakeTokenStore(), outcome = AuthOutcome.Error("Invalid email or password."))
-        val viewModel = AuthViewModel(repository, FakeTokenStore())
+        val viewModel = AuthViewModel(repository, FakeStringProvider(), FakeTokenStore())
         viewModel.onEmailChange("a@b.com")
         viewModel.onPasswordChange("wrong-pw")
 
@@ -77,7 +82,7 @@ class AuthViewModelTest {
     fun login_success_persistsTokenAndLeavesNoError() = runTest(testDispatcher) {
         val tokenStore = FakeTokenStore()
         val repository = FakeAuthRepository(tokenStore, tokenOnSuccess = "tok")
-        val viewModel = AuthViewModel(repository, tokenStore)
+        val viewModel = AuthViewModel(repository, FakeStringProvider(), tokenStore)
         viewModel.onEmailChange("a@b.com")
         viewModel.onPasswordChange("pw123456")
 
@@ -92,7 +97,7 @@ class AuthViewModelTest {
     fun register_delegatesToRepository() = runTest(testDispatcher) {
         val tokenStore = FakeTokenStore()
         val repository = FakeAuthRepository(tokenStore, tokenOnSuccess = "reg")
-        val viewModel = AuthViewModel(repository, tokenStore)
+        val viewModel = AuthViewModel(repository, FakeStringProvider(), tokenStore)
         viewModel.onEmailChange("new@b.com")
         viewModel.onPasswordChange("pw123456")
 
@@ -105,7 +110,7 @@ class AuthViewModelTest {
 
     @Test
     fun onGoogleError_setsMessageAndClearsSubmitting() {
-        val viewModel = AuthViewModel(FakeAuthRepository(FakeTokenStore()), FakeTokenStore())
+        val viewModel = AuthViewModel(FakeAuthRepository(FakeTokenStore()), FakeStringProvider(), FakeTokenStore())
         viewModel.onGoogleError("Google sign-in failed.")
         assertEquals("Google sign-in failed.", viewModel.formState.value.errorMessage)
         assertEquals(false, viewModel.formState.value.isSubmitting)
@@ -113,7 +118,7 @@ class AuthViewModelTest {
 
     @Test
     fun resetForm_clearsEmailPasswordAndError() {
-        val viewModel = AuthViewModel(FakeAuthRepository(FakeTokenStore()), FakeTokenStore())
+        val viewModel = AuthViewModel(FakeAuthRepository(FakeTokenStore()), FakeStringProvider(), FakeTokenStore())
         viewModel.onEmailChange("a@b.com")
         viewModel.onGoogleError("oops")
 
@@ -125,7 +130,7 @@ class AuthViewModelTest {
     @Test
     fun authState_reflectsTokenPresence() = runTest(testDispatcher) {
         val tokenStore = FakeTokenStore()
-        val viewModel = AuthViewModel(FakeAuthRepository(tokenStore), tokenStore)
+        val viewModel = AuthViewModel(FakeAuthRepository(tokenStore), FakeStringProvider(), tokenStore)
         backgroundScope.launch { viewModel.authState.collect {} } // keep the WhileSubscribed flow active
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(AuthState.LoggedOut, viewModel.authState.value)
@@ -140,7 +145,7 @@ class AuthViewModelTest {
     fun logout_clearsTokenAndReturnsToLoggedOut() = runTest(testDispatcher) {
         val tokenStore = FakeTokenStore()
         tokenStore.setToken("tok")
-        val viewModel = AuthViewModel(FakeAuthRepository(tokenStore), tokenStore)
+        val viewModel = AuthViewModel(FakeAuthRepository(tokenStore), FakeStringProvider(), tokenStore)
         backgroundScope.launch { viewModel.authState.collect {} }
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(AuthState.LoggedIn, viewModel.authState.value)

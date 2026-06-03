@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.edit.ui
 
+import com.rrbrambley.flashcards.core.FakeStringProvider
+
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.domain.Flashcard
@@ -40,7 +42,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun loadDeck_populatesUiStateFromRepositoryDeckId() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader, FakeStringProvider())
 
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -60,7 +62,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun unchangedLoadedDeck_isNotDirty() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader, FakeStringProvider())
 
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -70,7 +72,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun changingField_marksUiStateDirty() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader, FakeStringProvider())
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -81,7 +83,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun addDraftCard_addsEmptyCardAfterLoadedDeckCardsAndMarksDirty() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader, FakeStringProvider())
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -96,7 +98,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun removeCard_removesTheCardAndMarksDirty() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader)
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck()), NoOpImageUploader, FakeStringProvider())
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -111,7 +113,7 @@ class EditDeckViewModelTest {
 
     @Test
     fun removeCard_onReadOnlyDeck_isIgnored() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck(editable = false)), NoOpImageUploader)
+        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck(editable = false)), NoOpImageUploader, FakeStringProvider())
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
         val cardsBefore = viewModel.uiState.value.cards
@@ -124,7 +126,7 @@ class EditDeckViewModelTest {
     @Test
     fun finishDeckEditing_withInvalidDeck_showsValidationErrors() = runTest(testDispatcher) {
         val repository = FakeFlashcardRepository(testDeck())
-        val viewModel = EditDeckViewModel(repository, NoOpImageUploader)
+        val viewModel = EditDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.onDeckTitleChange("")
@@ -138,7 +140,7 @@ class EditDeckViewModelTest {
     @Test
     fun finishDeckEditing_withValidDeck_updatesExistingDeckAndMarksSaved() = runTest(testDispatcher) {
         val repository = FakeFlashcardRepository(testDeck())
-        val viewModel = EditDeckViewModel(repository, NoOpImageUploader)
+        val viewModel = EditDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
         viewModel.onDeckTitleChange(" Spanish greetings ")

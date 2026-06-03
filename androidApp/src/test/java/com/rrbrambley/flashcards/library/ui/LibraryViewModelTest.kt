@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.library.ui
 
+import com.rrbrambley.flashcards.core.FakeStringProvider
+
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.domain.FlashcardDeck
 import com.rrbrambley.flashcards.domain.FlashcardRepository
@@ -41,6 +43,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList()),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
         )
 
         assertEquals(LibraryUiState.Loading, viewModel.uiState.value)
@@ -58,6 +61,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(decks),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
         )
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -70,6 +74,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList()),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
         )
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -84,6 +89,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList()),
             practiceSessionRepository = practiceSessionRepository,
+            stringProvider = FakeStringProvider(),
         )
 
         viewModel.startPractice(deckId = 7L) { startedSessionId = it }
@@ -99,6 +105,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = flashcardRepository,
             practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
         )
 
         viewModel.deleteDeck(deckId = 5L)
@@ -112,6 +119,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList(), deleteShouldFail = true),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
         )
         val messages = mutableListOf<String>()
         // Unconfined so the collector subscribes eagerly (before we emit) — SharedFlow has no replay.
@@ -131,6 +139,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(decks, failFirstSubscription = true),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(LibraryUiState.LoadingFailed, viewModel.uiState.value)

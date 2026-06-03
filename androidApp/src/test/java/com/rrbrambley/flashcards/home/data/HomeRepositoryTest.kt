@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.home.data
 
+import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.core.FakeStringProvider
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.practice.domain.PracticeSession
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
@@ -27,13 +29,14 @@ class HomeRepositoryTest {
     @Test
     fun observeHomeData_returnsPracticeCardWhenNoActiveSessions() {
         runTest {
-            val repository = HomeRepositoryImpl(offlineApiClient(), FakePracticeSessionRepository(emptyList()))
+            val repository =
+                HomeRepositoryImpl(offlineApiClient(), FakePracticeSessionRepository(emptyList()), FakeStringProvider())
 
             val homeData = repository.observeHomeData().first()
 
-            assertEquals("Practice identifying country flags", homeData.first().title)
+            assertEquals("string:${R.string.home_country_flags_title}", homeData.first().title)
             assertNotNull(homeData.first().button)
-            assertEquals("Practice", homeData.first().button?.message)
+            assertEquals("string:${R.string.home_country_flags_button}", homeData.first().button?.message)
             assertEquals(HomeButtonAction.NavigateToPractice, homeData.first().button?.action)
         }
     }
@@ -41,13 +44,14 @@ class HomeRepositoryTest {
     @Test
     fun observeHomeData_returnsCreateFlashcardSetCardSecondWhenNoActiveSessions() {
         runTest {
-            val repository = HomeRepositoryImpl(offlineApiClient(), FakePracticeSessionRepository(emptyList()))
+            val repository =
+                HomeRepositoryImpl(offlineApiClient(), FakePracticeSessionRepository(emptyList()), FakeStringProvider())
 
             val homeData = repository.observeHomeData().first()
 
-            assertEquals("Create a new flashcard set", homeData[1].title)
+            assertEquals("string:${R.string.home_create_set_title}", homeData[1].title)
             assertNotNull(homeData[1].button)
-            assertEquals("Create", homeData[1].button?.message)
+            assertEquals("string:${R.string.home_create_set_button}", homeData[1].button?.message)
             assertEquals(HomeButtonAction.CreateNewFlashcardSet, homeData[1].button?.action)
         }
     }
@@ -55,7 +59,8 @@ class HomeRepositoryTest {
     @Test
     fun observeHomeData_prependsActivePracticeSessions() {
         runTest {
-            val repository = HomeRepositoryImpl(offlineApiClient(), 
+            val repository = HomeRepositoryImpl(
+                offlineApiClient(),
                 FakePracticeSessionRepository(
                     listOf(
                         PracticeSession(
@@ -65,12 +70,13 @@ class HomeRepositoryTest {
                         ),
                     ),
                 ),
+                FakeStringProvider(),
             )
 
             val homeData = repository.observeHomeData().first()
 
-            assertEquals("Continue Spanish basics practice", homeData.first().title)
-            assertEquals("Continue practice", homeData.first().button?.message)
+            assertEquals("string:${R.string.home_continue_practice_title}:Spanish basics", homeData.first().title)
+            assertEquals("string:${R.string.home_continue_practice_button}", homeData.first().button?.message)
             assertEquals(HomeButtonAction.ContinuePractice(12L), homeData.first().button?.action)
         }
     }

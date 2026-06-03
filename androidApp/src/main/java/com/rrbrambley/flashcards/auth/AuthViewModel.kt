@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.data.auth.TokenStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +33,7 @@ data class AuthFormState(
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val stringProvider: StringProvider,
     tokenStore: TokenStore,
 ) : ViewModel() {
 
@@ -64,7 +67,7 @@ class AuthViewModel @Inject constructor(
     private inline fun submitWithCredentials(crossinline call: suspend (AuthFormState) -> AuthOutcome) {
         val current = _formState.value
         if (current.email.isBlank() || current.password.isBlank()) {
-            _formState.update { it.copy(errorMessage = "Enter your email and password.") }
+            _formState.update { it.copy(errorMessage = stringProvider.getString(R.string.auth_error_enter_credentials)) }
             return
         }
         runAuth { call(current) }

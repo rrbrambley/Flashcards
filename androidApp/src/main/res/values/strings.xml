@@ -13,6 +13,18 @@
         <item quantity="other">%1$d cards</item>
     </plurals>
 
+    <!-- Strings resolved outside Compose (ViewModels / repositories, via StringProvider) -->
+    <string name="auth_error_enter_credentials">Enter your email and password.</string>
+    <string name="library_delete_failed">Couldn\'t delete the deck. Check your connection and try again.</string>
+    <string name="image_upload_error">Couldn\'t add the image. Use a JPEG, PNG, WebP or GIF under 5 MB and try again.</string>
+    <!-- Home feed offline-fallback copy (the primary feed comes from the backend). -->
+    <string name="home_continue_practice_title">Continue %1$s practice</string>
+    <string name="home_continue_practice_button">Continue practice</string>
+    <string name="home_country_flags_title">Practice identifying country flags</string>
+    <string name="home_country_flags_button">Practice</string>
+    <string name="home_create_set_title">Create a new flashcard set</string>
+    <string name="home_create_set_button">Create</string>
+
     <!-- Auth -->
     <string name="auth_login_title">Welcome back</string>
     <string name="auth_login_google">Sign in with Google</string>
