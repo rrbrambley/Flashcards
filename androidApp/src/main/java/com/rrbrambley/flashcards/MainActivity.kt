@@ -36,10 +36,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.annotation.StringRes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.auth.AuthState
 import com.rrbrambley.flashcards.auth.AuthViewModel
@@ -89,12 +91,12 @@ private fun FlashcardsApp(authViewModel: AuthViewModel = hiltViewModel()) {
 }
 
 private enum class BottomDestination(
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
-    Home("Home", Icons.Default.Home),
-    New("New", Icons.Default.Add),
-    Library("Library", Icons.Default.Menu),
+    Home(R.string.nav_home, Icons.Default.Home),
+    New(R.string.nav_new, Icons.Default.Add),
+    Library(R.string.nav_library, Icons.Default.Menu),
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -121,11 +123,13 @@ private fun HomeScaffolding(
             TopAppBar(
                 title = {
                     Text(
-                        text = when (currentDestination) {
-                            BottomDestination.Home -> "Flashcards"
-                            BottomDestination.New -> "New deck"
-                            BottomDestination.Library -> "Library"
-                        },
+                        text = stringResource(
+                            when (currentDestination) {
+                                BottomDestination.Home -> R.string.flashcards
+                                BottomDestination.New -> R.string.main_title_new_deck
+                                BottomDestination.Library -> R.string.nav_library
+                            },
+                        ),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -140,7 +144,7 @@ private fun HomeScaffolding(
                             IconButton(onClick = createDeckViewModel::finishDeckCreation) {
                                 Icon(
                                     imageVector = Icons.Default.Check,
-                                    contentDescription = "Finish deck creation",
+                                    contentDescription = stringResource(R.string.main_cd_finish_deck_creation),
                                 )
                             }
                         }
@@ -150,7 +154,7 @@ private fun HomeScaffolding(
                             IconButton(onClick = { showAccountMenu = true }) {
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "Account menu",
+                                    contentDescription = stringResource(R.string.main_cd_account_menu),
                                 )
                             }
                             DropdownMenu(
@@ -158,7 +162,7 @@ private fun HomeScaffolding(
                                 onDismissRequest = { showAccountMenu = false },
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Log out") },
+                                    text = { Text(stringResource(R.string.main_log_out)) },
                                     onClick = {
                                         showAccountMenu = false
                                         authViewModel.logout()
@@ -181,7 +185,7 @@ private fun HomeScaffolding(
                         icon = {
                             Icon(
                                 imageVector = destination.icon,
-                                contentDescription = destination.label,
+                                contentDescription = stringResource(destination.labelRes),
                             )
                         },
                     )
@@ -194,7 +198,7 @@ private fun HomeScaffolding(
                     FloatingActionButton(onClick = createDeckViewModel::addDraftCard) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Add flashcard",
+                            contentDescription = stringResource(R.string.cd_add_flashcard),
                         )
                     }
                 }
