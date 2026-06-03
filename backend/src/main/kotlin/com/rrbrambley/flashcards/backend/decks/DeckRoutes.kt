@@ -1,6 +1,8 @@
 package com.rrbrambley.flashcards.backend.decks
 
 import com.rrbrambley.flashcards.backend.error.NotFoundException
+import com.rrbrambley.flashcards.backend.routes.pageCursor
+import com.rrbrambley.flashcards.backend.routes.pageLimit
 import com.rrbrambley.flashcards.backend.routes.pathLong
 import com.rrbrambley.flashcards.backend.routes.userId
 import com.rrbrambley.flashcards.backend.validation.Validation
@@ -18,7 +20,7 @@ import io.ktor.server.routing.route
 fun Route.deckRoutes() {
     route("/decks") {
         get {
-            call.respond(DeckRepository.listDecksForUser(call.userId()))
+            call.respond(DeckRepository.listDecksForUser(call.userId(), call.pageLimit(), call.pageCursor()))
         }
         get("/{id}") {
             val deckId = call.pathLong("id")

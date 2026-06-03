@@ -41,18 +41,43 @@ describe('api client', () => {
     expect(init.headers.Authorization).toBe('Bearer tok');
   });
 
-  it('getDecks sends an authed GET to /decks', async () => {
+  it('getDecks sends an authed GET to /decks and returns the page', async () => {
     setToken('tok');
-    const fetchMock = stubFetch({ json: () => Promise.resolve([]) });
+    const fetchMock = stubFetch({ json: () => Promise.resolve({ items: [], nextCursor: null }) });
 
-    const decks = await api.getDecks();
+    const page = await api.getDecks();
 
-    expect(decks).toEqual([]);
+    expect(page).toEqual({ items: [], nextCursor: null });
     const { url, init } = lastCall(fetchMock);
     expect(url).toContain('/decks');
+    expect(url).not.toContain('?'); // no params on the first page
     expect(init.method).toBe('GET');
     expect(init.headers.Authorization).toBe('Bearer tok');
     expect(init.body).toBeUndefined();
+  });
+
+  it('getAllDecks follows nextCursor across pages', async () => {
+    setToken('tok');
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ items: [{ id: 1 }], nextCursor: 'c1' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ items: [{ id: 2 }], nextCursor: null }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const decks = await api.getAllDecks();
+
+    expect(decks).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((fetchMock.mock.calls[0] as [string])[0]).not.toContain('cursor=');
+    expect((fetchMock.mock.calls[1] as [string])[0]).toContain('cursor=c1');
   });
 
   it('register posts JSON without an auth header', async () => {

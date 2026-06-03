@@ -1,6 +1,13 @@
 // TypeScript mirrors of the backend's shared @Serializable DTOs
 // (com.rrbrambley.flashcards.shared.api).
 
+// One page of a cursor-paginated list endpoint. `nextCursor` is an opaque token to pass back as
+// the `cursor` query param for the next page, or null on the last page.
+export interface Page<T> {
+  items: T[];
+  nextCursor: string | null;
+}
+
 export interface FlashcardDto {
   question: string;
   answer: string;

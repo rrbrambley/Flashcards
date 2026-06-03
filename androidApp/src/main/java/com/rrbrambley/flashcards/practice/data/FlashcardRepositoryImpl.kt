@@ -56,7 +56,8 @@ class FlashcardRepositoryImpl @Inject constructor(
     }
 
     private suspend fun refreshDecks() {
-        val decks = apiClient.getDecks()
+        // Offline-first: pull the whole library (all pages) so the Room cache is complete.
+        val decks = apiClient.getAllDecks()
         flashcardDao.cacheDecks(decks.map { it.toDeckEntity() to it.toFlashcardEntities() })
     }
 

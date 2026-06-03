@@ -15,6 +15,7 @@ import com.rrbrambley.flashcards.shared.api.HomeDataDto
 import com.rrbrambley.flashcards.shared.api.ImageUploadResponse
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.LogoutRequest
+import com.rrbrambley.flashcards.shared.api.Page
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
@@ -335,7 +336,7 @@ class ApplicationFlowTest {
         val auth = client.register("carol", "password1")
         val response = client.get("/decks") { bearerAuth(auth.accessToken) }
         assertEquals(HttpStatusCode.OK, response.status)
-        val decks = response.decode<List<FlashcardDeckDto>>()
+        val decks = response.decode<Page<FlashcardDeckDto>>().items
 
         val flags = decks.single { it.title == "Country Flags" }
         assertEquals(3, flags.flashcards.size)
@@ -343,6 +344,78 @@ class ApplicationFlowTest {
         assertTrue(flags.flashcards.all { it.imageUrl != null })
         // The global catalog deck has no owner, so it is read-only for every user.
         assertFalse(flags.editable)
+    }
+
+    @Test
+    fun decks_paginate_with_a_stable_cursor() = runApp { client ->
+        val auth = client.register("paula", "password1")
+        // Create 4 decks; with the seeded global Country Flags deck that's 5 visible decks.
+        repeat(4) { i ->
+            client.post("/decks") {
+                bearerAuth(auth.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(CreateDeckRequest("Deck $i", listOf(FlashcardDto("Q", "A")))))
+            }
+        }
+
+        val seen = mutableListOf<Long>()
+        var cursor: String? = null
+        var pages = 0
+        do {
+            // Cursors are URL-safe base64, so they're safe to inline in the query string unescaped.
+            val path = if (cursor == null) "/decks?limit=2" else "/decks?limit=2&cursor=$cursor"
+            val response = client.get(path) { bearerAuth(auth.accessToken) }
+            assertEquals(HttpStatusCode.OK, response.status)
+            val page = response.decode<Page<FlashcardDeckDto>>()
+            assertTrue(page.items.size <= 2)
+            seen += page.items.map { it.id }
+            cursor = page.nextCursor
+            pages++
+        } while (cursor != null)
+
+        // 5 decks at page size 2 => 3 pages (2 + 2 + 1), no duplicates, stable descending-id order.
+        assertEquals(3, pages)
+        assertEquals(5, seen.size)
+        assertEquals(seen.distinct(), seen)
+        assertEquals(seen.sortedDescending(), seen)
+    }
+
+    @Test
+    fun decks_reject_a_malformed_cursor() = runApp { client ->
+        val auth = client.register("perry", "password1")
+        val response = client.get("/decks?cursor=not%20a%20cursor!") { bearerAuth(auth.accessToken) }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun sessions_paginate_most_recently_updated_first() = runApp { client ->
+        val auth = client.register("sam", "password1")
+        // One active session per deck; create 3 in order.
+        val deckIds = (0 until 3).map { i ->
+            client.post("/decks") {
+                bearerAuth(auth.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(CreateDeckRequest("Deck $i", listOf(FlashcardDto("Q", "A")))))
+            }.decode<FlashcardDeckDto>().id
+        }
+        val sessionIds = deckIds.map { client.createSession(auth.accessToken, it).id }
+
+        val seen = mutableListOf<Long>()
+        var cursor: String? = null
+        do {
+            val path =
+                if (cursor == null) "/sessions?active=true&limit=2" else "/sessions?active=true&limit=2&cursor=$cursor"
+            val page = client.get(path) { bearerAuth(auth.accessToken) }.decode<Page<PracticeSessionDto>>()
+            assertTrue(page.items.size <= 2)
+            seen += page.items.map { it.id }
+            cursor = page.nextCursor
+        } while (cursor != null)
+
+        assertEquals(3, seen.size)
+        assertEquals(seen.distinct(), seen)
+        // Ordered most-recently-updated first; ties on updatedAt break by id desc — either way the
+        // last-created session comes first, so the page order is the creation order reversed.
+        assertEquals(sessionIds.reversed(), seen)
     }
 
     @Test
@@ -362,7 +435,7 @@ class ApplicationFlowTest {
     fun session_create_is_start_or_resume() = runApp { client ->
         val auth = client.register("dave", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
-            .decode<List<FlashcardDeckDto>>().first().id
+            .decode<Page<FlashcardDeckDto>>().items.first().id
 
         val created = client.createSession(auth.accessToken, deckId)
         val resumed = client.createSession(auth.accessToken, deckId)
@@ -374,7 +447,7 @@ class ApplicationFlowTest {
     fun progress_then_complete_updates_state_and_home_feed() = runApp { client ->
         val auth = client.register("erin", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
-            .decode<List<FlashcardDeckDto>>().first().id
+            .decode<Page<FlashcardDeckDto>>().items.first().id
         val session = client.createSession(auth.accessToken, deckId)
 
         // PATCH progress
@@ -389,7 +462,7 @@ class ApplicationFlowTest {
 
         // Active list + home feed contain the session before completion
         val activeBefore = client.get("/sessions?active=true") { bearerAuth(auth.accessToken) }
-            .decode<List<PracticeSessionDto>>()
+            .decode<Page<PracticeSessionDto>>().items
         assertEquals(listOf(session.id), activeBefore.map { it.id })
 
         val homeBefore = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
@@ -402,7 +475,7 @@ class ApplicationFlowTest {
         assertTrue(completed.isCompleted)
 
         val activeAfter = client.get("/sessions?active=true") { bearerAuth(auth.accessToken) }
-            .decode<List<PracticeSessionDto>>()
+            .decode<Page<PracticeSessionDto>>().items
         assertTrue(activeAfter.isEmpty())
 
         val homeAfter = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
@@ -418,7 +491,7 @@ class ApplicationFlowTest {
         val alice = client.register("alice2", "password1")
         val bob = client.register("bob2", "password1")
         val deckId = client.get("/decks") { bearerAuth(alice.accessToken) }
-            .decode<List<FlashcardDeckDto>>().first().id
+            .decode<Page<FlashcardDeckDto>>().items.first().id
         val aliceSession = client.createSession(alice.accessToken, deckId)
 
         val bobView = client.get("/sessions/${aliceSession.id}") { bearerAuth(bob.accessToken) }
@@ -445,7 +518,7 @@ class ApplicationFlowTest {
         val owner = client.register("judy", "password1")
         val intruder = client.register("kevin", "password1")
         val deckId = client.get("/decks") { bearerAuth(owner.accessToken) }
-            .decode<List<FlashcardDeckDto>>().first().id
+            .decode<Page<FlashcardDeckDto>>().items.first().id
         val session = client.createSession(owner.accessToken, deckId)
 
         val patch = client.patch("/sessions/${session.id}") {
@@ -472,7 +545,7 @@ class ApplicationFlowTest {
     fun start_or_resume_after_complete_creates_a_new_session() = runApp { client ->
         val auth = client.register("mallory", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
-            .decode<List<FlashcardDeckDto>>().first().id
+            .decode<Page<FlashcardDeckDto>>().items.first().id
 
         val first = client.createSession(auth.accessToken, deckId)
         client.post("/sessions/${first.id}/complete") { bearerAuth(auth.accessToken) }
@@ -487,7 +560,7 @@ class ApplicationFlowTest {
     fun home_feed_orders_active_sessions_by_recency() = runApp { client ->
         val auth = client.register("olivia", "password1")
         val flagsDeckId = client.get("/decks") { bearerAuth(auth.accessToken) }
-            .decode<List<FlashcardDeckDto>>().first().id
+            .decode<Page<FlashcardDeckDto>>().items.first().id
         val capitals = client.post("/decks") {
             bearerAuth(auth.accessToken)
             contentType(ContentType.Application.Json)
@@ -534,7 +607,7 @@ class ApplicationFlowTest {
         assertTrue(deck.id > 0)
 
         // Appears in the user's library...
-        val decks = client.get("/decks") { bearerAuth(auth.accessToken) }.decode<List<FlashcardDeckDto>>()
+        val decks = client.get("/decks") { bearerAuth(auth.accessToken) }.decode<Page<FlashcardDeckDto>>().items
         assertTrue(decks.any { it.id == deck.id && it.title == "World Capitals" })
 
         // ...and a session can be started on it.
@@ -573,7 +646,7 @@ class ApplicationFlowTest {
         val auth = client.register("heidi", "password1")
         // The seeded global Country Flags deck has no owner, so it is read-only.
         val globalDeck = client.get("/decks") { bearerAuth(auth.accessToken) }
-            .decode<List<FlashcardDeckDto>>()
+            .decode<Page<FlashcardDeckDto>>().items
             .single { it.title == "Country Flags" }
 
         val response = client.put("/decks/${globalDeck.id}") {
@@ -601,7 +674,7 @@ class ApplicationFlowTest {
         // The deck is gone from the library and by id...
         assertTrue(
             client.get("/decks") { bearerAuth(auth.accessToken) }
-                .decode<List<FlashcardDeckDto>>().none { it.id == deck.id },
+                .decode<Page<FlashcardDeckDto>>().items.none { it.id == deck.id },
         )
         assertEquals(HttpStatusCode.NotFound, client.get("/decks/${deck.id}") { bearerAuth(auth.accessToken) }.status)
         // ...and its session was cascaded away.
@@ -635,7 +708,7 @@ class ApplicationFlowTest {
     fun cannot_delete_the_global_deck() = runApp { client ->
         val auth = client.register("quinn", "password1")
         val globalDeck = client.get("/decks") { bearerAuth(auth.accessToken) }
-            .decode<List<FlashcardDeckDto>>()
+            .decode<Page<FlashcardDeckDto>>().items
             .single { it.title == "Country Flags" }
 
         assertEquals(

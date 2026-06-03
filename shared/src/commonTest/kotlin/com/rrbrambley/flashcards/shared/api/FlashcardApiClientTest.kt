@@ -18,7 +18,7 @@ class FlashcardApiClientTest {
 
     @Test
     fun getDecks_sendsGetToDecksWithBearerToken() = runTest {
-        val engine = jsonEngine("[]")
+        val engine = jsonEngine(EMPTY_PAGE)
         apiClient(engine, token = "tok-1").getDecks()
 
         val request = engine.requestHistory.last()
@@ -102,7 +102,7 @@ class FlashcardApiClientTest {
 
     @Test
     fun baseUrlTrailingSlashIsTrimmed() = runTest {
-        val engine = jsonEngine("[]")
+        val engine = jsonEngine(EMPTY_PAGE)
         FlashcardApiClient(createFlashcardHttpClient(engine), baseUrl = "http://localhost/", tokenProvider = { null })
             .getDecks()
 
@@ -129,14 +129,34 @@ class FlashcardApiClientTest {
             if (calls == 1) {
                 respond("boom", HttpStatusCode.InternalServerError)
             } else {
-                respond("[]", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                respond(EMPTY_PAGE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             }
         }
 
-        val decks = apiClient(engine).getDecks()
+        val page = apiClient(engine).getDecks()
 
-        assertEquals(emptyList(), decks)
+        assertEquals(emptyList(), page.items)
         assertEquals(2, calls) // one failure + one successful retry
+    }
+
+    @Test
+    fun getAllDecks_followsNextCursorAcrossPages() = runTest {
+        val pages = listOf(
+            """{"items":[{"id":1,"title":"A","flashcards":[]}],"nextCursor":"c1"}""",
+            """{"items":[{"id":2,"title":"B","flashcards":[]}],"nextCursor":null}""",
+        )
+        var call = 0
+        val engine = MockEngine { request ->
+            // First request has no cursor; the second carries the first page's nextCursor.
+            val expectCursor = call == 1
+            assertEquals(expectCursor, request.url.parameters.contains("cursor"))
+            respond(pages[call++], HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+        }
+
+        val decks = apiClient(engine).getAllDecks()
+
+        assertEquals(listOf(1L, 2L), decks.map { it.id })
+        assertEquals(2, call)
     }
 
     @Test
@@ -165,5 +185,10 @@ class FlashcardApiClientTest {
 
     private fun jsonEngine(body: String) = MockEngine {
         respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
+    }
+
+    private companion object {
+        // An empty page of the cursor-paginated list endpoints (GET /decks, GET /sessions).
+        const val EMPTY_PAGE = """{"items":[],"nextCursor":null}"""
     }
 }

@@ -43,7 +43,7 @@ export function HomePage() {
         }
         case 'navigate_to_practice': {
           // Practice the global catalog deck (Country Flags), mirroring Android.
-          const decks = await api.getDecks();
+          const decks = await api.getAllDecks();
           const target = decks.find((d) => d.title === 'Country Flags') ?? decks[0];
           if (!target) {
             setActionError('There are no decks to practice yet.');

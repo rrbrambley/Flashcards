@@ -6,6 +6,7 @@ import type {
   FlashcardDeckDto,
   HomeData,
   ImageUploadResponse,
+  Page,
   PracticeSessionDto,
   UpdateProgressRequest,
 } from './types';
@@ -135,6 +136,29 @@ async function uploadImage(file: File, retried = false): Promise<ImageUploadResp
   return (await response.json()) as ImageUploadResponse;
 }
 
+// Builds a `?k=v&…` query string, dropping undefined values. Returns '' when nothing is set.
+function buildQuery(params: Record<string, string | number | boolean | undefined>): string {
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined);
+  if (entries.length === 0) return '';
+  return '?' + entries.map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`).join('&');
+}
+
+// Walks a cursor-paginated endpoint to the end, accumulating every page's items.
+async function fetchAllPages<T>(fetchPage: (cursor?: string) => Promise<Page<T>>): Promise<T[]> {
+  const all: T[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await fetchPage(cursor);
+    all.push(...page.items);
+    cursor = page.nextCursor ?? undefined;
+  } while (cursor);
+  return all;
+}
+
+function getDecksPage(params: { limit?: number; cursor?: string } = {}): Promise<Page<FlashcardDeckDto>> {
+  return request<Page<FlashcardDeckDto>>(`/decks${buildQuery(params)}`, { auth: true });
+}
+
 export const api = {
   register: (email: string, password: string) =>
     request<AuthResponse>('/auth/register', { method: 'POST', body: { email, password } }),
@@ -146,7 +170,10 @@ export const api = {
   logout: (refreshToken: string) =>
     request<void>('/auth/logout', { method: 'POST', body: { refreshToken }, auth: true }),
   getHome: () => request<HomeData[]>('/home', { auth: true }),
-  getDecks: () => request<FlashcardDeckDto[]>('/decks', { auth: true }),
+  // One cursor-paginated page of decks (newest first). Pass a prior page's nextCursor to continue.
+  getDecks: (params: { limit?: number; cursor?: string } = {}) => getDecksPage(params),
+  // Every deck across all pages — for flows that need the whole library (e.g. finding a deck by title).
+  getAllDecks: () => fetchAllPages((cursor) => getDecksPage({ cursor })),
   getDeck: (id: number) => request<FlashcardDeckDto>(`/decks/${id}`, { auth: true }),
   createDeck: (deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>('/decks', { method: 'POST', body: deck, auth: true }),

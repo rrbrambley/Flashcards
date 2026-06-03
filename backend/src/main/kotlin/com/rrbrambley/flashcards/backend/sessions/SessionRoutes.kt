@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.backend.sessions
 
+import com.rrbrambley.flashcards.backend.routes.pageCursor
+import com.rrbrambley.flashcards.backend.routes.pageLimit
 import com.rrbrambley.flashcards.backend.routes.pathLong
 import com.rrbrambley.flashcards.backend.routes.userId
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
@@ -21,7 +23,9 @@ fun Route.sessionRoutes() {
         }
         get {
             val activeOnly = call.request.queryParameters["active"]?.toBooleanStrictOrNull() ?: false
-            call.respond(SessionRepository.listSessions(call.userId(), activeOnly))
+            call.respond(
+                SessionRepository.listSessions(call.userId(), activeOnly, call.pageLimit(), call.pageCursor()),
+            )
         }
         get("/{id}") {
             call.respond(SessionRepository.getSession(call.userId(), call.pathLong("id")))
