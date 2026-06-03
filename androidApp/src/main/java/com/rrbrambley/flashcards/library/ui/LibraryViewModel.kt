@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.library.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.domain.FlashcardRepository
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,6 +23,7 @@ import javax.inject.Inject
 class LibraryViewModel @Inject constructor(
     private val flashcardRepository: FlashcardRepository,
     private val practiceSessionRepository: PracticeSessionRepository,
+    private val stringProvider: StringProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -77,11 +80,7 @@ class LibraryViewModel @Inject constructor(
     fun deleteDeck(deckId: Long) {
         viewModelScope.launch {
             runCatching { flashcardRepository.deleteFlashcardDeck(deckId) }
-                .onFailure { _userMessages.tryEmit(DELETE_FAILED_MESSAGE) }
+                .onFailure { _userMessages.tryEmit(stringProvider.getString(R.string.library_delete_failed)) }
         }
-    }
-
-    private companion object {
-        const val DELETE_FAILED_MESSAGE = "Couldn't delete the deck. Check your connection and try again."
     }
 }

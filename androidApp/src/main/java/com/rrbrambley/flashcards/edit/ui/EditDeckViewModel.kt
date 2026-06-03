@@ -3,6 +3,8 @@ package com.rrbrambley.flashcards.edit.ui
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.create.ui.isComplete
 import com.rrbrambley.flashcards.create.ui.isStarted
@@ -20,13 +22,12 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val MinimumCompleteCardCount = 1
-private const val IMAGE_UPLOAD_ERROR =
-    "Couldn't add the image. Use a JPEG, PNG, WebP or GIF under 5 MB and try again."
 
 @HiltViewModel
 class EditDeckViewModel @Inject constructor(
     private val flashcardRepository: FlashcardRepository,
     private val imageUploader: ImageUploader,
+    private val stringProvider: StringProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EditDeckUiState())
     val uiState: StateFlow<EditDeckUiState> = _uiState.asStateFlow()
@@ -93,7 +94,11 @@ class EditDeckViewModel @Inject constructor(
                 .onSuccess { url ->
                     updateCard(cardId) { it.copy(imageUrl = url, uploading = false, uploadError = null) }
                 }
-                .onFailure { updateCard(cardId) { it.copy(uploading = false, uploadError = IMAGE_UPLOAD_ERROR) } }
+                .onFailure {
+                    updateCard(cardId) {
+                        it.copy(uploading = false, uploadError = stringProvider.getString(R.string.image_upload_error))
+                    }
+                }
         }
     }
 

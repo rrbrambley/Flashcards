@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.create.ui
 
+import com.rrbrambley.flashcards.core.FakeStringProvider
+
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.domain.FlashcardDeck
@@ -39,7 +41,7 @@ class CreateDeckViewModelTest {
 
     @Test
     fun addDraftCard_addsEmptyCard() {
-        val viewModel = CreateDeckViewModel(FakeFlashcardRepository(), NoOpImageUploader)
+        val viewModel = CreateDeckViewModel(FakeFlashcardRepository(), NoOpImageUploader, FakeStringProvider())
 
         viewModel.addDraftCard()
 
@@ -48,7 +50,7 @@ class CreateDeckViewModelTest {
 
     @Test
     fun removeCard_removesOnlyTheCardWithThatId() {
-        val viewModel = CreateDeckViewModel(FakeFlashcardRepository(), NoOpImageUploader)
+        val viewModel = CreateDeckViewModel(FakeFlashcardRepository(), NoOpImageUploader, FakeStringProvider())
         viewModel.addDraftCard() // cards now have ids 1 and 2
 
         viewModel.removeCard(1L)
@@ -59,7 +61,7 @@ class CreateDeckViewModelTest {
     @Test
     fun finishDeckCreation_withInvalidDeck_showsValidationErrors() {
         val repository = FakeFlashcardRepository()
-        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader)
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
 
         viewModel.finishDeckCreation()
 
@@ -70,7 +72,7 @@ class CreateDeckViewModelTest {
     @Test
     fun finishDeckCreation_withValidDeck_savesDeckAndResetsState() = runTest(testDispatcher) {
         val repository = FakeFlashcardRepository()
-        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader)
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
         viewModel.onDeckTitleChange(" Spanish basics ")
         viewModel.onTermChange(1L, " Hola ")
         viewModel.onDefinitionChange(1L, " Hello ")

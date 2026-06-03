@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.home.data
 
+import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.data.mapping.toDomain
 import com.rrbrambley.flashcards.home.domain.HomeButton
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
@@ -20,38 +22,38 @@ import javax.inject.Inject
 class HomeRepositoryImpl @Inject constructor(
     private val apiClient: FlashcardApiClient,
     private val practiceSessionRepository: PracticeSessionRepository,
+    private val stringProvider: StringProvider,
 ) : HomeRepository {
 
     override fun observeHomeData(): Flow<List<HomeData>> =
         practiceSessionRepository.observeActiveSessions().map { activeSessions ->
             runCatching { apiClient.getHome().map { it.toDomain() } }
-                .getOrElse { activeSessions.map { it.toContinueItem() } + STATIC_ITEMS }
+                .getOrElse { activeSessions.map { it.toContinueItem() } + staticItems() }
         }
 
     private fun PracticeSession.toContinueItem(): HomeData = HomeData(
-        title = "Continue $deckTitle practice",
+        title = stringProvider.getString(R.string.home_continue_practice_title, deckTitle),
         button = HomeButton(
-            message = "Continue practice",
+            message = stringProvider.getString(R.string.home_continue_practice_button),
             action = HomeButtonAction.ContinuePractice(id),
         ),
     )
 
-    private companion object {
-        val STATIC_ITEMS = listOf(
-            HomeData(
-                title = "Practice identifying country flags",
-                button = HomeButton(
-                    message = "Practice",
-                    action = HomeButtonAction.NavigateToPractice,
-                ),
+    /** The default feed items shown when the backend feed is unavailable. */
+    private fun staticItems(): List<HomeData> = listOf(
+        HomeData(
+            title = stringProvider.getString(R.string.home_country_flags_title),
+            button = HomeButton(
+                message = stringProvider.getString(R.string.home_country_flags_button),
+                action = HomeButtonAction.NavigateToPractice,
             ),
-            HomeData(
-                title = "Create a new flashcard set",
-                button = HomeButton(
-                    message = "Create",
-                    action = HomeButtonAction.CreateNewFlashcardSet,
-                ),
+        ),
+        HomeData(
+            title = stringProvider.getString(R.string.home_create_set_title),
+            button = HomeButton(
+                message = stringProvider.getString(R.string.home_create_set_button),
+                action = HomeButtonAction.CreateNewFlashcardSet,
             ),
-        )
-    }
+        ),
+    )
 }
