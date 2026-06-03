@@ -46,7 +46,7 @@ class PracticeSessionRepositoryTest {
         val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
         val repository = repository(
             flashcardDao, sessionDao,
-            mockEngine(HttpMethod.Get to "/sessions" to "[${sessionJson(id = 1, deckId = 5)}]"),
+            mockEngine(HttpMethod.Get to "/sessions" to """{"items":[${sessionJson(id = 1, deckId = 5)}],"nextCursor":null}"""),
         )
 
         val active = repository.observeActiveSessions().first()

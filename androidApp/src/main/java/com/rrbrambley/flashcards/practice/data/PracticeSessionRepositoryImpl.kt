@@ -28,7 +28,7 @@ class PracticeSessionRepositoryImpl @Inject constructor(
     }
 
     override fun observeActiveSessions(): Flow<List<PracticeSession>> = flow {
-        runCatching { apiClient.getSessions(activeOnly = true).forEach { cache(it) } }
+        runCatching { apiClient.getAllSessions(activeOnly = true).forEach { cache(it) } }
         emitAll(practiceSessionDao.observeActiveSessions().map { sessions -> sessions.map { it.toDomain() } })
     }
 

@@ -7,7 +7,7 @@ import { api } from '../api/client';
 import type { HomeData } from '../api/types';
 
 vi.mock('../api/client', () => ({
-  api: { getHome: vi.fn(), getSession: vi.fn(), getDecks: vi.fn() },
+  api: { getHome: vi.fn(), getSession: vi.fn(), getAllDecks: vi.fn() },
 }));
 vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn() }) }));
 
@@ -67,7 +67,7 @@ describe('HomePage', () => {
 
   it('practice tile routes to the global Country Flags deck', async () => {
     vi.mocked(api.getHome).mockResolvedValue([practiceItem]);
-    vi.mocked(api.getDecks).mockResolvedValue([
+    vi.mocked(api.getAllDecks).mockResolvedValue([
       { id: 9, title: 'Country Flags', flashcards: [], editable: false },
       { id: 1, title: 'Spanish', flashcards: [], editable: true },
     ]);

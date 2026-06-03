@@ -31,7 +31,7 @@ class FlashcardsRepositoryTest {
     @Test
     fun observeFlashcardDecks_emitsDecksCachedFromTheBackend() = runWithDao { dao ->
         val engine = mockEngine(
-            HttpMethod.Get to "/decks" to json("""[${deckJson(1, "Spanish basics", "Hola" to "Hello")}]"""),
+            HttpMethod.Get to "/decks" to json(pageJson(deckJson(1, "Spanish basics", "Hola" to "Hello"))),
         )
         val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
 
@@ -123,10 +123,10 @@ class FlashcardsRepositoryTest {
     fun getFlashcards_prefersTheCountryFlagsDeck() = runWithDao { dao ->
         val engine = mockEngine(
             HttpMethod.Get to "/decks" to json(
-                """[
-                    ${deckJson(1, "Spanish basics", "Hola" to "Hello")},
-                    ${deckJson(2, "Country Flags", "Canada flag" to "Canada")}
-                ]""",
+                pageJson(
+                    deckJson(1, "Spanish basics", "Hola" to "Hello"),
+                    deckJson(2, "Country Flags", "Canada flag" to "Canada"),
+                ),
             ),
         )
         val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
@@ -168,6 +168,10 @@ class FlashcardsRepositoryTest {
     private class MockResponse(val body: String, val status: HttpStatusCode)
 
     private fun json(body: String, status: HttpStatusCode = HttpStatusCode.OK) = MockResponse(body, status)
+
+    /** Wraps deck JSON objects in the paginated list envelope returned by GET /decks. */
+    private fun pageJson(vararg itemJson: String): String =
+        """{"items":[${itemJson.joinToString(",")}],"nextCursor":null}"""
 
     private fun deckJson(id: Long, title: String, vararg cards: Pair<String, String>): String {
         val cardsJson = cards.joinToString(",") { (q, a) ->

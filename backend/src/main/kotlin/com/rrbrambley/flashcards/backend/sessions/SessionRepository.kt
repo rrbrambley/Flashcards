@@ -5,10 +5,15 @@ import com.rrbrambley.flashcards.backend.db.PracticeSessions
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.mapping.toPracticeSessionDto
+import com.rrbrambley.flashcards.backend.routes.Cursor
+import com.rrbrambley.flashcards.shared.api.Page
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import org.jetbrains.exposed.sql.SortOrder
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -50,18 +55,60 @@ object SessionRepository {
         )
     }
 
-    suspend fun listSessions(userId: Long, activeOnly: Boolean): List<PracticeSessionDto> = dbQuery {
-        (PracticeSessions innerJoin Decks)
-            .selectAll()
-            .where {
-                if (activeOnly) {
-                    (PracticeSessions.userId eq userId) and (PracticeSessions.isCompleted eq false)
-                } else {
-                    PracticeSessions.userId eq userId
+    /**
+     * One page of the user's sessions (optionally only active ones), most-recently-updated first.
+     * The cursor packs (updatedAtMillis, id); id is the tiebreaker so rows sharing an
+     * updatedAtMillis can't straddle a page boundary and get skipped or duplicated.
+     */
+    suspend fun listSessions(userId: Long, activeOnly: Boolean, limit: Int, cursor: String?): Page<PracticeSessionDto> =
+        dbQuery {
+            val after = cursor?.let { decodeSessionCursor(it) }
+            val query = (PracticeSessions innerJoin Decks)
+                .selectAll()
+                .where {
+                    if (activeOnly) {
+                        (PracticeSessions.userId eq userId) and (PracticeSessions.isCompleted eq false)
+                    } else {
+                        PracticeSessions.userId eq userId
+                    }
+                }
+            if (after != null) {
+                val (updatedAt, id) = after
+                query.andWhere {
+                    (PracticeSessions.updatedAtMillis less updatedAt) or
+                        (
+                            (PracticeSessions.updatedAtMillis eq updatedAt) and
+                                (PracticeSessions.id less id)
+                            )
                 }
             }
-            .orderBy(PracticeSessions.updatedAtMillis to SortOrder.DESC)
-            .map { it.toPracticeSessionDto(it[Decks.title]) }
+            val rows = query
+                .orderBy(
+                    PracticeSessions.updatedAtMillis to SortOrder.DESC,
+                    PracticeSessions.id to SortOrder.DESC,
+                )
+                .limit(limit + 1)
+                .toList()
+
+            val pageRows = rows.take(limit)
+            val nextCursor = if (rows.size > limit) {
+                val last = pageRows.last()
+                Cursor.encode("${last[PracticeSessions.updatedAtMillis]}:${last[PracticeSessions.id].value}")
+            } else {
+                null
+            }
+            Page(items = pageRows.map { it.toPracticeSessionDto(it[Decks.title]) }, nextCursor = nextCursor)
+        }
+
+    /** Decodes a session cursor into its (updatedAtMillis, id) ordering key. */
+    private fun decodeSessionCursor(token: String): Pair<Long, Long> {
+        val parts = Cursor.decode(token).split(":")
+        val updatedAt = parts.getOrNull(0)?.toLongOrNull()
+        val id = parts.getOrNull(1)?.toLongOrNull()
+        if (parts.size != 2 || updatedAt == null || id == null) {
+            throw IllegalArgumentException("Invalid pagination cursor")
+        }
+        return updatedAt to id
     }
 
     suspend fun getSession(userId: Long, sessionId: Long): PracticeSessionDto = dbQuery {

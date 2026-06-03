@@ -8,28 +8,36 @@ export function LibraryPage() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [decks, setDecks] = useState<FlashcardDeckDto[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadDecks = useCallback(async () => {
-    // `loading` starts true; all state writes happen after the await so the mount
-    // effect doesn't set state synchronously.
+  // Fetches one page. `reset` replaces the list (initial load); otherwise appends (load more).
+  const loadPage = useCallback(async (cursorToken: string | undefined, reset: boolean) => {
     try {
-      setDecks(await api.getDecks());
+      const page = await api.getDecks(cursorToken ? { cursor: cursorToken } : {});
+      setDecks((prev) => (reset ? page.items : [...prev, ...page.items]));
+      setCursor(page.nextCursor);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load your decks.');
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    // Legitimate fetch-on-mount: loadDecks only writes state after its await, but this
+    // Legitimate fetch-on-mount: loadPage only writes state after its await, but this
     // lint rule is conservative about effects that call a state-setting function.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadDecks();
-  }, [loadDecks]);
+    loadPage(undefined, true).finally(() => setLoading(false));
+  }, [loadPage]);
+
+  const loadMore = async () => {
+    if (!cursor) return;
+    setLoadingMore(true);
+    await loadPage(cursor, false);
+    setLoadingMore(false);
+  };
 
   return (
     <div className="app">
@@ -74,6 +82,14 @@ export function LibraryPage() {
               </li>
             ))}
           </ul>
+        )}
+
+        {!loading && !error && cursor && (
+          <div className="library-actions">
+            <button className="secondary" onClick={loadMore} disabled={loadingMore}>
+              {loadingMore ? 'Loading…' : 'Load more'}
+            </button>
+          </div>
         )}
       </main>
     </div>

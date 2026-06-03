@@ -5,13 +5,17 @@ import com.rrbrambley.flashcards.backend.db.Flashcards
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.mapping.toFlashcardDto
+import com.rrbrambley.flashcards.backend.routes.Cursor
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
+import com.rrbrambley.flashcards.shared.api.Page
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
@@ -21,13 +25,28 @@ import org.jetbrains.exposed.sql.update
 
 object DeckRepository {
 
-    /** Decks owned by the user plus the global catalog (NULL owner). */
-    suspend fun listDecksForUser(userId: Long): List<FlashcardDeckDto> = dbQuery {
-        val deckRows = Decks.selectAll()
+    /**
+     * One page of the decks owned by the user plus the global catalog (NULL owner), ordered by
+     * id descending (newest first). The cursor packs the last id seen, so paging is stable even as
+     * decks are added. Fetches [limit] + 1 rows to tell whether a further page exists.
+     */
+    suspend fun listDecksForUser(userId: Long, limit: Int, cursor: String?): Page<FlashcardDeckDto> = dbQuery {
+        val afterId = cursor?.let {
+            Cursor.decode(it).toLongOrNull() ?: throw IllegalArgumentException("Invalid pagination cursor")
+        }
+        val query = Decks.selectAll()
             .where { (Decks.ownerUserId eq userId) or Decks.ownerUserId.isNull() }
+        if (afterId != null) {
+            query.andWhere { Decks.id less afterId }
+        }
+        val rows = query
             .orderBy(Decks.id to SortOrder.DESC)
+            .limit(limit + 1)
             .toList()
-        deckRows.map { it.toDeckDtoWithCards(userId) }
+
+        val pageRows = rows.take(limit)
+        val nextCursor = if (rows.size > limit) Cursor.encode(pageRows.last()[Decks.id].value.toString()) else null
+        Page(items = pageRows.map { it.toDeckDtoWithCards(userId) }, nextCursor = nextCursor)
     }
 
     suspend fun getDeck(userId: Long, deckId: Long): FlashcardDeckDto? = dbQuery {

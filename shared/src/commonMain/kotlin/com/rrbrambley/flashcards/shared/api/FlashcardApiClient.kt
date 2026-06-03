@@ -74,7 +74,19 @@ class FlashcardApiClient(
         ) { auth() }.body()
 
     // --- Decks ---
-    suspend fun getDecks(): List<FlashcardDeckDto> = client.get(url("/decks")) { auth() }.body()
+    /**
+     * One cursor-paginated page of the user's decks (plus the global catalog), newest first.
+     * Pass [cursor] = a previous page's [Page.nextCursor] to continue; null starts at the first page.
+     */
+    suspend fun getDecks(limit: Int? = null, cursor: String? = null): Page<FlashcardDeckDto> =
+        client.get(url("/decks")) {
+            auth()
+            limit?.let { parameter("limit", it) }
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
+    /** Fetches every page of [getDecks]; offline-first clients cache the whole library at once. */
+    suspend fun getAllDecks(): List<FlashcardDeckDto> = fetchAllPages { cursor -> getDecks(cursor = cursor) }
 
     suspend fun getDeck(deckId: Long): FlashcardDeckDto = client.get(url("/decks/$deckId")) { auth() }.body()
 
@@ -93,10 +105,24 @@ class FlashcardApiClient(
     }
 
     // --- Sessions ---
-    suspend fun getSessions(activeOnly: Boolean = true): List<PracticeSessionDto> = client.get(url("/sessions")) {
+    /**
+     * One cursor-paginated page of the user's practice sessions, most-recently-updated first.
+     * Pass [cursor] = a previous page's [Page.nextCursor] to continue; null starts at the first page.
+     */
+    suspend fun getSessions(
+        activeOnly: Boolean = true,
+        limit: Int? = null,
+        cursor: String? = null,
+    ): Page<PracticeSessionDto> = client.get(url("/sessions")) {
         auth()
         parameter("active", activeOnly)
+        limit?.let { parameter("limit", it) }
+        cursor?.let { parameter("cursor", it) }
     }.body()
+
+    /** Fetches every page of [getSessions]; offline-first clients cache them all at once. */
+    suspend fun getAllSessions(activeOnly: Boolean = true): List<PracticeSessionDto> =
+        fetchAllPages { cursor -> getSessions(activeOnly = activeOnly, cursor = cursor) }
 
     suspend fun getSession(sessionId: Long): PracticeSessionDto = client.get(url("/sessions/$sessionId")) {
         auth()
@@ -118,6 +144,18 @@ class FlashcardApiClient(
 
     // --- Home ---
     suspend fun getHome(): List<HomeDataDto> = client.get(url("/home")) { auth() }.body()
+
+    /** Walks a cursor-paginated endpoint to the end, accumulating every page's items. */
+    private suspend fun <T> fetchAllPages(fetchPage: suspend (cursor: String?) -> Page<T>): List<T> {
+        val all = mutableListOf<T>()
+        var cursor: String? = null
+        do {
+            val page = fetchPage(cursor)
+            all += page.items
+            cursor = page.nextCursor
+        } while (cursor != null)
+        return all
+    }
 
     private fun url(path: String): String = "${baseUrl.trimEnd('/')}$path"
 
