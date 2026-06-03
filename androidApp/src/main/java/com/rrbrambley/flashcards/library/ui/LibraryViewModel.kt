@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,17 +36,35 @@ class LibraryViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    // Live title filter applied to the decks shown; blank = show all.
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     private var observeJob: Job? = null
 
     init {
         observeDecks()
     }
 
-    /** (Re)subscribes to the deck stream, which best-effort re-syncs from the backend first. */
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
+
+    /**
+     * (Re)subscribes to the deck stream, which best-effort re-syncs from the backend first, and
+     * applies the live [searchQuery] filter. Changing the query re-filters the cached decks without
+     * re-subscribing (no extra backend sync).
+     */
     private fun observeDecks() {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            flashcardRepository.observeFlashcardDecks()
+            combine(flashcardRepository.observeFlashcardDecks(), _searchQuery) { decks, query ->
+                if (query.isBlank()) {
+                    decks
+                } else {
+                    decks.filter { it.title.contains(query.trim(), ignoreCase = true) }
+                }
+            }
                 .catch {
                     _uiState.update { LibraryUiState.LoadingFailed }
                     _isRefreshing.value = false

@@ -229,6 +229,11 @@ button.danger:hover:not(:disabled) {
   margin-bottom: 1rem;
 }
 
+.deck-search {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
 .deck-list {
   list-style: none;
   margin: 0;
