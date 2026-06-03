@@ -36,11 +36,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
 private const val MinimumCompleteCardCount = 1
@@ -70,8 +72,8 @@ fun CreateDeckScreen(
     val uiState by createDeckViewModel.uiState.collectAsState()
 
     CreateDeckContent(
-        title = "Create deck",
-        description = "Add a title, then create the terms and definitions you want to practice.",
+        title = stringResource(R.string.create_deck_title),
+        description = stringResource(R.string.create_deck_description),
         deckTitle = uiState.deckTitle,
         cards = uiState.cards,
         showValidationErrors = uiState.showValidationErrors,
@@ -115,7 +117,7 @@ fun CreateDeckContent(
         if (!editable) {
             item {
                 Text(
-                    text = "This deck is read-only and can't be edited.",
+                    text = stringResource(R.string.create_deck_readonly),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
@@ -155,13 +157,13 @@ fun CreateDeckContent(
                 value = deckTitle,
                 onValueChange = onDeckTitleChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Deck title") },
+                label = { Text(stringResource(R.string.create_deck_title_label)) },
                 singleLine = true,
                 enabled = editable,
                 isError = showDeckTitleError,
                 supportingText = {
                     if (showDeckTitleError) {
-                        Text("Enter a deck title")
+                        Text(stringResource(R.string.create_deck_title_error))
                     }
                 },
             )
@@ -171,8 +173,8 @@ fun CreateDeckContent(
             item {
                 Text(
                     text = when {
-                        showCardCountError -> "Add at least one card with a definition and a term or image."
-                        else -> "Finish each started card: a definition plus a term or image."
+                        showCardCountError -> stringResource(R.string.create_deck_card_count_error)
+                        else -> stringResource(R.string.create_deck_incomplete_error)
                     },
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
@@ -244,7 +246,7 @@ private fun FlashcardDraftCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Card $cardNumber",
+                    text = stringResource(R.string.create_deck_card_number, cardNumber),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                 )
@@ -258,7 +260,10 @@ private fun FlashcardDraftCard(
                                 )
                             },
                         ) {
-                            Icon(Icons.Default.Image, contentDescription = "Add image")
+                            Icon(
+                                Icons.Default.Image,
+                                contentDescription = stringResource(R.string.create_deck_cd_add_image),
+                            )
                         }
                         else -> Unit
                     }
@@ -266,7 +271,7 @@ private fun FlashcardDraftCard(
                         IconButton(onClick = { onRemoveCard(card.id) }) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Remove card $cardNumber",
+                                contentDescription = stringResource(R.string.create_deck_cd_remove_card, cardNumber),
                                 tint = MaterialTheme.colorScheme.error,
                             )
                         }
@@ -286,7 +291,7 @@ private fun FlashcardDraftCard(
                 Box(modifier = Modifier.fillMaxWidth()) {
                     AsyncImage(
                         model = card.imageUrl,
-                        contentDescription = "Card image",
+                        contentDescription = stringResource(R.string.create_deck_cd_card_image),
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -298,7 +303,10 @@ private fun FlashcardDraftCard(
                             onClick = { onRemoveImage(card.id) },
                             modifier = Modifier.align(Alignment.TopEnd),
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove image")
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = stringResource(R.string.create_deck_cd_remove_image),
+                            )
                         }
                     }
                 }
@@ -308,12 +316,20 @@ private fun FlashcardDraftCard(
                 value = card.term,
                 onValueChange = { onTermChange(card.id, it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(if (card.imageUrl != null) "Term (optional)" else "Term") },
+                label = {
+                    Text(
+                        if (card.imageUrl != null) {
+                            stringResource(R.string.create_deck_term_optional_label)
+                        } else {
+                            stringResource(R.string.create_deck_term_label)
+                        },
+                    )
+                },
                 enabled = editable,
                 isError = showTermError,
                 supportingText = {
                     if (showTermError) {
-                        Text("Add a term or an image")
+                        Text(stringResource(R.string.create_deck_term_error))
                     }
                 },
             )
@@ -321,12 +337,12 @@ private fun FlashcardDraftCard(
                 value = card.definition,
                 onValueChange = { onDefinitionChange(card.id, it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Definition") },
+                label = { Text(stringResource(R.string.create_deck_definition_label)) },
                 enabled = editable,
                 isError = showDefinitionError,
                 supportingText = {
                     if (showDefinitionError) {
-                        Text("Enter a definition")
+                        Text(stringResource(R.string.create_deck_definition_error))
                     }
                 },
                 minLines = 2,

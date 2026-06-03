@@ -22,11 +22,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.home.domain.HomeButton
 import com.rrbrambley.flashcards.home.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.domain.HomeData
@@ -77,9 +79,9 @@ private fun ErrorMessage(onRetry: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(text = "Couldn't load your home feed. Check your connection.")
+            Text(text = stringResource(R.string.home_load_error))
             Button(onClick = onRetry) {
-                Text("Retry")
+                Text(stringResource(R.string.action_retry))
             }
         }
     }

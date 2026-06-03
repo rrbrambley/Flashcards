@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +56,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.ui.SwipeCard
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
@@ -83,7 +85,7 @@ fun FlashcardsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Flashcards",
+                        stringResource(R.string.flashcards),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -94,12 +96,12 @@ fun FlashcardsScreen(
                 ),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.Close, contentDescription = "Back")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showHelpDialog.value = true }) {
-                        Icon(Icons.Default.Info, contentDescription = "How to practice")
+                        Icon(Icons.Default.Info, contentDescription = stringResource(R.string.practice_help_title))
                     }
                 },
             )
@@ -136,17 +138,17 @@ private fun FlashcardsHelpDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = { Text("How to practice") },
+        title = { Text(stringResource(R.string.practice_help_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Tap a card to flip between the question and answer.")
-                Text("Swipe right when you know the answer.")
-                Text("Swipe left when you want more practice.")
+                Text(stringResource(R.string.practice_help_flip))
+                Text(stringResource(R.string.practice_help_swipe_right))
+                Text(stringResource(R.string.practice_help_swipe_left))
             }
         },
         confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("Got it")
+                Text(stringResource(R.string.practice_help_got_it))
             }
         },
     )
@@ -270,13 +272,13 @@ private fun FlashcardsCompletionCard(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = "Practice complete",
+                    text = stringResource(R.string.practice_complete_title),
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "Nice work reviewing this deck.",
+                    text = stringResource(R.string.practice_complete_subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -410,10 +412,16 @@ fun NavRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onPrevious, enabled = enabled && canGoBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous card")
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.practice_cd_previous_card),
+            )
         }
         IconButton(onClick = onSkip, enabled = enabled) {
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Skip card")
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = stringResource(R.string.practice_cd_skip_card),
+            )
         }
     }
 }

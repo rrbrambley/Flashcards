@@ -1,3 +1,93 @@
 <resources>
     <string name="app_name">Flashcards</string>
+
+    <!-- Shared / reused across screens -->
+    <string name="flashcards">Flashcards</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_log_in">Log in</string>
+    <string name="cd_add_flashcard">Add flashcard</string>
+    <plurals name="deck_card_count">
+        <item quantity="one">%1$d card</item>
+        <item quantity="other">%1$d cards</item>
+    </plurals>
+
+    <!-- Auth -->
+    <string name="auth_login_title">Welcome back</string>
+    <string name="auth_login_google">Sign in with Google</string>
+    <string name="auth_login_switch_prompt">Don\'t have an account?</string>
+    <string name="auth_login_switch_action">Register</string>
+    <string name="auth_register_title">Create your account</string>
+    <string name="auth_register_submit">Create account</string>
+    <string name="auth_register_google">Sign up with Google</string>
+    <string name="auth_register_switch_prompt">Already have an account?</string>
+    <string name="auth_email_label">Email</string>
+    <string name="auth_password_label">Password</string>
+    <string name="auth_divider_or">OR</string>
+    <string name="auth_google_not_configured">Google sign-in isn\'t configured yet.</string>
+    <string name="auth_google_cancelled">Google sign-in was cancelled.</string>
+    <string name="auth_google_failed">Google sign-in failed. Please try again.</string>
+
+    <!-- Home -->
+    <string name="home_load_error">Couldn\'t load your home feed. Check your connection.</string>
+
+    <!-- Library -->
+    <string name="library_load_error">Couldn\'t load your decks. Check your connection.</string>
+    <string name="library_empty_title">No saved decks yet</string>
+    <string name="library_empty_subtitle">Create a deck and it will appear here automatically.</string>
+    <string name="library_practice">Practice</string>
+    <string name="library_edit_deck">Edit deck</string>
+    <string name="library_delete_deck">Delete deck</string>
+    <string name="library_delete_dialog_title">Delete deck?</string>
+    <string name="library_delete_dialog_message">\"%1$s\" and its cards will be permanently deleted. This can\'t be undone.</string>
+
+    <!-- Create deck -->
+    <string name="create_deck_title">Create deck</string>
+    <string name="create_deck_description">Add a title, then create the terms and definitions you want to practice.</string>
+    <string name="create_deck_readonly">This deck is read-only and can\'t be edited.</string>
+    <string name="create_deck_title_label">Deck title</string>
+    <string name="create_deck_title_error">Enter a deck title</string>
+    <string name="create_deck_card_count_error">Add at least one card with a definition and a term or image.</string>
+    <string name="create_deck_incomplete_error">Finish each started card: a definition plus a term or image.</string>
+    <string name="create_deck_card_number">Card %1$d</string>
+    <string name="create_deck_cd_add_image">Add image</string>
+    <string name="create_deck_cd_remove_card">Remove card %1$d</string>
+    <string name="create_deck_cd_card_image">Card image</string>
+    <string name="create_deck_cd_remove_image">Remove image</string>
+    <string name="create_deck_term_label">Term</string>
+    <string name="create_deck_term_optional_label">Term (optional)</string>
+    <string name="create_deck_term_error">Add a term or an image</string>
+    <string name="create_deck_definition_label">Definition</string>
+    <string name="create_deck_definition_error">Enter a definition</string>
+
+    <!-- Edit deck -->
+    <string name="edit_deck_title">Edit Flashcards</string>
+    <string name="edit_deck_cd_close">Close edit deck</string>
+    <string name="edit_deck_cd_save">Save deck changes</string>
+    <string name="edit_deck_unsaved_title">Unsaved changes</string>
+    <string name="edit_deck_unsaved_message">You have unsaved edits. Save your changes before leaving, or keep editing.</string>
+    <string name="edit_deck_save_changes">Save changes</string>
+    <string name="edit_deck_keep_editing">Keep editing</string>
+
+    <!-- Practice -->
+    <string name="practice_cd_back">Back</string>
+    <string name="practice_help_title">How to practice</string>
+    <string name="practice_help_flip">Tap a card to flip between the question and answer.</string>
+    <string name="practice_help_swipe_right">Swipe right when you know the answer.</string>
+    <string name="practice_help_swipe_left">Swipe left when you want more practice.</string>
+    <string name="practice_help_got_it">Got it</string>
+    <string name="practice_complete_title">Practice complete</string>
+    <string name="practice_complete_subtitle">Nice work reviewing this deck.</string>
+    <string name="practice_cd_previous_card">Previous card</string>
+    <string name="practice_cd_skip_card">Skip card</string>
+
+    <!-- Main scaffolding / bottom navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_new">New</string>
+    <string name="nav_library">Library</string>
+    <string name="main_title_new_deck">New deck</string>
+    <string name="main_cd_finish_deck_creation">Finish deck creation</string>
+    <string name="main_cd_account_menu">Account menu</string>
+    <string name="main_log_out">Log out</string>
 </resources>

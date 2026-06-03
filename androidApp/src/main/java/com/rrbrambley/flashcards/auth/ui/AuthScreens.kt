@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.credentials.exceptions.GetCredentialException
 import com.rrbrambley.flashcards.BuildConfig
+import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.auth.AuthFormState
 import com.rrbrambley.flashcards.auth.AuthViewModel
 import com.rrbrambley.flashcards.auth.GoogleSignIn
@@ -53,10 +55,13 @@ fun AuthHost(
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val notConfiguredMessage = stringResource(R.string.auth_google_not_configured)
+    val cancelledMessage = stringResource(R.string.auth_google_cancelled)
+    val failedMessage = stringResource(R.string.auth_google_failed)
     val onGoogle: () -> Unit = onGoogle@{
         val activity = context as? Activity
         if (activity == null || BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank()) {
-            authViewModel.onGoogleError("Google sign-in isn't configured yet.")
+            authViewModel.onGoogleError(notConfiguredMessage)
             return@onGoogle
         }
         scope.launch {
@@ -64,20 +69,20 @@ fun AuthHost(
                 val idToken = GoogleSignIn.getIdToken(activity, BuildConfig.GOOGLE_WEB_CLIENT_ID)
                 authViewModel.onGoogleIdToken(idToken)
             } catch (e: GetCredentialException) {
-                authViewModel.onGoogleError("Google sign-in was cancelled.")
+                authViewModel.onGoogleError(cancelledMessage)
             } catch (e: Exception) {
-                authViewModel.onGoogleError("Google sign-in failed. Please try again.")
+                authViewModel.onGoogleError(failedMessage)
             }
         }
     }
 
     when (screen) {
         AuthScreen.Login -> AuthForm(
-            title = "Welcome back",
-            submitLabel = "Log in",
-            googleLabel = "Sign in with Google",
-            switchPrompt = "Don't have an account?",
-            switchAction = "Register",
+            title = stringResource(R.string.auth_login_title),
+            submitLabel = stringResource(R.string.action_log_in),
+            googleLabel = stringResource(R.string.auth_login_google),
+            switchPrompt = stringResource(R.string.auth_login_switch_prompt),
+            switchAction = stringResource(R.string.auth_login_switch_action),
             form = form,
             onEmailChange = authViewModel::onEmailChange,
             onPasswordChange = authViewModel::onPasswordChange,
@@ -91,11 +96,11 @@ fun AuthHost(
         )
 
         AuthScreen.Register -> AuthForm(
-            title = "Create your account",
-            submitLabel = "Create account",
-            googleLabel = "Sign up with Google",
-            switchPrompt = "Already have an account?",
-            switchAction = "Log in",
+            title = stringResource(R.string.auth_register_title),
+            submitLabel = stringResource(R.string.auth_register_submit),
+            googleLabel = stringResource(R.string.auth_register_google),
+            switchPrompt = stringResource(R.string.auth_register_switch_prompt),
+            switchAction = stringResource(R.string.action_log_in),
             form = form,
             onEmailChange = authViewModel::onEmailChange,
             onPasswordChange = authViewModel::onPasswordChange,
@@ -142,7 +147,7 @@ private fun AuthForm(
         OutlinedTextField(
             value = form.email,
             onValueChange = onEmailChange,
-            label = { Text("Email") },
+            label = { Text(stringResource(R.string.auth_email_label)) },
             singleLine = true,
             enabled = !form.isSubmitting,
             keyboardOptions = KeyboardOptions(
@@ -155,7 +160,7 @@ private fun AuthForm(
         OutlinedTextField(
             value = form.password,
             onValueChange = onPasswordChange,
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.auth_password_label)) },
             singleLine = true,
             enabled = !form.isSubmitting,
             visualTransformation = PasswordVisualTransformation(),
@@ -220,7 +225,7 @@ private fun OrDivider() {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         HorizontalDivider(modifier = Modifier.weight(1f))
-        Text("OR", style = MaterialTheme.typography.labelMedium)
+        Text(stringResource(R.string.auth_divider_or), style = MaterialTheme.typography.labelMedium)
         HorizontalDivider(modifier = Modifier.weight(1f))
     }
 }

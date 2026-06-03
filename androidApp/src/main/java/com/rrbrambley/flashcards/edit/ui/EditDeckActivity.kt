@@ -30,7 +30,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -99,7 +101,11 @@ private fun EditDeckScaffold(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (uiState.isEditable) "Edit Flashcards" else "Flashcards",
+                        text = if (uiState.isEditable) {
+                            stringResource(R.string.edit_deck_title)
+                        } else {
+                            stringResource(R.string.flashcards)
+                        },
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 },
@@ -113,7 +119,7 @@ private fun EditDeckScaffold(
                     IconButton(onClick = ::attemptFinish) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Close edit deck",
+                            contentDescription = stringResource(R.string.edit_deck_cd_close),
                         )
                     }
                 },
@@ -122,7 +128,7 @@ private fun EditDeckScaffold(
                         IconButton(onClick = editDeckViewModel::finishDeckEditing) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "Save deck changes",
+                                contentDescription = stringResource(R.string.edit_deck_cd_save),
                             )
                         }
                     }
@@ -134,7 +140,7 @@ private fun EditDeckScaffold(
                 FloatingActionButton(onClick = editDeckViewModel::addDraftCard) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Add flashcard",
+                        contentDescription = stringResource(R.string.cd_add_flashcard),
                     )
                 }
             }
@@ -156,16 +162,16 @@ private fun EditDeckScaffold(
     if (showUnsavedChangesDialog.value) {
         AlertDialog(
             onDismissRequest = { showUnsavedChangesDialog.value = false },
-            title = { Text("Unsaved changes") },
-            text = { Text("You have unsaved edits. Save your changes before leaving, or keep editing.") },
+            title = { Text(stringResource(R.string.edit_deck_unsaved_title)) },
+            text = { Text(stringResource(R.string.edit_deck_unsaved_message)) },
             confirmButton = {
                 TextButton(onClick = editDeckViewModel::finishDeckEditing) {
-                    Text("Save changes")
+                    Text(stringResource(R.string.edit_deck_save_changes))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showUnsavedChangesDialog.value = false }) {
-                    Text("Keep editing")
+                    Text(stringResource(R.string.edit_deck_keep_editing))
                 }
             },
         )

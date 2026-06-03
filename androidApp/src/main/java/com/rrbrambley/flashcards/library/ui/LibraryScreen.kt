@@ -34,12 +34,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.domain.Flashcard
 import com.rrbrambley.flashcards.domain.FlashcardDeck
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
@@ -131,9 +134,9 @@ private fun LibraryErrorMessage(onRetry: () -> Unit, modifier: Modifier = Modifi
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(text = "Couldn't load your decks. Check your connection.")
+            Text(text = stringResource(R.string.library_load_error))
             Button(onClick = onRetry) {
-                Text("Retry")
+                Text(stringResource(R.string.action_retry))
             }
         }
     }
@@ -179,13 +182,13 @@ private fun EmptyLibraryMessage(modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "No saved decks yet",
+                text = stringResource(R.string.library_empty_title),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Create a deck and it will appear here automatically.",
+                text = stringResource(R.string.library_empty_subtitle),
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -222,7 +225,11 @@ private fun LibraryDeckCard(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${deck.flashcards.size} ${if (deck.flashcards.size == 1) "card" else "cards"}",
+                text = pluralStringResource(
+                    R.plurals.deck_card_count,
+                    deck.flashcards.size,
+                    deck.flashcards.size,
+                ),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -253,7 +260,11 @@ private fun LibraryDeckActionsSheet(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "${deck.flashcards.size} ${if (deck.flashcards.size == 1) "card" else "cards"}",
+                text = pluralStringResource(
+                    R.plurals.deck_card_count,
+                    deck.flashcards.size,
+                    deck.flashcards.size,
+                ),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -262,13 +273,13 @@ private fun LibraryDeckActionsSheet(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = deck.flashcards.isNotEmpty(),
             ) {
-                Text("Practice")
+                Text(stringResource(R.string.library_practice))
             }
             OutlinedButton(
                 onClick = onEditClick,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Edit deck")
+                Text(stringResource(R.string.library_edit_deck))
             }
             // Delete only applies to decks the user owns; the global catalog deck is undeletable.
             if (deck.isEditable) {
@@ -279,7 +290,7 @@ private fun LibraryDeckActionsSheet(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
                 ) {
-                    Text("Delete deck")
+                    Text(stringResource(R.string.library_delete_deck))
                 }
             }
         }
@@ -294,19 +305,19 @@ private fun DeleteDeckConfirmationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete deck?") },
-        text = { Text("\"${deck.title}\" and its cards will be permanently deleted. This can't be undone.") },
+        title = { Text(stringResource(R.string.library_delete_dialog_title)) },
+        text = { Text(stringResource(R.string.library_delete_dialog_message, deck.title)) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) {
-                Text("Delete")
+                Text(stringResource(R.string.action_delete))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.action_cancel))
             }
         },
     )
