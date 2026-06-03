@@ -10,6 +10,7 @@ import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 
 data class DbConfig(val jdbcUrl: String, val user: String, val password: String, val maxPoolSize: Int = 5)
 
@@ -37,7 +38,9 @@ object DatabaseFactory {
         Database.connect(HikariDataSource(hikari))
 
         transaction {
-            SchemaUtils.create(Users, RefreshTokens, Decks, Flashcards, PracticeSessions)
+            // createMissingTablesAndColumns (vs. create) also adds newly-introduced nullable columns
+            // — e.g. refresh_tokens.rotated_at_millis — to an already-provisioned dev database.
+            SchemaUtils.createMissingTablesAndColumns(Users, RefreshTokens, Decks, Flashcards, PracticeSessions)
             seed()
         }
     }
@@ -69,6 +72,9 @@ object DatabaseFactory {
                 it[createdAtMillis] = now
                 it[expiresAtMillis] = now + TEN_YEARS_MILLIS
             }
+        } else {
+            // Keep the dev demo token usable across restarts even after it's been rotated.
+            RefreshTokens.update({ RefreshTokens.token eq DEMO_TOKEN }) { it[rotatedAtMillis] = null }
         }
 
         val hasGlobalFlagsDeck = Decks

@@ -7,7 +7,6 @@ import com.rrbrambley.flashcards.backend.error.ConflictException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
 import com.rrbrambley.flashcards.shared.api.AuthResponse
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
@@ -66,24 +65,59 @@ object AuthService {
     }
 
     /**
-     * Exchanges a valid, non-revoked, non-expired refresh token for a fresh access token.
-     * The refresh token itself is returned unchanged (no rotation in this pass — see FLA-6).
-     * Throws [UnauthorizedException] if the refresh token is unknown or expired.
+     * Exchanges a valid, non-revoked, non-expired refresh token for a fresh access token AND a
+     * fresh refresh token (rotation): the presented token is retired and can't be used again.
+     * Replaying an already-rotated token signals theft, so the whole session is revoked.
+     * Throws [UnauthorizedException] if the refresh token is unknown, expired, or reused.
      */
-    suspend fun refresh(refreshToken: String): AuthResponse = dbQuery {
+    private sealed interface RefreshResult {
+        data class Rotated(val response: AuthResponse) : RefreshResult
+        data class Reuse(val userId: Long) : RefreshResult
+        data object Invalid : RefreshResult
+    }
+
+    suspend fun refresh(refreshToken: String): AuthResponse {
         val now = System.currentTimeMillis()
-        val userId = RefreshTokens
-            .selectAll()
-            .where { (RefreshTokens.token eq refreshToken) and (RefreshTokens.expiresAtMillis greater now) }
-            .firstOrNull()
-            ?.get(RefreshTokens.userId)
-            ?.value
-            ?: throw UnauthorizedException("Invalid or expired refresh token")
-        AuthResponse(
-            accessToken = TokenService.generateAccessToken(userId),
-            refreshToken = refreshToken,
-            userId = userId,
-        )
+        val result = dbQuery {
+            val row = RefreshTokens.selectAll()
+                .where { RefreshTokens.token eq refreshToken }
+                .firstOrNull()
+                ?: return@dbQuery RefreshResult.Invalid
+            val userId = row[RefreshTokens.userId].value
+            when {
+                // Already exchanged → reuse/theft (handled below, in its own committed transaction).
+                row[RefreshTokens.rotatedAtMillis] != null -> RefreshResult.Reuse(userId)
+                row[RefreshTokens.expiresAtMillis] <= now -> RefreshResult.Invalid
+                else -> {
+                    // Rotate: retire the presented token and mint a replacement for the same user.
+                    RefreshTokens.update({ RefreshTokens.token eq refreshToken }) { it[rotatedAtMillis] = now }
+                    val newRefresh = generateOpaqueToken()
+                    RefreshTokens.insert {
+                        it[token] = newRefresh
+                        it[RefreshTokens.userId] = userId
+                        it[createdAtMillis] = now
+                        it[expiresAtMillis] = now + TokenService.refreshTtlMillis
+                    }
+                    RefreshResult.Rotated(
+                        AuthResponse(
+                            accessToken = TokenService.generateAccessToken(userId),
+                            refreshToken = newRefresh,
+                            userId = userId,
+                        ),
+                    )
+                }
+            }
+        }
+        return when (result) {
+            is RefreshResult.Rotated -> result.response
+            is RefreshResult.Reuse -> {
+                // Revoke the whole session in its own committed transaction (throwing inside the
+                // read transaction would roll the delete back), then reject.
+                dbQuery { RefreshTokens.deleteWhere { RefreshTokens.userId eq result.userId } }
+                throw UnauthorizedException("Refresh token reuse detected; please sign in again")
+            }
+            RefreshResult.Invalid -> throw UnauthorizedException("Invalid or expired refresh token")
+        }
     }
 
     /**
