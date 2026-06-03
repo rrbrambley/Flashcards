@@ -25,6 +25,10 @@ object RefreshTokens : LongIdTable("refresh_tokens") {
     val createdAtMillis = long("created_at_millis")
     val expiresAtMillis = long("expires_at_millis")
 
+    // Null = active; non-null = already exchanged (rotated). A rotated token presented again is
+    // treated as reuse/theft and revokes the whole session.
+    val rotatedAtMillis = long("rotated_at_millis").nullable()
+
     init {
         // Revoke-all-for-user and expired-row cleanup.
         index(false, userId)

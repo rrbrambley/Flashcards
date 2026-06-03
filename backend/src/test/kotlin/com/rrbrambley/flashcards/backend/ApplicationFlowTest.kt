@@ -259,6 +259,29 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun refresh_rotates_the_refresh_token() = runApp { client ->
+        val auth = client.register("rota", "password1")
+        val rotated = client.refresh(auth.refreshToken).decode<AuthResponse>()
+
+        // A brand-new refresh token is issued...
+        assertNotEquals(auth.refreshToken, rotated.refreshToken)
+        assertTrue(rotated.accessToken.isNotBlank())
+        // ...and it can itself be exchanged again.
+        assertEquals(HttpStatusCode.OK, client.refresh(rotated.refreshToken).status)
+    }
+
+    @Test
+    fun reusing_a_rotated_refresh_token_revokes_the_session() = runApp { client ->
+        val auth = client.register("rotb", "password1")
+        val rotated = client.refresh(auth.refreshToken).decode<AuthResponse>()
+
+        // Replaying the retired token is treated as theft → 401.
+        assertEquals(HttpStatusCode.Unauthorized, client.refresh(auth.refreshToken).status)
+        // ...and the whole session is revoked: even the legitimately-rotated token no longer works.
+        assertEquals(HttpStatusCode.Unauthorized, client.refresh(rotated.refreshToken).status)
+    }
+
+    @Test
     fun logout_revokes_refresh_token_so_session_cannot_be_refreshed() = runApp { client ->
         val auth = client.register("nora", "password1")
         // The access token still authenticates before logout.
