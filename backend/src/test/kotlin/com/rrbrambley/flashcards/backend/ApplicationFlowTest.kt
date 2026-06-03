@@ -78,13 +78,22 @@ class ApplicationFlowTest {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private fun runApp(block: suspend ApplicationTestBuilder.(HttpClient) -> Unit) = testApplication {
-        // Load the real application.conf so module() sees jwt config (testApplication's default
-        // config is empty). Google stays unconfigured since main()'s configure() isn't called.
-        environment { config = HoconApplicationConfig(ConfigFactory.load()) }
-        application { module() }
-        block(client)
-    }
+    private fun runApp(authRateLimit: Int = 100_000, block: suspend ApplicationTestBuilder.(HttpClient) -> Unit) =
+        testApplication {
+            // Load the real application.conf so module() sees jwt config (testApplication's default
+            // config is empty). Google stays unconfigured since main()'s configure() isn't called.
+            // The auth rate limit is bumped far above what tests send, except where a test opts into a
+            // low limit to exercise throttling.
+            environment {
+                config = HoconApplicationConfig(
+                    ConfigFactory.parseString(
+                        "ratelimit.auth.limit = $authRateLimit",
+                    ).withFallback(ConfigFactory.load()),
+                )
+            }
+            application { module() }
+            block(client)
+        }
 
     private fun emailFor(name: String) = "$name@example.com"
 
@@ -125,6 +134,24 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(LoginRequest(emailFor("bob"), "wrong")))
         }
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun auth_endpoints_are_rate_limited_per_client() = runApp(authRateLimit = 3) { client ->
+        // The first `limit` requests are allowed (these 401 as unknown logins)...
+        repeat(3) { i ->
+            val response = client.post("/auth/login") {
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(LoginRequest("nobody$i@example.com", "whatever1")))
+            }
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
+        }
+        // ...the next request from the same client is throttled.
+        val throttled = client.post("/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(LoginRequest("nobody@example.com", "whatever1")))
+        }
+        assertEquals(HttpStatusCode.TooManyRequests, throttled.status)
     }
 
     @Test

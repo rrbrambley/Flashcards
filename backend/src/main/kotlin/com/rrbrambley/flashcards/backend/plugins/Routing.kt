@@ -9,13 +9,17 @@ import com.rrbrambley.flashcards.backend.images.imageRoutes
 import com.rrbrambley.flashcards.backend.sessions.sessionRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
+import io.ktor.server.plugins.ratelimit.rateLimit
 import io.ktor.server.routing.routing
 
 fun Application.configureRouting() {
     routing {
         // Public, unauthenticated probe for load balancers / orchestrators.
         healthRoutes()
-        authRoutes()
+        // Throttle the unauthenticated auth endpoints per IP.
+        rateLimit(AUTH_RATE_LIMIT) {
+            authRoutes()
+        }
         authenticate(BEARER_AUTH) {
             logoutRoute()
             deckRoutes()

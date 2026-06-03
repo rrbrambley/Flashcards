@@ -80,6 +80,7 @@ ktor-server-auth-jwt = { group = "io.ktor", name = "ktor-server-auth-jwt", versi
 ktor-server-status-pages = { group = "io.ktor", name = "ktor-server-status-pages", version.ref = "ktor" }
 ktor-server-call-logging = { group = "io.ktor", name = "ktor-server-call-logging", version.ref = "ktor" }
 ktor-server-cors = { group = "io.ktor", name = "ktor-server-cors", version.ref = "ktor" }
+ktor-server-rate-limit = { group = "io.ktor", name = "ktor-server-rate-limit", version.ref = "ktor" }
 ktor-server-test-host = { group = "io.ktor", name = "ktor-server-test-host", version.ref = "ktor" }
 
 # Ktor client (shared)
