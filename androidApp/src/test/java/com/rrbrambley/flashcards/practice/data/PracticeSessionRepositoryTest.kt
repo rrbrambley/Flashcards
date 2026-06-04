@@ -178,6 +178,11 @@ class PracticeSessionRepositoryTest {
             list.firstOrNull { it.id == sessionId }?.withDeck()
         }
 
+        override fun observeLastPracticedByDeck(): Flow<List<DeckLastPracticed>> = sessions.map { list ->
+            list.groupBy { it.deckId }
+                .map { (deckId, rows) -> DeckLastPracticed(deckId, rows.maxOf { it.updatedAtMillis }) }
+        }
+
         override suspend fun upsertSession(session: PracticeSessionEntity) {
             sessions.value = sessions.value.filterNot { it.id == session.id } + session
         }

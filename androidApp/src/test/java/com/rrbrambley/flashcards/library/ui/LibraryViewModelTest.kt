@@ -99,14 +99,57 @@ class LibraryViewModelTest {
         viewModel.onSearchQueryChange("span")
         testDispatcher.scheduler.advanceUntilIdle()
 
+        // Default sort is alphabetical: "Spanish basics" (1) before "Spanish food" (3).
         val filtered = viewModel.uiState.value as LibraryUiState.ShowDecks
         assertEquals(listOf(1L, 3L), filtered.decks.map { it.id })
 
-        // Clearing the query restores the full list (no re-subscription needed).
+        // Clearing the query restores the full list (alphabetical): French verbs(2), Spanish basics(1), Spanish food(3).
         viewModel.onSearchQueryChange("")
         testDispatcher.scheduler.advanceUntilIdle()
         val all = viewModel.uiState.value as LibraryUiState.ShowDecks
-        assertEquals(listOf(1L, 2L, 3L), all.decks.map { it.id })
+        assertEquals(listOf(2L, 1L, 3L), all.decks.map { it.id })
+    }
+
+    @Test
+    fun sortOrder_defaultsToAlphabeticalByTitle() = runTest(testDispatcher) {
+        val decks = listOf(
+            FlashcardDeck(id = 1L, title = "Zebra facts", flashcards = emptyList()),
+            FlashcardDeck(id = 2L, title = "apples", flashcards = emptyList()),
+            FlashcardDeck(id = 3L, title = "Mango", flashcards = emptyList()),
+        )
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(decks),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Case-insensitive A–Z: apples(2), Mango(3), Zebra facts(1).
+        val state = viewModel.uiState.value as LibraryUiState.ShowDecks
+        assertEquals(listOf(2L, 3L, 1L), state.decks.map { it.id })
+    }
+
+    @Test
+    fun sortOrder_recentlyPracticed_ordersByLastPracticedThenId() = runTest(testDispatcher) {
+        val decks = listOf(
+            FlashcardDeck(id = 1L, title = "Alpha", flashcards = emptyList()),
+            FlashcardDeck(id = 2L, title = "Beta", flashcards = emptyList()),
+            FlashcardDeck(id = 3L, title = "Gamma", flashcards = emptyList()),
+        )
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(decks),
+            // Deck 2 practiced most recently, deck 1 earlier, deck 3 never.
+            practiceSessionRepository = FakePracticeSessionRepository(lastPracticed = mapOf(1L to 100L, 2L to 500L)),
+            stringProvider = FakeStringProvider(),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onSortOrderChange(DeckSortOrder.RecentlyPracticed)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Most recent first (2, then 1); never-practiced (3) falls back to last.
+        val state = viewModel.uiState.value as LibraryUiState.ShowDecks
+        assertEquals(listOf(2L, 1L, 3L), state.decks.map { it.id })
     }
 
     @Test
@@ -208,6 +251,7 @@ class LibraryViewModelTest {
 
     private class FakePracticeSessionRepository(
         private val sessionId: Long = 0L,
+        private val lastPracticed: Map<Long, Long> = emptyMap(),
     ) : PracticeSessionRepository {
         var startedDeckId: Long? = null
 
@@ -217,6 +261,8 @@ class LibraryViewModelTest {
         }
 
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(emptyList())
+
+        override fun observeLastPracticedByDeck(): Flow<Map<Long, Long>> = flowOf(lastPracticed)
 
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(null)
 

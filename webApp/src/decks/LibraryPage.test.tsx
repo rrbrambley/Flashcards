@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { LibraryPage } from './LibraryPage';
 import { api } from '../api/client';
 
-vi.mock('../api/client', () => ({ api: { getDecks: vi.fn() } }));
+vi.mock('../api/client', () => ({ api: { getDecks: vi.fn(), getAllSessions: vi.fn() } }));
 vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn() }) }));
 
 function renderPage() {
@@ -38,6 +38,42 @@ describe('LibraryPage', () => {
     vi.mocked(api.getDecks).mockRejectedValue(new Error('boom'));
     renderPage();
     expect(await screen.findByText('boom')).toBeInTheDocument();
+  });
+
+  it('defaults to A–Z and reorders by recently practiced when selected', async () => {
+    vi.mocked(api.getDecks).mockResolvedValue({
+      items: [
+        { id: 1, title: 'Alpha', flashcards: [] },
+        { id: 2, title: 'Beta', flashcards: [] },
+      ],
+      nextCursor: null,
+    });
+    vi.mocked(api.getAllSessions).mockResolvedValue([
+      {
+        id: 10,
+        deckId: 2,
+        deckTitle: 'Beta',
+        currentCardIndex: 0,
+        numCorrect: 0,
+        numIncorrect: 0,
+        isCompleted: true,
+        createdAtMillis: 1,
+        updatedAtMillis: 500,
+      },
+    ]);
+    renderPage();
+
+    // Default A–Z: Alpha before Beta.
+    await screen.findByText('Alpha');
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Alpha');
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Sort decks' }), 'recent');
+
+    // Beta was practiced most recently; Alpha never → Beta floats to the top.
+    await waitFor(() => {
+      expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Beta');
+    });
+    expect(api.getAllSessions).toHaveBeenCalledTimes(1);
   });
 
   it('filters decks by title as you type, with a no-match message', async () => {

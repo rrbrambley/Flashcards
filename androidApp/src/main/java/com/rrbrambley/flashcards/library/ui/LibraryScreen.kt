@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -63,6 +65,7 @@ fun LibraryScreen(
 ) {
     val uiState by libraryViewModel.uiState.collectAsState()
     val searchQuery by libraryViewModel.searchQuery.collectAsState()
+    val sortOrder by libraryViewModel.sortOrder.collectAsState()
     var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
     var deckPendingDeletion by remember { mutableStateOf<FlashcardDeck?>(null) }
 
@@ -115,6 +118,8 @@ fun LibraryScreen(
                     decks = state.decks,
                     searchQuery = searchQuery,
                     onSearchQueryChange = libraryViewModel::onSearchQueryChange,
+                    sortOrder = sortOrder,
+                    onSortOrderChange = libraryViewModel::onSortOrderChange,
                     onDeckClick = { selectedDeck = it },
                 )
             }
@@ -157,11 +162,13 @@ fun LibraryContent(
     modifier: Modifier = Modifier,
     searchQuery: String = "",
     onSearchQueryChange: (String) -> Unit = {},
+    sortOrder: DeckSortOrder = DeckSortOrder.Alphabetical,
+    onSortOrderChange: (DeckSortOrder) -> Unit = {},
     onDeckClick: (FlashcardDeck) -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        // The search box appears once there's something to search, or while a filter is active
-        // (so it can't disappear out from under a query that matches nothing).
+        // The search box + sort control appear once there's something to search, or while a filter
+        // is active (so they can't disappear out from under a query that matches nothing).
         if (decks.isNotEmpty() || searchQuery.isNotBlank()) {
             DeckSearchField(
                 query = searchQuery,
@@ -169,6 +176,11 @@ fun LibraryContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            DeckSortChips(
+                sortOrder = sortOrder,
+                onSortOrderChange = onSortOrderChange,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
         when {
@@ -216,6 +228,29 @@ private fun DeckSearchField(
         },
         placeholder = { Text(stringResource(R.string.library_search_placeholder)) },
     )
+}
+
+@Composable
+private fun DeckSortChips(
+    sortOrder: DeckSortOrder,
+    onSortOrderChange: (DeckSortOrder) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = sortOrder == DeckSortOrder.RecentlyPracticed,
+            onClick = { onSortOrderChange(DeckSortOrder.RecentlyPracticed) },
+            label = { Text(stringResource(R.string.library_sort_recent)) },
+        )
+        FilterChip(
+            selected = sortOrder == DeckSortOrder.Alphabetical,
+            onClick = { onSortOrderChange(DeckSortOrder.Alphabetical) },
+            label = { Text(stringResource(R.string.library_sort_alphabetical)) },
+        )
+    }
 }
 
 @Composable
