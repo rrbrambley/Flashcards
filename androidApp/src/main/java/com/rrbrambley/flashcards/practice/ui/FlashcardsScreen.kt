@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.rrbrambley.flashcards.R
-import com.rrbrambley.flashcards.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.ui.SwipeCard
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 

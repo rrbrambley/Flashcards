@@ -1,7 +1,7 @@
 package com.rrbrambley.flashcards.practice.data
 
-import com.rrbrambley.flashcards.practice.domain.PracticeSession
-import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest

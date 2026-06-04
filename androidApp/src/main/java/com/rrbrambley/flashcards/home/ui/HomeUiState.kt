@@ -1,6 +1,6 @@
 package com.rrbrambley.flashcards.home.ui
 
-import com.rrbrambley.flashcards.home.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.HomeData
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState

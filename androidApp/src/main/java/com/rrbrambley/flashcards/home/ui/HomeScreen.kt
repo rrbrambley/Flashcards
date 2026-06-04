@@ -29,9 +29,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
-import com.rrbrambley.flashcards.home.domain.HomeButton
-import com.rrbrambley.flashcards.home.domain.HomeButtonAction
-import com.rrbrambley.flashcards.home.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.HomeButton
+import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
+import com.rrbrambley.flashcards.shared.domain.HomeData
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)

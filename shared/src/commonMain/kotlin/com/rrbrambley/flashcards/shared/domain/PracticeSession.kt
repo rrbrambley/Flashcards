@@ -1,4 +1,4 @@
-package com.rrbrambley.flashcards.practice.domain
+package com.rrbrambley.flashcards.shared.domain
 
 data class PracticeSession(
     val id: Long = 0L,

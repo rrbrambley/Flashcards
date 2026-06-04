@@ -1,9 +1,9 @@
 package com.rrbrambley.flashcards.home.ui
 
-import com.rrbrambley.flashcards.home.domain.HomeButton
-import com.rrbrambley.flashcards.home.domain.HomeButtonAction
-import com.rrbrambley.flashcards.home.domain.HomeData
-import com.rrbrambley.flashcards.home.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.HomeButton
+import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
+import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
