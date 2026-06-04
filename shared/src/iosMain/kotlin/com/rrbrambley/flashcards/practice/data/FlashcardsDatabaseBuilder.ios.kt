@@ -1,4 +1,4 @@
-package com.rrbrambley.flashcards.shared.db
+package com.rrbrambley.flashcards.practice.data
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -7,10 +7,10 @@ import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
 
-/** iOS [ProbeDatabase] builder, backed by a file in the app's Documents directory. */
-fun probeDatabaseBuilder(): RoomDatabase.Builder<ProbeDatabase> {
-    val dbFilePath = "${documentDirectory()}/probe.db"
-    return Room.databaseBuilder<ProbeDatabase>(name = dbFilePath)
+/** iOS [FlashcardsDatabase] builder, backed by `flashcards.db` in the app's Documents directory. */
+fun flashcardsDatabaseBuilder(): RoomDatabase.Builder<FlashcardsDatabase> {
+    val dbFilePath = "${documentDirectory()}/flashcards.db"
+    return Room.databaseBuilder<FlashcardsDatabase>(name = dbFilePath)
 }
 
 @OptIn(ExperimentalForeignApi::class)

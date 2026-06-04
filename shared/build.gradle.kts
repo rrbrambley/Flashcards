@@ -8,6 +8,12 @@ plugins {
 kotlin {
     jvmToolchain(11)
 
+    // Room-KMP uses an `expect object … : RoomDatabaseConstructor` whose actual is KSP-generated;
+    // opt into the (stable-in-practice) expect/actual-classes feature to silence the Beta warning.
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     android {
         namespace = "com.rrbrambley.flashcards.shared"
         compileSdk = 36
@@ -36,8 +42,8 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.coroutines.core)
             // Room-KMP: the offline-first store, shared across Android + iOS (run on the bundled
-            // SQLite driver). Entities/DAOs/migrations get lifted here in the following tickets.
-            implementation(libs.androidx.room.runtime)
+            // SQLite driver). `api` so consumers (androidApp / iosApp) can reference the DB + DAOs.
+            api(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
         }
         commonTest.dependencies {
