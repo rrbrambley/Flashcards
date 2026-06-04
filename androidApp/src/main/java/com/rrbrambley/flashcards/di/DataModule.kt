@@ -9,11 +9,11 @@ import com.rrbrambley.flashcards.data.auth.TokenStore
 import com.rrbrambley.flashcards.data.image.AndroidImageUploader
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
-import com.rrbrambley.flashcards.home.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
-import com.rrbrambley.flashcards.domain.FlashcardRepository
-import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

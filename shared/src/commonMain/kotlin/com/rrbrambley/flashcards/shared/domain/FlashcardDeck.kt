@@ -1,6 +1,4 @@
-package com.rrbrambley.flashcards.domain
-
-import com.rrbrambley.flashcards.domain.Flashcard
+package com.rrbrambley.flashcards.shared.domain
 
 data class FlashcardDeck(
     val id: Long = 0L,

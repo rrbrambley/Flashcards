@@ -1,8 +1,8 @@
 package com.rrbrambley.flashcards.practice.data
 
-import com.rrbrambley.flashcards.domain.Flashcard
-import com.rrbrambley.flashcards.domain.FlashcardDeck
-import com.rrbrambley.flashcards.practice.domain.PracticeSession
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto

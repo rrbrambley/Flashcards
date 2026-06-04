@@ -3,9 +3,9 @@ package com.rrbrambley.flashcards.create.ui
 import com.rrbrambley.flashcards.core.FakeStringProvider
 
 import com.rrbrambley.flashcards.data.image.ImageUploader
-import com.rrbrambley.flashcards.domain.Flashcard
-import com.rrbrambley.flashcards.domain.FlashcardDeck
-import com.rrbrambley.flashcards.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

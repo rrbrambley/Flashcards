@@ -1,6 +1,5 @@
-package com.rrbrambley.flashcards.domain
+package com.rrbrambley.flashcards.shared.domain
 
-import com.rrbrambley.flashcards.domain.Flashcard
 import kotlinx.coroutines.flow.Flow
 
 interface FlashcardRepository {

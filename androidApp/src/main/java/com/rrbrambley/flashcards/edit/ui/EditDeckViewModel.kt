@@ -9,9 +9,9 @@ import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.create.ui.isComplete
 import com.rrbrambley.flashcards.create.ui.isStarted
 import com.rrbrambley.flashcards.data.image.ImageUploader
-import com.rrbrambley.flashcards.domain.Flashcard
-import com.rrbrambley.flashcards.domain.FlashcardDeck
-import com.rrbrambley.flashcards.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow

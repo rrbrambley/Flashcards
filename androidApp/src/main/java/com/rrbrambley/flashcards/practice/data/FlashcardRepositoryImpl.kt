@@ -1,9 +1,9 @@
 package com.rrbrambley.flashcards.practice.data
 
 import com.rrbrambley.flashcards.data.mapping.toCreateRequest
-import com.rrbrambley.flashcards.domain.Flashcard
-import com.rrbrambley.flashcards.domain.FlashcardDeck
-import com.rrbrambley.flashcards.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import kotlinx.coroutines.flow.Flow

@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.StringProvider
-import com.rrbrambley.flashcards.domain.FlashcardDeck
-import com.rrbrambley.flashcards.domain.FlashcardRepository
-import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow

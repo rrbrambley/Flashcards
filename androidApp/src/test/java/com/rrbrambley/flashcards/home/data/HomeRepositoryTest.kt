@@ -2,9 +2,9 @@ package com.rrbrambley.flashcards.home.data
 
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.FakeStringProvider
-import com.rrbrambley.flashcards.home.domain.HomeButtonAction
-import com.rrbrambley.flashcards.practice.domain.PracticeSession
-import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import io.ktor.client.engine.mock.MockEngine

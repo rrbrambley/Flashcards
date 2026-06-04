@@ -1,11 +1,11 @@
 package com.rrbrambley.flashcards.data.mapping
 
-import com.rrbrambley.flashcards.domain.Flashcard
-import com.rrbrambley.flashcards.domain.FlashcardDeck
-import com.rrbrambley.flashcards.home.domain.HomeButton
-import com.rrbrambley.flashcards.home.domain.HomeButtonAction
-import com.rrbrambley.flashcards.home.domain.HomeData
-import com.rrbrambley.flashcards.practice.domain.PracticeSession
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.HomeButton
+import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
+import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto

@@ -2,7 +2,7 @@ package com.rrbrambley.flashcards.home.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rrbrambley.flashcards.home.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
