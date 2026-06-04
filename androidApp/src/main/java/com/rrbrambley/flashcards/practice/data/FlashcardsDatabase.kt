@@ -9,8 +9,8 @@ import androidx.room.RoomDatabase
         FlashcardEntity::class,
         PracticeSessionEntity::class,
     ],
-    version = 3,
-    exportSchema = false,
+    version = 4,
+    exportSchema = true,
 )
 abstract class FlashcardsDatabase : RoomDatabase() {
     abstract fun flashcardDao(): FlashcardDao

@@ -18,6 +18,8 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["deckId"]),
         Index(value = ["deckId", "isCompleted"]),
+        // Backs observeActiveSessions(): WHERE isCompleted = 0 ORDER BY updatedAtMillis DESC.
+        Index(value = ["isCompleted", "updatedAtMillis"]),
     ],
 )
 data class PracticeSessionEntity(
