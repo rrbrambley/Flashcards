@@ -56,6 +56,15 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // Make the exported Room schemas available to MigrationTestHelper in instrumented tests.
+    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+}
+
+// Export Room schemas to a versioned, checked-in directory so migrations can be written and
+// tested against each prior version.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -102,6 +111,7 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.room.testing)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
