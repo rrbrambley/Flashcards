@@ -1,20 +1,19 @@
 package com.rrbrambley.flashcards.practice.data
 
+import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
+import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
-import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
-import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 
 // --- Backend DTO -> Room entity (keyed by backend ids) ---
 
 fun FlashcardDeckDto.toDeckEntity(): FlashcardDeckEntity =
     FlashcardDeckEntity(id = id, title = title, editable = editable)
 
-fun FlashcardDeckDto.toFlashcardEntities(): List<FlashcardEntity> =
-    flashcards.map {
-        FlashcardEntity(deckId = id, question = it.question, answer = it.answer, imageUrl = it.imageUrl)
-    }
+fun FlashcardDeckDto.toFlashcardEntities(): List<FlashcardEntity> = flashcards.map {
+    FlashcardEntity(deckId = id, question = it.question, answer = it.answer, imageUrl = it.imageUrl)
+}
 
 fun PracticeSessionDto.toEntity(): PracticeSessionEntity = PracticeSessionEntity(
     id = id,
@@ -28,8 +27,7 @@ fun PracticeSessionDto.toEntity(): PracticeSessionEntity = PracticeSessionEntity
 )
 
 /** Minimal deck row so a cached session satisfies the deck FK / relation before the full deck syncs. */
-fun PracticeSessionDto.toDeckStubEntity(): FlashcardDeckEntity =
-    FlashcardDeckEntity(id = deckId, title = deckTitle)
+fun PracticeSessionDto.toDeckStubEntity(): FlashcardDeckEntity = FlashcardDeckEntity(id = deckId, title = deckTitle)
 
 // --- Room entity -> domain ---
 

@@ -16,10 +16,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
-import java.io.IOException
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class PracticeSessionRepositoryTest {
 
@@ -28,7 +27,8 @@ class PracticeSessionRepositoryTest {
         val flashcardDao = FakeFlashcardDao()
         val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
         val repository = repository(
-            flashcardDao, sessionDao,
+            flashcardDao,
+            sessionDao,
             mockEngine(HttpMethod.Post to "/sessions" to sessionJson(id = 12, deckId = 5)),
         )
 
@@ -45,8 +45,11 @@ class PracticeSessionRepositoryTest {
         val flashcardDao = FakeFlashcardDao()
         val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
         val repository = repository(
-            flashcardDao, sessionDao,
-            mockEngine(HttpMethod.Get to "/sessions" to """{"items":[${sessionJson(id = 1, deckId = 5)}],"nextCursor":null}"""),
+            flashcardDao,
+            sessionDao,
+            mockEngine(
+                HttpMethod.Get to "/sessions" to """{"items":[${sessionJson(id = 1, deckId = 5)}],"nextCursor":null}""",
+            ),
         )
 
         val active = repository.observeActiveSessions().first()
@@ -74,8 +77,12 @@ class PracticeSessionRepositoryTest {
         val flashcardDao = FakeFlashcardDao()
         val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
         val repository = repository(
-            flashcardDao, sessionDao,
-            mockEngine(HttpMethod.Patch to "/sessions/12" to sessionJson(id = 12, deckId = 5, currentCardIndex = 4, numCorrect = 3)),
+            flashcardDao,
+            sessionDao,
+            mockEngine(
+                HttpMethod.Patch to "/sessions/12" to
+                    sessionJson(id = 12, deckId = 5, currentCardIndex = 4, numCorrect = 3),
+            ),
         )
 
         repository.updateProgress(sessionId = 12, currentCardIndex = 4, numCorrect = 3, numIncorrect = 0)
@@ -90,8 +97,11 @@ class PracticeSessionRepositoryTest {
         val flashcardDao = FakeFlashcardDao()
         val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
         val repository = repository(
-            flashcardDao, sessionDao,
-            mockEngine(HttpMethod.Post to "/sessions/12/complete" to sessionJson(id = 12, deckId = 5, isCompleted = true)),
+            flashcardDao,
+            sessionDao,
+            mockEngine(
+                HttpMethod.Post to "/sessions/12/complete" to sessionJson(id = 12, deckId = 5, isCompleted = true),
+            ),
         )
 
         repository.completeSession(sessionId = 12)
@@ -126,7 +136,7 @@ class PracticeSessionRepositoryTest {
     }
 
     private fun offlineEngine(failOn: Pair<HttpMethod, String>) = MockEngine { request: HttpRequestData ->
-        if (request.method to request.url.encodedPath == failOn) throw IOException("offline")
+        if (request.method to request.url.encodedPath == failOn) throw RuntimeException("offline")
         error("unexpected ${request.method.value} ${request.url.encodedPath}")
     }
 
@@ -158,16 +168,14 @@ class PracticeSessionRepositoryTest {
             decks[deck.id] = deck
         }
         override suspend fun insertDeckIfAbsent(deck: FlashcardDeckEntity) {
-            decks.putIfAbsent(deck.id, deck)
+            decks.getOrPut(deck.id) { deck }
         }
         override suspend fun insertFlashcards(flashcards: List<FlashcardEntity>) = Unit
         override suspend fun deleteFlashcardsForDeck(deckId: Long) = Unit
         override suspend fun deleteDeck(deckId: Long) = Unit
     }
 
-    private class FakePracticeSessionDao(
-        private val decks: Map<Long, FlashcardDeckEntity>,
-    ) : PracticeSessionDao {
+    private class FakePracticeSessionDao(private val decks: Map<Long, FlashcardDeckEntity>) : PracticeSessionDao {
         private val sessions = MutableStateFlow<List<PracticeSessionEntity>>(emptyList())
 
         override fun observeActiveSessions(): Flow<List<PracticeSessionWithDeck>> = sessions.map { list ->

@@ -1,11 +1,5 @@
 package com.rrbrambley.flashcards.data.mapping
 
-import com.rrbrambley.flashcards.shared.domain.Flashcard
-import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
-import com.rrbrambley.flashcards.shared.domain.HomeButton
-import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
-import com.rrbrambley.flashcards.shared.domain.HomeData
-import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
@@ -13,9 +7,15 @@ import com.rrbrambley.flashcards.shared.api.HomeButtonActionDto
 import com.rrbrambley.flashcards.shared.api.HomeButtonDto
 import com.rrbrambley.flashcards.shared.api.HomeDataDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.HomeButton
+import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
+import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class ApiMappersTest {
 

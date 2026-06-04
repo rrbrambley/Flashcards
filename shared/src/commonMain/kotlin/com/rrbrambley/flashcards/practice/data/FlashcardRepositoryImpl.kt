@@ -1,25 +1,22 @@
 package com.rrbrambley.flashcards.practice.data
 
 import com.rrbrambley.flashcards.data.mapping.toCreateRequest
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
-import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
-import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 /**
  * Offline-first: reads serve the Room cache immediately after a best-effort remote
  * refresh; writes go to the backend first, then update the cache keyed by backend ids.
  */
-class FlashcardRepositoryImpl @Inject constructor(
-    private val apiClient: FlashcardApiClient,
-    private val flashcardDao: FlashcardDao,
-) : FlashcardRepository {
+class FlashcardRepositoryImpl(private val apiClient: FlashcardApiClient, private val flashcardDao: FlashcardDao) :
+    FlashcardRepository {
 
     override suspend fun getFlashcards(): Flow<List<Flashcard>> = flow {
         runCatching { refreshDecks() }
