@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -33,6 +34,11 @@ kotlin {
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+            implementation(libs.coroutines.core)
+            // Room-KMP: the offline-first store, shared across Android + iOS (run on the bundled
+            // SQLite driver). Entities/DAOs/migrations get lifted here in the following tickets.
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -40,4 +46,20 @@ kotlin {
             implementation(libs.coroutines.test)
         }
     }
+}
+
+// Export Room schemas to a versioned, checked-in dir (the Room Gradle plugin can't yet configure a
+// KMP module, so use the KSP arg — same approach androidApp uses).
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+// Run the Room KSP compiler for every target's compilation (the generated DB impl is per-platform).
+// Needs KSP 2.3+ (decoupled KSP2), which is the first to support AGP's KMP-library android target.
+dependencies {
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspJvm", libs.androidx.room.compiler)
+    add("kspIosX64", libs.androidx.room.compiler)
+    add("kspIosArm64", libs.androidx.room.compiler)
+    add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
