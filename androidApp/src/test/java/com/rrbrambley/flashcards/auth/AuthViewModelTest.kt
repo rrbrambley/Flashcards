@@ -2,7 +2,7 @@ package com.rrbrambley.flashcards.auth
 
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.FakeStringProvider
-import com.rrbrambley.flashcards.data.auth.TokenStore
+import com.rrbrambley.flashcards.shared.api.TokenStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

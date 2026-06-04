@@ -1,10 +1,10 @@
 package com.rrbrambley.flashcards.di
 
 import com.rrbrambley.flashcards.BuildConfig
-import com.rrbrambley.flashcards.data.auth.TokenStore
-import com.rrbrambley.flashcards.data.auth.installTokenRefreshAuth
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import com.rrbrambley.flashcards.shared.api.installTokenRefreshAuth
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,7 +21,7 @@ object NetworkModule {
     @Singleton
     fun provideHttpClient(tokenStore: TokenStore): HttpClient =
         createFlashcardHttpClient(OkHttp.create()) {
-            installTokenRefreshAuth(tokenStore, "${BuildConfig.BACKEND_BASE_URL.trimEnd('/')}/auth/refresh")
+            installTokenRefreshAuth(tokenStore, BuildConfig.BACKEND_BASE_URL)
         }
 
     @Provides

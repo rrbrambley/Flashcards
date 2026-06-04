@@ -1,11 +1,11 @@
 package com.rrbrambley.flashcards.auth
 
-import com.rrbrambley.flashcards.data.auth.TokenStore
 import com.rrbrambley.flashcards.shared.api.ApiError
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
+import com.rrbrambley.flashcards.shared.api.TokenStore
 import javax.inject.Inject
 
 sealed interface AuthOutcome {

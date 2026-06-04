@@ -1,7 +1,7 @@
 package com.rrbrambley.flashcards.auth
 
-import com.rrbrambley.flashcards.data.auth.TokenStore
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
