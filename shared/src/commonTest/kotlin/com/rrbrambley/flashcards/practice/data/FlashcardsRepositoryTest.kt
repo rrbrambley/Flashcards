@@ -1,12 +1,12 @@
 package com.rrbrambley.flashcards.practice.data
 
-import com.rrbrambley.flashcards.shared.domain.Flashcard
-import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.request.HttpRequestData
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.request.HttpRequestData
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -17,9 +17,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * Exercises the offline-first pipeline of [FlashcardRepositoryImpl]: a best-effort remote
@@ -89,7 +89,11 @@ class FlashcardsRepositoryTest {
         val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
 
         repository.updateFlashcardDeck(
-            FlashcardDeck(id = 5L, title = "Renamed", flashcards = listOf(Flashcard("Q1", "A1"), Flashcard("Q2", "A2"))),
+            FlashcardDeck(
+                id = 5L,
+                title = "Renamed",
+                flashcards = listOf(Flashcard("Q1", "A1"), Flashcard("Q2", "A2")),
+            ),
         )
 
         assertTrue(engine.requestHistory.any { it.method == HttpMethod.Put && it.url.encodedPath == "/decks/5" })
@@ -101,7 +105,10 @@ class FlashcardsRepositoryTest {
     @Test
     fun deleteFlashcardDeck_deletesRemotelyThenEvictsFromTheCache() = runWithDao { dao ->
         // Seed the cache with a deck, then delete it.
-        dao.cacheDeck(FlashcardDeckEntity(id = 3L, title = "Temp"), listOf(FlashcardEntity(deckId = 3L, question = "Q", answer = "A")))
+        dao.cacheDeck(
+            FlashcardDeckEntity(id = 3L, title = "Temp"),
+            listOf(FlashcardEntity(deckId = 3L, question = "Q", answer = "A")),
+        )
         var deleteCalled = false
         val engine = MockEngine { request ->
             if (request.method == HttpMethod.Delete && request.url.encodedPath == "/decks/3") {
@@ -141,17 +148,14 @@ class FlashcardsRepositoryTest {
     /** Runs the test body with a fresh in-memory DAO. */
     private fun runWithDao(block: suspend (FakeFlashcardDao) -> Unit) = runTest { block(FakeFlashcardDao()) }
 
-    private fun apiClient(engine: MockEngine): FlashcardApiClient =
-        FlashcardApiClient(
-            client = createFlashcardHttpClient(engine),
-            baseUrl = "http://localhost",
-            tokenProvider = { "test-token" },
-        )
+    private fun apiClient(engine: MockEngine): FlashcardApiClient = FlashcardApiClient(
+        client = createFlashcardHttpClient(engine),
+        baseUrl = "http://localhost",
+        tokenProvider = { "test-token" },
+    )
 
     /** A MockEngine that maps (method, path) -> a canned JSON response; unmatched requests 404. */
-    private fun mockEngine(
-        vararg routes: Pair<Pair<HttpMethod, String>, MockResponse>,
-    ): MockEngine {
+    private fun mockEngine(vararg routes: Pair<Pair<HttpMethod, String>, MockResponse>): MockEngine {
         val table = routes.toMap()
         return MockEngine { request: HttpRequestData ->
             val response = table[request.method to request.url.encodedPath]
@@ -203,7 +207,7 @@ class FlashcardsRepositoryTest {
         }
 
         override suspend fun insertDeckIfAbsent(deck: FlashcardDeckEntity) {
-            decks.putIfAbsent(deck.id, deck)
+            decks.getOrPut(deck.id) { deck }
             publish()
         }
 

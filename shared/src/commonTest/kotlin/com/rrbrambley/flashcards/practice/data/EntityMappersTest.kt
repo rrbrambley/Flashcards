@@ -1,13 +1,13 @@
 package com.rrbrambley.flashcards.practice.data
 
-import com.rrbrambley.flashcards.shared.domain.Flashcard
-import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
-import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class EntityMappersTest {
 

@@ -1,21 +1,20 @@
 package com.rrbrambley.flashcards.practice.data
 
-import com.rrbrambley.flashcards.shared.domain.PracticeSession
-import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import javax.inject.Inject
 
 /**
  * Sessions are owned by the backend. Writes (start/resume, progress, complete) hit the
  * server first and cache the returned state; reads refresh from the server then serve Room.
  */
-class PracticeSessionRepositoryImpl @Inject constructor(
+class PracticeSessionRepositoryImpl(
     private val apiClient: FlashcardApiClient,
     private val practiceSessionDao: PracticeSessionDao,
     private val flashcardDao: FlashcardDao,
@@ -42,12 +41,7 @@ class PracticeSessionRepositoryImpl @Inject constructor(
             rows.associate { it.deckId to it.lastPracticedAtMillis }
         }
 
-    override suspend fun updateProgress(
-        sessionId: Long,
-        currentCardIndex: Int,
-        numCorrect: Int,
-        numIncorrect: Int,
-    ) {
+    override suspend fun updateProgress(sessionId: Long, currentCardIndex: Int, numCorrect: Int, numIncorrect: Int) {
         cache(
             apiClient.updateProgress(
                 sessionId,

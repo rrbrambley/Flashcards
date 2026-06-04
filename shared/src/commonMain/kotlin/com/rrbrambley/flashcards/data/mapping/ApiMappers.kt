@@ -1,11 +1,5 @@
 package com.rrbrambley.flashcards.data.mapping
 
-import com.rrbrambley.flashcards.shared.domain.Flashcard
-import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
-import com.rrbrambley.flashcards.shared.domain.HomeButton
-import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
-import com.rrbrambley.flashcards.shared.domain.HomeData
-import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
@@ -13,6 +7,12 @@ import com.rrbrambley.flashcards.shared.api.HomeButtonActionDto
 import com.rrbrambley.flashcards.shared.api.HomeButtonDto
 import com.rrbrambley.flashcards.shared.api.HomeDataDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
+import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.HomeButton
+import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
+import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
 
 fun FlashcardDto.toDomain(): Flashcard = Flashcard(question, answer, imageUrl)
 
