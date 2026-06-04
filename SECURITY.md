@@ -19,6 +19,10 @@ This repository is designed so that **no secrets are ever committed**:
   environment variables — never in the committed project `gradle.properties`.
 - **Web config** lives in `webApp/.env`, which is gitignored. Only the placeholder
   `webApp/.env.example` is committed.
+- **The JWT signing secret** (`JWT_SECRET`) ships with an **insecure development default** in
+  `backend/src/main/resources/application.conf`. It is fine for local dev but **must** be
+  overridden with a strong secret (env var) in any deployed environment — anyone who knows it
+  can mint valid access tokens.
 
 The OAuth **Web client ID** and the **CloudFront domain** are public by design (they
 are sent to browsers and bundled into client apps), so they are safe to expose. Treat

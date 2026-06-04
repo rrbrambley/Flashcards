@@ -7,7 +7,7 @@ Android app, a Ktor backend, a shared KMP library, and a React/TypeScript web ap
 ## Getting set up
 
 1. Read the [README](README.md) "Quick start" — install the prerequisites (JDK 11+,
-   Android Studio, Node 18+, and Docker via Colima or Docker Desktop).
+   Android Studio, Node 20.19+/22.12+, and Docker via Colima or Docker Desktop).
 2. Start Postgres and the backend, then run the Android app and/or the web app.
 3. Google Sign-In and image uploads are **optional** — the app runs fully without them.
    If you want them, configure your **own** OAuth client and AWS resources (README).
@@ -30,13 +30,19 @@ Run the checks for the area you changed:
 ```bash
 ./gradlew ktlintCheck                      # Kotlin style (./gradlew ktlintFormat auto-fixes)
 ./gradlew :androidApp:testDebugUnitTest   # Android unit tests
-./gradlew :shared:build                   # shared library (android/iOS/JVM)
+./gradlew :shared:jvmTest                 # shared commonTest (compiles + runs on the JVM)
 ./gradlew :backend:test                   # backend integration tests (needs Docker)
-cd webApp && npm run build && npm run lint # web app
+cd webApp && npm run build && npm run lint && npm run test  # web app
 ```
 
-CI runs these on every PR (see `.github/workflows/ci.yml`). Kotlin style is enforced by
-[ktlint](https://pinterest.github.io/ktlint/) (configured in `.editorconfig`).
+> When you change the `shared` module, run `:shared:jvmTest` (not just a compile) — the shared
+> compile can pass while `commonTest` is broken, and CI runs `:shared:jvmTest`. Schema changes
+> to the Room DB need a migration + the instrumented migration test (`:androidApp:connectedDebugAndroidTest`);
+> see `androidApp/src/main/.../practice/data/Migrations.kt`.
+
+CI runs these on every PR (see `.github/workflows/ci.yml`), including instrumented tests on an
+emulator. Kotlin style is enforced by [ktlint](https://pinterest.github.io/ktlint/) (configured
+in `.editorconfig`).
 
 - Keep changes focused and described in the PR body.
 - **Never commit secrets** or account-specific identifiers. Personal config goes in

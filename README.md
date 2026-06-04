@@ -17,9 +17,9 @@ app is offline-first; the web app is a thin client over the same API.
 | Android app — Compose, offline-first, synced to the backend | ✅ Done |
 | Email/password + Google sign-in (Android & web) | ✅ Done |
 | Flashcard images (front side), uploaded to S3 and served via CloudFront | ✅ Done |
-| Web app (React/TypeScript) — auth, library, deck create/edit | ✅ Done |
+| Web app (React/TypeScript) — auth, library (search + sort), deck create/edit, practice | ✅ Done |
+| JWT access + refresh tokens, transparent refresh-on-401, logout (server-side revocation) | ✅ Done |
 | iOS app (SwiftUI) | ⏳ Not started |
-| Logout, web practice screen | ⏳ Planned |
 
 ## Repository layout
 
@@ -93,6 +93,9 @@ Register a new account in either client, or use the seeded demo login
 > daemon isn't found, export the socket:
 > `export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"`.
 
+> **Shortcut:** a root `Makefile` wraps the common dev loop — `make start` (Postgres + backend),
+> `make stop`, `make restart`, `make logs`, `make status`, and `make web` (the web dev server).
+
 ### Default path (port 5432 free)
 
 ```bash
@@ -110,15 +113,24 @@ DB_JDBC_URL=jdbc:postgresql://localhost:5433/flashcards ./gradlew :backend:run
 ```
 
 The server is ready when it logs `Responding at http://0.0.0.0:8080`. On first boot it
-creates its schema and seeds a demo user, a fixed dev token (`demo-token`), and the global
-"Country Flags" deck.
+creates its schema and seeds a demo user (`demo@flashcards.dev` / `demo`), a fixed dev
+**refresh** token (`demo-token`), and the global "Country Flags" deck.
 
 ### Smoke-test the API
 
+Auth uses short-lived **access JWTs** plus an opaque **refresh token**, so protected routes
+need an access token (a bare `demo-token` won't authenticate). Exchange the seeded refresh
+token for one, then call a protected route:
+
 ```bash
-curl -s http://localhost:8080/decks -H "Authorization: Bearer demo-token"
-# -> the seeded Country Flags deck
+ACCESS=$(curl -s http://localhost:8080/auth/refresh \
+  -H 'Content-Type: application/json' -d '{"refreshToken":"demo-token"}' | jq -r .accessToken)
+
+curl -s "http://localhost:8080/decks" -H "Authorization: Bearer $ACCESS"
+# -> the first page of decks, including the seeded Country Flags deck
 ```
+
+(Or `POST /auth/login` with the demo credentials to get an `accessToken` the same way.)
 
 ### Teardown
 
@@ -162,8 +174,13 @@ npm run dev              # http://localhost:5173
 ```
 
 The web app calls the backend at `VITE_API_BASE_URL` (default `http://localhost:8080`),
-which is allowed by the backend's CORS config out of the box. Practice isn't implemented on
-the web yet — tapping a deck opens it for editing.
+which is allowed by the backend's CORS config out of the box. It has parity with the Android
+client's core flows: auth, the deck library (with title search + sort), deck create/edit, and
+a practice screen (routed at `/decks/:id/practice`).
+
+> The dev server is pinned to **port 5173** (`vite.config.ts`, `strictPort`) because that's the
+> origin registered with the Google OAuth client; if 5173 is taken it fails loudly rather than
+> drifting to another port (which Google would reject with `origin_mismatch`).
 
 ---
 
@@ -230,6 +247,12 @@ CDN_BASE_URL=https://<your-distribution>.cloudfront.net
 | `DB_USER` / `DB_PASSWORD` | `flashcards` / `flashcards` | Postgres credentials |
 | `DB_MAX_POOL_SIZE` | `5` | Hikari pool size |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Comma-separated browser origins |
+| `JWT_SECRET` | *(insecure dev default)* | HMAC256 signing key for access JWTs — **must** be overridden in production |
+| `JWT_ISSUER` / `JWT_AUDIENCE` | `flashcards-backend` / `flashcards-clients` | Access-token issuer / audience claims |
+| `JWT_ACCESS_TTL_SECONDS` | `900` | Access-token lifetime (15 min) |
+| `JWT_REFRESH_TTL_SECONDS` | `2592000` | Refresh-token lifetime (30 days) |
+| `RATE_LIMIT_AUTH_LIMIT` | `20` | Max `/auth/*` requests per IP per window |
+| `RATE_LIMIT_AUTH_WINDOW_SECONDS` | `60` | Rate-limit window for `/auth/*` |
 | `GOOGLE_WEB_CLIENT_ID` | *(unset → Google disabled)* | OAuth Web client ID to verify ID tokens |
 | `S3_BUCKET` / `S3_REGION` / `CDN_BASE_URL` | *(unset → uploads disabled)* | Image storage |
 | `S3_ENDPOINT` | *(unset → real AWS)* | Override for a local S3-compatible server (e.g. MinIO) |
@@ -254,20 +277,27 @@ disables Google sign-in.
 
 ## API
 
-All endpoints require a bearer token except register/login. Bodies are the `@Serializable`
-DTOs in `shared/src/commonMain/.../api/`.
+Endpoints require an **access-token JWT** as a bearer except the public auth routes
+(`/auth/register`, `/auth/login`, `/auth/google`, `/auth/refresh`). When an access token
+expires the client transparently calls `/auth/refresh` and retries. Bodies are the
+`@Serializable` DTOs in `shared/src/commonMain/.../api/`.
 
 | Method + Path | Purpose |
 |---------------|---------|
-| `POST /auth/register`, `POST /auth/login` | Issue a bearer token |
-| `POST /auth/google` | Exchange a Google ID token for a bearer token (requires `GOOGLE_WEB_CLIENT_ID`) |
-| `GET /decks`, `GET /decks/{id}` | List / fetch decks (a user's decks + the global catalog) |
-| `POST /decks`, `PUT /decks/{id}` | Create / update a deck (owner-scoped; the seeded deck is read-only) |
+| `POST /auth/register`, `POST /auth/login` | Issue an access JWT + a refresh token |
+| `POST /auth/google` | Exchange a Google ID token for access + refresh tokens (requires `GOOGLE_WEB_CLIENT_ID`) |
+| `POST /auth/refresh` | Exchange a refresh token for a fresh access token (rotates the refresh token) |
+| `POST /auth/logout` | Revoke a refresh token server-side (ends the session) |
+| `GET /decks`, `GET /decks/{id}` | List (cursor-paginated: `?limit&cursor`) / fetch decks (a user's decks + the global catalog) |
+| `POST /decks`, `PUT /decks/{id}`, `DELETE /decks/{id}` | Create / update / delete a deck (owner-scoped; the seeded deck is read-only) |
 | `POST /sessions` | Start or resume a practice session for a deck |
-| `GET /sessions?active=true`, `GET /sessions/{id}` | List / fetch practice sessions |
+| `GET /sessions?active=`, `GET /sessions/{id}` | List (cursor-paginated) / fetch practice sessions |
 | `PATCH /sessions/{id}`, `POST /sessions/{id}/complete` | Update progress / complete a session |
 | `GET /home` | Server-computed home feed |
 | `POST /images` | Upload a flashcard image; returns its CloudFront URL (requires S3 config) |
+
+> The `/auth/*` routes are rate-limited per client IP (`429` on exceed). List endpoints return a
+> `Page<T>` envelope (`{ items, nextCursor }`); pass `nextCursor` back as `cursor` for the next page.
 
 ---
 
@@ -276,11 +306,17 @@ DTOs in `shared/src/commonMain/.../api/`.
 ```bash
 ./gradlew :androidApp:assembleDebug         # build the Android APK
 ./gradlew :androidApp:testDebugUnitTest     # Android unit tests
+./gradlew :androidApp:connectedDebugAndroidTest  # instrumented tests, incl. the Room migration test (needs a device/emulator)
 ./gradlew :shared:build                     # build shared for android/iOS/JVM
+./gradlew :shared:jvmTest                   # shared commonTest on the JVM host
 ./gradlew :backend:build                    # build the backend
 ./gradlew :backend:test                     # backend integration tests (Testcontainers)
-cd webApp && npm run build && npm run lint  # build + lint the web app
+cd webApp && npm run build && npm run lint && npm run test  # build + lint + test the web app
 ```
+
+CI (`.github/workflows/ci.yml`) runs ktlint, the JVM unit tests (backend/android/shared) with
+coverage, the web build/lint/tests, and the **instrumented tests on an emulator** (which covers
+the Room migration test).
 
 The backend tests start a real Postgres via Testcontainers, so they need Docker. Under
 Colima they additionally need:
