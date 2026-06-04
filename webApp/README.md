@@ -1,8 +1,9 @@
 # Flashcards — Web App
 
 A React + TypeScript + Vite single-page app for Flashcards. It's a thin client over the
-backend API (auth, deck library, deck create/edit with optional front-of-card images).
-Practice isn't implemented on the web yet — tapping a deck opens it for editing.
+backend API with parity to the Android client's core flows: auth, the deck library (with
+title search + sort), deck create/edit (optional front-of-card images), and a practice
+screen (card flip + reducer, routed at `/decks/:id/practice`).
 
 This app has its **own npm toolchain** and is **not** part of the repo's Gradle build.
 
@@ -14,8 +15,10 @@ cp .env.example .env     # then fill in values if needed
 npm run dev              # http://localhost:5173
 ```
 
-Start the backend first (see the [root README](../README.md)). The dev server's origin
-(`http://localhost:5173`) is in the backend's default CORS allow-list.
+Start the backend first (see the [root README](../README.md)). The dev server is pinned to
+**port 5173** (`vite.config.ts`, `strictPort`) — that origin is in the backend's default CORS
+allow-list and is the one registered with the Google OAuth client, so it fails loudly instead
+of drifting to another port if 5173 is taken.
 
 ## Scripts
 
@@ -25,6 +28,7 @@ Start the backend first (see the [root README](../README.md)). The dev server's 
 | `npm run build` | Type-check + production build to `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | ESLint |
+| `npm run test` | Vitest unit/component tests (`test:coverage` for coverage) |
 
 ## Configuration
 
@@ -40,7 +44,10 @@ Use the **same** Google client ID the backend verifies against. See the root REA
 
 ## Structure
 
-- `src/api/` — `types.ts` (hand-written mirrors of the shared API DTOs) and `client.ts`
-  (fetch-based API client; bearer token in `localStorage`).
+- `src/api/` — `types.ts` (hand-written mirrors of the shared API DTOs, including the
+  `Page<T>` envelope) and `client.ts` (fetch-based API client; access + refresh tokens in
+  `localStorage`, with single-flight transparent refresh on `401`).
 - `src/auth/` — login/register + Google sign-in (Google Identity Services).
-- `src/decks/` — library list and the create/edit deck form (`DeckForm`).
+- `src/decks/` — library list (title search + sort, cursor "Load more") and the create/edit
+  deck form (`DeckForm`).
+- `src/practice/` — the practice flow (card flip + reducer), routed at `/decks/:id/practice`.
