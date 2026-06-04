@@ -80,6 +80,30 @@ describe('api client', () => {
     expect((fetchMock.mock.calls[1] as [string])[0]).toContain('cursor=c1');
   });
 
+  it('getAllSessions walks pages of /sessions?active=false', async () => {
+    setToken('tok');
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ items: [{ id: 10, deckId: 1 }], nextCursor: 'c1' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ items: [{ id: 11, deckId: 2 }], nextCursor: null }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const sessions = await api.getAllSessions();
+
+    expect(sessions.map((s) => s.id)).toEqual([10, 11]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect((fetchMock.mock.calls[0] as [string])[0]).toContain('active=false');
+    expect((fetchMock.mock.calls[1] as [string])[0]).toContain('cursor=c1');
+  });
+
   it('register posts JSON without an auth header', async () => {
     const fetchMock = stubFetch({ json: () => Promise.resolve({ token: 't', userId: 1 }) });
 

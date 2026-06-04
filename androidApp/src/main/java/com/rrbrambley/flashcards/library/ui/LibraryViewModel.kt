@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.StringProvider
+import com.rrbrambley.flashcards.domain.FlashcardDeck
 import com.rrbrambley.flashcards.domain.FlashcardRepository
 import com.rrbrambley.flashcards.practice.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,6 +41,10 @@ class LibraryViewModel @Inject constructor(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    // How the (filtered) decks are ordered; alphabetical by default (no session data required).
+    private val _sortOrder = MutableStateFlow(DeckSortOrder.Alphabetical)
+    val sortOrder: StateFlow<DeckSortOrder> = _sortOrder.asStateFlow()
+
     private var observeJob: Job? = null
 
     init {
@@ -50,20 +55,30 @@ class LibraryViewModel @Inject constructor(
         _searchQuery.value = query
     }
 
+    fun onSortOrderChange(order: DeckSortOrder) {
+        _sortOrder.value = order
+    }
+
     /**
-     * (Re)subscribes to the deck stream, which best-effort re-syncs from the backend first, and
-     * applies the live [searchQuery] filter. Changing the query re-filters the cached decks without
-     * re-subscribing (no extra backend sync).
+     * (Re)subscribes to the deck stream, which best-effort re-syncs from the backend first, then
+     * applies the live [searchQuery] filter and [sortOrder]. Changing the query, sort, or
+     * last-practiced times re-derives the list from the cached decks without re-subscribing.
      */
     private fun observeDecks() {
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
-            combine(flashcardRepository.observeFlashcardDecks(), _searchQuery) { decks, query ->
-                if (query.isBlank()) {
+            combine(
+                flashcardRepository.observeFlashcardDecks(),
+                _searchQuery,
+                _sortOrder,
+                practiceSessionRepository.observeLastPracticedByDeck(),
+            ) { decks, query, order, lastPracticed ->
+                val filtered = if (query.isBlank()) {
                     decks
                 } else {
                     decks.filter { it.title.contains(query.trim(), ignoreCase = true) }
                 }
+                sortDecks(filtered, order, lastPracticed)
             }
                 .catch {
                     _uiState.update { LibraryUiState.LoadingFailed }
@@ -74,6 +89,18 @@ class LibraryViewModel @Inject constructor(
                     _isRefreshing.value = false
                 }
         }
+    }
+
+    private fun sortDecks(
+        decks: List<FlashcardDeck>,
+        order: DeckSortOrder,
+        lastPracticed: Map<Long, Long>,
+    ) = when (order) {
+        DeckSortOrder.Alphabetical -> decks.sortedBy { it.title.lowercase() }
+        // Most-recently-practiced first; never-practiced decks fall back to newest-created (id desc).
+        DeckSortOrder.RecentlyPracticed -> decks.sortedWith(
+            compareByDescending<FlashcardDeck> { lastPracticed[it.id] ?: 0L }.thenByDescending { it.id },
+        )
     }
 
     /** Pull-to-refresh: keep the current decks visible while we re-sync. */

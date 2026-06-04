@@ -13,12 +13,43 @@ export function LibraryPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState<'alpha' | 'recent'>('alpha');
+  // deckId -> most recent practice time; loaded lazily the first time "Recently practiced" is picked.
+  const [lastPracticed, setLastPracticed] = useState<Record<number, number>>({});
+  const [sessionsLoaded, setSessionsLoaded] = useState(false);
+
+  // "Recently practiced" needs per-deck session times; fetch them once, only when first selected.
+  useEffect(() => {
+    if (sortOrder !== 'recent' || sessionsLoaded) return;
+    let cancelled = false;
+    api
+      .getAllSessions()
+      .then((sessions) => {
+        if (cancelled) return;
+        const map: Record<number, number> = {};
+        for (const s of sessions) map[s.deckId] = Math.max(map[s.deckId] ?? 0, s.updatedAtMillis);
+        setLastPracticed(map);
+      })
+      .catch(() => {
+        /* leave the map empty; recency sort falls back to deck order */
+      })
+      .finally(() => !cancelled && setSessionsLoaded(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [sortOrder, sessionsLoaded]);
 
   // Client-side title filter over the decks loaded so far (case-insensitive).
   const normalizedSearch = search.trim().toLowerCase();
   const filteredDecks = normalizedSearch
     ? decks.filter((deck) => deck.title.toLowerCase().includes(normalizedSearch))
     : decks;
+
+  const sortedDecks = [...filteredDecks].sort((a, b) =>
+    sortOrder === 'alpha'
+      ? a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+      : (lastPracticed[b.id] ?? 0) - (lastPracticed[a.id] ?? 0) || b.id - a.id,
+  );
 
   // Fetches one page. `reset` replaces the list (initial load); otherwise appends (load more).
   const loadPage = useCallback(async (cursorToken: string | undefined, reset: boolean) => {
@@ -66,14 +97,25 @@ export function LibraryPage() {
         </div>
 
         {!loading && !error && (decks.length > 0 || search) && (
-          <input
-            className="deck-search"
-            type="search"
-            placeholder="Search decks"
-            aria-label="Search decks"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="library-controls">
+            <input
+              className="deck-search"
+              type="search"
+              placeholder="Search decks"
+              aria-label="Search decks"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <select
+              className="deck-sort"
+              aria-label="Sort decks"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as 'alpha' | 'recent')}
+            >
+              <option value="alpha">A–Z</option>
+              <option value="recent">Recently practiced</option>
+            </select>
+          </div>
         )}
 
         {loading ? (
@@ -82,11 +124,11 @@ export function LibraryPage() {
           <p className="error">{error}</p>
         ) : decks.length === 0 ? (
           <p className="muted">No decks yet — create your first one.</p>
-        ) : filteredDecks.length === 0 ? (
+        ) : sortedDecks.length === 0 ? (
           <p className="muted">No decks match “{search}”.</p>
         ) : (
           <ul className="deck-list">
-            {filteredDecks.map((deck) => (
+            {sortedDecks.map((deck) => (
               <li key={deck.id} className="deck-row">
                 <button className="deck-row-main" onClick={() => navigate(`/decks/${deck.id}/edit`)}>
                   <span className="deck-title">{deck.title}</span>

@@ -49,6 +49,8 @@
     <string name="library_search_placeholder">Search decks</string>
     <string name="library_search_clear">Clear search</string>
     <string name="library_no_results">No decks match \"%1$s\"</string>
+    <string name="library_sort_recent">Recently practiced</string>
+    <string name="library_sort_alphabetical">A–Z</string>
     <string name="library_empty_title">No saved decks yet</string>
     <string name="library_empty_subtitle">Create a deck and it will appear here automatically.</string>
     <string name="library_practice">Practice</string>

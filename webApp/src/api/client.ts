@@ -159,6 +159,10 @@ function getDecksPage(params: { limit?: number; cursor?: string } = {}): Promise
   return request<Page<FlashcardDeckDto>>(`/decks${buildQuery(params)}`, { auth: true });
 }
 
+function getSessionsPage(cursor?: string): Promise<Page<PracticeSessionDto>> {
+  return request<Page<PracticeSessionDto>>(`/sessions${buildQuery({ active: false, cursor })}`, { auth: true });
+}
+
 export const api = {
   register: (email: string, password: string) =>
     request<AuthResponse>('/auth/register', { method: 'POST', body: { email, password } }),
@@ -185,6 +189,8 @@ export const api = {
   createSession: (deckId: number) =>
     request<PracticeSessionDto>('/sessions', { method: 'POST', body: { deckId }, auth: true }),
   getSession: (id: number) => request<PracticeSessionDto>(`/sessions/${id}`, { auth: true }),
+  // Every session across all pages (active + completed) — used to derive per-deck last-practiced time.
+  getAllSessions: () => fetchAllPages((cursor) => getSessionsPage(cursor)),
   updateProgress: (id: number, progress: UpdateProgressRequest) =>
     request<PracticeSessionDto>(`/sessions/${id}`, { method: 'PATCH', body: progress, auth: true }),
   completeSession: (id: number) =>

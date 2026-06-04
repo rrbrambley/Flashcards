@@ -37,6 +37,11 @@ class PracticeSessionRepositoryImpl @Inject constructor(
         emitAll(practiceSessionDao.observeSession(sessionId).map { it?.toDomain() })
     }
 
+    override fun observeLastPracticedByDeck(): Flow<Map<Long, Long>> =
+        practiceSessionDao.observeLastPracticedByDeck().map { rows ->
+            rows.associate { it.deckId to it.lastPracticedAtMillis }
+        }
+
     override suspend fun updateProgress(
         sessionId: Long,
         currentCardIndex: Int,

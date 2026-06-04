@@ -229,9 +229,18 @@ button.danger:hover:not(:disabled) {
   margin-bottom: 1rem;
 }
 
-.deck-search {
-  width: 100%;
+.library-controls {
+  display: flex;
+  gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+.deck-search {
+  flex: 1;
+}
+
+.deck-sort {
+  flex: 0 0 auto;
 }
 
 .deck-list {
