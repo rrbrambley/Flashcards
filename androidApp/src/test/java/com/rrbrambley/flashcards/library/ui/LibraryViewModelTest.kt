@@ -83,6 +83,33 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun searchQuery_filtersDecksByTitleCaseInsensitively() = runTest(testDispatcher) {
+        val decks = listOf(
+            FlashcardDeck(id = 1L, title = "Spanish basics", flashcards = emptyList()),
+            FlashcardDeck(id = 2L, title = "French verbs", flashcards = emptyList()),
+            FlashcardDeck(id = 3L, title = "Spanish food", flashcards = emptyList()),
+        )
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(decks),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onSearchQueryChange("span")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val filtered = viewModel.uiState.value as LibraryUiState.ShowDecks
+        assertEquals(listOf(1L, 3L), filtered.decks.map { it.id })
+
+        // Clearing the query restores the full list (no re-subscription needed).
+        viewModel.onSearchQueryChange("")
+        testDispatcher.scheduler.advanceUntilIdle()
+        val all = viewModel.uiState.value as LibraryUiState.ShowDecks
+        assertEquals(listOf(1L, 2L, 3L), all.decks.map { it.id })
+    }
+
+    @Test
     fun startPractice_startsSessionAndInvokesCallback() = runTest(testDispatcher) {
         val practiceSessionRepository = FakePracticeSessionRepository(sessionId = 42L)
         var startedSessionId: Long? = null

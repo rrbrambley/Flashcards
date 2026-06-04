@@ -40,6 +40,27 @@ describe('LibraryPage', () => {
     expect(await screen.findByText('boom')).toBeInTheDocument();
   });
 
+  it('filters decks by title as you type, with a no-match message', async () => {
+    vi.mocked(api.getDecks).mockResolvedValue({
+      items: [
+        { id: 1, title: 'Spanish basics', flashcards: [] },
+        { id: 2, title: 'French verbs', flashcards: [] },
+      ],
+      nextCursor: null,
+    });
+    renderPage();
+
+    expect(await screen.findByText('Spanish basics')).toBeInTheDocument();
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search decks' }), 'french');
+
+    expect(screen.getByText('French verbs')).toBeInTheDocument();
+    expect(screen.queryByText('Spanish basics')).not.toBeInTheDocument();
+
+    await userEvent.clear(screen.getByRole('searchbox', { name: 'Search decks' }));
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search decks' }), 'zzz');
+    expect(screen.getByText(/No decks match/)).toBeInTheDocument();
+  });
+
   it('appends the next page when "Load more" is clicked', async () => {
     vi.mocked(api.getDecks)
       .mockResolvedValueOnce({ items: [{ id: 1, title: 'Spanish', flashcards: [] }], nextCursor: 'c1' })

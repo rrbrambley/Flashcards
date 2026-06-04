@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,9 +20,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -56,6 +62,7 @@ fun LibraryScreen(
     onEditDeck: (FlashcardDeck) -> Unit = {},
 ) {
     val uiState by libraryViewModel.uiState.collectAsState()
+    val searchQuery by libraryViewModel.searchQuery.collectAsState()
     var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
     var deckPendingDeletion by remember { mutableStateOf<FlashcardDeck?>(null) }
 
@@ -106,6 +113,8 @@ fun LibraryScreen(
                 LibraryUiState.LoadingFailed -> LibraryErrorMessage(onRetry = libraryViewModel::retry)
                 is LibraryUiState.ShowDecks -> LibraryContent(
                     decks = state.decks,
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = libraryViewModel::onSearchQueryChange,
                     onDeckClick = { selectedDeck = it },
                 )
             }
@@ -146,26 +155,81 @@ private fun LibraryErrorMessage(onRetry: () -> Unit, modifier: Modifier = Modifi
 fun LibraryContent(
     decks: List<FlashcardDeck>,
     modifier: Modifier = Modifier,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
     onDeckClick: (FlashcardDeck) -> Unit = {},
 ) {
-    if (decks.isEmpty()) {
-        EmptyLibraryMessage(modifier = modifier)
-    } else {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            items(
-                items = decks,
-                key = { deck -> deck.id },
-            ) { deck ->
-                LibraryDeckCard(
-                    deck = deck,
-                    onClick = { onDeckClick(deck) },
-                )
-            }
+    Column(modifier = modifier.fillMaxSize()) {
+        // The search box appears once there's something to search, or while a filter is active
+        // (so it can't disappear out from under a query that matches nothing).
+        if (decks.isNotEmpty() || searchQuery.isNotBlank()) {
+            DeckSearchField(
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
         }
+        when {
+            decks.isNotEmpty() -> LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                items(
+                    items = decks,
+                    key = { deck -> deck.id },
+                ) { deck ->
+                    LibraryDeckCard(
+                        deck = deck,
+                        onClick = { onDeckClick(deck) },
+                    )
+                }
+            }
+            // Non-blank query with no matches vs. a genuinely empty library.
+            searchQuery.isNotBlank() -> NoSearchResultsMessage(query = searchQuery, modifier = Modifier.fillMaxSize())
+            else -> EmptyLibraryMessage(modifier = Modifier.fillMaxSize())
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeckSearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = modifier,
+        singleLine = true,
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = {
+            if (query.isNotEmpty()) {
+                IconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.library_search_clear))
+                }
+            }
+        },
+        placeholder = { Text(stringResource(R.string.library_search_placeholder)) },
+    )
+}
+
+@Composable
+private fun NoSearchResultsMessage(query: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.library_no_results, query),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

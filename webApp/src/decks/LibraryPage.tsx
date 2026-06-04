@@ -12,6 +12,13 @@ export function LibraryPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  // Client-side title filter over the decks loaded so far (case-insensitive).
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredDecks = normalizedSearch
+    ? decks.filter((deck) => deck.title.toLowerCase().includes(normalizedSearch))
+    : decks;
 
   // Fetches one page. `reset` replaces the list (initial load); otherwise appends (load more).
   const loadPage = useCallback(async (cursorToken: string | undefined, reset: boolean) => {
@@ -58,15 +65,28 @@ export function LibraryPage() {
           <button onClick={() => navigate('/create')}>+ Create deck</button>
         </div>
 
+        {!loading && !error && (decks.length > 0 || search) && (
+          <input
+            className="deck-search"
+            type="search"
+            placeholder="Search decks"
+            aria-label="Search decks"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        )}
+
         {loading ? (
           <p className="muted">Loading…</p>
         ) : error ? (
           <p className="error">{error}</p>
         ) : decks.length === 0 ? (
           <p className="muted">No decks yet — create your first one.</p>
+        ) : filteredDecks.length === 0 ? (
+          <p className="muted">No decks match “{search}”.</p>
         ) : (
           <ul className="deck-list">
-            {decks.map((deck) => (
+            {filteredDecks.map((deck) => (
               <li key={deck.id} className="deck-row">
                 <button className="deck-row-main" onClick={() => navigate(`/decks/${deck.id}/edit`)}>
                   <span className="deck-title">{deck.title}</span>
