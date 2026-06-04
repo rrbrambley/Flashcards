@@ -57,14 +57,9 @@ android {
         buildConfig = true
     }
 
-    // Make the exported Room schemas available to MigrationTestHelper in instrumented tests.
-    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
-}
-
-// Export Room schemas to a versioned, checked-in directory so migrations can be written and
-// tested against each prior version.
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
+    // The Room database now lives in :shared; make its exported schemas available to
+    // MigrationTestHelper in this module's instrumented migration test.
+    sourceSets.getByName("androidTest").assets.srcDir(rootProject.file("shared/schemas"))
 }
 
 dependencies {
@@ -100,8 +95,7 @@ dependencies {
 
     implementation(libs.coroutines.android)
 
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
+    // The Room database lives in :shared (which exposes Room via `api`); no Room codegen here.
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
