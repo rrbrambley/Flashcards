@@ -21,7 +21,7 @@ struct RootView: View {
             case .loading:
                 ProgressView()
             case .signedOut:
-                AuthPlaceholderView()
+                AuthView(authService: container.authService)
             case .signedIn:
                 MainTabView()
             }
