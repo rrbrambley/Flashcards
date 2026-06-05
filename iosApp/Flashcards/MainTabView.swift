@@ -21,9 +21,14 @@ struct MainTabView: View {
                 .tabItem { Label("New", systemImage: "plus.square") }
                 .tag(Tab.new)
 
-            NavigationStack { LibraryView(repository: container.flashcardRepository) }
-                .tabItem { Label("Library", systemImage: "rectangle.stack") }
-                .tag(Tab.library)
+            NavigationStack {
+                LibraryView(
+                    flashcardRepository: container.flashcardRepository,
+                    sessionRepository: container.practiceSessionRepository
+                )
+            }
+            .tabItem { Label("Library", systemImage: "rectangle.stack") }
+            .tag(Tab.library)
         }
     }
 }

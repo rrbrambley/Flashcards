@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.shared
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.flow.map
 
 /**
@@ -17,3 +18,7 @@ fun TokenStore.loggedInAdapter(): FlowAdapter<Boolean> = FlowAdapter(tokenFlow()
 
 /** The user's decks + the global catalog (offline-first; best-effort re-syncs on subscribe). */
 fun FlashcardRepository.flashcardDecksAdapter(): FlowAdapter<List<FlashcardDeck>> = FlowAdapter(observeFlashcardDecks())
+
+/** deckId → most-recent practice time (millis), for "recently practiced" sorting. */
+fun PracticeSessionRepository.lastPracticedAdapter(): FlowAdapter<Map<Long, Long>> =
+    FlowAdapter(observeLastPracticedByDeck())

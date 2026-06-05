@@ -1,30 +1,86 @@
 import Shared
 import SwiftUI
 
+/// How the library is ordered (parity with Android's `DeckSortOrder`).
+enum DeckSortOrder: String, CaseIterable, Identifiable {
+    case alphabetical
+    case recentlyPracticed
+
+    var id: String { rawValue }
+    var label: String { self == .alphabetical ? "A–Z" : "Recently practiced" }
+}
+
 /// Lists the user's decks from the offline-first `FlashcardRepository` (which best-effort re-syncs
-/// from the backend on subscribe, then emits the cached decks).
+/// on subscribe), with a live title filter and A–Z / recently-practiced sorting applied in memory.
 @MainActor
 final class LibraryViewModel: ObservableObject {
     @Published private(set) var state: LoadState<[FlashcardDeck]> = .loading
+    @Published var searchQuery = "" { didSet { recompute() } }
+    @Published var sortOrder: DeckSortOrder = .alphabetical { didSet { recompute() } }
 
-    private let repository: FlashcardRepository
+    /// True once decks have loaded — lets the view tell "no decks yet" from "no search matches".
+    var hasAnyDecks: Bool { !rawDecks.isEmpty }
 
-    init(repository: FlashcardRepository) {
-        self.repository = repository
+    private var rawDecks: [FlashcardDeck] = []
+    private var lastPracticed: [Int64: Int64] = [:]
+    private var loaded = false
+
+    private let flashcardRepository: FlashcardRepository
+    private let sessionRepository: PracticeSessionRepository
+
+    init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository) {
+        self.flashcardRepository = flashcardRepository
+        self.sessionRepository = sessionRepository
     }
 
-    /// Long-lived subscription driving the list. New subscriptions re-sync from the backend first.
-    func observe() async {
-        for await decks in asyncStream(BridgingKt.flashcardDecksAdapter(repository)) {
-            state = .loaded((decks as? [FlashcardDeck]) ?? [])
+    func observeDecks() async {
+        for await decks in asyncStream(BridgingKt.flashcardDecksAdapter(flashcardRepository)) {
+            rawDecks = (decks as? [FlashcardDeck]) ?? []
+            loaded = true
+            recompute()
         }
     }
 
-    /// Pull-to-refresh: a fresh subscription re-syncs; await the first emission so the spinner holds.
+    func observeLastPracticed() async {
+        for await map in asyncStream(BridgingKt.lastPracticedAdapter(sessionRepository)) {
+            var result: [Int64: Int64] = [:]
+            if let dict = map as? [NSNumber: NSNumber] {
+                for (key, value) in dict { result[key.int64Value] = value.int64Value }
+            }
+            lastPracticed = result
+            recompute()
+        }
+    }
+
     func refresh() async {
-        for await decks in asyncStream(BridgingKt.flashcardDecksAdapter(repository)) {
-            state = .loaded((decks as? [FlashcardDeck]) ?? [])
+        for await decks in asyncStream(BridgingKt.flashcardDecksAdapter(flashcardRepository)) {
+            rawDecks = (decks as? [FlashcardDeck]) ?? []
+            loaded = true
+            recompute()
             return
+        }
+    }
+
+    private func recompute() {
+        guard loaded else { return }
+        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered = query.isEmpty
+            ? rawDecks
+            : rawDecks.filter { $0.title.localizedCaseInsensitiveContains(query) }
+        state = .loaded(sorted(filtered))
+    }
+
+    private func sorted(_ decks: [FlashcardDeck]) -> [FlashcardDeck] {
+        switch sortOrder {
+        case .alphabetical:
+            return decks.sorted { $0.title.lowercased() < $1.title.lowercased() }
+        case .recentlyPracticed:
+            // Most-recently-practiced first; never-practiced fall back to newest-created (id desc).
+            return decks.sorted {
+                let lhs = lastPracticed[$0.id] ?? 0
+                let rhs = lastPracticed[$1.id] ?? 0
+                return lhs == rhs ? $0.id > $1.id : lhs > rhs
+            }
         }
     }
 }
