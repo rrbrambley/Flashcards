@@ -17,6 +17,7 @@ final class LibraryViewModel: ObservableObject {
     @Published private(set) var state: LoadState<[FlashcardDeck]> = .loading
     @Published var searchQuery = "" { didSet { recompute() } }
     @Published var sortOrder: DeckSortOrder = .alphabetical { didSet { recompute() } }
+    @Published var deleteError: String?
 
     /// True once decks have loaded — lets the view tell "no decks yet" from "no search matches".
     var hasAnyDecks: Bool { !rawDecks.isEmpty }
@@ -38,6 +39,16 @@ final class LibraryViewModel: ObservableObject {
             rawDecks = (decks as? [FlashcardDeck]) ?? []
             loaded = true
             recompute()
+        }
+    }
+
+    /// Deletes an owned deck (backend-first, then the Room flow drops it → the list updates).
+    /// The global catalog deck isn't deletable, so the view only offers this on editable decks.
+    func deleteDeck(_ deckId: Int64) async {
+        do {
+            try await flashcardRepository.deleteFlashcardDeck(deckId: deckId)
+        } catch {
+            deleteError = "Couldn't delete the deck. Check your connection and try again."
         }
     }
 
