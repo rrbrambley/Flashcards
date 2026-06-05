@@ -12,6 +12,10 @@ struct LibraryView: View {
     private struct EditingDeck: Identifiable { let id: Int64 }
     @State private var editing: EditingDeck?
 
+    /// The deck awaiting delete confirmation (editable decks only).
+    private struct PendingDelete: Identifiable { let id: Int64; let title: String }
+    @State private var pendingDelete: PendingDelete?
+
     init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository) {
         self.flashcardRepository = flashcardRepository
         _viewModel = StateObject(
@@ -29,6 +33,22 @@ struct LibraryView: View {
             .toolbar { sortMenu }
             .sheet(item: $editing) { item in
                 EditDeckView(repository: flashcardRepository, deckId: item.id)
+            }
+            .confirmationDialog(
+                "Delete “\(pendingDelete?.title ?? "")”?",
+                isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
+                titleVisibility: .visible,
+                presenting: pendingDelete
+            ) { deck in
+                Button("Delete", role: .destructive) { Task { await viewModel.deleteDeck(deck.id) } }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("This deck and its cards will be permanently deleted.")
+            }
+            .alert("Couldn't delete deck", isPresented: Binding(get: { viewModel.deleteError != nil }, set: { if !$0 { viewModel.deleteError = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(viewModel.deleteError ?? "")
             }
             .task { await viewModel.observeDecks() }
             .task { await viewModel.observeLastPracticed() }
@@ -67,6 +87,16 @@ struct LibraryView: View {
                 .buttonStyle(.plain)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Spacing.xs, leading: Spacing.md, bottom: Spacing.xs, trailing: Spacing.md))
+                .swipeActions(edge: .trailing) {
+                    // The global catalog deck isn't deletable.
+                    if deck.isEditable {
+                        Button(role: .destructive) {
+                            pendingDelete = PendingDelete(id: deck.id, title: deck.title)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
             }
         }
         .listStyle(.plain)
