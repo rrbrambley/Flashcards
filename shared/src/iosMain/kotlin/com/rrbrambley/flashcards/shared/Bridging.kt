@@ -1,8 +1,11 @@
 package com.rrbrambley.flashcards.shared
 
 import com.rrbrambley.flashcards.shared.api.TokenStore
+import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.flow.filterNotNull
@@ -32,3 +35,9 @@ fun PracticeSessionRepository.lastPracticedAdapter(): FlowAdapter<Map<Long, Long
 /** A practice session by id (non-null emissions), for restoring progress on the practice screen. */
 fun PracticeSessionRepository.sessionAdapter(sessionId: Long): FlowAdapter<PracticeSession> =
     FlowAdapter(observeSession(sessionId).filterNotNull())
+
+/** The home feed (backend GET /home, offline fallback from cached sessions + static items). */
+fun HomeRepository.homeAdapter(): FlowAdapter<List<HomeData>> = FlowAdapter(observeHomeData())
+
+/** The global Country Flags cards, for a session-less "Practice country flags" run from Home. */
+suspend fun FlashcardRepository.defaultFlashcardsAdapter(): FlowAdapter<List<Flashcard>> = FlowAdapter(getFlashcards())

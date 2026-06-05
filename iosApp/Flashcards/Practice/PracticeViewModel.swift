@@ -9,16 +9,27 @@ enum PracticeState {
     case failed
 }
 
-/// Drives a practice run for a deck: starts-or-resumes a session, restores progress, and persists
-/// each step (current card index + correct/incorrect) through the shared `PracticeSessionRepository`
-/// (offline-first → syncs to the backend). Swipe right = correct, left = needs practice.
+/// How a practice run is launched.
+enum PracticeEntry {
+    /// Start or resume a session for a deck (Library "Practice").
+    case deck(Int64)
+    /// Resume an existing session (Home "Continue practice").
+    case session(Int64)
+    /// The global Country Flags cards, with no session (Home "Practice country flags").
+    case defaultFlashcards
+}
+
+/// Drives a practice run: starts-or-resumes (or restores) a session, restores progress, and
+/// persists each step (current card index + correct/incorrect) through the shared
+/// `PracticeSessionRepository` (offline-first → syncs to the backend). The default-flashcards entry
+/// has no session, so it isn't persisted. Swipe right = correct, left = needs practice.
 @MainActor
 final class PracticeViewModel: ObservableObject {
     @Published private(set) var state: PracticeState = .loading
 
     private let flashcardRepository: FlashcardRepository
     private let sessionRepository: PracticeSessionRepository
-    private let deckId: Int64
+    private let entry: PracticeEntry
 
     private var sessionId: Int64?
     private var cards: [Flashcard] = []
@@ -26,38 +37,38 @@ final class PracticeViewModel: ObservableObject {
     private var numCorrect = 0
     private var numIncorrect = 0
 
-    init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository, deckId: Int64) {
+    init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository, entry: PracticeEntry) {
         self.flashcardRepository = flashcardRepository
         self.sessionRepository = sessionRepository
-        self.deckId = deckId
+        self.entry = entry
     }
 
     func start() async {
-        // Start or resume a session, restore its progress, then load the deck's cards.
-        guard let session = try? await sessionRepository.startOrResumeSession(deckId: deckId) else {
-            state = .failed
-            return
+        switch entry {
+        case let .deck(deckId):
+            guard let started = try? await sessionRepository.startOrResumeSession(deckId: deckId) else {
+                state = .failed
+                return
+            }
+            sessionId = started.int64Value
+            await restoreFromSession()
+            await loadDeckCards(deckId: deckId)
+        case let .session(sid):
+            sessionId = sid
+            guard let deckId = await restoreFromSession() else { state = .failed; return }
+            await loadDeckCards(deckId: deckId)
+        case .defaultFlashcards:
+            guard let adapter = try? await BridgingKt.defaultFlashcardsAdapter(flashcardRepository) else {
+                state = .failed
+                return
+            }
+            for await cards in asyncStream(adapter) {
+                self.cards = (cards as? [Flashcard]) ?? []
+                break
+            }
+            guard !cards.isEmpty else { state = .failed; return }
+            updateState()
         }
-        let sid = session.int64Value
-        sessionId = sid
-
-        for await session in asyncStream(BridgingKt.sessionAdapter(sessionRepository, sessionId: sid)) {
-            guard let session else { continue }
-            index = Int(session.currentCardIndex)
-            numCorrect = Int(session.numCorrect)
-            numIncorrect = Int(session.numIncorrect)
-            break
-        }
-
-        for await deck in asyncStream(BridgingKt.flashcardDeckAdapter(flashcardRepository, deckId: deckId)) {
-            guard let deck else { continue }
-            cards = (deck.flashcards as? [Flashcard]) ?? []
-            break
-        }
-
-        guard !cards.isEmpty else { state = .failed; return }
-        index = min(max(index, 0), cards.count - 1)
-        updateState()
     }
 
     func swipeRight() {
@@ -86,6 +97,31 @@ final class PracticeViewModel: ObservableObject {
             state = .completed(numCorrect: numCorrect, numIncorrect: numIncorrect)
             complete()
         }
+    }
+
+    /// Reads the session once (restoring index + scores) and returns its deck id.
+    @discardableResult
+    private func restoreFromSession() async -> Int64? {
+        guard let sid = sessionId else { return nil }
+        for await session in asyncStream(BridgingKt.sessionAdapter(sessionRepository, sessionId: sid)) {
+            guard let session, !session.isCompleted else { continue }
+            index = Int(session.currentCardIndex)
+            numCorrect = Int(session.numCorrect)
+            numIncorrect = Int(session.numIncorrect)
+            return session.deckId
+        }
+        return nil
+    }
+
+    private func loadDeckCards(deckId: Int64) async {
+        for await deck in asyncStream(BridgingKt.flashcardDeckAdapter(flashcardRepository, deckId: deckId)) {
+            guard let deck else { continue }
+            cards = (deck.flashcards as? [Flashcard]) ?? []
+            break
+        }
+        guard !cards.isEmpty else { state = .failed; return }
+        index = min(max(index, 0), cards.count - 1)
+        updateState()
     }
 
     private func updateState() {
