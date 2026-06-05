@@ -1,5 +1,6 @@
-# The Xcode project is generated from project.yml by XcodeGen — don't commit it.
+# The Xcode project + Info.plist are generated from project.yml by XcodeGen — don't commit them.
 *.xcodeproj
+Flashcards/Info.plist
 
 # Xcode user/build artifacts
 xcuserdata/

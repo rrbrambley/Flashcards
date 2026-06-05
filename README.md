@@ -191,6 +191,12 @@ config/SDK/arch env vars) before Swift compiles, so Swift can `import Shared`. T
 slower while Gradle compiles the framework. The build phase needs a JDK 17+ on `PATH`/`JAVA_HOME`
 (it falls back to `/usr/libexec/java_home`).
 
+The backend URL is the per-config build setting `BACKEND_BASE_URL` in `project.yml` (default
+`http://localhost:8080`, which the **simulator** uses to reach a backend on your Mac). For a
+physical device, set the Debug `BACKEND_BASE_URL` to your host's LAN IP (e.g.
+`http://192.168.x.x:8080`), re-run `xcodegen generate`, and add an App Transport Security
+exception for that host (cleartext HTTP).
+
 > Edit the project (targets, build settings, the shared-framework build phase) in
 > `project.yml` and re-run `xcodegen generate` — never hand-edit the `.xcodeproj`.
 > Xcode must have a simulator runtime matching its SDK; if a build reports

@@ -22,20 +22,33 @@ targets:
     platform: iOS
     sources:
       - path: Flashcards
+    info:
+      path: Flashcards/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Surfaced from the per-config BACKEND_BASE_URL build setting; read via AppConfig.
+        BackendBaseURL: $(BACKEND_BASE_URL)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rrbrambley.flashcards
         TARGETED_DEVICE_FAMILY: "1"
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         # The shared Kotlin/Native framework is produced by the build phase below into
         # shared/build/xcode-frameworks/<config>/<sdk>; find + link it (static) by name.
         FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
         OTHER_LDFLAGS: "$(inherited) -framework Shared"
+      configs:
+        # Simulator reaches a locally-running backend at localhost; point a device build at your
+        # host's LAN IP here (and allow its ATS exception) — see the README.
+        Debug: { BACKEND_BASE_URL: "http://localhost:8080" }
+        Release: { BACKEND_BASE_URL: "http://localhost:8080" }
     preBuildScripts:
       # Compile + stage the `Shared` Kotlin framework for the current Xcode config/SDK/arch
       # before Swift compiles. Runs Gradle's direct-integration task, which reads Xcode's
