@@ -19,14 +19,20 @@ struct MainTabView: View {
             .tabItem { Label("Home", systemImage: "house") }
             .tag(Tab.home)
 
-            NavigationStack { CreateDeckView(repository: container.flashcardRepository) }
-                .tabItem { Label("New", systemImage: "plus.square") }
-                .tag(Tab.new)
+            NavigationStack {
+                CreateDeckView(
+                    repository: container.flashcardRepository,
+                    imageUploader: container.imageUploader
+                )
+            }
+            .tabItem { Label("New", systemImage: "plus.square") }
+            .tag(Tab.new)
 
             NavigationStack {
                 LibraryView(
                     flashcardRepository: container.flashcardRepository,
-                    sessionRepository: container.practiceSessionRepository
+                    sessionRepository: container.practiceSessionRepository,
+                    imageUploader: container.imageUploader
                 )
             }
             .tabItem { Label("Library", systemImage: "rectangle.stack") }

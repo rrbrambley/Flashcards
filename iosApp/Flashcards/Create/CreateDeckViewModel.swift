@@ -1,3 +1,4 @@
+import PhotosUI
 import Shared
 import SwiftUI
 
@@ -14,9 +15,11 @@ final class CreateDeckViewModel: ObservableObject {
     @Published private(set) var justSaved = false
 
     private let repository: FlashcardRepository
+    private let imageUploader: ImageUploader
 
-    init(repository: FlashcardRepository) {
+    init(repository: FlashcardRepository, imageUploader: ImageUploader) {
         self.repository = repository
+        self.imageUploader = imageUploader
     }
 
     func addCard() {
@@ -27,6 +30,27 @@ final class CreateDeckViewModel: ObservableObject {
     func removeCard(_ id: UUID) {
         cards.removeAll { $0.id == id }
         showErrors = false
+    }
+
+    func pickImage(cardId: UUID, item: PhotosPickerItem) {
+        updateCard(cardId) { $0.uploading = true; $0.uploadError = nil }
+        Task {
+            do {
+                let url = try await imageUploader.upload(item: item)
+                updateCard(cardId) { $0.imageUrl = url; $0.uploading = false }
+            } catch {
+                updateCard(cardId) { $0.uploading = false; $0.uploadError = ImageUploader.errorMessage }
+            }
+        }
+    }
+
+    func removeImage(cardId: UUID) {
+        updateCard(cardId) { $0.imageUrl = nil; $0.uploadError = nil }
+    }
+
+    private func updateCard(_ id: UUID, _ transform: (inout CardDraft) -> Void) {
+        guard let index = cards.firstIndex(where: { $0.id == id }) else { return }
+        transform(&cards[index])
     }
 
     func save() async {
@@ -44,7 +68,7 @@ final class CreateDeckViewModel: ObservableObject {
             id: 0,
             title: deckTitle.trimmed,
             flashcards: complete.map {
-                Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: nil)
+                Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: $0.imageUrl)
             },
             isEditable: true
         )

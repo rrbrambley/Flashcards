@@ -8,8 +8,10 @@ struct EditDeckView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showDiscardConfirm = false
 
-    init(repository: FlashcardRepository, deckId: Int64) {
-        _viewModel = StateObject(wrappedValue: EditDeckViewModel(repository: repository, deckId: deckId))
+    init(repository: FlashcardRepository, imageUploader: ImageUploader, deckId: Int64) {
+        _viewModel = StateObject(
+            wrappedValue: EditDeckViewModel(repository: repository, imageUploader: imageUploader, deckId: deckId)
+        )
     }
 
     var body: some View {
@@ -31,7 +33,9 @@ struct EditDeckView: View {
                             isEditable: viewModel.isEditable,
                             showErrors: viewModel.showErrors,
                             onAddCard: viewModel.addCard,
-                            onRemoveCard: viewModel.removeCard
+                            onRemoveCard: viewModel.removeCard,
+                            onPickImage: viewModel.pickImage,
+                            onRemoveImage: viewModel.removeImage
                         )
                         if let error = viewModel.saveError {
                             Section { FormErrorText(error) }

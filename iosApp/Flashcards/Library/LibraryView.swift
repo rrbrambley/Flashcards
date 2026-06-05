@@ -8,6 +8,7 @@ struct LibraryView: View {
     @StateObject private var viewModel: LibraryViewModel
     private let flashcardRepository: FlashcardRepository
     private let sessionRepository: PracticeSessionRepository
+    private let imageUploader: ImageUploader
 
     /// `.sheet(item:)` needs an Identifiable; a deck id wrapper presents the edit sheet.
     private struct EditingDeck: Identifiable { let id: Int64 }
@@ -21,9 +22,14 @@ struct LibraryView: View {
     private struct PracticingDeck: Identifiable { let id: Int64 }
     @State private var practicing: PracticingDeck?
 
-    init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository) {
+    init(
+        flashcardRepository: FlashcardRepository,
+        sessionRepository: PracticeSessionRepository,
+        imageUploader: ImageUploader
+    ) {
         self.flashcardRepository = flashcardRepository
         self.sessionRepository = sessionRepository
+        self.imageUploader = imageUploader
         _viewModel = StateObject(
             wrappedValue: LibraryViewModel(
                 flashcardRepository: flashcardRepository,
@@ -38,7 +44,7 @@ struct LibraryView: View {
             .searchable(text: $viewModel.searchQuery, prompt: "Search decks")
             .toolbar { sortMenu }
             .sheet(item: $editing) { item in
-                EditDeckView(repository: flashcardRepository, deckId: item.id)
+                EditDeckView(repository: flashcardRepository, imageUploader: imageUploader, deckId: item.id)
             }
             .fullScreenCover(item: $practicing) { item in
                 PracticeView(

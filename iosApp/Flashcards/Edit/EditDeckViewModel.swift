@@ -1,3 +1,4 @@
+import PhotosUI
 import Shared
 import SwiftUI
 
@@ -16,12 +17,14 @@ final class EditDeckViewModel: ObservableObject {
     @Published private(set) var didSave = false
 
     private let repository: FlashcardRepository
+    private let imageUploader: ImageUploader
     private let deckId: Int64
     private var originalTitle = ""
     private var originalCards: [CardDraft] = []
 
-    init(repository: FlashcardRepository, deckId: Int64) {
+    init(repository: FlashcardRepository, imageUploader: ImageUploader, deckId: Int64) {
         self.repository = repository
+        self.imageUploader = imageUploader
         self.deckId = deckId
     }
 
@@ -50,6 +53,27 @@ final class EditDeckViewModel: ObservableObject {
         showErrors = false
     }
 
+    func pickImage(cardId: UUID, item: PhotosPickerItem) {
+        updateCard(cardId) { $0.uploading = true; $0.uploadError = nil }
+        Task {
+            do {
+                let url = try await imageUploader.upload(item: item)
+                updateCard(cardId) { $0.imageUrl = url; $0.uploading = false }
+            } catch {
+                updateCard(cardId) { $0.uploading = false; $0.uploadError = ImageUploader.errorMessage }
+            }
+        }
+    }
+
+    func removeImage(cardId: UUID) {
+        updateCard(cardId) { $0.imageUrl = nil; $0.uploadError = nil }
+    }
+
+    private func updateCard(_ id: UUID, _ transform: (inout CardDraft) -> Void) {
+        guard let index = cards.firstIndex(where: { $0.id == id }) else { return }
+        transform(&cards[index])
+    }
+
     func save() async {
         guard isEditable else { return }
         let complete = cards.completeCards
@@ -66,7 +90,7 @@ final class EditDeckViewModel: ObservableObject {
             id: deckId,
             title: deckTitle.trimmed,
             flashcards: complete.map {
-                Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: nil)
+                Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: $0.imageUrl)
             },
             isEditable: true
         )
@@ -83,7 +107,7 @@ final class EditDeckViewModel: ObservableObject {
 
     private func populate(from deck: FlashcardDeck) {
         let drafts = (deck.flashcards as? [Flashcard])?.map {
-            CardDraft(term: $0.question, definition: $0.answer)
+            CardDraft(term: $0.question, definition: $0.answer, imageUrl: $0.imageUrl)
         } ?? []
         let cards = drafts.isEmpty ? [CardDraft()] : drafts
         deckTitle = deck.title
