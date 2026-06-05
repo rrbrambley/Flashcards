@@ -5,8 +5,9 @@ import SwiftUI
 /// Injected via `.environmentObject` and resolved with `@EnvironmentObject` in any view.
 ///
 /// `createIosFlashcardSdk` (shared iosMain) wires the Darwin HTTP client + transparent token
-/// refresh + the offline-first Room repositories. The `TokenStore` is the placeholder
-/// `InMemoryTokenStore` for now — FLA-36 swaps in a Keychain-backed implementation.
+/// refresh + the offline-first Room repositories. Tokens are persisted in the Keychain
+/// (`KeychainTokenStore`), so a signed-in session survives app restarts and the shared refresh
+/// flow reads/writes them.
 @MainActor
 final class AppContainer: ObservableObject {
     let tokenStore: TokenStore
@@ -16,7 +17,7 @@ final class AppContainer: ObservableObject {
     var practiceSessionRepository: PracticeSessionRepository { sdk.practiceSessionRepository }
     var homeRepository: HomeRepository { sdk.homeRepository }
 
-    init(baseURL: String = AppConfig.backendBaseURL, tokenStore: TokenStore = InMemoryTokenStore()) {
+    init(baseURL: String = AppConfig.backendBaseURL, tokenStore: TokenStore = KeychainTokenStore()) {
         self.tokenStore = tokenStore
         // Kotlin default args don't bridge — pass the default home-feed strings explicitly.
         self.sdk = IosFlashcardSdkKt.createIosFlashcardSdk(
