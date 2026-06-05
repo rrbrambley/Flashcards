@@ -15,6 +15,9 @@ final class AuthViewModel: ObservableObject {
     @Published private(set) var isSubmitting = false
     @Published var errorMessage: String?
 
+    /// Whether to show the Google button (the iOS OAuth client ID is configured).
+    let isGoogleConfigured = GoogleSignInHelper.isConfigured
+
     private let authService: AuthService
 
     init(authService: AuthService) {
@@ -57,5 +60,28 @@ final class AuthViewModel: ObservableObject {
         if let failure = result as? AuthResult.Failure {
             errorMessage = failure.message
         }
+    }
+
+    /// Runs the native Google flow, then exchanges the ID token via the shared `AuthService`
+    /// (success flips `RootView` to the main tabs). Cancellation is silent; other failures show a
+    /// message. Parity with Android's Google sign-in.
+    func signInWithGoogle() async {
+        guard !isSubmitting else { return }
+        isSubmitting = true
+        errorMessage = nil
+        do {
+            let idToken = try await GoogleSignInHelper.signIn()
+            let result = try? await authService.signInWithGoogle(idToken: idToken)
+            if let failure = result as? AuthResult.Failure {
+                errorMessage = failure.message
+            }
+        } catch GoogleSignInHelper.SignInError.cancelled {
+            // User backed out — no error to show.
+        } catch GoogleSignInHelper.SignInError.notConfigured {
+            errorMessage = "Google sign-in isn't configured."
+        } catch {
+            errorMessage = "Couldn't sign in with Google. Please try again."
+        }
+        isSubmitting = false
     }
 }

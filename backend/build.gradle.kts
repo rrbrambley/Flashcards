@@ -63,6 +63,7 @@ tasks.named<JavaExec>("run") {
     // come from the default AWS chain (~/.aws / env), never from gradle properties.
     listOf(
         "GOOGLE_WEB_CLIENT_ID",
+        "GOOGLE_IOS_CLIENT_ID",
         "S3_BUCKET",
         "S3_REGION",
         "CDN_BASE_URL",

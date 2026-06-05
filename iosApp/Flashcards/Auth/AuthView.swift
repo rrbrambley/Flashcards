@@ -22,8 +22,10 @@ struct AuthView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 submitButton
-                divider
-                googleButton
+                if viewModel.isGoogleConfigured {
+                    divider
+                    googleButton
+                }
                 switchButton
             }
             .padding(Spacing.lg)
@@ -89,13 +91,14 @@ struct AuthView: View {
         Rectangle().fill(Color(.separator)).frame(height: 1)
     }
 
-    // Disabled until FLA-50 wires the GoogleSignIn SDK.
     private var googleButton: some View {
-        Button {} label: {
+        Button {
+            Task { await viewModel.signInWithGoogle() }
+        } label: {
             Label(viewModel.googleTitle, systemImage: "g.circle")
         }
         .buttonStyle(.secondary)
-        .disabled(true)
+        .disabled(viewModel.isSubmitting)
     }
 
     private var switchButton: some View {

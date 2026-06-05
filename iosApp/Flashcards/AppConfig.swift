@@ -10,4 +10,10 @@ enum AppConfig {
         if let value, !value.isEmpty { return value }
         return "http://localhost:8080"
     }
+
+    /// The iOS OAuth client ID for Google Sign-In, or "" when unconfigured (the button is then
+    /// hidden — parity with Android/web). Surfaced from the `GOOGLE_IOS_CLIENT_ID` build setting.
+    static var googleIOSClientID: String {
+        (Bundle.main.object(forInfoDictionaryKey: "GoogleIOSClientID") as? String) ?? ""
+    }
 }

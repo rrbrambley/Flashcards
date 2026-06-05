@@ -232,18 +232,27 @@ cloud accounts — never reuse another deployment's identifiers.
 
 ### Sign in with Google
 
-Without a client ID, the Google button is hidden (Android & web) and the backend's
+Without a client ID, the Google button is hidden (Android, web & iOS) and the backend's
 `POST /auth/google` returns `503`; email/password sign-in works regardless.
 
 1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create an
    **OAuth 2.0 Web application** client ID. Add `http://localhost:5173` to its authorized
    JavaScript origins (for the web app).
-2. Provide the **same** client ID to all three places:
+2. Provide the **Web** client ID to:
    - **Android build + backend:** add it to your user-global `~/.gradle/gradle.properties`
      (see [Configuration](#configuration)).
    - **Web app:** set `VITE_GOOGLE_WEB_CLIENT_ID` in `webApp/.env`.
+3. **iOS** (optional): the Google Sign-In SDK on iOS issues an ID token whose audience is an
+   **iOS** OAuth client ID, not the Web one. Create an **OAuth 2.0 iOS** client ID (bundle id
+   `com.rrbrambley.flashcards`), then:
+   - Set `GOOGLE_IOS_CLIENT_ID` (the client ID) and `GOOGLE_REVERSED_CLIENT_ID` (its reversed
+     form, `com.googleusercontent.apps.<…>`, used as the OAuth callback URL scheme) in
+     `iosApp/project.yml`'s per-config build settings, and re-run `xcodegen generate`.
+   - Set `GOOGLE_IOS_CLIENT_ID` on the **backend** too (it accepts both the Web and iOS client
+     IDs as valid token audiences).
 
-The backend verifies Google ID tokens against this client ID, so it must match across clients.
+The backend verifies Google ID tokens against the configured client ID(s) — the Web ID (web +
+Android) and the iOS ID (iOS) — so they must match between each client and the backend.
 
 ### Image uploads (S3 + CloudFront)
 
@@ -294,7 +303,8 @@ CDN_BASE_URL=https://<your-distribution>.cloudfront.net
 | `JWT_REFRESH_TTL_SECONDS` | `2592000` | Refresh-token lifetime (30 days) |
 | `RATE_LIMIT_AUTH_LIMIT` | `20` | Max `/auth/*` requests per IP per window |
 | `RATE_LIMIT_AUTH_WINDOW_SECONDS` | `60` | Rate-limit window for `/auth/*` |
-| `GOOGLE_WEB_CLIENT_ID` | *(unset → Google disabled)* | OAuth Web client ID to verify ID tokens |
+| `GOOGLE_WEB_CLIENT_ID` | *(unset → Google disabled)* | OAuth Web client ID (web + Android token audience) |
+| `GOOGLE_IOS_CLIENT_ID` | *(unset)* | OAuth iOS client ID — additional accepted token audience for iOS sign-in |
 | `S3_BUCKET` / `S3_REGION` / `CDN_BASE_URL` | *(unset → uploads disabled)* | Image storage |
 | `S3_ENDPOINT` | *(unset → real AWS)* | Override for a local S3-compatible server (e.g. MinIO) |
 
@@ -313,6 +323,13 @@ CDN_BASE_URL=https://<your-distribution>.cloudfront.net
 `BACKEND_BASE_URL` is set in `androidApp/build.gradle.kts` (`http://10.0.2.2:8080` for the
 emulator). `GOOGLE_WEB_CLIENT_ID` is read from Gradle properties into `BuildConfig`; blank
 disables Google sign-in.
+
+### iOS
+
+`BACKEND_BASE_URL`, `GOOGLE_IOS_CLIENT_ID`, and `GOOGLE_REVERSED_CLIENT_ID` are per-config build
+settings in `iosApp/project.yml` (surfaced through `Info.plist`, read via `AppConfig`). The two
+Google settings are blank by default — blank hides the Google button; set them from your iOS OAuth
+client (and re-run `xcodegen generate`) to enable it. See [Sign in with Google](#sign-in-with-google).
 
 ---
 
