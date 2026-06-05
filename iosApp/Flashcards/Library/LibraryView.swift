@@ -2,13 +2,21 @@ import Shared
 import SwiftUI
 
 /// Library tab: the user's decks + the global catalog, offline-first, with title search and
-/// A–Z / recently-practiced sorting. Tapping a deck opens the edit sheet (FLA-45); swipe to
-/// delete (FLA-46).
+/// A–Z / recently-practiced sorting. Tapping a deck opens a deck-actions sheet — Practice / Edit /
+/// Delete (parity with Android, FLA-58); Practice and Delete are also row-swipe shortcuts.
 struct LibraryView: View {
     @StateObject private var viewModel: LibraryViewModel
     private let flashcardRepository: FlashcardRepository
     private let sessionRepository: PracticeSessionRepository
     private let imageUploader: ImageUploader
+
+    /// The tapped deck, presenting the actions sheet. Holds the whole deck (title / card count /
+    /// ownership drive the sheet's contents).
+    private struct SelectedDeck: Identifiable {
+        let deck: FlashcardDeck
+        var id: Int64 { deck.id }
+    }
+    @State private var selectedDeck: SelectedDeck?
 
     /// `.sheet(item:)` needs an Identifiable; a deck id wrapper presents the edit sheet.
     private struct EditingDeck: Identifiable { let id: Int64 }
@@ -52,6 +60,27 @@ struct LibraryView: View {
                     sessionRepository: sessionRepository,
                     entry: .deck(item.id)
                 )
+            }
+            // Deck-actions sheet on tap (parity with Android): Practice / Edit / Delete. Edit opens
+            // the (read-only for the global deck) edit screen; Delete is owned-decks only.
+            .confirmationDialog(
+                selectedDeck?.deck.title ?? "",
+                isPresented: Binding(get: { selectedDeck != nil }, set: { if !$0 { selectedDeck = nil } }),
+                titleVisibility: .visible,
+                presenting: selectedDeck
+            ) { selected in
+                if !selected.deck.flashcards.isEmpty {
+                    Button("Practice") { practicing = PracticingDeck(id: selected.deck.id) }
+                }
+                Button("Edit deck") { editing = EditingDeck(id: selected.deck.id) }
+                if selected.deck.isEditable {
+                    Button("Delete deck", role: .destructive) {
+                        pendingDelete = PendingDelete(id: selected.deck.id, title: selected.deck.title)
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { selected in
+                Text("^[\(selected.deck.flashcards.count) card](inflect: true)")
             }
             .confirmationDialog(
                 "Delete “\(pendingDelete?.title ?? "")”?",
@@ -99,7 +128,7 @@ struct LibraryView: View {
         List {
             ForEach(decks, id: \.id) { deck in
                 Button {
-                    editing = EditingDeck(id: deck.id)
+                    selectedDeck = SelectedDeck(deck: deck)
                 } label: {
                     DeckCard(title: deck.title, cardCount: deck.flashcards.count)
                 }
