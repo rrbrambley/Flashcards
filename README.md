@@ -185,10 +185,17 @@ xcodebuild -project iosApp/Flashcards.xcodeproj -scheme Flashcards \
   -destination 'platform=iOS Simulator,name=iPhone 17' build
 ```
 
+The app links the shared KMP code as a Kotlin/Native framework: a **"Compile Kotlin Framework"**
+build phase runs `./gradlew :shared:embedAndSignAppleFrameworkForXcode` (driven by Xcode's
+config/SDK/arch env vars) before Swift compiles, so Swift can `import Shared`. The first build is
+slower while Gradle compiles the framework. The build phase needs a JDK 17+ on `PATH`/`JAVA_HOME`
+(it falls back to `/usr/libexec/java_home`).
+
 > Edit the project (targets, build settings, the shared-framework build phase) in
 > `project.yml` and re-run `xcodegen generate` — never hand-edit the `.xcodeproj`.
 > Xcode must have a simulator runtime matching its SDK; if a build reports
 > "No simulator runtime version … available", run `xcodebuild -downloadPlatform iOS`.
+> A physical-device build additionally needs the iOS device platform installed and a signing team.
 
 ---
 

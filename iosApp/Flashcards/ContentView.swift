@@ -1,8 +1,12 @@
+import Shared
 import SwiftUI
 
-/// Placeholder launch screen proving the app shell builds and runs. Replaced by the auth-gated
+/// Placeholder launch screen. The subtitle is produced by the shared Kotlin framework
+/// (`Greeting().greet()`), proving Swift↔Kotlin linkage. Replaced by the auth-gated
 /// navigation shell (TabView) in FLA-37.
 struct ContentView: View {
+    private let greeting = Greeting().greet()
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "rectangle.on.rectangle.angled")
@@ -10,7 +14,8 @@ struct ContentView: View {
                 .foregroundStyle(.tint)
             Text("Flashcards")
                 .font(.largeTitle.bold())
-            Text("iOS app foundation")
+            Text(greeting)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
         }
         .padding()
