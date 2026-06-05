@@ -5,10 +5,10 @@ import com.rrbrambley.flashcards.auth.DefaultAuthRepository
 import com.rrbrambley.flashcards.core.AndroidStringProvider
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.data.auth.DataStoreTokenStore
-import com.rrbrambley.flashcards.data.auth.TokenStore
 import com.rrbrambley.flashcards.data.image.AndroidImageUploader
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.home.data.AndroidHomeFeedStrings
+import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import dagger.Binds
 import dagger.Module

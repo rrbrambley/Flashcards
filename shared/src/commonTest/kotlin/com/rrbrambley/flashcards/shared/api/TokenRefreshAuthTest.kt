@@ -1,7 +1,5 @@
-package com.rrbrambley.flashcards.data.auth
+package com.rrbrambley.flashcards.shared.api
 
-import com.rrbrambley.flashcards.shared.api.ApiError
-import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.get
@@ -12,14 +10,15 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class TokenRefreshAuthTest {
 
-    private val refreshUrl = "http://localhost/auth/refresh"
+    // Both platforms install the flow with their backend base URL; the refresh path is derived.
+    private val baseUrl = "http://localhost"
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
@@ -49,7 +48,7 @@ class TokenRefreshAuthTest {
                 else -> respond("""{"error":"unauthorized"}""", HttpStatusCode.Unauthorized, unauthorizedHeaders)
             }
         }
-        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, refreshUrl) }
+        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, baseUrl) }
 
         val response = client.get("http://localhost/decks")
 
@@ -68,7 +67,7 @@ class TokenRefreshAuthTest {
         val engine = MockEngine {
             respond("""{"error":"unauthorized"}""", HttpStatusCode.Unauthorized, unauthorizedHeaders)
         }
-        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, refreshUrl) }
+        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, baseUrl) }
 
         val thrown = runCatching { client.get("http://localhost/decks") }.exceptionOrNull()
 
@@ -87,7 +86,7 @@ class TokenRefreshAuthTest {
         val engine = MockEngine {
             respond("""{"error":"unauthorized"}""", HttpStatusCode.Unauthorized, unauthorizedHeaders)
         }
-        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, refreshUrl) }
+        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, baseUrl) }
 
         // The original request still fails (expectSuccess throws on the final 401)...
         val thrown = runCatching { client.get("http://localhost/decks") }.exceptionOrNull()

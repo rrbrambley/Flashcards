@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.StringProvider
-import com.rrbrambley.flashcards.data.auth.TokenStore
+import com.rrbrambley.flashcards.shared.api.TokenStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

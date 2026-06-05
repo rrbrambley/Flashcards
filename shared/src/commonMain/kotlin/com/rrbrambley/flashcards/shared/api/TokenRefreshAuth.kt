@@ -1,7 +1,5 @@
-package com.rrbrambley.flashcards.data.auth
+package com.rrbrambley.flashcards.shared.api
 
-import com.rrbrambley.flashcards.shared.api.AuthResponse
-import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.plugins.auth.Auth
@@ -14,14 +12,18 @@ import io.ktor.http.contentType
 
 /**
  * Installs bearer auth with transparent token refresh: the access token is attached to every
- * request, and on a `401` Ktor calls `refreshTokens` to mint a new access token from the stored
- * refresh token (posting to [refreshUrl]), then retries the original request — so callers never
- * see the expiry. If the refresh token is missing or rejected, the tokens are cleared so the app
- * gates back to sign-in (AuthViewModel observes the cleared access token).
+ * request, and on a `401` (with the server's `WWW-Authenticate: Bearer` challenge) Ktor calls
+ * `refreshTokens` to mint a new access token from the stored refresh token (posting to
+ * `$baseUrl/auth/refresh`), then retries the original request — so callers never see the expiry.
+ * Ktor coalesces concurrent refreshes into a single flight. If the refresh token is missing or
+ * rejected, the tokens are cleared so the app gates back to sign-in (the auth UI observes the
+ * cleared access token via [TokenStore.tokenFlow]).
  *
- * Extracted from `NetworkModule` so the refresh-on-401 flow can be unit-tested with a MockEngine.
+ * Lives in `shared` (commonMain) so Android and iOS install the exact same flow through the
+ * client factory's `configure` hook — each platform supplies only its native [TokenStore].
  */
-fun HttpClientConfig<*>.installTokenRefreshAuth(tokenStore: TokenStore, refreshUrl: String) {
+fun HttpClientConfig<*>.installTokenRefreshAuth(tokenStore: TokenStore, baseUrl: String) {
+    val refreshUrl = "${baseUrl.trimEnd('/')}/auth/refresh"
     install(Auth) {
         bearer {
             loadTokens {
