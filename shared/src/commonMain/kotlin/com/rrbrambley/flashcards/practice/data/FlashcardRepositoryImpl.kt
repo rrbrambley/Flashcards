@@ -38,14 +38,17 @@ class FlashcardRepositoryImpl(private val apiClient: FlashcardApiClient, private
         emitAll(flashcardDao.observeDeck(deckId).map { it?.toDomain() })
     }
 
+    @Throws(Exception::class)
     override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
         cache(apiClient.createDeck(deck.toCreateRequest()))
     }
 
+    @Throws(Exception::class)
     override suspend fun updateFlashcardDeck(deck: FlashcardDeck) {
         cache(apiClient.updateDeck(deck.id, deck.toCreateRequest()))
     }
 
+    @Throws(Exception::class)
     override suspend fun deleteFlashcardDeck(deckId: Long) {
         // Backend first, then drop the local cache (Room cascades to cards + sessions).
         apiClient.deleteDeck(deckId)
