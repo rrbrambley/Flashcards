@@ -107,9 +107,9 @@ private struct FlashcardCardView: View {
 
     var body: some View {
         ZStack {
-            face(text: card.question, caption: "Tap to flip")
+            face(text: card.question, imageUrl: card.imageUrl, caption: "Tap to flip")
                 .opacity(flipped ? 0 : 1)
-            face(text: card.answer, caption: "Answer")
+            face(text: card.answer, imageUrl: nil, caption: "Answer")
                 .opacity(flipped ? 1 : 0)
                 .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
         }
@@ -146,14 +146,22 @@ private struct FlashcardCardView: View {
         }
     }
 
-    private func face(text: String, caption: String) -> some View {
+    private func face(text: String, imageUrl: String?, caption: String) -> some View {
         RoundedRectangle(cornerRadius: 20)
             .fill(Color(.secondarySystemBackground))
             .overlay {
-                Text(text.isEmpty ? "—" : text)
-                    .font(.title2.weight(.semibold))
-                    .multilineTextAlignment(.center)
-                    .padding(Spacing.lg)
+                VStack(spacing: Spacing.md) {
+                    if let imageUrl, !imageUrl.isEmpty {
+                        RemoteCardImage(url: imageUrl)
+                            .frame(maxHeight: 220)
+                    }
+                    if !text.isEmpty {
+                        Text(text)
+                            .font(.title2.weight(.semibold))
+                            .multilineTextAlignment(.center)
+                    }
+                }
+                .padding(Spacing.lg)
             }
             .overlay(alignment: .bottom) {
                 Text(caption)

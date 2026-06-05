@@ -16,12 +16,26 @@ settings:
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
 
+# Swift Package Manager dependencies. Versions are pinned by the `from:` constraints below; Xcode
+# resolves them on first build (Package.resolved lives in the generated, gitignored .xcodeproj).
+packages:
+  SDWebImageSwiftUI:
+    url: https://github.com/SDWebImage/SDWebImageSwiftUI
+    from: "3.1.0"
+  SDWebImageSVGCoder:
+    url: https://github.com/SDWebImage/SDWebImageSVGCoder
+    from: "1.7.0"
+
 targets:
   Flashcards:
     type: application
     platform: iOS
     sources:
       - path: Flashcards
+    dependencies:
+      # Remote image loading + caching, incl. SVG (the Country Flags cards) via the SVG coder.
+      - package: SDWebImageSwiftUI
+      - package: SDWebImageSVGCoder
     info:
       path: Flashcards/Info.plist
       properties:
