@@ -44,13 +44,23 @@ targets:
     info:
       path: Flashcards/Info.plist
       properties:
-        UILaunchScreen: {}
+        # Home-screen / task-switcher name.
+        CFBundleDisplayName: Flashcards
+        # Branded launch screen: the card logo centered on the accent background.
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchLogo
+          UIImageRespectsSafeAreaInsets: true
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        # Dev-only: allow cleartext HTTP to a LAN/host backend (the default config is
+        # http://localhost:8080). A production build should point at an HTTPS backend and drop this.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
         # Surfaced from the per-config BACKEND_BASE_URL build setting; read via AppConfig.
         BackendBaseURL: $(BACKEND_BASE_URL)
         # Google Sign-In (FLA-50): the iOS OAuth client ID gates the button (read via AppConfig);

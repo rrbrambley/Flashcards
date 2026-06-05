@@ -39,6 +39,7 @@ struct AuthView: View {
             Image(systemName: "rectangle.on.rectangle.angled")
                 .font(.system(size: 48))
                 .foregroundStyle(.tint)
+                .accessibilityHidden(true)
             Text(viewModel.title)
                 .font(.title.bold())
         }
