@@ -7,6 +7,7 @@ import SwiftUI
 struct LibraryView: View {
     @StateObject private var viewModel: LibraryViewModel
     private let flashcardRepository: FlashcardRepository
+    private let sessionRepository: PracticeSessionRepository
 
     /// `.sheet(item:)` needs an Identifiable; a deck id wrapper presents the edit sheet.
     private struct EditingDeck: Identifiable { let id: Int64 }
@@ -16,8 +17,13 @@ struct LibraryView: View {
     private struct PendingDelete: Identifiable { let id: Int64; let title: String }
     @State private var pendingDelete: PendingDelete?
 
+    /// The deck being practiced (presents the full-screen practice run).
+    private struct PracticingDeck: Identifiable { let id: Int64 }
+    @State private var practicing: PracticingDeck?
+
     init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository) {
         self.flashcardRepository = flashcardRepository
+        self.sessionRepository = sessionRepository
         _viewModel = StateObject(
             wrappedValue: LibraryViewModel(
                 flashcardRepository: flashcardRepository,
@@ -33,6 +39,13 @@ struct LibraryView: View {
             .toolbar { sortMenu }
             .sheet(item: $editing) { item in
                 EditDeckView(repository: flashcardRepository, deckId: item.id)
+            }
+            .fullScreenCover(item: $practicing) { item in
+                PracticeView(
+                    flashcardRepository: flashcardRepository,
+                    sessionRepository: sessionRepository,
+                    deckId: item.id
+                )
             }
             .confirmationDialog(
                 "Delete “\(pendingDelete?.title ?? "")”?",
@@ -87,6 +100,14 @@ struct LibraryView: View {
                 .buttonStyle(.plain)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Spacing.xs, leading: Spacing.md, bottom: Spacing.xs, trailing: Spacing.md))
+                .swipeActions(edge: .leading) {
+                    Button {
+                        practicing = PracticingDeck(id: deck.id)
+                    } label: {
+                        Label("Practice", systemImage: "play.fill")
+                    }
+                    .tint(.green)
+                }
                 .swipeActions(edge: .trailing) {
                     // The global catalog deck isn't deletable.
                     if deck.isEditable {

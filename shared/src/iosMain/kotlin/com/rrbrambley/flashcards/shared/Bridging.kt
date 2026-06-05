@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.shared
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
@@ -27,3 +28,7 @@ fun FlashcardRepository.flashcardDeckAdapter(deckId: Long): FlowAdapter<Flashcar
 /** deckId → most-recent practice time (millis), for "recently practiced" sorting. */
 fun PracticeSessionRepository.lastPracticedAdapter(): FlowAdapter<Map<Long, Long>> =
     FlowAdapter(observeLastPracticedByDeck())
+
+/** A practice session by id (non-null emissions), for restoring progress on the practice screen. */
+fun PracticeSessionRepository.sessionAdapter(sessionId: Long): FlowAdapter<PracticeSession> =
+    FlowAdapter(observeSession(sessionId).filterNotNull())
