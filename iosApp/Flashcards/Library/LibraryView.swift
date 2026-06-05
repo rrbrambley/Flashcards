@@ -44,7 +44,7 @@ struct LibraryView: View {
                 PracticeView(
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
-                    deckId: item.id
+                    entry: .deck(item.id)
                 )
             }
             .confirmationDialog(

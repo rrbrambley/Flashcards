@@ -13,9 +13,11 @@ struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            NavigationStack { HomeView() }
-                .tabItem { Label("Home", systemImage: "house") }
-                .tag(Tab.home)
+            NavigationStack {
+                HomeView(repository: container.homeRepository) { selection = .new }
+            }
+            .tabItem { Label("Home", systemImage: "house") }
+            .tag(Tab.home)
 
             NavigationStack { CreateDeckView(repository: container.flashcardRepository) }
                 .tabItem { Label("New", systemImage: "plus.square") }

@@ -9,12 +9,12 @@ struct PracticeView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showHelp = false
 
-    init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository, deckId: Int64) {
+    init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository, entry: PracticeEntry) {
         _viewModel = StateObject(
             wrappedValue: PracticeViewModel(
                 flashcardRepository: flashcardRepository,
                 sessionRepository: sessionRepository,
-                deckId: deckId
+                entry: entry
             )
         )
     }
