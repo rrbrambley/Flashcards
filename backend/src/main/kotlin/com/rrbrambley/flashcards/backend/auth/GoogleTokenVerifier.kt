@@ -5,9 +5,14 @@ import com.google.api.client.http.javanet.NetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 
 /**
- * Verifies Google ID tokens against the configured Web client ID (audience).
- * Configured once at startup from `auth.googleWebClientId`; when unset, Google
- * sign-in is treated as not available.
+ * Verifies Google ID tokens against the configured client IDs (accepted audiences).
+ * Configured once at startup from `auth.googleWebClientId` + `auth.googleIosClientId`; when none are
+ * set, Google sign-in is treated as not available.
+ *
+ * Multiple audiences are needed because each platform's ID token carries a different `aud`: the web
+ * app and Android (via Credential Manager, which requests the *web* client ID) present the web
+ * client ID, while Google Sign-In on iOS issues tokens whose audience is the *iOS* client ID. A
+ * token is accepted if its audience matches any configured client ID.
  */
 object GoogleTokenVerifier {
 
@@ -18,10 +23,11 @@ object GoogleTokenVerifier {
 
     val isConfigured: Boolean get() = verifier != null
 
-    fun configure(webClientId: String?) {
-        verifier = webClientId?.takeIf { it.isNotBlank() }?.let { clientId ->
+    fun configure(vararg clientIds: String?) {
+        val audiences = clientIds.filterNot { it.isNullOrBlank() }
+        verifier = audiences.takeIf { it.isNotEmpty() }?.let {
             GoogleIdTokenVerifier.Builder(NetHttpTransport(), GsonFactory.getDefaultInstance())
-                .setAudience(listOf(clientId))
+                .setAudience(it)
                 .build()
         }
     }

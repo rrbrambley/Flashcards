@@ -1,3 +1,4 @@
+import GoogleSignIn
 import SDWebImageSVGCoder
 import SwiftUI
 
@@ -16,6 +17,8 @@ struct FlashcardsApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(container)
+                // Completes the Google Sign-In OAuth callback (no-op when Google isn't configured).
+                .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
         }
     }
 }

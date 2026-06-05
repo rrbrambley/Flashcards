@@ -36,3 +36,6 @@ google-services.json
 
 # Local dev server log (make start)
 backend.local.log
+
+# iOS per-developer build config (Google OAuth client ID, etc.) — see Local.xcconfig.example
+iosApp/Local.xcconfig

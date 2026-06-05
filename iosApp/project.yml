@@ -25,6 +25,9 @@ packages:
   SDWebImageSVGCoder:
     url: https://github.com/SDWebImage/SDWebImageSVGCoder
     from: "1.7.0"
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "7.1.0"
 
 targets:
   Flashcards:
@@ -36,6 +39,8 @@ targets:
       # Remote image loading + caching, incl. SVG (the Country Flags cards) via the SVG coder.
       - package: SDWebImageSwiftUI
       - package: SDWebImageSVGCoder
+      # Native Google Sign-In (gated on GOOGLE_IOS_CLIENT_ID being set — see AppConfig).
+      - package: GoogleSignIn
     info:
       path: Flashcards/Info.plist
       properties:
@@ -48,6 +53,13 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         # Surfaced from the per-config BACKEND_BASE_URL build setting; read via AppConfig.
         BackendBaseURL: $(BACKEND_BASE_URL)
+        # Google Sign-In (FLA-50): the iOS OAuth client ID gates the button (read via AppConfig);
+        # its reversed form is the OAuth callback URL scheme. Both are blank until configured (see
+        # README) — when blank the Google button is hidden, matching Android/web.
+        GoogleIOSClientID: $(GOOGLE_IOS_CLIENT_ID)
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - $(GOOGLE_REVERSED_CLIENT_ID)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rrbrambley.flashcards
@@ -63,6 +75,12 @@ targets:
         # host's LAN IP here (and allow its ATS exception) — see the README.
         Debug: { BACKEND_BASE_URL: "http://localhost:8080" }
         Release: { BACKEND_BASE_URL: "http://localhost:8080" }
+    # GOOGLE_IOS_CLIENT_ID / GOOGLE_REVERSED_CLIENT_ID come from Config.xcconfig (which optionally
+    # includes the gitignored Local.xcconfig — per-developer, never committed; see SECURITY.md).
+    # They must NOT be set above: target `configs` override an xcconfig base.
+    configFiles:
+      Debug: Config.xcconfig
+      Release: Config.xcconfig
     preBuildScripts:
       # Compile + stage the `Shared` Kotlin framework for the current Xcode config/SDK/arch
       # before Swift compiles. Runs Gradle's direct-integration task, which reads Xcode's

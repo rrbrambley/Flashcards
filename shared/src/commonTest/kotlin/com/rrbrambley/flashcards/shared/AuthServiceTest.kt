@@ -81,6 +81,41 @@ class AuthServiceTest {
     }
 
     @Test
+    fun googleSignInSuccessPersistsTokens() = runTest {
+        val store = FakeTokenStore()
+        var path: String? = null
+        val engine = MockEngine { request ->
+            path = request.url.encodedPath
+            respond(
+                """{"accessToken":"access-g","refreshToken":"refresh-g","userId":7}""",
+                HttpStatusCode.OK,
+                jsonHeaders,
+            )
+        }
+
+        val result = service(store, engine).signInWithGoogle("google-id-token")
+
+        assertIs<AuthResult.Success>(result)
+        assertEquals("/auth/google", path)
+        assertEquals("access-g", store.currentToken())
+        assertEquals("refresh-g", store.currentRefreshToken())
+    }
+
+    @Test
+    fun googleSignInUnconfiguredMapsServiceUnavailable() = runTest {
+        val store = FakeTokenStore()
+        val engine = MockEngine {
+            respond("""{"error":"unavailable"}""", HttpStatusCode.ServiceUnavailable, jsonHeaders)
+        }
+
+        val result = service(store, engine).signInWithGoogle("google-id-token")
+
+        val failure = assertIs<AuthResult.Failure>(result)
+        assertEquals("Google sign-in isn't available right now.", failure.message)
+        assertNull(store.currentToken())
+    }
+
+    @Test
     fun logoutRevokesAndClearsTokens() = runTest {
         val store = FakeTokenStore()
         store.setTokens("access-1", "refresh-1")

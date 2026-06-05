@@ -1,0 +1,8 @@
+// iOS build config (committed). Per-developer values — e.g. your Google OAuth iOS client ID — go
+// in the gitignored `Local.xcconfig`: copy `Local.xcconfig.example` to `Local.xcconfig` and fill it
+// in (see README "Sign in with Google"). Defaults are empty so a fresh clone / CI build fine with
+// Google sign-in gated off (the button is hidden when GOOGLE_IOS_CLIENT_ID is empty).
+GOOGLE_IOS_CLIENT_ID =
+GOOGLE_REVERSED_CLIENT_ID =
+
+#include? "Local.xcconfig"

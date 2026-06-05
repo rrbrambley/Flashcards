@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.shared
 import com.rrbrambley.flashcards.shared.api.ApiError
 import com.rrbrambley.flashcards.shared.api.AuthResponse
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import com.rrbrambley.flashcards.shared.api.TokenStore
@@ -34,6 +35,15 @@ class AuthService(private val apiClient: FlashcardApiClient, private val tokenSt
             when (error) {
                 is ApiError.Conflict -> "An account with that email already exists."
                 is ApiError.Validation -> "Enter a valid email and a password."
+                else -> GENERIC_ERROR
+            }
+        }
+
+    suspend fun signInWithGoogle(idToken: String): AuthResult =
+        authenticate({ apiClient.googleSignIn(GoogleAuthRequest(idToken)) }) { error ->
+            when (error) {
+                is ApiError.ServiceUnavailable -> "Google sign-in isn't available right now."
+                is ApiError.Unauthorized -> "Google sign-in failed. Please try again."
                 else -> GENERIC_ERROR
             }
         }

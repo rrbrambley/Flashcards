@@ -33,7 +33,10 @@ fun main() {
         ),
     )
 
-    GoogleTokenVerifier.configure(config.propertyOrNull("auth.googleWebClientId")?.getString())
+    GoogleTokenVerifier.configure(
+        config.propertyOrNull("auth.googleWebClientId")?.getString(),
+        config.propertyOrNull("auth.googleIosClientId")?.getString(),
+    )
 
     val bucket = config.propertyOrNull("storage.bucket")?.getString()
     val cdnBaseUrl = config.propertyOrNull("storage.cdnBaseUrl")?.getString()
