@@ -12,6 +12,7 @@ import SwiftUI
 final class AppContainer: ObservableObject {
     let tokenStore: TokenStore
     let sdk: FlashcardSdk
+    let authService: AuthService
 
     var flashcardRepository: FlashcardRepository { sdk.flashcardRepository }
     var practiceSessionRepository: PracticeSessionRepository { sdk.practiceSessionRepository }
@@ -20,10 +21,12 @@ final class AppContainer: ObservableObject {
     init(baseURL: String = AppConfig.backendBaseURL, tokenStore: TokenStore = KeychainTokenStore()) {
         self.tokenStore = tokenStore
         // Kotlin default args don't bridge — pass the default home-feed strings explicitly.
-        self.sdk = IosFlashcardSdkKt.createIosFlashcardSdk(
+        let sdk = IosFlashcardSdkKt.createIosFlashcardSdk(
             baseUrl: baseURL,
             tokenStore: tokenStore,
             homeFeedStrings: DefaultHomeFeedStrings.shared
         )
+        self.sdk = sdk
+        self.authService = AuthService(apiClient: sdk.apiClient, tokenStore: tokenStore)
     }
 }
