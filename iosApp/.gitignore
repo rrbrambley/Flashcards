@@ -1,0 +1,9 @@
+# The Xcode project is generated from project.yml by XcodeGen — don't commit it.
+*.xcodeproj
+
+# Xcode user/build artifacts
+xcuserdata/
+DerivedData/
+build/
+*.xcworkspace/xcuserdata/
+.DS_Store

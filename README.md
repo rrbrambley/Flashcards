@@ -31,13 +31,16 @@ Flashcards/
 │                  (FlashcardApiClient), targeting android, iOS, and jvm.
 │                  Consumed by androidApp and the backend.
 ├── androidApp/    Android app (Jetpack Compose, MVVM, Hilt, Room). Offline-first.
+├── iosApp/        SwiftUI app consuming the shared framework (XcodeGen project, not in the Gradle build).
 ├── backend/       Ktor server (Netty) + Exposed + Postgres. The API the apps sync against.
 ├── webApp/        React + TypeScript + Vite SPA (its own npm toolchain, not in the Gradle build).
 ├── docker-compose.yml          Local Postgres for the backend
 └── gradle/libs.versions.toml   Version catalog (single source for deps)
 ```
 
-Reserved for a later phase: `iosApp/`.
+The shared offline-first data layer (domain, Room-KMP database, repositories) and the Ktor
+client + token refresh live in `shared/` and are reused by both apps; iOS gets a one-call
+`createIosFlashcardSdk(...)` factory. The `iosApp/` SwiftUI app is under active development.
 
 ## Tech stack
 
@@ -161,6 +164,31 @@ locally-running backend with no extra setup.
 `androidApp/build.gradle.kts`) at your host's LAN IP (e.g. `http://192.168.x.x:8080`), put
 the device on the same network, and add that host to
 `androidApp/src/main/res/xml/network_security_config.xml` (it only allows cleartext to dev hosts).
+
+---
+
+## Running the iOS app
+
+The Xcode project is **generated from `iosApp/project.yml` by [XcodeGen](https://github.com/yonsm/XcodeGen)** —
+`Flashcards.xcodeproj` is not committed. Requires Xcode and `brew install xcodegen`.
+
+```bash
+cd iosApp
+xcodegen generate          # writes Flashcards.xcodeproj from project.yml
+open Flashcards.xcodeproj   # then Run the Flashcards scheme on a simulator
+```
+
+Or build/run headlessly:
+
+```bash
+xcodebuild -project iosApp/Flashcards.xcodeproj -scheme Flashcards \
+  -destination 'platform=iOS Simulator,name=iPhone 17' build
+```
+
+> Edit the project (targets, build settings, the shared-framework build phase) in
+> `project.yml` and re-run `xcodegen generate` — never hand-edit the `.xcodeproj`.
+> Xcode must have a simulator runtime matching its SDK; if a build reports
+> "No simulator runtime version … available", run `xcodebuild -downloadPlatform iOS`.
 
 ---
 
