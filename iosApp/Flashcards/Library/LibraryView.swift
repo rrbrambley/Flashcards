@@ -2,11 +2,18 @@ import Shared
 import SwiftUI
 
 /// Library tab: the user's decks + the global catalog, offline-first, with title search and
-/// A–Z / recently-practiced sorting. (Deck actions arrive in FLA-44/45/46.)
+/// A–Z / recently-practiced sorting. Tapping a deck opens the edit sheet (FLA-45); swipe to
+/// delete (FLA-46).
 struct LibraryView: View {
     @StateObject private var viewModel: LibraryViewModel
+    private let flashcardRepository: FlashcardRepository
+
+    /// `.sheet(item:)` needs an Identifiable; a deck id wrapper presents the edit sheet.
+    private struct EditingDeck: Identifiable { let id: Int64 }
+    @State private var editing: EditingDeck?
 
     init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository) {
+        self.flashcardRepository = flashcardRepository
         _viewModel = StateObject(
             wrappedValue: LibraryViewModel(
                 flashcardRepository: flashcardRepository,
@@ -20,6 +27,9 @@ struct LibraryView: View {
             .navigationTitle("Library")
             .searchable(text: $viewModel.searchQuery, prompt: "Search decks")
             .toolbar { sortMenu }
+            .sheet(item: $editing) { item in
+                EditDeckView(repository: flashcardRepository, deckId: item.id)
+            }
             .task { await viewModel.observeDecks() }
             .task { await viewModel.observeLastPracticed() }
     }
@@ -49,9 +59,14 @@ struct LibraryView: View {
     private func deckList(_ decks: [FlashcardDeck]) -> some View {
         List {
             ForEach(decks, id: \.id) { deck in
-                DeckCard(title: deck.title, cardCount: deck.flashcards.count)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: Spacing.xs, leading: Spacing.md, bottom: Spacing.xs, trailing: Spacing.md))
+                Button {
+                    editing = EditingDeck(id: deck.id)
+                } label: {
+                    DeckCard(title: deck.title, cardCount: deck.flashcards.count)
+                }
+                .buttonStyle(.plain)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: Spacing.xs, leading: Spacing.md, bottom: Spacing.xs, trailing: Spacing.md))
             }
         }
         .listStyle(.plain)

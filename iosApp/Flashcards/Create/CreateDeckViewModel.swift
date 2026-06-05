@@ -1,21 +1,9 @@
 import Shared
 import SwiftUI
 
-/// A single editable card in the create form. `question = term`, `answer = definition` (matching
-/// the shared `Flashcard`). Image-only cards arrive with image upload in FLA-51, so for now a
-/// complete card needs both a term and a definition.
-struct CardDraft: Identifiable, Equatable {
-    let id = UUID()
-    var term = ""
-    var definition = ""
-
-    var isComplete: Bool { !term.trimmed.isEmpty && !definition.trimmed.isEmpty }
-    var isStarted: Bool { !term.trimmed.isEmpty || !definition.trimmed.isEmpty }
-}
-
 /// Drives the create-deck form. Validation mirrors Android: a title plus at least one complete
 /// card, and no started-but-incomplete card. Saves through the shared offline-first
-/// `FlashcardRepository`.
+/// `FlashcardRepository`. (See `CardDraft` for the card model + completeness rules.)
 @MainActor
 final class CreateDeckViewModel: ObservableObject {
     @Published var deckTitle = ""
@@ -31,10 +19,6 @@ final class CreateDeckViewModel: ObservableObject {
         self.repository = repository
     }
 
-    var titleError: Bool { showErrors && deckTitle.trimmed.isEmpty }
-    var cardCountError: Bool { showErrors && !cards.contains { $0.isComplete } }
-    func cardError(_ card: CardDraft) -> Bool { showErrors && card.isStarted && !card.isComplete }
-
     func addCard() {
         cards.append(CardDraft())
         justSaved = false
@@ -46,9 +30,8 @@ final class CreateDeckViewModel: ObservableObject {
     }
 
     func save() async {
-        let complete = cards.filter(\.isComplete)
-        let hasIncompleteStarted = cards.contains { $0.isStarted && !$0.isComplete }
-        let isValid = !deckTitle.trimmed.isEmpty && !complete.isEmpty && !hasIncompleteStarted
+        let complete = cards.completeCards
+        let isValid = !deckTitle.trimmed.isEmpty && !complete.isEmpty && !cards.hasIncompleteStartedCard
         guard isValid else {
             showErrors = true
             return

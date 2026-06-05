@@ -37,3 +37,14 @@ struct EmptyStateView: View {
         ContentUnavailableView(title, systemImage: systemImage, description: Text(message))
     }
 }
+
+/// Inline form validation/error text (red, footnote) — used by the deck form sections.
+struct FormErrorText: View {
+    private let message: String
+    init(_ message: String) { self.message = message }
+    var body: some View {
+        Text(message)
+            .font(.footnote)
+            .foregroundStyle(.red)
+    }
+}
