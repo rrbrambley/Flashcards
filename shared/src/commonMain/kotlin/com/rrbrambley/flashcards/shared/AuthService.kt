@@ -38,6 +38,24 @@ class AuthService(private val apiClient: FlashcardApiClient, private val tokenSt
             }
         }
 
+    /**
+     * Ends the session. Best-effort server-side revoke of the refresh token (`POST /auth/logout`),
+     * then always clears the local tokens — so logout works offline and the gate returns to sign-in.
+     */
+    suspend fun logout() {
+        val refreshToken = tokenStore.currentRefreshToken()
+        if (refreshToken != null) {
+            try {
+                apiClient.logout(refreshToken)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Ignore: the local tokens are cleared below regardless.
+            }
+        }
+        tokenStore.clearToken()
+    }
+
     private suspend fun authenticate(call: suspend () -> AuthResponse, messageFor: (ApiError) -> String): AuthResult =
         try {
             val response = call()
