@@ -73,10 +73,14 @@ targets:
       configs:
         # Simulator reaches a locally-running backend at localhost; point a device build at your
         # host's LAN IP here (and allow its ATS exception) — see the README.
-        # GOOGLE_IOS_CLIENT_ID / GOOGLE_REVERSED_CLIENT_ID are blank by default (Google sign-in is
-        # off); set them from your iOS OAuth client to enable it (see README + SECURITY).
-        Debug: { BACKEND_BASE_URL: "http://localhost:8080", GOOGLE_IOS_CLIENT_ID: "", GOOGLE_REVERSED_CLIENT_ID: "" }
-        Release: { BACKEND_BASE_URL: "http://localhost:8080", GOOGLE_IOS_CLIENT_ID: "", GOOGLE_REVERSED_CLIENT_ID: "" }
+        Debug: { BACKEND_BASE_URL: "http://localhost:8080" }
+        Release: { BACKEND_BASE_URL: "http://localhost:8080" }
+    # GOOGLE_IOS_CLIENT_ID / GOOGLE_REVERSED_CLIENT_ID come from Config.xcconfig (which optionally
+    # includes the gitignored Local.xcconfig — per-developer, never committed; see SECURITY.md).
+    # They must NOT be set above: target `configs` override an xcconfig base.
+    configFiles:
+      Debug: Config.xcconfig
+      Release: Config.xcconfig
     preBuildScripts:
       # Compile + stage the `Shared` Kotlin framework for the current Xcode config/SDK/arch
       # before Swift compiles. Runs Gradle's direct-integration task, which reads Xcode's

@@ -245,11 +245,13 @@ Without a client ID, the Google button is hidden (Android, web & iOS) and the ba
 3. **iOS** (optional): the Google Sign-In SDK on iOS issues an ID token whose audience is an
    **iOS** OAuth client ID, not the Web one. Create an **OAuth 2.0 iOS** client ID (bundle id
    `com.rrbrambley.flashcards`), then:
-   - Set `GOOGLE_IOS_CLIENT_ID` (the client ID) and `GOOGLE_REVERSED_CLIENT_ID` (its reversed
-     form, `com.googleusercontent.apps.<…>`, used as the OAuth callback URL scheme) in
-     `iosApp/project.yml`'s per-config build settings, and re-run `xcodegen generate`.
-   - Set `GOOGLE_IOS_CLIENT_ID` on the **backend** too (it accepts both the Web and iOS client
-     IDs as valid token audiences).
+   - Copy `iosApp/Local.xcconfig.example` to `iosApp/Local.xcconfig` (gitignored) and set
+     `GOOGLE_IOS_CLIENT_ID` (the client ID) and `GOOGLE_REVERSED_CLIENT_ID` (its reversed form,
+     `com.googleusercontent.apps.<…>`, used as the OAuth callback URL scheme); re-run
+     `xcodegen generate`.
+   - Set `GOOGLE_IOS_CLIENT_ID` on the **backend** too (in `~/.gradle/gradle.properties` for
+     `:backend:run`, or as an env var) — it accepts both the Web and iOS client IDs as valid token
+     audiences.
 
 The backend verifies Google ID tokens against the configured client ID(s) — the Web ID (web +
 Android) and the iOS ID (iOS) — so they must match between each client and the backend.
@@ -326,10 +328,11 @@ disables Google sign-in.
 
 ### iOS
 
-`BACKEND_BASE_URL`, `GOOGLE_IOS_CLIENT_ID`, and `GOOGLE_REVERSED_CLIENT_ID` are per-config build
-settings in `iosApp/project.yml` (surfaced through `Info.plist`, read via `AppConfig`). The two
-Google settings are blank by default — blank hides the Google button; set them from your iOS OAuth
-client (and re-run `xcodegen generate`) to enable it. See [Sign in with Google](#sign-in-with-google).
+`BACKEND_BASE_URL` is a per-config build setting in `iosApp/project.yml` (surfaced through
+`Info.plist`, read via `AppConfig`). `GOOGLE_IOS_CLIENT_ID` / `GOOGLE_REVERSED_CLIENT_ID` come from
+the gitignored `iosApp/Local.xcconfig` (template: `Local.xcconfig.example`) — blank/absent hides the
+Google button; fill them in (and re-run `xcodegen generate`) to enable it. See
+[Sign in with Google](#sign-in-with-google).
 
 ---
 

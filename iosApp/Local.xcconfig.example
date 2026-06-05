@@ -1,0 +1,6 @@
+// Copy this file to `Local.xcconfig` (gitignored) to enable Google Sign-In locally, then run
+// `xcodegen generate`. GOOGLE_REVERSED_CLIENT_ID is the iOS client ID with its dotted segments
+// reversed — it's the OAuth callback URL scheme. See README "Sign in with Google".
+//
+// GOOGLE_IOS_CLIENT_ID = 000000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
+// GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.000000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
