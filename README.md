@@ -329,10 +329,19 @@ disables Google sign-in.
 ### iOS
 
 `BACKEND_BASE_URL` is a per-config build setting in `iosApp/project.yml` (surfaced through
-`Info.plist`, read via `AppConfig`). `GOOGLE_IOS_CLIENT_ID` / `GOOGLE_REVERSED_CLIENT_ID` come from
-the gitignored `iosApp/Local.xcconfig` (template: `Local.xcconfig.example`) — blank/absent hides the
-Google button; fill them in (and re-run `xcodegen generate`) to enable it. See
+`Info.plist`, read via `AppConfig`). The simulator reaches `http://localhost:8080`; for a **device**
+build, point `BACKEND_BASE_URL` at your host's LAN IP — the `Info.plist` includes an
+`NSAllowsLocalNetworking` App Transport Security exception so the dev cleartext backend works (a
+production build should use HTTPS and drop it). `GOOGLE_IOS_CLIENT_ID` / `GOOGLE_REVERSED_CLIENT_ID`
+come from the gitignored `iosApp/Local.xcconfig` (template: `Local.xcconfig.example`) — blank/absent
+hides the Google button; fill them in (and re-run `xcodegen generate`) to enable it. See
 [Sign in with Google](#sign-in-with-google).
+
+The app icon, launch screen (`LaunchLogo` / `LaunchBackground` in `Assets.xcassets`), display name,
+and accent color are configured via `project.yml`'s `info:` block + the asset catalog. The bundled
+app icon is a **placeholder** — replace `Assets.xcassets/AppIcon.appiconset/icon-1024.png` with final
+brand art before release. **Distribution** (TestFlight/App Store) needs a real signing team: set
+`DEVELOPMENT_TEAM` in `project.yml` and archive the `Flashcards` scheme (Release).
 
 ---
 

@@ -19,6 +19,7 @@ struct DeckCard: View {
             Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
         }
         .padding(Spacing.md)
         .background(

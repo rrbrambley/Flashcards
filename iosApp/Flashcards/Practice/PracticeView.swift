@@ -28,6 +28,7 @@ struct PracticeView: View {
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button { showHelp = true } label: { Image(systemName: "questionmark.circle") }
+                            .accessibilityLabel("How to practice")
                     }
                 }
                 .alert("How to practice", isPresented: $showHelp) {
@@ -201,6 +202,7 @@ private struct CompletionView: View {
             Image(systemName: "checkmark.seal.fill")
                 .font(.system(size: 64))
                 .foregroundStyle(.green)
+                .accessibilityHidden(true)
             Text("Practice complete")
                 .font(.title.bold())
             HStack(spacing: Spacing.xl) {
