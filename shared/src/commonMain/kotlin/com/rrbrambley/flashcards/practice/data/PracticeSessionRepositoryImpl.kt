@@ -20,6 +20,7 @@ class PracticeSessionRepositoryImpl(
     private val flashcardDao: FlashcardDao,
 ) : PracticeSessionRepository {
 
+    @Throws(Exception::class)
     override suspend fun startOrResumeSession(deckId: Long): Long {
         val session = apiClient.createSession(deckId)
         cache(session)
@@ -41,6 +42,7 @@ class PracticeSessionRepositoryImpl(
             rows.associate { it.deckId to it.lastPracticedAtMillis }
         }
 
+    @Throws(Exception::class)
     override suspend fun updateProgress(sessionId: Long, currentCardIndex: Int, numCorrect: Int, numIncorrect: Int) {
         cache(
             apiClient.updateProgress(
@@ -50,6 +52,7 @@ class PracticeSessionRepositoryImpl(
         )
     }
 
+    @Throws(Exception::class)
     override suspend fun completeSession(sessionId: Long) {
         cache(apiClient.completeSession(sessionId))
     }
