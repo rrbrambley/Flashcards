@@ -23,46 +23,16 @@ struct CreateDeckView: View {
                     .foregroundStyle(.green)
             }
 
-            Section("Title") {
-                TextField("Deck title", text: $viewModel.deckTitle)
-                if viewModel.titleError {
-                    errorText("Enter a deck title")
-                }
-            }
-
-            ForEach(Array(viewModel.cards.enumerated()), id: \.element.id) { index, card in
-                Section("Card \(index + 1)") {
-                    TextField("Term", text: $viewModel.cards[index].term)
-                    TextField("Definition", text: $viewModel.cards[index].definition)
-                    if viewModel.cardError(card) {
-                        errorText("Enter both a term and a definition")
-                    }
-                    if viewModel.cards.count > 1 {
-                        Button("Remove card", systemImage: "trash", role: .destructive) {
-                            viewModel.removeCard(card.id)
-                        }
-                    }
-                }
-            }
-
-            if viewModel.cardCountError {
-                Section {
-                    errorText("Add at least one card with a term and a definition.")
-                }
-            }
-
-            Section {
-                Button {
-                    viewModel.addCard()
-                } label: {
-                    Label("Add card", systemImage: "plus")
-                }
-            }
+            DeckFormSections(
+                deckTitle: $viewModel.deckTitle,
+                cards: $viewModel.cards,
+                showErrors: viewModel.showErrors,
+                onAddCard: viewModel.addCard,
+                onRemoveCard: viewModel.removeCard
+            )
 
             if let error = viewModel.saveError {
-                Section {
-                    errorText(error)
-                }
+                Section { FormErrorText(error) }
             }
         }
         .navigationTitle("New deck")
@@ -82,11 +52,5 @@ struct CreateDeckView: View {
             try? await Task.sleep(for: .seconds(2))
             viewModel.acknowledgeSaved()
         }
-    }
-
-    private func errorText(_ message: String) -> some View {
-        Text(message)
-            .font(.footnote)
-            .foregroundStyle(.red)
     }
 }
