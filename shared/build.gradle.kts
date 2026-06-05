@@ -47,6 +47,10 @@ kotlin {
             api(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
         }
+        iosMain.dependencies {
+            // Darwin (NSURLSession) HTTP engine so iOS uses the platform networking stack.
+            implementation(libs.ktor.client.darwin)
+        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation(libs.ktor.client.mock)
