@@ -8,6 +8,7 @@ struct MainTabView: View {
         case home, new, library
     }
 
+    @EnvironmentObject private var container: AppContainer
     @State private var selection: Tab = .home
 
     var body: some View {
@@ -20,7 +21,7 @@ struct MainTabView: View {
                 .tabItem { Label("New", systemImage: "plus.square") }
                 .tag(Tab.new)
 
-            NavigationStack { LibraryView() }
+            NavigationStack { LibraryView(repository: container.flashcardRepository) }
                 .tabItem { Label("Library", systemImage: "rectangle.stack") }
                 .tag(Tab.library)
         }
