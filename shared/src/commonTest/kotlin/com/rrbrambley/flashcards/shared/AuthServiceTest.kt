@@ -80,6 +80,38 @@ class AuthServiceTest {
         assertNull(store.currentToken())
     }
 
+    @Test
+    fun logoutRevokesAndClearsTokens() = runTest {
+        val store = FakeTokenStore()
+        store.setTokens("access-1", "refresh-1")
+        var loggedOutPath: String? = null
+        val engine = MockEngine { request ->
+            loggedOutPath = request.url.encodedPath
+            respond("", HttpStatusCode.NoContent)
+        }
+
+        service(store, engine).logout()
+
+        assertEquals("/auth/logout", loggedOutPath)
+        assertNull(store.currentToken())
+        assertNull(store.currentRefreshToken())
+    }
+
+    @Test
+    fun logoutClearsTokensEvenWhenServerFails() = runTest {
+        val store = FakeTokenStore()
+        store.setTokens("access-1", "refresh-1")
+        val engine = MockEngine {
+            respond("""{"error":"server"}""", HttpStatusCode.InternalServerError, jsonHeaders)
+        }
+
+        service(store, engine).logout()
+
+        // Best-effort revoke: the local session is ended regardless of the server response.
+        assertNull(store.currentToken())
+        assertNull(store.currentRefreshToken())
+    }
+
     private class FakeTokenStore : TokenStore {
         private val tokens = MutableStateFlow<String?>(null)
         private var refreshToken: String? = null
