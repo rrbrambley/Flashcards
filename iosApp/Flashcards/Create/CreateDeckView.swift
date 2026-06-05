@@ -1,13 +1,15 @@
 import Shared
 import SwiftUI
 
-/// New tab: create a deck — a title plus term/definition card rows — saved through the shared
-/// offline-first `FlashcardRepository`. (Front-of-card images arrive in FLA-51.)
+/// New tab: create a deck — a title plus term/definition card rows, each with an optional
+/// front-of-card image — saved through the shared offline-first `FlashcardRepository`.
 struct CreateDeckView: View {
     @StateObject private var viewModel: CreateDeckViewModel
 
-    init(repository: FlashcardRepository) {
-        _viewModel = StateObject(wrappedValue: CreateDeckViewModel(repository: repository))
+    init(repository: FlashcardRepository, imageUploader: ImageUploader) {
+        _viewModel = StateObject(
+            wrappedValue: CreateDeckViewModel(repository: repository, imageUploader: imageUploader)
+        )
     }
 
     var body: some View {
@@ -28,7 +30,9 @@ struct CreateDeckView: View {
                 cards: $viewModel.cards,
                 showErrors: viewModel.showErrors,
                 onAddCard: viewModel.addCard,
-                onRemoveCard: viewModel.removeCard
+                onRemoveCard: viewModel.removeCard,
+                onPickImage: viewModel.pickImage,
+                onRemoveImage: viewModel.removeImage
             )
 
             if let error = viewModel.saveError {
