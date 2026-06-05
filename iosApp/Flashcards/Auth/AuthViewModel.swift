@@ -18,9 +18,9 @@ final class AuthViewModel: ObservableObject {
     /// Whether to show the Google button (the iOS OAuth client ID is configured).
     let isGoogleConfigured = GoogleSignInHelper.isConfigured
 
-    private let authService: AuthService
+    private let authService: AuthenticationService
 
-    init(authService: AuthService) {
+    init(authService: AuthenticationService) {
         self.authService = authService
     }
 

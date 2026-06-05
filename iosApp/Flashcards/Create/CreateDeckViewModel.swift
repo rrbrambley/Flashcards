@@ -15,9 +15,9 @@ final class CreateDeckViewModel: ObservableObject {
     @Published private(set) var justSaved = false
 
     private let repository: FlashcardRepository
-    private let imageUploader: ImageUploader
+    private let imageUploader: ImageUploading
 
-    init(repository: FlashcardRepository, imageUploader: ImageUploader) {
+    init(repository: FlashcardRepository, imageUploader: ImageUploading) {
         self.repository = repository
         self.imageUploader = imageUploader
     }

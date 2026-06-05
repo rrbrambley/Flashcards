@@ -94,11 +94,33 @@ targets:
           cd "$SRCROOT/.."
           ./gradlew :shared:embedAndSignAppleFrameworkForXcode
 
+  # View-model unit tests (XCTest), hosted by the app so `@testable import Flashcards` + the Shared
+  # framework resolve. Uses hand-written fakes of the shared repository interfaces (FLA-54).
+  FlashcardsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FlashcardsTests
+    dependencies:
+      - target: Flashcards
+    settings:
+      base:
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Flashcards.app/Flashcards"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        # Compile-time access to the Shared framework's module (symbols resolve from the host app).
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+
 schemes:
   Flashcards:
     build:
       targets:
         Flashcards: all
+        FlashcardsTests: [test]
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - FlashcardsTests
     run:
       config: Debug
     archive:

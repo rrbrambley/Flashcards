@@ -17,12 +17,12 @@ final class EditDeckViewModel: ObservableObject {
     @Published private(set) var didSave = false
 
     private let repository: FlashcardRepository
-    private let imageUploader: ImageUploader
+    private let imageUploader: ImageUploading
     private let deckId: Int64
     private var originalTitle = ""
     private var originalCards: [CardDraft] = []
 
-    init(repository: FlashcardRepository, imageUploader: ImageUploader, deckId: Int64) {
+    init(repository: FlashcardRepository, imageUploader: ImageUploading, deckId: Int64) {
         self.repository = repository
         self.imageUploader = imageUploader
         self.deckId = deckId

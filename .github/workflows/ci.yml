@@ -275,19 +275,23 @@ jobs:
         working-directory: iosApp
         run: xcodegen generate
 
-      # Build the app for a simulator. The "Compile Kotlin Framework" build phase runs
-      # embedAndSignAppleFrameworkForXcode (JAVA_HOME comes from setup-java); a generic
-      # simulator destination avoids pinning a specific device/runtime.
-      - name: Build iOS app (simulator)
+      # Build + run the Swift view-model unit tests (FLA-54) on a booted simulator. `test` needs a
+      # concrete device (not a generic destination), so pick the first available iPhone simulator —
+      # model/runtime-agnostic across runner images. The "Compile Kotlin Framework" build phase runs
+      # embedAndSignAppleFrameworkForXcode (JAVA_HOME comes from setup-java).
+      - name: Build + test iOS app (simulator)
         working-directory: iosApp
         run: |
+          UDID=$(xcrun simctl list devices available --json \
+            | python3 -c "import sys,json; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for v in d.values() for x in v if 'iPhone' in x['name']))")
+          echo "Using simulator $UDID"
           xcodebuild \
             -project Flashcards.xcodeproj \
             -scheme Flashcards \
             -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "id=$UDID" \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            test
 
       - name: Upload iOS test results
         if: ${{ !cancelled() }}

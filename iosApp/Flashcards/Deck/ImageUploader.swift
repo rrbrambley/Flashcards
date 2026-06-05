@@ -2,13 +2,18 @@ import PhotosUI
 import Shared
 import SwiftUI
 
+/// The seam the create/edit view models depend on, so tests can substitute a fake uploader.
+protocol ImageUploading {
+    func upload(item: PhotosPickerItem) async throws -> String
+}
+
 /// Uploads a picked front-of-card image via the shared API client, returning the stored CDN URL.
 /// Mirrors Android's `AndroidImageUploader` (validate type/size → POST the bytes), with one
 /// iOS-specific accommodation: PhotosPicker on a real iPhone usually hands back **HEIC**, which the
 /// server doesn't accept, and camera photos routinely exceed the 5 MB cap. So an image that isn't
 /// already a server-accepted type within the cap is transcoded to JPEG (downscaled to fit) before
 /// upload — keeping the feature usable on-device while still matching Android for supported formats.
-struct ImageUploader {
+struct ImageUploader: ImageUploading {
     let apiClient: FlashcardApiClient
 
     /// Shown on any upload failure (unreadable image, network, 503, rejected) — matches Android's copy.
