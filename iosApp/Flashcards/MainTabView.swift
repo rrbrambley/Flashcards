@@ -17,7 +17,7 @@ struct MainTabView: View {
                 .tabItem { Label("Home", systemImage: "house") }
                 .tag(Tab.home)
 
-            NavigationStack { CreateDeckView() }
+            NavigationStack { CreateDeckView(repository: container.flashcardRepository) }
                 .tabItem { Label("New", systemImage: "plus.square") }
                 .tag(Tab.new)
 
