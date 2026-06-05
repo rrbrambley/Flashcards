@@ -7,6 +7,7 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
@@ -94,6 +95,40 @@ class TokenRefreshAuthTest {
         // ...and the session is ended locally so the app gates back to sign-in.
         assertNull(store.currentToken())
         assertNull(store.currentRefreshToken())
+    }
+
+    @Test
+    fun concurrentUnauthorizedRequestsRefreshOnlyOnce() = runTest {
+        val store = FakeTokenStore()
+        store.setTokens("expired-access", "old-refresh")
+
+        var refreshCount = 0
+        val engine = MockEngine { request ->
+            when {
+                request.url.encodedPath == "/auth/refresh" -> {
+                    refreshCount++
+                    respond(
+                        """{"accessToken":"new-access","refreshToken":"new-refresh","userId":1}""",
+                        HttpStatusCode.OK,
+                        jsonHeaders,
+                    )
+                }
+                request.headers[HttpHeaders.Authorization] == "Bearer new-access" ->
+                    respond("[]", HttpStatusCode.OK, jsonHeaders)
+                else -> respond("""{"error":"unauthorized"}""", HttpStatusCode.Unauthorized, unauthorizedHeaders)
+            }
+        }
+        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, baseUrl) }
+
+        // Two requests race with the same expired token; the Auth plugin must coalesce them into a
+        // single /auth/refresh (no spurious double-refresh / logout under concurrent 401s).
+        val first = async { client.get("http://localhost/decks") }
+        val second = async { client.get("http://localhost/sessions") }
+        first.await()
+        second.await()
+
+        assertEquals(1, refreshCount)
+        assertEquals("new-access", store.currentToken())
     }
 
     private class FakeTokenStore : TokenStore {
