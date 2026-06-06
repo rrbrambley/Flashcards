@@ -1,7 +1,7 @@
 import SDWebImageSwiftUI
 import SwiftUI
 
-/// Renders a front-of-card image from a URL — raster or **SVG** (the Country Flags cards) — with a
+/// Renders a front-of-card image from a URL — raster or **SVG** (the Flags of the World cards) — with a
 /// loading placeholder, a graceful failure, and on-disk caching for smooth practice. SVG support
 /// comes from `SDImageSVGCoder`, registered at app launch in `FlashcardsApp`.
 struct RemoteCardImage: View {

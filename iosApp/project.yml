@@ -36,7 +36,7 @@ targets:
     sources:
       - path: Flashcards
     dependencies:
-      # Remote image loading + caching, incl. SVG (the Country Flags cards) via the SVG coder.
+      # Remote image loading + caching, incl. SVG (the Flags of the World cards) via the SVG coder.
       - package: SDWebImageSwiftUI
       - package: SDWebImageSVGCoder
       # Native Google Sign-In (gated on GOOGLE_IOS_CLIENT_ID being set — see AppConfig).

@@ -37,7 +37,7 @@ object HomeService {
 
     private val STATIC_ITEMS = listOf(
         HomeDataDto(
-            title = "Practice identifying country flags",
+            title = "Practice the flags of the world",
             button = HomeButtonDto(
                 message = "Practice",
                 action = HomeButtonActionDto.NavigateToPractice,

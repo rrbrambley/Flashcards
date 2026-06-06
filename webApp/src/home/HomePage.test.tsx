@@ -34,7 +34,7 @@ const continueItem: HomeData = {
   button: { message: 'Continue practice', action: { type: 'continue_practice', sessionId: 7 } },
 };
 const practiceItem: HomeData = {
-  title: 'Practice identifying country flags',
+  title: 'Practice the flags of the world',
   button: { message: 'Practice', action: { type: 'navigate_to_practice' } },
 };
 const createItem: HomeData = {
@@ -65,10 +65,10 @@ describe('HomePage', () => {
     expect(await screen.findByText('practice-3')).toBeInTheDocument();
   });
 
-  it('practice tile routes to the global Country Flags deck', async () => {
+  it('practice tile routes to the global Flags of the World deck', async () => {
     vi.mocked(api.getHome).mockResolvedValue([practiceItem]);
     vi.mocked(api.getAllDecks).mockResolvedValue([
-      { id: 9, title: 'Country Flags', flashcards: [], editable: false },
+      { id: 9, title: 'Flags of the World', flashcards: [], editable: false },
       { id: 1, title: 'Spanish', flashcards: [], editable: true },
     ]);
     renderHome();
