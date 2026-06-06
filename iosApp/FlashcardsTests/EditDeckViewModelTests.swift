@@ -24,7 +24,7 @@ final class EditDeckViewModelTests: XCTestCase {
 
     func test_load_readOnlyDeck_isNotEditableOrDirty() async {
         let repo = FakeFlashcardRepository()
-        repo.deck = makeDeck(id: 1, "Country Flags", cards: [makeCard("", "Canada", imageUrl: "https://x/f.svg")], editable: false)
+        repo.deck = makeDeck(id: 1, "Flags of the World", cards: [makeCard("", "Canada", imageUrl: "https://x/f.svg")], editable: false)
         let vm = makeVM(repo)
 
         await vm.load()

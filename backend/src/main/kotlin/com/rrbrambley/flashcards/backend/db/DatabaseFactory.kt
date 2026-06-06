@@ -3,9 +3,15 @@ package com.rrbrambley.flashcards.backend.db
 import com.rrbrambley.flashcards.backend.auth.Passwords
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.selectAll
@@ -77,17 +83,22 @@ object DatabaseFactory {
             RefreshTokens.update({ RefreshTokens.token eq DEMO_TOKEN }) { it[rotatedAtMillis] = null }
         }
 
-        val hasGlobalFlagsDeck = Decks
+        // Drop the legacy minimal test deck if it lingers from an older seed, then build the full
+        // Flags of the World catalog deck. Idempotent across restarts; rebuilt on a reset + reseed.
+        // (Deck deletes cascade to its flashcards + practice sessions — see Tables.kt.)
+        Decks.deleteWhere { (Decks.ownerUserId eq null) and (Decks.title eq LEGACY_FLAGS_TITLE) }
+
+        val hasFlagsDeck = Decks
             .selectAll()
-            .where { (Decks.ownerUserId eq null) and (Decks.title eq COUNTRY_FLAGS_TITLE) }
+            .where { (Decks.ownerUserId eq null) and (Decks.title eq FLAGS_TITLE) }
             .any()
-        if (!hasGlobalFlagsDeck) {
+        if (!hasFlagsDeck) {
             val deckId = Decks.insertAndGetId {
-                it[title] = COUNTRY_FLAGS_TITLE
+                it[title] = FLAGS_TITLE
                 it[ownerUserId] = null
                 it[createdAtMillis] = now
             }.value
-            countryFlagCards.forEachIndexed { index, card ->
+            flagSeedCards().forEachIndexed { index, card ->
                 Flashcards.insert {
                     it[Flashcards.deckId] = deckId
                     it[question] = card.question
@@ -99,26 +110,28 @@ object DatabaseFactory {
         }
     }
 
-    private const val COUNTRY_FLAGS_TITLE = "Country Flags"
+    /** Title of the seeded global catalog deck. Public so clients/tests can resolve it by name. */
+    const val FLAGS_TITLE = "Flags of the World"
+    private const val LEGACY_FLAGS_TITLE = "Country Flags"
 
     private data class SeedCard(val question: String, val answer: String, val imageUrl: String?)
 
-    // Mirrors the app's seeded flashcards in FlashcardLocalDataSource.kt verbatim.
-    private val countryFlagCards = listOf(
-        SeedCard(
-            "What is this country?",
-            "Canada",
-            "https://upload.wikimedia.org/wikipedia/commons/d/d9/Flag_of_Canada_%28Pantone%29.svg",
-        ),
-        SeedCard(
-            "What is this country?",
-            "Kenya",
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Flag_of_Kenya.svg/1920px-Flag_of_Kenya.svg.png",
-        ),
-        SeedCard(
-            "What is this country?",
-            "India",
-            "https://upload.wikimedia.org/wikipedia/en/4/41/Flag_of_India.svg",
-        ),
-    )
+    /**
+     * Builds the Flags of the World cards from the checked-in `seed/flags.json` (ISO 3166-1
+     * alpha-2 `code` → `name`, generated from https://flagcdn.com/en/codes.json, 2-letter codes
+     * only). Front is the flag image only (empty question); back is the country/territory name.
+     * Flag SVGs are served by flagcdn.com — a free, Cloudflare-hosted CDN of public-domain national
+     * flags — referenced by URL like the cards' other images (no upload to our storage needed).
+     */
+    private fun flagSeedCards(): List<SeedCard> {
+        val text = DatabaseFactory::class.java.getResourceAsStream("/seed/flags.json")
+            ?.bufferedReader()?.use { it.readText() }
+            ?: error("Missing seed resource: /seed/flags.json")
+        return Json.parseToJsonElement(text).jsonArray.map { element ->
+            val obj = element.jsonObject
+            val code = obj.getValue("code").jsonPrimitive.content
+            val name = obj.getValue("name").jsonPrimitive.content
+            SeedCard(question = "", answer = name, imageUrl = "https://flagcdn.com/$code.svg")
+        }
+    }
 }

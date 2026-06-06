@@ -332,16 +332,20 @@ class ApplicationFlowTest {
     }
 
     @Test
-    fun decks_returns_seeded_country_flags_deck() = runApp { client ->
+    fun decks_returns_seeded_flags_of_the_world_deck() = runApp { client ->
         val auth = client.register("carol", "password1")
         val response = client.get("/decks") { bearerAuth(auth.accessToken) }
         assertEquals(HttpStatusCode.OK, response.status)
         val decks = response.decode<Page<FlashcardDeckDto>>().items
 
-        val flags = decks.single { it.title == "Country Flags" }
-        assertEquals(3, flags.flashcards.size)
-        assertEquals(listOf("Canada", "Kenya", "India"), flags.flashcards.map { it.answer })
-        assertTrue(flags.flashcards.all { it.imageUrl != null })
+        val flags = decks.single { it.title == "Flags of the World" }
+        // Seeded from the full flagcdn country/territory set (a couple hundred).
+        assertTrue(flags.flashcards.size >= 200)
+        // Each card is image-only: empty front, a country name on the back, a flagcdn image.
+        assertTrue(flags.flashcards.all { it.question.isEmpty() })
+        assertTrue(flags.flashcards.all { it.answer.isNotBlank() })
+        assertTrue(flags.flashcards.all { it.imageUrl?.startsWith("https://flagcdn.com/") == true })
+        assertTrue(flags.flashcards.any { it.answer == "United States" })
         // The global catalog deck has no owner, so it is read-only for every user.
         assertFalse(flags.editable)
     }
@@ -349,7 +353,7 @@ class ApplicationFlowTest {
     @Test
     fun decks_paginate_with_a_stable_cursor() = runApp { client ->
         val auth = client.register("paula", "password1")
-        // Create 4 decks; with the seeded global Country Flags deck that's 5 visible decks.
+        // Create 4 decks; with the seeded global Flags of the World deck that's 5 visible decks.
         repeat(4) { i ->
             client.post("/decks") {
                 bearerAuth(auth.accessToken)
@@ -466,7 +470,7 @@ class ApplicationFlowTest {
         assertEquals(listOf(session.id), activeBefore.map { it.id })
 
         val homeBefore = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
-        assertEquals("Continue Country Flags practice", homeBefore.first().title)
+        assertEquals("Continue Flags of the World practice", homeBefore.first().title)
         assertEquals(3, homeBefore.size) // 1 continue + 2 static
 
         // Complete
@@ -481,7 +485,7 @@ class ApplicationFlowTest {
         val homeAfter = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
         assertEquals(2, homeAfter.size) // only the 2 static items
         assertEquals(
-            listOf("Practice identifying country flags", "Create a new flashcard set"),
+            listOf("Practice the flags of the world", "Create a new flashcard set"),
             homeAfter.map { it.title },
         )
     }
@@ -644,10 +648,10 @@ class ApplicationFlowTest {
     @Test
     fun cannot_edit_a_deck_you_do_not_own() = runApp { client ->
         val auth = client.register("heidi", "password1")
-        // The seeded global Country Flags deck has no owner, so it is read-only.
+        // The seeded global Flags of the World deck has no owner, so it is read-only.
         val globalDeck = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<Page<FlashcardDeckDto>>().items
-            .single { it.title == "Country Flags" }
+            .single { it.title == "Flags of the World" }
 
         val response = client.put("/decks/${globalDeck.id}") {
             bearerAuth(auth.accessToken)
@@ -709,7 +713,7 @@ class ApplicationFlowTest {
         val auth = client.register("quinn", "password1")
         val globalDeck = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<Page<FlashcardDeckDto>>().items
-            .single { it.title == "Country Flags" }
+            .single { it.title == "Flags of the World" }
 
         assertEquals(
             HttpStatusCode.NotFound,

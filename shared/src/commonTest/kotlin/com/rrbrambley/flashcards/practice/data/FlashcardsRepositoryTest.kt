@@ -132,7 +132,7 @@ class FlashcardsRepositoryTest {
             HttpMethod.Get to "/decks" to json(
                 pageJson(
                     deckJson(1, "Spanish basics", "Hola" to "Hello"),
-                    deckJson(2, "Country Flags", "Canada flag" to "Canada"),
+                    deckJson(2, "Flags of the World", "Canada flag" to "Canada"),
                 ),
             ),
         )

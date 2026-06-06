@@ -85,7 +85,7 @@ npm run dev                          # http://localhost:5173
 ```
 
 Register a new account in either client, or use the seeded demo login
-(`demo@flashcards.dev` / `demo`). The backend ships a seeded **Country Flags** deck.
+(`demo@flashcards.dev` / `demo`). The backend ships a seeded **Flags of the World** deck.
 
 ---
 
@@ -117,7 +117,7 @@ DB_JDBC_URL=jdbc:postgresql://localhost:5433/flashcards ./gradlew :backend:run
 
 The server is ready when it logs `Responding at http://0.0.0.0:8080`. On first boot it
 creates its schema and seeds a demo user (`demo@flashcards.dev` / `demo`), a fixed dev
-**refresh** token (`demo-token`), and the global "Country Flags" deck.
+**refresh** token (`demo-token`), and the global "Flags of the World" deck.
 
 ### Smoke-test the API
 
@@ -130,7 +130,7 @@ ACCESS=$(curl -s http://localhost:8080/auth/refresh \
   -H 'Content-Type: application/json' -d '{"refreshToken":"demo-token"}' | jq -r .accessToken)
 
 curl -s "http://localhost:8080/decks" -H "Authorization: Bearer $ACCESS"
-# -> the first page of decks, including the seeded Country Flags deck
+# -> the first page of decks, including the seeded Flags of the World deck
 ```
 
 (Or `POST /auth/login` with the demo credentials to get an `accessToken` the same way.)

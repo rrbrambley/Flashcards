@@ -67,7 +67,7 @@ struct HomeView: View {
         } else if let resume = action as? HomeButtonActionContinuePractice {
             practice = PracticePresentation(entry: .session(resume.sessionId))
         } else {
-            // NavigateToPractice → the global Country Flags cards.
+            // NavigateToPractice → the global Flags of the World cards.
             practice = PracticePresentation(entry: .defaultFlashcards)
         }
     }

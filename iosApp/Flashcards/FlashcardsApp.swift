@@ -9,7 +9,7 @@ struct FlashcardsApp: App {
     @StateObject private var container = AppContainer()
 
     init() {
-        // Enable SVG decoding for remote card images (the Country Flags deck).
+        // Enable SVG decoding for remote card images (the Flags of the World deck).
         SDImageCodersManager.shared.addCoder(SDImageSVGCoder.shared)
     }
 

@@ -15,7 +15,7 @@ enum PracticeEntry {
     case deck(Int64)
     /// Resume an existing session (Home "Continue practice").
     case session(Int64)
-    /// The global Country Flags cards, with no session (Home "Practice country flags").
+    /// The global Flags of the World cards, with no session (Home "Practice the flags of the world").
     case defaultFlashcards
 }
 

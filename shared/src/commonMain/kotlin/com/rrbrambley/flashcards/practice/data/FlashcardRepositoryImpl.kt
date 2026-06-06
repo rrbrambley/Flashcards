@@ -66,7 +66,8 @@ class FlashcardRepositoryImpl(private val apiClient: FlashcardApiClient, private
     }
 
     private companion object {
-        // The seeded, globally-shared deck practiced from the "Practice" home action.
-        const val COUNTRY_FLAGS_TITLE = "Country Flags"
+        // The seeded, globally-shared deck practiced from the "Practice" home action (the backend
+        // seeds it under this title — see DatabaseFactory.FLAGS_TITLE).
+        const val COUNTRY_FLAGS_TITLE = "Flags of the World"
     }
 }
