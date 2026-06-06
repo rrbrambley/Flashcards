@@ -5,7 +5,9 @@ import com.rrbrambley.flashcards.practice.data.FlashcardDao
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.PracticeSessionDao
 import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
+import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
@@ -22,6 +24,12 @@ import dagger.hilt.components.SingletonComponent
 @Module
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
+    @Provides
+    fun provideAuthService(
+        apiClient: FlashcardApiClient,
+        tokenStore: TokenStore,
+    ): AuthService = AuthService(apiClient, tokenStore)
+
     @Provides
     fun provideFlashcardRepository(
         apiClient: FlashcardApiClient,

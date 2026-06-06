@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.auth
 
+import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
@@ -139,12 +140,14 @@ class AuthRepositoryTest {
 
     private fun repository(tokenStore: TokenStore, engine: MockEngine): AuthRepository =
         DefaultAuthRepository(
-            apiClient = FlashcardApiClient(
-                client = createFlashcardHttpClient(engine),
-                baseUrl = "http://localhost",
-                tokenProvider = { tokenStore.currentToken() },
+            AuthService(
+                apiClient = FlashcardApiClient(
+                    client = createFlashcardHttpClient(engine),
+                    baseUrl = "http://localhost",
+                    tokenProvider = { tokenStore.currentToken() },
+                ),
+                tokenStore = tokenStore,
             ),
-            tokenStore = tokenStore,
         )
 
     private fun jsonEngine(status: HttpStatusCode, body: String = "{}") = MockEngine {

@@ -1,11 +1,7 @@
 package com.rrbrambley.flashcards.auth
 
-import com.rrbrambley.flashcards.shared.api.ApiError
-import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
-import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
-import com.rrbrambley.flashcards.shared.api.LoginRequest
-import com.rrbrambley.flashcards.shared.api.RegisterRequest
-import com.rrbrambley.flashcards.shared.api.TokenStore
+import com.rrbrambley.flashcards.shared.AuthResult
+import com.rrbrambley.flashcards.shared.AuthService
 import javax.inject.Inject
 
 sealed interface AuthOutcome {
@@ -25,74 +21,28 @@ interface AuthRepository {
     suspend fun logout()
 }
 
+/**
+ * Thin adapter over the shared [AuthService] (login/register/Google/logout over the shared
+ * `FlashcardApiClient` + `TokenStore`, persisting tokens on success, with parity error copy — the
+ * same logic iOS uses). Kept behind [AuthRepository] so the ViewModel stays unit-testable with a
+ * synchronous fake; maps the shared sealed [AuthResult] to the Android [AuthOutcome].
+ */
 class DefaultAuthRepository @Inject constructor(
-    private val apiClient: FlashcardApiClient,
-    private val tokenStore: TokenStore,
+    private val authService: AuthService,
 ) : AuthRepository {
-    override suspend fun register(email: String, password: String): AuthOutcome = run {
-        try {
-            val response = apiClient.register(RegisterRequest(email.trim(), password))
-            tokenStore.setTokens(response.accessToken, response.refreshToken)
-            AuthOutcome.Success
-        } catch (e: ApiError) {
-            AuthOutcome.Error(
-                when (e) {
-                    is ApiError.Conflict -> "An account with that email already exists."
-                    is ApiError.Validation -> "Enter a valid email and a password."
-                    else -> GENERIC_ERROR
-                },
-            )
-        } catch (e: Exception) {
-            AuthOutcome.Error(GENERIC_ERROR)
-        }
-    }
+    override suspend fun register(email: String, password: String): AuthOutcome =
+        authService.register(email, password).toOutcome()
 
-    override suspend fun login(email: String, password: String): AuthOutcome = run {
-        try {
-            val response = apiClient.login(LoginRequest(email.trim(), password))
-            tokenStore.setTokens(response.accessToken, response.refreshToken)
-            AuthOutcome.Success
-        } catch (e: ApiError) {
-            AuthOutcome.Error(
-                if (e is ApiError.Unauthorized) "Invalid email or password." else GENERIC_ERROR,
-            )
-        } catch (e: Exception) {
-            AuthOutcome.Error(GENERIC_ERROR)
-        }
-    }
+    override suspend fun login(email: String, password: String): AuthOutcome =
+        authService.login(email, password).toOutcome()
 
-    override suspend fun signInWithGoogle(idToken: String): AuthOutcome = run {
-        try {
-            val response = apiClient.googleSignIn(GoogleAuthRequest(idToken))
-            tokenStore.setTokens(response.accessToken, response.refreshToken)
-            AuthOutcome.Success
-        } catch (e: ApiError) {
-            AuthOutcome.Error(
-                when (e) {
-                    is ApiError.ServiceUnavailable -> "Google sign-in isn't available right now."
-                    is ApiError.Unauthorized -> "Google sign-in failed. Please try again."
-                    else -> GENERIC_ERROR
-                },
-            )
-        } catch (e: Exception) {
-            AuthOutcome.Error(GENERIC_ERROR)
-        }
-    }
+    override suspend fun signInWithGoogle(idToken: String): AuthOutcome =
+        authService.signInWithGoogle(idToken).toOutcome()
 
-    override suspend fun logout() {
-        // Best-effort server-side revoke of the refresh token; the local tokens are always cleared
-        // so logout works offline.
-        val refreshToken = tokenStore.currentRefreshToken()
-        if (refreshToken != null) {
-            try {
-                apiClient.logout(refreshToken)
-            } catch (_: Exception) {
-            }
-        }
-        tokenStore.clearToken()
-    }
+    override suspend fun logout() = authService.logout()
 
-    private companion object {
-        const val GENERIC_ERROR = "Something went wrong. Check your connection and try again."
+    private fun AuthResult.toOutcome(): AuthOutcome = when (this) {
+        is AuthResult.Success -> AuthOutcome.Success
+        is AuthResult.Failure -> AuthOutcome.Error(message)
     }
 }
