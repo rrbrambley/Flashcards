@@ -14,9 +14,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Detect which areas a PR touches so expensive jobs can be skipped when irrelevant. Runs in a
-  # few seconds on Linux. Today only the macOS iOS job is gated (FLA-59); the other jobs are gated
-  # in FLA-60. `main` isn't branch-protected, so a skipped job is simply absent from the checks.
+  # Detect which areas a PR touches so each job runs only when relevant code changed (FLA-60).
+  # Runs in a few seconds on Linux. `main` isn't branch-protected, so a skipped job is simply
+  # absent from the checks (no aggregator gate needed; add one if protection is enabled later).
   changes:
     name: Detect changed paths
     runs-on: ubuntu-latest
@@ -24,28 +24,49 @@ jobs:
       contents: read
       pull-requests: read   # paths-filter lists a PR's changed files via the API
     outputs:
+      kotlin: ${{ steps.filter.outputs.kotlin }}
+      android: ${{ steps.filter.outputs.android }}
       ios: ${{ steps.filter.outputs.ios }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
         id: filter
         with:
-          # The iOS build links the shared Kotlin framework, so shared/ + the root Gradle config
-          # affect it too. A change to this workflow re-runs everything to validate the change.
+          # `gradle` is a shared base (anchored below): the root build config + this workflow affect
+          # every Gradle module, so touching them re-runs all Gradle jobs. `shared/` is the common
+          # dependency — Android, backend, and the iOS framework all build on it — so it triggers
+          # their jobs too (but NOT web, which hand-mirrors the DTOs in TypeScript).
           filters: |
-            ios:
-              - 'iosApp/**'
-              - 'shared/**'
+            gradle: &gradle
               - 'build.gradle.kts'
               - 'settings.gradle.kts'
               - 'gradle/**'
               - 'gradlew'
               - 'gradlew.bat'
               - '.github/workflows/ci.yml'
+            kotlin:
+              - *gradle
+              - 'shared/**'
+              - 'backend/**'
+              - 'androidApp/**'
+            android:
+              - *gradle
+              - 'shared/**'
+              - 'androidApp/**'
+            ios:
+              - *gradle
+              - 'shared/**'
+              - 'iosApp/**'
+            web:
+              - '.github/workflows/ci.yml'
+              - 'webApp/**'
 
   kotlin-lint:
     name: Kotlin lint (ktlint)
+    needs: changes
+    if: ${{ needs.changes.outputs.kotlin == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -70,6 +91,8 @@ jobs:
 
   jvm:
     name: JVM tests + coverage (backend, android, shared)
+    needs: changes
+    if: ${{ needs.changes.outputs.kotlin == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -144,6 +167,8 @@ jobs:
 
   web:
     name: Web (build + lint + tests)
+    needs: changes
+    if: ${{ needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -190,6 +215,8 @@ jobs:
 
   android-instrumented:
     name: Android instrumented tests
+    needs: changes
+    if: ${{ needs.changes.outputs.android == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
