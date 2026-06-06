@@ -8,6 +8,7 @@
 #   make web       Start the web dev server at http://localhost:5173 (foreground)
 #   make db        Start just the local Postgres
 #   make db-stop   Stop the local Postgres container
+#   make reseed    Wipe the Postgres volume + restart so the backend reseeds from scratch
 #
 # The backend points at whatever host port the flashcards-postgres container publishes
 # for 5432, so a non-default mapping (e.g. 5433 when 5432 is taken) is handled automatically.
@@ -15,7 +16,7 @@
 SHELL := /bin/bash
 BACKEND_LOG := backend.local.log
 
-.PHONY: start stop restart logs status web db db-stop
+.PHONY: start stop restart logs status web db db-stop reseed
 
 db:
 	@if docker ps --format '{{.Names}}' | grep -q '^flashcards-postgres$$'; then \
@@ -29,6 +30,15 @@ db:
 
 db-stop:
 	docker compose stop postgres
+
+# Destructive: deletes the flashcards-pgdata volume so the next backend boot recreates
+# the tables and runs DatabaseFactory.seed() from scratch (demo user/token + global decks).
+reseed:
+	@read -p "This DELETES all local Postgres data and reseeds. Continue? [y/N] " ok; \
+	[ "$$ok" = "y" ] || [ "$$ok" = "Y" ] || { echo "Aborted."; exit 1; }
+	@$(MAKE) stop
+	docker compose down -v
+	@$(MAKE) start
 
 start: db
 	@if lsof -ti tcp:8080 >/dev/null 2>&1; then \
