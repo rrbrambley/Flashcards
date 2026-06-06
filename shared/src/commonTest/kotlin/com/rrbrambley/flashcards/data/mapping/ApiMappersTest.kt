@@ -110,11 +110,14 @@ class ApiMappersTest {
     fun homeDataDto_toDomain_navigateToPracticeAction() {
         val data = HomeDataDto(
             title = "Practice",
-            button = HomeButtonDto(message = "Practice", action = HomeButtonActionDto.NavigateToPractice),
+            button = HomeButtonDto(message = "Practice", action = HomeButtonActionDto.NavigateToPractice(deckId = 7)),
         ).toDomain()
 
         assertEquals(
-            HomeData(title = "Practice", button = HomeButton("Practice", HomeButtonAction.NavigateToPractice)),
+            HomeData(
+                title = "Practice",
+                button = HomeButton("Practice", HomeButtonAction.NavigateToPractice(deckId = 7)),
+            ),
             data,
         )
     }

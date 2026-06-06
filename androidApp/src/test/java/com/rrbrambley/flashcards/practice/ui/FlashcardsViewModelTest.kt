@@ -41,19 +41,18 @@ class FlashcardsViewModelTest {
     }
 
     @Test
-    fun uiState_showsFirstFlashcardFromRepository() = runTest(testDispatcher) {
+    fun deckEntry_startsOrResumesASessionAndShowsFirstCard() = runTest(testDispatcher) {
         val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards)
+        val sessions = FakePracticeSessionRepository(session(deckId = DECK_ID))
+        val viewModel = createViewModel(flashcards, sessions)
 
-        viewModel.loadSession(null)
+        // The Home "Practice" action passes a deck id, not a session id.
+        viewModel.load(sessionId = null, deckId = DECK_ID)
         testDispatcher.scheduler.advanceUntilIdle()
 
+        assertEquals(DECK_ID, sessions.startOrResumeDeckId)
         assertEquals(
-            FlashcardsUiState.ShowFlashcard(
-                numIncorrect = 0,
-                numCorrect = 0,
-                flashcard = flashcards.first(),
-            ),
+            FlashcardsUiState.ShowFlashcard(numIncorrect = 0, numCorrect = 0, flashcard = flashcards.first()),
             viewModel.uiState.value,
         )
     }
@@ -61,9 +60,7 @@ class FlashcardsViewModelTest {
     @Test
     fun swipeRight_incrementsCorrectCountAndShowsNextFlashcard() = runTest(testDispatcher) {
         val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards)
-        viewModel.loadSession(null)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel(flashcards).also { it.loadDeck() }
 
         viewModel.swipeRight()
 
@@ -81,9 +78,7 @@ class FlashcardsViewModelTest {
     @Test
     fun swipeLeft_incrementsIncorrectCountAndShowsNextFlashcard() = runTest(testDispatcher) {
         val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards)
-        viewModel.loadSession(null)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel(flashcards).also { it.loadDeck() }
 
         viewModel.swipeLeft()
 
@@ -101,9 +96,7 @@ class FlashcardsViewModelTest {
     @Test
     fun goForward_showsNextFlashcardWithoutChangingScores() = runTest(testDispatcher) {
         val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards)
-        viewModel.loadSession(null)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel(flashcards).also { it.loadDeck() }
 
         viewModel.goForward()
 
@@ -121,9 +114,7 @@ class FlashcardsViewModelTest {
     @Test
     fun goBack_whenOnSecondFlashcard_showsPreviousFlashcardWithoutChangingScores() = runTest(testDispatcher) {
         val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards)
-        viewModel.loadSession(null)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel(flashcards).also { it.loadDeck() }
         viewModel.swipeRight()
 
         viewModel.goBack()
@@ -140,10 +131,7 @@ class FlashcardsViewModelTest {
 
     @Test
     fun goBack_whenOnFirstFlashcard_doesNotChangeUiState() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards)
-        viewModel.loadSession(null)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = createViewModel(testFlashcards()).also { it.loadDeck() }
         val initialUiState = viewModel.uiState.value
 
         viewModel.goBack()
@@ -152,62 +140,14 @@ class FlashcardsViewModelTest {
     }
 
     @Test
-    fun goForward_whenOnLastDefaultFlashcard_doesNotChangeUiState() = runTest(testDispatcher) {
+    fun load_restoresProgressFromPracticeSession() = runTest(testDispatcher) {
         val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards)
-        viewModel.loadSession(null)
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.goForward()
-        viewModel.goForward()
-        val lastFlashcardUiState = viewModel.uiState.value
-
-        viewModel.goForward()
-
-        assertEquals(lastFlashcardUiState, viewModel.uiState.value)
-    }
-
-    @Test
-    fun swipingAtLastDefaultFlashcard_incrementsScoreWithoutAdvancingCard() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards)
-        viewModel.loadSession(null)
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.goForward()
-        viewModel.goForward()
-
-        viewModel.swipeLeft()
-
-        assertEquals(
-            FlashcardsUiState.ShowFlashcard(
-                numIncorrect = 1,
-                numCorrect = 0,
-                flashcard = flashcards.last(),
-                canGoBack = true,
-            ),
-            viewModel.uiState.value,
+        val sessions = FakePracticeSessionRepository(
+            session(currentCardIndex = 1, numCorrect = 2, numIncorrect = 1),
         )
-    }
+        val viewModel = createViewModel(flashcards, sessions)
 
-    @Test
-    fun loadSession_restoresProgressFromPracticeSession() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val practiceSessionRepository = FakePracticeSessionRepository(
-            session = PracticeSession(
-                id = 9L,
-                deckId = 42L,
-                deckTitle = "Spanish basics",
-                currentCardIndex = 1,
-                numCorrect = 2,
-                numIncorrect = 1,
-            ),
-        )
-        val viewModel = createViewModel(
-            flashcards = emptyList(),
-            decks = listOf(FlashcardDeck(id = 42L, title = "Spanish basics", flashcards = flashcards)),
-            practiceSessionRepository = practiceSessionRepository,
-        )
-
-        viewModel.loadSession(9L)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(
@@ -223,67 +163,67 @@ class FlashcardsViewModelTest {
 
     @Test
     fun sessionProgress_isPersistedWhenAdvancing() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val practiceSessionRepository = FakePracticeSessionRepository(
-            session = PracticeSession(
-                id = 9L,
-                deckId = 42L,
-                deckTitle = "Spanish basics",
-            ),
-        )
-        val viewModel = createViewModel(
-            flashcards = emptyList(),
-            decks = listOf(FlashcardDeck(id = 42L, title = "Spanish basics", flashcards = flashcards)),
-            practiceSessionRepository = practiceSessionRepository,
-        )
-        viewModel.loadSession(9L)
+        val sessions = FakePracticeSessionRepository(session())
+        val viewModel = createViewModel(testFlashcards(), sessions)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.swipeRight()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(PracticeProgress(sessionId = 9L, currentCardIndex = 1, numCorrect = 1, numIncorrect = 0), practiceSessionRepository.updatedProgress)
+        assertEquals(
+            PracticeProgress(sessionId = SESSION_ID, currentCardIndex = 1, numCorrect = 1, numIncorrect = 0),
+            sessions.updatedProgress,
+        )
     }
 
     @Test
     fun sessionCompletes_whenAdvancingPastLastCard() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val practiceSessionRepository = FakePracticeSessionRepository(
-            session = PracticeSession(
-                id = 9L,
-                deckId = 42L,
-                deckTitle = "Spanish basics",
-                currentCardIndex = 2,
-            ),
-        )
-        val viewModel = createViewModel(
-            flashcards = emptyList(),
-            decks = listOf(FlashcardDeck(id = 42L, title = "Spanish basics", flashcards = flashcards)),
-            practiceSessionRepository = practiceSessionRepository,
-        )
-        viewModel.loadSession(9L)
+        val sessions = FakePracticeSessionRepository(session(currentCardIndex = 2))
+        val viewModel = createViewModel(testFlashcards(), sessions)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.swipeLeft()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(9L, practiceSessionRepository.completedSessionId)
+        assertEquals(SESSION_ID, sessions.completedSessionId)
         assertEquals(
-            FlashcardsUiState.SessionCompleted(
-                numIncorrect = 1,
-                numCorrect = 0,
-            ),
+            FlashcardsUiState.SessionCompleted(numIncorrect = 1, numCorrect = 0),
             viewModel.uiState.value,
         )
     }
 
+    // --- Helpers ---
+
+    /** Loads via the deck entry (Home "Practice") and drains the dispatcher. */
+    private fun FlashcardsViewModel.loadDeck() {
+        load(sessionId = null, deckId = DECK_ID)
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
     private fun createViewModel(
         flashcards: List<Flashcard>,
-        decks: List<FlashcardDeck> = emptyList(),
-        practiceSessionRepository: FakePracticeSessionRepository = FakePracticeSessionRepository(),
+        practiceSessionRepository: FakePracticeSessionRepository = FakePracticeSessionRepository(session()),
     ): FlashcardsViewModel = FlashcardsViewModel(
-        flashcardRepository = FakeFlashcardRepository(flashcards = flashcards, decks = decks),
+        flashcardRepository = FakeFlashcardRepository(
+            listOf(FlashcardDeck(id = DECK_ID, title = "Deck", flashcards = flashcards)),
+        ),
         practiceSessionRepository = practiceSessionRepository,
+    )
+
+    private fun session(
+        deckId: Long = DECK_ID,
+        currentCardIndex: Int = 0,
+        numCorrect: Int = 0,
+        numIncorrect: Int = 0,
+    ) = PracticeSession(
+        id = SESSION_ID,
+        deckId = deckId,
+        deckTitle = "Deck",
+        currentCardIndex = currentCardIndex,
+        numCorrect = numCorrect,
+        numIncorrect = numIncorrect,
     )
 
     private fun testFlashcards(): List<Flashcard> = listOf(
@@ -292,20 +232,12 @@ class FlashcardsViewModelTest {
         Flashcard(question = "Question 3", answer = "Answer 3"),
     )
 
-    private class FakeFlashcardRepository(
-        private val flashcards: List<Flashcard>,
-        private val decks: List<FlashcardDeck>,
-    ) : FlashcardRepository {
-        override suspend fun getFlashcards(): Flow<List<Flashcard>> = flowOf(flashcards)
-
+    private class FakeFlashcardRepository(private val decks: List<FlashcardDeck>) : FlashcardRepository {
         override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(decks)
-
-        override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(decks.firstOrNull { it.id == deckId })
-
+        override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> =
+            flowOf(decks.firstOrNull { it.id == deckId })
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
-
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
-
         override suspend fun deleteFlashcardDeck(deckId: Long) = Unit
     }
 
@@ -314,8 +246,12 @@ class FlashcardsViewModelTest {
     ) : PracticeSessionRepository {
         var updatedProgress: PracticeProgress? = null
         var completedSessionId: Long? = null
+        var startOrResumeDeckId: Long? = null
 
-        override suspend fun startOrResumeSession(deckId: Long): Long = session?.id ?: 0L
+        override suspend fun startOrResumeSession(deckId: Long): Long {
+            startOrResumeDeckId = deckId
+            return session?.id ?: 0L
+        }
 
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(session?.let { listOf(it) }.orEmpty())
 
@@ -346,4 +282,9 @@ class FlashcardsViewModelTest {
         val numCorrect: Int,
         val numIncorrect: Int,
     )
+
+    private companion object {
+        const val DECK_ID = 42L
+        const val SESSION_ID = 9L
+    }
 }

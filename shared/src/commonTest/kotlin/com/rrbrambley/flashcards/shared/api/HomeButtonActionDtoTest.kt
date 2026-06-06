@@ -12,11 +12,11 @@ class HomeButtonActionDtoTest {
     private val json = Json
 
     @Test
-    fun navigateToPractice_roundTrips() {
-        val encoded = json.encodeToString<HomeButtonActionDto>(HomeButtonActionDto.NavigateToPractice)
+    fun navigateToPractice_roundTripsWithDeckId() {
+        val encoded = json.encodeToString<HomeButtonActionDto>(HomeButtonActionDto.NavigateToPractice(42L))
         assertTrue(encoded.contains("navigate_to_practice"), encoded)
         assertEquals(
-            HomeButtonActionDto.NavigateToPractice,
+            HomeButtonActionDto.NavigateToPractice(42L),
             json.decodeFromString<HomeButtonActionDto>(encoded),
         )
     }

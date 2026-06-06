@@ -66,9 +66,9 @@ struct HomeView: View {
             onCreateDeck()
         } else if let resume = action as? HomeButtonActionContinuePractice {
             practice = PracticePresentation(entry: .session(resume.sessionId))
-        } else {
-            // NavigateToPractice → the global Flags of the World cards.
-            practice = PracticePresentation(entry: .defaultFlashcards)
+        } else if let practiceDeck = action as? HomeButtonActionNavigateToPractice {
+            // The backend/offline layer resolves which deck (the featured global deck) and its id.
+            practice = PracticePresentation(entry: .deck(practiceDeck.deckId))
         }
     }
 

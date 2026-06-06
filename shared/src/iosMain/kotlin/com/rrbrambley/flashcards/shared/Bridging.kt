@@ -1,7 +1,6 @@
 package com.rrbrambley.flashcards.shared
 
 import com.rrbrambley.flashcards.shared.api.TokenStore
-import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeData
@@ -38,6 +37,3 @@ fun PracticeSessionRepository.sessionAdapter(sessionId: Long): FlowAdapter<Pract
 
 /** The home feed (backend GET /home, offline fallback from cached sessions + static items). */
 fun HomeRepository.homeAdapter(): FlowAdapter<List<HomeData>> = FlowAdapter(observeHomeData())
-
-/** The global Flags of the World cards, for a session-less "Practice the flags of the world" run from Home. */
-suspend fun FlashcardRepository.defaultFlashcardsAdapter(): FlowAdapter<List<Flashcard>> = FlowAdapter(getFlashcards())

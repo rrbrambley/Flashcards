@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.home.data
 
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
@@ -16,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class HomeRepositoryTest {
 
@@ -27,56 +30,76 @@ class HomeRepositoryTest {
         })
     }
 
+    private fun repository(
+        sessions: List<PracticeSession> = emptyList(),
+        decks: List<FlashcardDeck> = listOf(GLOBAL_DECK),
+    ) = HomeRepositoryImpl(
+        offlineApiClient(),
+        FakeFlashcardRepository(decks),
+        FakePracticeSessionRepository(sessions),
+        FakeHomeFeedStrings,
+    )
+
     @Test
-    fun observeHomeData_returnsPracticeCardWhenNoActiveSessions() = runTest {
-        val repository =
-            HomeRepositoryImpl(offlineApiClient(), FakePracticeSessionRepository(emptyList()), FakeHomeFeedStrings)
+    fun observeHomeData_practiceCardPointsAtTheCachedGlobalDeck() = runTest {
+        val homeData = repository().observeHomeData().first()
 
-        val homeData = repository.observeHomeData().first()
-
-        assertEquals("Country flags", homeData.first().title)
+        assertEquals("Practice Flags of the World", homeData.first().title)
         assertNotNull(homeData.first().button)
         assertEquals("Practice", homeData.first().button?.message)
-        assertEquals(HomeButtonAction.NavigateToPractice, homeData.first().button?.action)
+        // The deck id comes from the cached global deck — never a hardcoded title.
+        assertEquals(HomeButtonAction.NavigateToPractice(deckId = 5L), homeData.first().button?.action)
     }
 
     @Test
-    fun observeHomeData_returnsCreateFlashcardSetCardSecondWhenNoActiveSessions() = runTest {
-        val repository =
-            HomeRepositoryImpl(offlineApiClient(), FakePracticeSessionRepository(emptyList()), FakeHomeFeedStrings)
-
-        val homeData = repository.observeHomeData().first()
+    fun observeHomeData_createCardFollowsPractice() = runTest {
+        val homeData = repository().observeHomeData().first()
 
         assertEquals("Create a set", homeData[1].title)
-        assertNotNull(homeData[1].button)
         assertEquals("Create", homeData[1].button?.message)
         assertEquals(HomeButtonAction.CreateNewFlashcardSet, homeData[1].button?.action)
     }
 
     @Test
-    fun observeHomeData_prependsActivePracticeSessions() = runTest {
-        val repository = HomeRepositoryImpl(
-            offlineApiClient(),
-            FakePracticeSessionRepository(
-                listOf(PracticeSession(id = 12L, deckId = 1L, deckTitle = "Spanish basics")),
-            ),
-            FakeHomeFeedStrings,
-        )
+    fun observeHomeData_omitsPracticeCardWhenNoGlobalDeckCached() = runTest {
+        val homeData = repository(decks = emptyList()).observeHomeData().first()
 
-        val homeData = repository.observeHomeData().first()
+        assertTrue(homeData.none { it.button?.action is HomeButtonAction.NavigateToPractice })
+        assertEquals(HomeButtonAction.CreateNewFlashcardSet, homeData.first().button?.action)
+    }
+
+    @Test
+    fun observeHomeData_prependsActivePracticeSessions() = runTest {
+        val homeData = repository(
+            sessions = listOf(PracticeSession(id = 12L, deckId = 1L, deckTitle = "Spanish basics")),
+        ).observeHomeData().first()
 
         assertEquals("Continue Spanish basics", homeData.first().title)
         assertEquals("Continue", homeData.first().button?.message)
         assertEquals(HomeButtonAction.ContinuePractice(12L), homeData.first().button?.action)
     }
 
+    private companion object {
+        val GLOBAL_DECK =
+            FlashcardDeck(id = 5L, title = "Flags of the World", flashcards = emptyList(), isEditable = false)
+    }
+
     private object FakeHomeFeedStrings : HomeFeedStrings {
         override fun continuePracticeTitle(deckTitle: String) = "Continue $deckTitle"
         override val continuePracticeButton = "Continue"
-        override val practiceCountryFlagsTitle = "Country flags"
-        override val practiceCountryFlagsButton = "Practice"
+        override fun practiceDeckTitle(deckTitle: String) = "Practice $deckTitle"
+        override val practiceButton = "Practice"
         override val createNewSetTitle = "Create a set"
         override val createNewSetButton = "Create"
+    }
+
+    private class FakeFlashcardRepository(private val decks: List<FlashcardDeck>) : FlashcardRepository {
+        override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(decks)
+        override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> =
+            flowOf(decks.firstOrNull { it.id == deckId })
+        override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
+        override suspend fun updateFlashcardDeck(deck: FlashcardDeck) = Unit
+        override suspend fun deleteFlashcardDeck(deckId: Long) = Unit
     }
 
     private class FakePracticeSessionRepository(private val activeSessions: List<PracticeSession>) :

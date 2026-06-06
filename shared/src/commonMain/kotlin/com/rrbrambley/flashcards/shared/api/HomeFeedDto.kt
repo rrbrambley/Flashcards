@@ -13,7 +13,7 @@ data class HomeButtonDto(val message: String, val action: HomeButtonActionDto)
 sealed interface HomeButtonActionDto {
     @Serializable
     @SerialName("navigate_to_practice")
-    data object NavigateToPractice : HomeButtonActionDto
+    data class NavigateToPractice(val deckId: Long) : HomeButtonActionDto
 
     @Serializable
     @SerialName("create_new_flashcard_set")

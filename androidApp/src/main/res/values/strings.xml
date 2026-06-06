@@ -20,8 +20,8 @@
     <!-- Home feed offline-fallback copy (the primary feed comes from the backend). -->
     <string name="home_continue_practice_title">Continue %1$s practice</string>
     <string name="home_continue_practice_button">Continue practice</string>
-    <string name="home_country_flags_title">Practice the flags of the world</string>
-    <string name="home_country_flags_button">Practice</string>
+    <string name="home_practice_deck_title">Practice %1$s</string>
+    <string name="home_practice_button">Practice</string>
     <string name="home_create_set_title">Create a new flashcard set</string>
     <string name="home_create_set_button">Create</string>
 

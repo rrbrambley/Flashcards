@@ -32,6 +32,7 @@ fun buildFlashcardSdk(
     database: FlashcardsDatabase,
     homeFeedStrings: HomeFeedStrings = DefaultHomeFeedStrings,
 ): FlashcardSdk {
+    val flashcardRepository = FlashcardRepositoryImpl(apiClient, database.flashcardDao())
     val practiceSessionRepository = PracticeSessionRepositoryImpl(
         apiClient,
         database.practiceSessionDao(),
@@ -39,8 +40,13 @@ fun buildFlashcardSdk(
     )
     return FlashcardSdk(
         apiClient = apiClient,
-        flashcardRepository = FlashcardRepositoryImpl(apiClient, database.flashcardDao()),
+        flashcardRepository = flashcardRepository,
         practiceSessionRepository = practiceSessionRepository,
-        homeRepository = HomeRepositoryImpl(apiClient, practiceSessionRepository, homeFeedStrings),
+        homeRepository = HomeRepositoryImpl(
+            apiClient,
+            flashcardRepository,
+            practiceSessionRepository,
+            homeFeedStrings,
+        ),
     )
 }

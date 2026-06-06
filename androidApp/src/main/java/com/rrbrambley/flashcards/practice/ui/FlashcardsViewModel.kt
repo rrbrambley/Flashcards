@@ -29,19 +29,26 @@ class FlashcardsViewModel @Inject constructor(
     private var currentFlashcardIndex = 0
     private var flashcards: List<Flashcard> = emptyList()
     private var loadJob: Job? = null
+    private var loadedKey: Pair<Long?, Long?>? = null
 
-    fun loadSession(sessionId: Long?) {
-        if (this.sessionId == sessionId && loadJob != null) return
-
-        this.sessionId = sessionId
+    /**
+     * Practices an existing [sessionId], or — given a [deckId] (the Home "Practice" action) —
+     * starts/resumes a session for that deck (parity with the Library practice flow + iOS).
+     */
+    fun load(sessionId: Long?, deckId: Long?) {
+        if (loadedKey == (sessionId to deckId) && loadJob != null) return
+        loadedKey = sessionId to deckId
         loadJob?.cancel()
         _uiState.update { FlashcardsUiState.Loading }
 
         loadJob = viewModelScope.launch {
-            if (sessionId == null) {
-                loadDefaultFlashcards()
+            val resolvedSessionId = sessionId
+                ?: deckId?.let { runCatching { practiceSessionRepository.startOrResumeSession(it) }.getOrNull() }
+            this@FlashcardsViewModel.sessionId = resolvedSessionId
+            if (resolvedSessionId == null) {
+                _uiState.update { FlashcardsUiState.LoadingFailed }
             } else {
-                loadPracticeSession(sessionId)
+                loadPracticeSession(resolvedSessionId)
             }
         }
     }
@@ -62,15 +69,6 @@ class FlashcardsViewModel @Inject constructor(
 
     fun goForward() {
         goToNextCard()
-    }
-
-    private suspend fun loadDefaultFlashcards() {
-        val cards = flashcardRepository.getFlashcards().first()
-        flashcards = cards
-        currentFlashcardIndex = 0
-        numCorrect = 0
-        numIncorrect = 0
-        updateUiState()
     }
 
     private suspend fun loadPracticeSession(sessionId: Long) {

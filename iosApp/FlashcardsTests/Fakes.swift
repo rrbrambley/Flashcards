@@ -30,7 +30,6 @@ func makeSession(
 final class FakeFlashcardRepository: FlashcardRepository {
     var decks: [FlashcardDeck] = []
     var deck: FlashcardDeck?
-    var flashcards: [Flashcard] = []
     var saveError: Error?
     var deleteError: Error?
 
@@ -38,7 +37,6 @@ final class FakeFlashcardRepository: FlashcardRepository {
     private(set) var updatedDeck: FlashcardDeck?
     private(set) var deletedDeckId: Int64?
 
-    func getFlashcards() async throws -> any Kotlinx_coroutines_coreFlow { FlowTestSupportKt.oneShotFlow(value: flashcards) }
     func observeFlashcardDecks() -> any Kotlinx_coroutines_coreFlow { FlowTestSupportKt.oneShotFlow(value: decks) }
     func observeFlashcardDeck(deckId: Int64) -> any Kotlinx_coroutines_coreFlow { FlowTestSupportKt.oneShotFlow(value: deck) }
 

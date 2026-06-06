@@ -11,6 +11,7 @@ import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
+import com.rrbrambley.flashcards.shared.api.HomeButtonActionDto
 import com.rrbrambley.flashcards.shared.api.HomeDataDto
 import com.rrbrambley.flashcards.shared.api.ImageUploadResponse
 import com.rrbrambley.flashcards.shared.api.LoginRequest
@@ -47,6 +48,7 @@ import org.testcontainers.utility.DockerImageName
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -483,11 +485,15 @@ class ApplicationFlowTest {
         assertTrue(activeAfter.isEmpty())
 
         val homeAfter = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
-        assertEquals(2, homeAfter.size) // only the 2 static items
+        assertEquals(2, homeAfter.size) // practice (featured global deck) + create
         assertEquals(
-            listOf("Practice the flags of the world", "Create a new flashcard set"),
+            listOf("Practice Flags of the World", "Create a new flashcard set"),
             homeAfter.map { it.title },
         )
+        // The "Practice" item carries the featured global deck's id (resolved from the DB).
+        val practiceAction = homeAfter.first().button?.action
+        assertIs<HomeButtonActionDto.NavigateToPractice>(practiceAction)
+        assertTrue(practiceAction.deckId > 0)
     }
 
     @Test

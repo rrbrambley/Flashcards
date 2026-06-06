@@ -46,7 +46,8 @@ object RepositoryModule {
     @Provides
     fun provideHomeRepository(
         apiClient: FlashcardApiClient,
+        flashcardRepository: FlashcardRepository,
         practiceSessionRepository: PracticeSessionRepository,
         homeFeedStrings: HomeFeedStrings,
-    ): HomeRepository = HomeRepositoryImpl(apiClient, practiceSessionRepository, homeFeedStrings)
+    ): HomeRepository = HomeRepositoryImpl(apiClient, flashcardRepository, practiceSessionRepository, homeFeedStrings)
 }

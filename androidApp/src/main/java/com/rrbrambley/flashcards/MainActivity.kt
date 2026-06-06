@@ -217,8 +217,10 @@ private fun HomeScaffolding(
                 BottomDestination.Home -> HomeScreen(
                     onButtonAction = { action ->
                         when (action) {
-                            HomeButtonAction.NavigateToPractice -> {
-                                val intent = Intent(context, FlashcardsActivity::class.java)
+                            is HomeButtonAction.NavigateToPractice -> {
+                                val intent = Intent(context, FlashcardsActivity::class.java).apply {
+                                    putExtra(FlashcardsActivity.DECK_ID_EXTRA, action.deckId)
+                                }
                                 context.startActivity(intent)
                             }
                             HomeButtonAction.CreateNewFlashcardSet -> {
