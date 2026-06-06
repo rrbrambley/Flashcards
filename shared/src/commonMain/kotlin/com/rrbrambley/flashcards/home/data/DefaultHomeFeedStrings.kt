@@ -10,7 +10,7 @@ import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 object DefaultHomeFeedStrings : HomeFeedStrings {
     override fun continuePracticeTitle(deckTitle: String): String = "Continue $deckTitle practice"
     override val continuePracticeButton: String = "Continue practice"
-    override val practiceCountryFlagsTitle: String = "Practice identifying country flags"
+    override val practiceCountryFlagsTitle: String = "Practice the flags of the world"
     override val practiceCountryFlagsButton: String = "Practice"
     override val createNewSetTitle: String = "Create a new flashcard set"
     override val createNewSetButton: String = "Create"
