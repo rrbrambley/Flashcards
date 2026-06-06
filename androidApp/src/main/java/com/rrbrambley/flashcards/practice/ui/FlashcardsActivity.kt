@@ -12,11 +12,13 @@ class FlashcardsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val sessionId = intent.getLongExtra(SESSION_ID_EXTRA, MISSING_SESSION_ID).takeIf { it != MISSING_SESSION_ID }
+        val sessionId = intent.getLongExtra(SESSION_ID_EXTRA, MISSING_ID).takeIf { it != MISSING_ID }
+        val deckId = intent.getLongExtra(DECK_ID_EXTRA, MISSING_ID).takeIf { it != MISSING_ID }
         setContent {
             FlashcardsTheme {
                 FlashcardsScreen(
                     sessionId = sessionId,
+                    deckId = deckId,
                     onBack = ::finish,
                 )
             }
@@ -25,6 +27,9 @@ class FlashcardsActivity : ComponentActivity() {
 
     companion object {
         const val SESSION_ID_EXTRA = "session_id"
-        private const val MISSING_SESSION_ID = -1L
+
+        /** Start/resume a session for this deck (the Home "Practice" action). */
+        const val DECK_ID_EXTRA = "deck_id"
+        private const val MISSING_ID = -1L
     }
 }

@@ -45,10 +45,10 @@ class HomeViewModelTest {
     fun uiState_showsHomeDataFromRepository() = runTest(testDispatcher) {
         val homeData = listOf(
             HomeData(
-                title = "Practice the flags of the world",
+                title = "Practice Flags of the World",
                 button = HomeButton(
                     message = "Practice",
-                    action = HomeButtonAction.NavigateToPractice,
+                    action = HomeButtonAction.NavigateToPractice(deckId = 1),
                 ),
             ),
         )

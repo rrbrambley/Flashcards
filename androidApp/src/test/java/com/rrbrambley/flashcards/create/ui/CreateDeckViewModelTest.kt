@@ -95,8 +95,6 @@ class CreateDeckViewModelTest {
     private class FakeFlashcardRepository : FlashcardRepository {
         var savedDeck: FlashcardDeck? = null
 
-        override suspend fun getFlashcards(): Flow<List<Flashcard>> = flowOf(emptyList())
-
         override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(emptyList())
 
         override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(null)

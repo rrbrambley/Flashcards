@@ -65,11 +65,12 @@ import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 @Composable
 fun FlashcardsScreen(
     sessionId: Long? = null,
+    deckId: Long? = null,
     flashcardsViewModel: FlashcardsViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
 ) {
-    LaunchedEffect(sessionId) {
-        flashcardsViewModel.loadSession(sessionId)
+    LaunchedEffect(sessionId, deckId) {
+        flashcardsViewModel.load(sessionId, deckId)
     }
     val flashcardsState by flashcardsViewModel.uiState.collectAsState()
     val showHelpDialog = remember { mutableStateOf(false) }

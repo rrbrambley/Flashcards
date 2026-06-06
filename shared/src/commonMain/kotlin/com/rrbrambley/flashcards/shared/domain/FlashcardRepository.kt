@@ -3,7 +3,6 @@ package com.rrbrambley.flashcards.shared.domain
 import kotlinx.coroutines.flow.Flow
 
 interface FlashcardRepository {
-    suspend fun getFlashcards(): Flow<List<Flashcard>>
     fun observeFlashcardDecks(): Flow<List<FlashcardDeck>>
     fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?>
 

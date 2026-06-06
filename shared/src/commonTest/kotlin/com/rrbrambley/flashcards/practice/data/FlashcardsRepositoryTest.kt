@@ -126,23 +126,6 @@ class FlashcardsRepositoryTest {
         assertTrue(dao.observeDecks().first().isEmpty())
     }
 
-    @Test
-    fun getFlashcards_prefersTheCountryFlagsDeck() = runWithDao { dao ->
-        val engine = mockEngine(
-            HttpMethod.Get to "/decks" to json(
-                pageJson(
-                    deckJson(1, "Spanish basics", "Hola" to "Hello"),
-                    deckJson(2, "Flags of the World", "Canada flag" to "Canada"),
-                ),
-            ),
-        )
-        val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
-
-        val flashcards = repository.getFlashcards().first()
-
-        assertEquals(listOf("Canada"), flashcards.map { it.answer })
-    }
-
     // --- Helpers ---
 
     /** Runs the test body with a fresh in-memory DAO. */

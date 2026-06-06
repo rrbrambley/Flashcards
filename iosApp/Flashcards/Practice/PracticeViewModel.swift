@@ -11,18 +11,16 @@ enum PracticeState {
 
 /// How a practice run is launched.
 enum PracticeEntry {
-    /// Start or resume a session for a deck (Library "Practice").
+    /// Start or resume a session for a deck (Library "Practice" + the Home "Practice" action).
     case deck(Int64)
     /// Resume an existing session (Home "Continue practice").
     case session(Int64)
-    /// The global Flags of the World cards, with no session (Home "Practice the flags of the world").
-    case defaultFlashcards
 }
 
 /// Drives a practice run: starts-or-resumes (or restores) a session, restores progress, and
 /// persists each step (current card index + correct/incorrect) through the shared
-/// `PracticeSessionRepository` (offline-first → syncs to the backend). The default-flashcards entry
-/// has no session, so it isn't persisted. Swipe right = correct, left = needs practice.
+/// `PracticeSessionRepository` (offline-first → syncs to the backend).
+/// Swipe right = correct, left = needs practice.
 @MainActor
 final class PracticeViewModel: ObservableObject {
     @Published private(set) var state: PracticeState = .loading
@@ -57,17 +55,6 @@ final class PracticeViewModel: ObservableObject {
             sessionId = sid
             guard let deckId = await restoreFromSession() else { state = .failed; return }
             await loadDeckCards(deckId: deckId)
-        case .defaultFlashcards:
-            guard let adapter = try? await BridgingKt.defaultFlashcardsAdapter(flashcardRepository) else {
-                state = .failed
-                return
-            }
-            for await cards in asyncStream(adapter) {
-                self.cards = (cards as? [Flashcard]) ?? []
-                break
-            }
-            guard !cards.isEmpty else { state = .failed; return }
-            updateState()
         }
     }
 

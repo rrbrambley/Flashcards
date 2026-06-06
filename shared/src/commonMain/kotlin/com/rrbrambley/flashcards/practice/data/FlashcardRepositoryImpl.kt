@@ -3,7 +3,6 @@ package com.rrbrambley.flashcards.practice.data
 import com.rrbrambley.flashcards.data.mapping.toCreateRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
-import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import kotlinx.coroutines.flow.Flow
@@ -17,16 +16,6 @@ import kotlinx.coroutines.flow.map
  */
 class FlashcardRepositoryImpl(private val apiClient: FlashcardApiClient, private val flashcardDao: FlashcardDao) :
     FlashcardRepository {
-
-    override suspend fun getFlashcards(): Flow<List<Flashcard>> = flow {
-        runCatching { refreshDecks() }
-        emitAll(
-            flashcardDao.observeDecks().map { decks ->
-                val target = decks.firstOrNull { it.deck.title == COUNTRY_FLAGS_TITLE } ?: decks.firstOrNull()
-                target?.flashcards?.map { Flashcard(it.question, it.answer, it.imageUrl) }.orEmpty()
-            },
-        )
-    }
 
     override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flow {
         runCatching { refreshDecks() }
@@ -63,11 +52,5 @@ class FlashcardRepositoryImpl(private val apiClient: FlashcardApiClient, private
 
     private suspend fun cache(dto: FlashcardDeckDto) {
         flashcardDao.cacheDeck(dto.toDeckEntity(), dto.toFlashcardEntities())
-    }
-
-    private companion object {
-        // The seeded, globally-shared deck practiced from the "Practice" home action (the backend
-        // seeds it under this title — see DatabaseFactory.FLAGS_TITLE).
-        const val COUNTRY_FLAGS_TITLE = "Flags of the World"
     }
 }

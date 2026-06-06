@@ -15,11 +15,11 @@ class AndroidHomeFeedStrings @Inject constructor(
     override val continuePracticeButton: String
         get() = stringProvider.getString(R.string.home_continue_practice_button)
 
-    override val practiceCountryFlagsTitle: String
-        get() = stringProvider.getString(R.string.home_country_flags_title)
+    override fun practiceDeckTitle(deckTitle: String): String =
+        stringProvider.getString(R.string.home_practice_deck_title, deckTitle)
 
-    override val practiceCountryFlagsButton: String
-        get() = stringProvider.getString(R.string.home_country_flags_button)
+    override val practiceButton: String
+        get() = stringProvider.getString(R.string.home_practice_button)
 
     override val createNewSetTitle: String
         get() = stringProvider.getString(R.string.home_create_set_title)

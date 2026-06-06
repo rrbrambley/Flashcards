@@ -41,7 +41,7 @@ fun HomeDataDto.toDomain(): HomeData = HomeData(title = title, button = button?.
 private fun HomeButtonDto.toDomain(): HomeButton = HomeButton(message = message, action = action.toDomain())
 
 private fun HomeButtonActionDto.toDomain(): HomeButtonAction = when (this) {
-    HomeButtonActionDto.NavigateToPractice -> HomeButtonAction.NavigateToPractice
+    is HomeButtonActionDto.NavigateToPractice -> HomeButtonAction.NavigateToPractice(deckId)
     HomeButtonActionDto.CreateNewFlashcardSet -> HomeButtonAction.CreateNewFlashcardSet
     is HomeButtonActionDto.ContinuePractice -> HomeButtonAction.ContinuePractice(sessionId)
 }

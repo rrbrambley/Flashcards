@@ -8,8 +8,8 @@ package com.rrbrambley.flashcards.shared.domain
 interface HomeFeedStrings {
     fun continuePracticeTitle(deckTitle: String): String
     val continuePracticeButton: String
-    val practiceCountryFlagsTitle: String
-    val practiceCountryFlagsButton: String
+    fun practiceDeckTitle(deckTitle: String): String
+    val practiceButton: String
     val createNewSetTitle: String
     val createNewSetButton: String
 }

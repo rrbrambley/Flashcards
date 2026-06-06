@@ -3,9 +3,11 @@ package com.rrbrambley.flashcards.shared.domain
 data class HomeData(val title: String, val button: HomeButton? = null)
 
 sealed interface HomeButtonAction {
-    data object NavigateToPractice : HomeButtonAction
+    /** Practice a specific deck (the backend/offline layer resolves which one — e.g. the global
+     *  catalog deck — so clients never match on a hardcoded title). */
+    data class NavigateToPractice(val deckId: Long) : HomeButtonAction
     data object CreateNewFlashcardSet : HomeButtonAction
     data class ContinuePractice(val sessionId: Long) : HomeButtonAction
 }
 
-data class HomeButton(val message: String, val action: HomeButtonAction = HomeButtonAction.NavigateToPractice)
+data class HomeButton(val message: String, val action: HomeButtonAction)

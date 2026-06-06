@@ -150,7 +150,10 @@ private fun HomeCardPreview() {
         HomeCard(
             card = HomeData(
                 title = "Practice your flashcards",
-                button = HomeButton(message = "Start practice"),
+                button = HomeButton(
+                    message = "Start practice",
+                    action = HomeButtonAction.NavigateToPractice(deckId = 1),
+                ),
             ),
         )
     }
