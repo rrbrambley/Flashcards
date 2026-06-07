@@ -173,6 +173,7 @@ class PracticeSessionRepositoryTest {
         override suspend fun insertFlashcards(flashcards: List<FlashcardEntity>) = Unit
         override suspend fun deleteFlashcardsForDeck(deckId: Long) = Unit
         override suspend fun deleteDeck(deckId: Long) = Unit
+        override suspend fun deleteAllDecks() = decks.clear()
     }
 
     private class FakePracticeSessionDao(private val decks: Map<Long, FlashcardDeckEntity>) : PracticeSessionDao {
@@ -193,6 +194,10 @@ class PracticeSessionRepositoryTest {
 
         override suspend fun upsertSession(session: PracticeSessionEntity) {
             sessions.value = sessions.value.filterNot { it.id == session.id } + session
+        }
+
+        override suspend fun deleteAllSessions() {
+            sessions.value = emptyList()
         }
 
         private fun PracticeSessionEntity.withDeck() = PracticeSessionWithDeck(this, decks.getValue(deckId))

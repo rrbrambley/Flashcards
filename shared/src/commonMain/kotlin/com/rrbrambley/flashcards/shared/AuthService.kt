@@ -7,6 +7,7 @@ import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import com.rrbrambley.flashcards.shared.api.TokenStore
+import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import kotlinx.coroutines.CancellationException
 
 /** Outcome of an auth attempt. Returned (not thrown) so Swift consumes it without bridging Kotlin
@@ -24,7 +25,11 @@ sealed class AuthResult {
  * iOS consumes this directly; Android still has its own `DefaultAuthRepository` (could adopt this
  * later — see FLA-56).
  */
-class AuthService(private val apiClient: FlashcardApiClient, private val tokenStore: TokenStore) {
+class AuthService(
+    private val apiClient: FlashcardApiClient,
+    private val tokenStore: TokenStore,
+    private val localDataStore: LocalDataStore,
+) {
     suspend fun login(email: String, password: String): AuthResult =
         authenticate({ apiClient.login(LoginRequest(email.trim(), password)) }) { error ->
             if (error is ApiError.Unauthorized) "Invalid email or password." else GENERIC_ERROR
@@ -50,7 +55,9 @@ class AuthService(private val apiClient: FlashcardApiClient, private val tokenSt
 
     /**
      * Ends the session. Best-effort server-side revoke of the refresh token (`POST /auth/logout`),
-     * then always clears the local tokens — so logout works offline and the gate returns to sign-in.
+     * then wipes the locally-cached data and always clears the local tokens — so the next account to
+     * sign in on this device never sees the previous user's decks, and logout works offline and the
+     * gate returns to sign-in.
      */
     suspend fun logout() {
         val refreshToken = tokenStore.currentRefreshToken()
@@ -60,10 +67,15 @@ class AuthService(private val apiClient: FlashcardApiClient, private val tokenSt
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Ignore: the local tokens are cleared below regardless.
+                // Ignore: the local session is cleared below regardless.
             }
         }
-        tokenStore.clearToken()
+        // Clear the token even if the cache wipe fails, so the user is always logged out.
+        try {
+            localDataStore.clearAll()
+        } finally {
+            tokenStore.clearToken()
+        }
     }
 
     private suspend fun authenticate(call: suspend () -> AuthResponse, messageFor: (ApiError) -> String): AuthResult =

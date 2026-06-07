@@ -209,5 +209,11 @@ class FlashcardsRepositoryTest {
             cards.removeAll { it.deckId == deckId }
             publish()
         }
+
+        override suspend fun deleteAllDecks() {
+            decks.clear()
+            cards.clear()
+            publish()
+        }
     }
 }

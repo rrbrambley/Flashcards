@@ -4,6 +4,7 @@ import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -147,11 +148,16 @@ class AuthRepositoryTest {
                     tokenProvider = { tokenStore.currentToken() },
                 ),
                 tokenStore = tokenStore,
+                localDataStore = FakeLocalDataStore(),
             ),
         )
 
     private fun jsonEngine(status: HttpStatusCode, body: String = "{}") = MockEngine {
         respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
+    }
+
+    private class FakeLocalDataStore : LocalDataStore {
+        override suspend fun clearAll() = Unit
     }
 
     private class FakeTokenStore : TokenStore {
