@@ -23,4 +23,8 @@ interface PracticeSessionDao {
     /** Caches a backend session under its backend id (in-place update, no cascade). */
     @Upsert
     suspend fun upsertSession(session: PracticeSessionEntity)
+
+    /** Clears every cached practice session (e.g. on logout). */
+    @Query("DELETE FROM practice_sessions")
+    suspend fun deleteAllSessions()
 }

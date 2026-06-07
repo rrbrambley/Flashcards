@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.shared
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -13,8 +14,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Covers the auth → token-store integration the iOS app relies on (runs on the JVM in CI and on the
@@ -25,13 +28,17 @@ class AuthServiceTest {
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
-    private fun service(store: TokenStore, engine: MockEngine): AuthService {
+    private fun service(
+        store: TokenStore,
+        engine: MockEngine,
+        localDataStore: LocalDataStore = FakeLocalDataStore(),
+    ): AuthService {
         val client = FlashcardApiClient(
             createFlashcardHttpClient(engine),
             baseUrl = "http://localhost",
             tokenProvider = { null },
         )
-        return AuthService(client, store)
+        return AuthService(client, store, localDataStore)
     }
 
     @Test
@@ -116,35 +123,69 @@ class AuthServiceTest {
     }
 
     @Test
-    fun logoutRevokesAndClearsTokens() = runTest {
+    fun logoutRevokesClearsTokensAndWipesLocalData() = runTest {
         val store = FakeTokenStore()
         store.setTokens("access-1", "refresh-1")
+        val localData = FakeLocalDataStore()
         var loggedOutPath: String? = null
         val engine = MockEngine { request ->
             loggedOutPath = request.url.encodedPath
             respond("", HttpStatusCode.NoContent)
         }
 
-        service(store, engine).logout()
+        service(store, engine, localData).logout()
 
         assertEquals("/auth/logout", loggedOutPath)
         assertNull(store.currentToken())
         assertNull(store.currentRefreshToken())
+        // The cache is wiped so the next account to sign in starts clean (FLA-63).
+        assertTrue(localData.cleared)
     }
 
     @Test
-    fun logoutClearsTokensEvenWhenServerFails() = runTest {
+    fun logoutClearsTokensAndLocalDataEvenWhenServerFails() = runTest {
         val store = FakeTokenStore()
         store.setTokens("access-1", "refresh-1")
+        val localData = FakeLocalDataStore()
         val engine = MockEngine {
             respond("""{"error":"server"}""", HttpStatusCode.InternalServerError, jsonHeaders)
         }
 
-        service(store, engine).logout()
+        service(store, engine, localData).logout()
 
-        // Best-effort revoke: the local session is ended regardless of the server response.
+        // Best-effort revoke: the local session + cache are cleared regardless of the server response.
         assertNull(store.currentToken())
         assertNull(store.currentRefreshToken())
+        assertTrue(localData.cleared)
+    }
+
+    @Test
+    fun logoutClearsTokenEvenWhenCacheWipeFails() = runTest {
+        val store = FakeTokenStore()
+        store.setTokens("access-1", "refresh-1")
+        val localData = FakeLocalDataStore(failOnClear = true)
+        val engine = MockEngine { respond("", HttpStatusCode.NoContent) }
+
+        var threw = false
+        try {
+            service(store, engine, localData).logout()
+        } catch (e: IllegalStateException) {
+            threw = true
+        }
+
+        // The user is logged out (token cleared) even though the cache wipe failed and surfaced.
+        assertTrue(threw)
+        assertFalse(localData.cleared)
+        assertNull(store.currentToken())
+        assertNull(store.currentRefreshToken())
+    }
+
+    private class FakeLocalDataStore(private val failOnClear: Boolean = false) : LocalDataStore {
+        var cleared = false
+        override suspend fun clearAll() {
+            if (failOnClear) error("cache wipe failed")
+            cleared = true
+        }
     }
 
     private class FakeTokenStore : TokenStore {

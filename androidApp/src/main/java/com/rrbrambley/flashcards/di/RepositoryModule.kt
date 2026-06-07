@@ -3,14 +3,17 @@ package com.rrbrambley.flashcards.di
 import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardDao
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
+import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
 import com.rrbrambley.flashcards.practice.data.PracticeSessionDao
 import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
+import com.rrbrambley.flashcards.practice.data.RoomLocalDataStore
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import dagger.Module
 import dagger.Provides
@@ -25,10 +28,14 @@ import dagger.hilt.components.SingletonComponent
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
     @Provides
+    fun provideLocalDataStore(database: FlashcardsDatabase): LocalDataStore = RoomLocalDataStore(database)
+
+    @Provides
     fun provideAuthService(
         apiClient: FlashcardApiClient,
         tokenStore: TokenStore,
-    ): AuthService = AuthService(apiClient, tokenStore)
+        localDataStore: LocalDataStore,
+    ): AuthService = AuthService(apiClient, tokenStore, localDataStore)
 
     @Provides
     fun provideFlashcardRepository(

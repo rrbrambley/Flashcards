@@ -28,6 +28,10 @@ final class AppContainer: ObservableObject {
             homeFeedStrings: DefaultHomeFeedStrings.shared
         )
         self.sdk = sdk
-        self.authService = AuthService(apiClient: sdk.apiClient, tokenStore: tokenStore)
+        self.authService = AuthService(
+            apiClient: sdk.apiClient,
+            tokenStore: tokenStore,
+            localDataStore: sdk.localDataStore
+        )
     }
 }

@@ -5,10 +5,12 @@ import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
 import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
+import com.rrbrambley.flashcards.practice.data.RoomLocalDataStore
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 
 /**
@@ -21,6 +23,7 @@ class FlashcardSdk(
     val flashcardRepository: FlashcardRepository,
     val practiceSessionRepository: PracticeSessionRepository,
     val homeRepository: HomeRepository,
+    val localDataStore: LocalDataStore,
 )
 
 /**
@@ -48,5 +51,6 @@ fun buildFlashcardSdk(
             practiceSessionRepository,
             homeFeedStrings,
         ),
+        localDataStore = RoomLocalDataStore(database),
     )
 }

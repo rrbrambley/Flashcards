@@ -36,6 +36,10 @@ interface FlashcardDao {
     @Query("DELETE FROM flashcard_decks WHERE id = :deckId")
     suspend fun deleteDeck(deckId: Long)
 
+    // Clears every cached deck; SQLite FK cascade removes all flashcards and practice sessions too.
+    @Query("DELETE FROM flashcard_decks")
+    suspend fun deleteAllDecks()
+
     /** Caches a backend deck (and its cards) under its backend id. */
     @Transaction
     suspend fun cacheDeck(deck: FlashcardDeckEntity, flashcards: List<FlashcardEntity>) {
