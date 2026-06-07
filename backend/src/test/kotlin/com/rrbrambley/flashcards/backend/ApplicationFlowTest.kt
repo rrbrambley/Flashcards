@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.backend
 
+import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
 import com.rrbrambley.flashcards.backend.auth.TokenService
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
@@ -175,6 +176,72 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(GoogleAuthRequest("any-token")))
         }
         assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+    }
+
+    /** Runs [block] with a fake Google verifier installed, then restores the unconfigured default. */
+    private inline fun withGoogleVerification(verification: GoogleTokenVerifier.Verification, block: () -> Unit) {
+        GoogleTokenVerifier.verification = verification
+        try {
+            block()
+        } finally {
+            GoogleTokenVerifier.verification = null
+        }
+    }
+
+    @Test
+    fun google_signin_creates_user_issues_tokens_and_is_idempotent() = runApp { client ->
+        // Fake the verifier so the happy path runs without a real Google token / network call.
+        val verification = GoogleTokenVerifier.Verification { idToken ->
+            if (idToken == "good-google-token") {
+                GoogleTokenVerifier.GoogleIdentity("guser@example.com", emailVerified = true, sub = "google-sub-1")
+            } else {
+                null
+            }
+        }
+        withGoogleVerification(verification) {
+            val first = client.post("/auth/google") {
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(GoogleAuthRequest("good-google-token")))
+            }
+            assertEquals(HttpStatusCode.OK, first.status)
+            val auth = first.decode<AuthResponse>()
+            assertTrue(auth.accessToken.isNotBlank())
+            assertTrue(auth.refreshToken.isNotBlank())
+            // The issued access token authenticates subsequent requests.
+            assertEquals(HttpStatusCode.OK, client.get("/decks") { bearerAuth(auth.accessToken) }.status)
+
+            // Signing in again with the same Google identity resolves the same user (upsert by email).
+            val again = client.post("/auth/google") {
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(GoogleAuthRequest("good-google-token")))
+            }.decode<AuthResponse>()
+            assertEquals(auth.userId, again.userId)
+        }
+    }
+
+    @Test
+    fun google_signin_with_invalid_token_is_unauthorized() = runApp { client ->
+        withGoogleVerification(GoogleTokenVerifier.Verification { null }) {
+            val response = client.post("/auth/google") {
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(GoogleAuthRequest("bad-token")))
+            }
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
+        }
+    }
+
+    @Test
+    fun google_signin_with_unverified_email_is_unauthorized() = runApp { client ->
+        val verification = GoogleTokenVerifier.Verification {
+            GoogleTokenVerifier.GoogleIdentity("unverified@example.com", emailVerified = false, sub = "google-sub-2")
+        }
+        withGoogleVerification(verification) {
+            val response = client.post("/auth/google") {
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(GoogleAuthRequest("any-token")))
+            }
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
+        }
     }
 
     @Test

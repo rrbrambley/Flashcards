@@ -18,29 +18,39 @@ object GoogleTokenVerifier {
 
     data class GoogleIdentity(val email: String, val emailVerified: Boolean, val sub: String)
 
-    @Volatile
-    private var verifier: GoogleIdTokenVerifier? = null
-
-    val isConfigured: Boolean get() = verifier != null
-
-    fun configure(vararg clientIds: String?) {
-        val audiences = clientIds.filterNot { it.isNullOrBlank() }
-        verifier = audiences.takeIf { it.isNotEmpty() }?.let {
-            GoogleIdTokenVerifier.Builder(NetHttpTransport(), GsonFactory.getDefaultInstance())
-                .setAudience(it)
-                .build()
-        }
+    /**
+     * Turns a Google ID token into a verified identity, or null if it's invalid/expired. The real
+     * implementation wraps the google-api-client verifier; tests swap in a fake (mirrors
+     * [com.rrbrambley.flashcards.backend.storage.Storage]).
+     */
+    fun interface Verification {
+        fun verify(idToken: String): GoogleIdentity?
     }
 
-    /** Returns the verified identity, or null if the token is invalid/expired. */
-    fun verify(idToken: String): GoogleIdentity? {
-        val activeVerifier = verifier ?: return null
-        val token = runCatching { activeVerifier.verify(idToken) }.getOrNull() ?: return null
-        val payload = token.payload
-        return GoogleIdentity(
-            email = payload.email,
-            emailVerified = payload.emailVerified == true,
-            sub = payload.subject,
-        )
+    @Volatile
+    var verification: Verification? = null
+
+    val isConfigured: Boolean get() = verification != null
+
+    fun configure(vararg clientIds: String?) {
+        val audiences = clientIds.filterNotNull().filter { it.isNotBlank() }
+        verification = audiences.takeIf { it.isNotEmpty() }?.let { googleVerification(it) }
+    }
+
+    /** Returns the verified identity, or null if Google sign-in is unconfigured or the token is invalid. */
+    fun verify(idToken: String): GoogleIdentity? = verification?.verify(idToken)
+
+    private fun googleVerification(audiences: List<String>): Verification {
+        val verifier = GoogleIdTokenVerifier.Builder(NetHttpTransport(), GsonFactory.getDefaultInstance())
+            .setAudience(audiences)
+            .build()
+        return Verification { idToken ->
+            val token = runCatching { verifier.verify(idToken) }.getOrNull() ?: return@Verification null
+            val payload = token.payload
+            // Treat a token missing email/sub as invalid (clean 401) rather than NPE-ing into a 500.
+            val email = payload.email ?: return@Verification null
+            val sub = payload.subject ?: return@Verification null
+            GoogleIdentity(email = email, emailVerified = payload.emailVerified == true, sub = sub)
+        }
     }
 }
