@@ -355,7 +355,10 @@ class ApplicationFlowTest {
     @Test
     fun decks_paginate_with_a_stable_cursor() = runApp { client ->
         val auth = client.register("paula", "password1")
-        // Create 4 decks; with the seeded global Flags of the World deck that's 5 visible decks.
+        // The seeded global catalog decks are visible to every user; count them as the baseline.
+        val baseline = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.size
+        // Create 4 user decks on top of the global ones.
         repeat(4) { i ->
             client.post("/decks") {
                 bearerAuth(auth.accessToken)
@@ -363,6 +366,7 @@ class ApplicationFlowTest {
                 setBody(json.encodeToString(CreateDeckRequest("Deck $i", listOf(FlashcardDto("Q", "A")))))
             }
         }
+        val total = baseline + 4
 
         val seen = mutableListOf<Long>()
         var cursor: String? = null
@@ -379,11 +383,37 @@ class ApplicationFlowTest {
             pages++
         } while (cursor != null)
 
-        // 5 decks at page size 2 => 3 pages (2 + 2 + 1), no duplicates, stable descending-id order.
-        assertEquals(3, pages)
-        assertEquals(5, seen.size)
+        // At page size 2: ceil(total / 2) pages, no duplicates, stable descending-id order.
+        assertEquals((total + 1) / 2, pages)
+        assertEquals(total, seen.size)
         assertEquals(seen.distinct(), seen)
         assertEquals(seen.sortedDescending(), seen)
+    }
+
+    @Test
+    fun decks_returns_the_seeded_text_only_global_decks() = runApp { client ->
+        val auth = client.register("trivia", "password1")
+        val decks = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items
+
+        // National Capitals, U.S. State Capitals, World Currencies: ownerless, read-only, text-only.
+        val stateCapitals = decks.single { it.title == "U.S. State Capitals" }
+        assertEquals(50, stateCapitals.flashcards.size)
+        assertFalse(stateCapitals.editable)
+        assertEquals("California", stateCapitals.flashcards.single { it.answer == "Sacramento" }.question)
+
+        val capitals = decks.single { it.title == "National Capitals" }
+        assertTrue(capitals.flashcards.size >= 190)
+        assertEquals("Tokyo", capitals.flashcards.single { it.question == "Japan" }.answer)
+
+        val currencies = decks.single { it.title == "World Currencies" }
+        assertTrue(currencies.flashcards.size >= 190)
+
+        // All three are text-only: a non-empty front and back, no images.
+        for (deck in listOf(stateCapitals, capitals, currencies)) {
+            assertTrue(deck.flashcards.all { it.question.isNotBlank() && it.answer.isNotBlank() })
+            assertTrue(deck.flashcards.all { it.imageUrl == null })
+        }
     }
 
     @Test
@@ -452,8 +482,9 @@ class ApplicationFlowTest {
     @Test
     fun progress_then_complete_updates_state_and_home_feed() = runApp { client ->
         val auth = client.register("erin", "password1")
-        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
-            .decode<Page<FlashcardDeckDto>>().items.first().id
+        // Practice the featured global deck (Flags) so the continue + featured-practice items match.
+        val deckId = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.single { it.title == "Flags of the World" }.id
         val session = client.createSession(auth.accessToken, deckId)
 
         // PATCH progress

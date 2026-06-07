@@ -83,35 +83,54 @@ object DatabaseFactory {
             RefreshTokens.update({ RefreshTokens.token eq DEMO_TOKEN }) { it[rotatedAtMillis] = null }
         }
 
-        // Drop the legacy minimal test deck if it lingers from an older seed, then build the full
-        // Flags of the World catalog deck. Idempotent across restarts; rebuilt on a reset + reseed.
-        // (Deck deletes cascade to its flashcards + practice sessions — see Tables.kt.)
+        // Drop the legacy minimal test deck if it lingers from an older seed, then build the global
+        // catalog decks. Idempotent across restarts; rebuilt on a reset + reseed. (Deck deletes
+        // cascade to their flashcards + practice sessions — see Tables.kt.) Flags is seeded first so
+        // it stays the lowest-id global deck, which the home feed features.
         Decks.deleteWhere { (Decks.ownerUserId eq null) and (Decks.title eq LEGACY_FLAGS_TITLE) }
 
-        val hasFlagsDeck = Decks
+        seedGlobalDeck(now, FLAGS_TITLE, flagSeedCards())
+        seedGlobalDeck(
+            now,
+            NATIONAL_CAPITALS_TITLE,
+            textSeedCards("/seed/national-capitals.json", "country", "capital"),
+        )
+        seedGlobalDeck(now, US_STATE_CAPITALS_TITLE, textSeedCards("/seed/us-state-capitals.json", "state", "capital"))
+        seedGlobalDeck(now, WORLD_CURRENCIES_TITLE, textSeedCards("/seed/world-currencies.json", "country", "currency"))
+    }
+
+    /**
+     * Inserts a global (ownerless) catalog deck with [cards] under [title], unless a global deck with
+     * that title already exists. Guarded so restarts don't duplicate it; rebuilt on a reset + reseed.
+     */
+    private fun seedGlobalDeck(now: Long, title: String, cards: List<SeedCard>) {
+        val exists = Decks
             .selectAll()
-            .where { (Decks.ownerUserId eq null) and (Decks.title eq FLAGS_TITLE) }
+            .where { (Decks.ownerUserId eq null) and (Decks.title eq title) }
             .any()
-        if (!hasFlagsDeck) {
-            val deckId = Decks.insertAndGetId {
-                it[title] = FLAGS_TITLE
-                it[ownerUserId] = null
-                it[createdAtMillis] = now
-            }.value
-            flagSeedCards().forEachIndexed { index, card ->
-                Flashcards.insert {
-                    it[Flashcards.deckId] = deckId
-                    it[question] = card.question
-                    it[answer] = card.answer
-                    it[imageUrl] = card.imageUrl
-                    it[position] = index
-                }
+        if (exists) return
+
+        val deckId = Decks.insertAndGetId {
+            it[Decks.title] = title
+            it[ownerUserId] = null
+            it[createdAtMillis] = now
+        }.value
+        cards.forEachIndexed { index, card ->
+            Flashcards.insert {
+                it[Flashcards.deckId] = deckId
+                it[question] = card.question
+                it[answer] = card.answer
+                it[imageUrl] = card.imageUrl
+                it[position] = index
             }
         }
     }
 
-    /** Title of the seeded global catalog deck. Public so clients/tests can resolve it by name. */
+    /** Titles of the seeded global catalog decks. Public so clients/tests can resolve them by name. */
     const val FLAGS_TITLE = "Flags of the World"
+    const val NATIONAL_CAPITALS_TITLE = "National Capitals"
+    const val US_STATE_CAPITALS_TITLE = "U.S. State Capitals"
+    const val WORLD_CURRENCIES_TITLE = "World Currencies"
     private const val LEGACY_FLAGS_TITLE = "Country Flags"
 
     private data class SeedCard(val question: String, val answer: String, val imageUrl: String?)
@@ -132,6 +151,25 @@ object DatabaseFactory {
             val code = obj.getValue("code").jsonPrimitive.content
             val name = obj.getValue("name").jsonPrimitive.content
             SeedCard(question = "", answer = name, imageUrl = "https://flagcdn.com/$code.svg")
+        }
+    }
+
+    /**
+     * Builds text-only cards (no images) from a checked-in JSON array of objects under `seed/`, taking the
+     * [questionKey] field as the front and [answerKey] as the back. Used for the National Capitals,
+     * U.S. State Capitals, and World Currencies global decks.
+     */
+    private fun textSeedCards(resource: String, questionKey: String, answerKey: String): List<SeedCard> {
+        val text = DatabaseFactory::class.java.getResourceAsStream(resource)
+            ?.bufferedReader()?.use { it.readText() }
+            ?: error("Missing seed resource: $resource")
+        return Json.parseToJsonElement(text).jsonArray.map { element ->
+            val obj = element.jsonObject
+            SeedCard(
+                question = obj.getValue(questionKey).jsonPrimitive.content,
+                answer = obj.getValue(answerKey).jsonPrimitive.content,
+                imageUrl = null,
+            )
         }
     }
 }
