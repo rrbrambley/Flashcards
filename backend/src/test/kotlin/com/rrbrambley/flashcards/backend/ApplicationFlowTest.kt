@@ -5,6 +5,12 @@ import com.rrbrambley.flashcards.backend.auth.Permission
 import com.rrbrambley.flashcards.backend.auth.PermissionRepository
 import com.rrbrambley.flashcards.backend.auth.Role
 import com.rrbrambley.flashcards.backend.auth.TokenService
+import com.rrbrambley.flashcards.backend.cli.AdminArgs
+import com.rrbrambley.flashcards.backend.cli.AdminError
+import com.rrbrambley.flashcards.backend.cli.RoleGrantCommand
+import com.rrbrambley.flashcards.backend.cli.RoleRevokeCommand
+import com.rrbrambley.flashcards.backend.cli.UserCreateCommand
+import com.rrbrambley.flashcards.backend.cli.UserDeleteCommand
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
 import com.rrbrambley.flashcards.backend.db.Roles
@@ -64,6 +70,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
@@ -312,6 +319,103 @@ class ApplicationFlowTest {
             HttpStatusCode.OK,
             client.get("/test/manage-global-decks") { bearerAuth(auth.accessToken) }.status,
         )
+    }
+
+    // --- Admin CLI (FLA-69) ---
+
+    private suspend fun HttpClient.loginStatus(email: String, password: String): HttpStatusCode = post("/auth/login") {
+        contentType(ContentType.Application.Json)
+        setBody(json.encodeToString(LoginRequest(email, password)))
+    }.status
+
+    @Test
+    fun adminArgs_parses_options_repeats_and_flags() {
+        val args = AdminArgs(listOf("--email", "x@y.com", "--role", "admin", "--role", "user", "--yes"))
+        assertEquals("x@y.com", args.required("email"))
+        assertEquals(listOf("admin", "user"), args.list("role"))
+        assertTrue(args.has("yes"))
+        assertFalse(args.has("nope"))
+        assertFailsWith<AdminError> { args.required("password") }
+    }
+
+    @Test
+    fun adminCli_userCreate_makes_a_loginable_user_with_roles() = runApp { client ->
+        val out = StringBuilder()
+        UserCreateCommand.run(
+            AdminArgs(listOf("--email", "cli-made@example.com", "--password", "password1", "--role", "admin")),
+            out,
+        )
+        assertTrue(out.toString().contains("Created user"))
+
+        // Same hashing + validation as registration → the user can log in via the API.
+        assertEquals(HttpStatusCode.OK, client.loginStatus("cli-made@example.com", "password1"))
+        // The role granted at creation resolves to its permissions.
+        val userId = client.post("/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(LoginRequest("cli-made@example.com", "password1")))
+        }.decode<AuthResponse>().userId
+        assertEquals(setOf(Permission.MANAGE_GLOBAL_DECKS.key), PermissionRepository.effectivePermissions(userId))
+    }
+
+    @Test
+    fun adminCli_userCreate_generates_a_working_password_when_omitted() = runApp { client ->
+        val out = StringBuilder()
+        UserCreateCommand.run(AdminArgs(listOf("--email", "cli-gen@example.com")), out)
+
+        val password = out.toString().substringAfter("generated password:").trim()
+        assertTrue(password.isNotEmpty())
+        assertEquals(HttpStatusCode.OK, client.loginStatus("cli-gen@example.com", password))
+    }
+
+    @Test
+    fun adminCli_userCreate_rejects_duplicate_and_invalid_email() = runApp {
+        UserCreateCommand.run(
+            AdminArgs(listOf("--email", "cli-dupe@example.com", "--password", "password1")),
+            StringBuilder(),
+        )
+        assertFailsWith<AdminError> {
+            UserCreateCommand.run(
+                AdminArgs(listOf("--email", "cli-dupe@example.com", "--password", "password1")),
+                StringBuilder(),
+            )
+        }
+        // Validation.validateEmail throws IllegalArgumentException, surfaced by the CLI as an error.
+        assertFailsWith<IllegalArgumentException> {
+            UserCreateCommand.run(
+                AdminArgs(listOf("--email", "not-an-email", "--password", "password1")),
+                StringBuilder(),
+            )
+        }
+    }
+
+    @Test
+    fun adminCli_userDelete_requires_yes_then_cascades() = runApp { client ->
+        UserCreateCommand.run(
+            AdminArgs(listOf("--email", "cli-del@example.com", "--password", "password1")),
+            StringBuilder(),
+        )
+
+        // Without --yes it's a no-op.
+        val warn = StringBuilder()
+        UserDeleteCommand.run(AdminArgs(listOf("--email", "cli-del@example.com")), warn)
+        assertTrue(warn.toString().contains("Re-run with --yes"))
+        assertEquals(HttpStatusCode.OK, client.loginStatus("cli-del@example.com", "password1"))
+
+        // With --yes the user (and their data) is gone.
+        UserDeleteCommand.run(AdminArgs(listOf("--email", "cli-del@example.com", "--yes")), StringBuilder())
+        assertEquals(HttpStatusCode.Unauthorized, client.loginStatus("cli-del@example.com", "password1"))
+    }
+
+    @Test
+    fun adminCli_roleGrant_then_revoke() = runApp { client ->
+        val auth = client.register("cli-role", "password1")
+        assertTrue(PermissionRepository.effectivePermissions(auth.userId).isEmpty())
+
+        RoleGrantCommand.run(AdminArgs(listOf("--email", "cli-role@example.com", "--role", "admin")), StringBuilder())
+        assertEquals(setOf(Permission.MANAGE_GLOBAL_DECKS.key), PermissionRepository.effectivePermissions(auth.userId))
+
+        RoleRevokeCommand.run(AdminArgs(listOf("--email", "cli-role@example.com", "--role", "admin")), StringBuilder())
+        assertTrue(PermissionRepository.effectivePermissions(auth.userId).isEmpty())
     }
 
     @Test

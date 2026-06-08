@@ -26,6 +26,7 @@ Gradle tasks run via the wrapper from the repo root and are module-qualified.
 ./gradlew :backend:run                       # Run the server at http://0.0.0.0:8080
 ./gradlew :backend:build                     # Build the backend
 ./gradlew :backend:test                      # Integration tests (Testcontainers → real Postgres, needs Docker)
+make admin ARGS="user list"                  # Operator admin CLI (detects the Postgres port; the bare :backend:admin task defaults to 5432)
 
 # shared KMP module
 ./gradlew :shared:build                      # Build for android/iOS/JVM

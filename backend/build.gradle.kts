@@ -79,6 +79,21 @@ tasks.named<JavaExec>("run") {
     }
 }
 
+// Operator admin CLI (user management, role assignment, …). Run e.g.:
+//   ./gradlew :backend:admin --args="user list"
+// DB config is forwarded from gradle properties (like :backend:run); the `make admin` wrapper also
+// passes DB_JDBC_URL for the local Docker Postgres port.
+tasks.register<JavaExec>("admin") {
+    group = "application"
+    description = "Run the admin CLI; pass the subcommand via --args, e.g. --args=\"user list\"."
+    mainClass.set("com.rrbrambley.flashcards.backend.cli.AdminCliKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    standardInput = System.`in`
+    listOf("DB_JDBC_URL", "DB_USER", "DB_PASSWORD", "DB_MAX_POOL_SIZE").forEach { key ->
+        providers.gradleProperty(key).orNull?.let { environment(key, it) }
+    }
+}
+
 tasks.test {
     useJUnitPlatform()
     // Forward Docker/Testcontainers env (e.g. a Colima or rootless socket) into the
