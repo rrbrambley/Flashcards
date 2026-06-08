@@ -10,7 +10,11 @@ export function CreateDeckPage() {
 
   return (
     <div className="app">
-      <BackHeader title={isGlobal ? 'New global deck' : 'Create deck'} />
+      <BackHeader
+        title={isGlobal ? 'New global deck' : 'Create deck'}
+        backTo={isGlobal ? '/library/global' : '/library'}
+        backLabel={isGlobal ? 'Global decks' : 'Library'}
+      />
       <main className="container">
         <DeckForm
           submitLabel={isGlobal ? 'Create global deck' : 'Create deck'}

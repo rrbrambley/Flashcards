@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ApiError, api } from '../api/client';
 import type { FlashcardDeckDto } from '../api/types';
 import { BackHeader } from './BackHeader';
@@ -9,6 +9,11 @@ export function EditDeckPage() {
   const { id } = useParams();
   const deckId = Number(id);
   const navigate = useNavigate();
+  // Return to whichever list we came from — the admin global catalog if that's the origin,
+  // otherwise the personal library (also the default for deep links / a missing referrer).
+  const fromGlobal = (useLocation().state as { from?: string } | null)?.from === '/library/global';
+  const backTo = fromGlobal ? '/library/global' : '/library';
+  const backLabel = fromGlobal ? 'Global decks' : 'Library';
   const [deck, setDeck] = useState<FlashcardDeckDto | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -35,7 +40,7 @@ export function EditDeckPage() {
     setDeleteError(null);
     try {
       await api.deleteDeck(deckId);
-      navigate('/library');
+      navigate(backTo);
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : 'Could not delete the deck.');
       setDeleting(false);
@@ -47,7 +52,7 @@ export function EditDeckPage() {
 
   return (
     <div className="app">
-      <BackHeader title="Edit deck" />
+      <BackHeader title="Edit deck" backTo={backTo} backLabel={backLabel} />
       <main className="container">
         {loadError ? (
           <p className="error">{loadError}</p>
@@ -70,7 +75,7 @@ export function EditDeckPage() {
                   }
                   throw err;
                 }
-                navigate('/library');
+                navigate(backTo);
               }}
             />
             {canDelete && (

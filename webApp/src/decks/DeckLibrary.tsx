@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import type { FlashcardDeckDto, Page } from '../api/types';
 
@@ -18,6 +18,8 @@ export function DeckLibrary({
   emptyMessage: string;
 }) {
   const navigate = useNavigate();
+  // Remember which list we're on so Edit can send the user back here (personal vs. global).
+  const origin = useLocation().pathname;
   const [decks, setDecks] = useState<FlashcardDeckDto[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -129,7 +131,10 @@ export function DeckLibrary({
         <ul className="deck-list">
           {sortedDecks.map((deck) => (
             <li key={deck.id} className="deck-row">
-              <button className="deck-row-main" onClick={() => navigate(`/decks/${deck.id}/edit`)}>
+              <button
+                className="deck-row-main"
+                onClick={() => navigate(`/decks/${deck.id}/edit`, { state: { from: origin } })}
+              >
                 <span className="deck-title">{deck.title}</span>
                 <span className="muted">
                   {deck.flashcards.length} card{deck.flashcards.length === 1 ? '' : 's'}
