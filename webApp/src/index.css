@@ -479,11 +479,80 @@ button.danger:hover:not(:disabled) {
   text-align: left;
   padding: 1rem;
   background: var(--panel);
+  color: var(--text);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
+}
+
+.mode-option:hover:not(:disabled) {
+  background: var(--panel);
+  border-color: var(--primary);
 }
 
 .mode-option-label {
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+/* Test (text-entry) mode */
+.test-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.test-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.test-prompt .practice-image {
+  max-height: 30vh;
+}
+
+.text-answer {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.text-answer-input {
+  flex: 1;
+}
+
+/* Post-submit: the typed answer stays in place, with a ✓/✗ verdict beside it. */
+.test-submitted {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.test-submitted-answer {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.test-verdict {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.test-verdict.correct {
+  color: var(--success);
+}
+
+.test-verdict.incorrect {
+  color: var(--error);
+}
+
+.test-answer {
+  text-align: center;
+  color: var(--muted);
 }

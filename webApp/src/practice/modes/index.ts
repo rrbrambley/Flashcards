@@ -1,5 +1,6 @@
 import type { PracticeMode } from './types';
 import { ClassicMode } from './ClassicMode';
+import { TestMode } from './TestMode';
 
 /**
  * The registry of practice modes. Adding a mode = add an entry here (and its component); it then
@@ -11,6 +12,12 @@ export const PRACTICE_MODES: PracticeMode[] = [
     label: 'Classic',
     description: 'Flip the card and mark whether you knew it.',
     Component: ClassicMode,
+  },
+  {
+    key: 'test',
+    label: 'Test',
+    description: 'Type the answer.',
+    Component: TestMode,
   },
 ];
 

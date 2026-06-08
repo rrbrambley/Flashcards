@@ -30,7 +30,7 @@ function setup(cards: FlashcardDto[], sessionOver: Partial<PracticeSessionDto> =
   vi.mocked(api.updateProgress).mockResolvedValue(session());
   vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
   render(
-    <MemoryRouter initialEntries={['/decks/5/practice']}>
+    <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
       <Routes>
         <Route path="/decks/:id/practice" element={<PracticePage />} />
         <Route path="/" element={<div>library</div>} />
@@ -90,6 +90,41 @@ describe('PracticePage', () => {
     expect(api.completeSession).toHaveBeenCalledWith(1);
   });
 
+  it('shows the mode chooser when no mode is selected', async () => {
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Choose a mode')).toBeInTheDocument();
+    expect(screen.getByText('Test')).toBeInTheDocument();
+  });
+
+  it('runs the test mode end-to-end when ?mode=test', async () => {
+    vi.mocked(api.createSession).mockResolvedValue(session({ mode: 'test' }));
+    vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: threeCards });
+    vi.mocked(api.updateProgress).mockResolvedValue(session());
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=test']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('Q1');
+    expect(api.createSession).toHaveBeenCalledWith(5, 'test');
+
+    await userEvent.type(screen.getByLabelText('Your answer'), 'A1');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(await screen.findByText('Q2')).toBeInTheDocument();
+    expect(api.updateProgress).toHaveBeenCalledWith(1, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
+  });
+
   it('shows an error when the deck has no cards', async () => {
     setup([]);
     expect(await screen.findByText(/no cards to practice/i)).toBeInTheDocument();
@@ -99,7 +134,7 @@ describe('PracticePage', () => {
     vi.mocked(api.createSession).mockRejectedValue(new Error('offline'));
     vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', flashcards: threeCards });
     render(
-      <MemoryRouter initialEntries={['/decks/5/practice']}>
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
         <Routes>
           <Route path="/decks/:id/practice" element={<PracticePage />} />
         </Routes>
