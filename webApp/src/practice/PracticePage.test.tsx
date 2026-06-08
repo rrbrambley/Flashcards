@@ -125,6 +125,28 @@ describe('PracticePage', () => {
     expect(api.updateProgress).toHaveBeenCalledWith(1, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
   });
 
+  it('runs multiple-choice mode end-to-end when ?mode=multiple_choice', async () => {
+    vi.mocked(api.createSession).mockResolvedValue(session({ mode: 'multiple_choice' }));
+    vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: threeCards });
+    vi.mocked(api.updateProgress).mockResolvedValue(session());
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=multiple_choice']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('Q1');
+    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice');
+
+    await userEvent.click(screen.getByRole('button', { name: /A1/ })); // the correct option
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    expect(await screen.findByText('Q2')).toBeInTheDocument();
+    expect(api.updateProgress).toHaveBeenCalledWith(1, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
+  });
+
   it('shows an error when the deck has no cards', async () => {
     setup([]);
     expect(await screen.findByText(/no cards to practice/i)).toBeInTheDocument();
