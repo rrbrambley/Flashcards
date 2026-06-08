@@ -77,7 +77,11 @@ final class LibraryViewModel: ObservableObject {
         let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         let filtered = query.isEmpty
             ? rawDecks
-            : rawDecks.filter { $0.title.localizedCaseInsensitiveContains(query) }
+            // Match the deck title or any of its tags (the category surfaced in the UI).
+            : rawDecks.filter { deck in
+                deck.title.localizedCaseInsensitiveContains(query)
+                    || ((deck.tags as? [String]) ?? []).contains { $0.localizedCaseInsensitiveContains(query) }
+            }
         state = .loaded(sorted(filtered))
     }
 

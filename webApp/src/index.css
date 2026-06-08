@@ -335,6 +335,24 @@ button.danger:hover:not(:disabled) {
 .deck-title {
   font-weight: 600;
 }
+.deck-row-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+/* Small secondary "Category" label on a deck row (Linear-style). */
+.deck-category {
+  flex: none;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  white-space: nowrap;
+}
 
 .create-form {
   display: flex;

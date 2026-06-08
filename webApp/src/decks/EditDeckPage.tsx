@@ -63,11 +63,12 @@ export function EditDeckPage() {
             <DeckForm
               submitLabel="Save changes"
               initialTitle={deck.title}
+              initialCategory={deck.tags?.[0] ?? ''}
               readOnly={deck.editable === false}
               initialCards={deck.flashcards.map((f) => ({ term: f.question, definition: f.answer, imageUrl: f.imageUrl }))}
-              onSubmit={async (title, flashcards) => {
+              onSubmit={async (title, flashcards, tags) => {
                 try {
-                  await api.updateDeck(deckId, { title, flashcards });
+                  await api.updateDeck(deckId, { title, flashcards, tags });
                 } catch (err) {
                   // The seeded global deck isn't owned by the user, so the server rejects edits.
                   if (err instanceof ApiError && err.status === 404) {

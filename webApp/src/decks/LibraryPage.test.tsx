@@ -137,6 +137,25 @@ describe('LibraryPage', () => {
     expect(screen.getByText(/No decks match/)).toBeInTheDocument();
   });
 
+  it('shows a deck category label and matches it in search', async () => {
+    vi.mocked(api.getDecks).mockResolvedValue({
+      items: [
+        { id: 1, title: 'Spanish basics', flashcards: [], tags: ['Language'] },
+        { id: 2, title: 'Flags', flashcards: [], tags: ['Geography'] },
+      ],
+      nextCursor: null,
+    });
+    renderPage();
+
+    // The category renders as a small label on the row.
+    expect(await screen.findByText('Geography')).toBeInTheDocument();
+
+    // Searching by a tag matches the deck even though its title doesn't contain the query.
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Search decks' }), 'geo');
+    expect(screen.getByText('Flags')).toBeInTheDocument();
+    expect(screen.queryByText('Spanish basics')).not.toBeInTheDocument();
+  });
+
   it('appends the next page when "Load more" is clicked', async () => {
     vi.mocked(api.getDecks)
       .mockResolvedValueOnce({ items: [{ id: 1, title: 'Spanish', flashcards: [] }], nextCursor: 'c1' })

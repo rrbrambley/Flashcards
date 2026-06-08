@@ -166,7 +166,38 @@ class EditDeckViewModelTest {
         assertFalse(viewModel.uiState.value.isDirty)
     }
 
-    private fun testDeck(editable: Boolean = true): FlashcardDeck = FlashcardDeck(
+    @Test
+    fun loadDeck_populatesCategoryFromFirstTag() = runTest(testDispatcher) {
+        val viewModel = EditDeckViewModel(
+            FakeFlashcardRepository(testDeck(tags = listOf("Geography"))),
+            NoOpImageUploader,
+            FakeStringProvider(),
+        )
+
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("Geography", viewModel.uiState.value.category)
+        assertFalse(viewModel.uiState.value.isDirty)
+    }
+
+    @Test
+    fun changingCategory_marksDirtyAndSavesAsTheSingleTag() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository(testDeck(tags = listOf("Geography")))
+        val viewModel = EditDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onCategoryChange("History")
+        assertTrue(viewModel.uiState.value.isDirty)
+
+        viewModel.finishDeckEditing()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf("History"), repository.updatedDeck?.tags)
+    }
+
+    private fun testDeck(editable: Boolean = true, tags: List<String> = emptyList()): FlashcardDeck = FlashcardDeck(
         id = 42L,
         title = "Spanish basics",
         flashcards = listOf(
@@ -174,6 +205,7 @@ class EditDeckViewModelTest {
             Flashcard(question = "Gracias", answer = "Thank you"),
         ),
         isEditable = editable,
+        tags = tags,
     )
 
     private class FakeFlashcardRepository(

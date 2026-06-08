@@ -8,6 +8,8 @@ import SwiftUI
 @MainActor
 final class CreateDeckViewModel: ObservableObject {
     @Published var deckTitle = ""
+    /// Optional category — surfaced as the deck's single tag (the backend stores a list).
+    @Published var category = ""
     @Published var cards: [CardDraft] = [CardDraft()]
     @Published private(set) var showErrors = false
     @Published private(set) var isSaving = false
@@ -71,8 +73,9 @@ final class CreateDeckViewModel: ObservableObject {
                 Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: $0.imageUrl)
             },
             isEditable: true,
-            // No tag UI yet (FLA-70); send empty. Kotlin default args don't bridge, so pass it explicitly.
-            tags: []
+            // The optional category as a single tag (empty when blank). Kotlin default args don't
+            // bridge, so pass it explicitly.
+            tags: category.toCategoryTags()
         )
         do {
             try await repository.saveFlashcardDeck(deck: deck)
@@ -89,6 +92,7 @@ final class CreateDeckViewModel: ObservableObject {
 
     private func reset() {
         deckTitle = ""
+        category = ""
         cards = [CardDraft()]
         showErrors = false
     }

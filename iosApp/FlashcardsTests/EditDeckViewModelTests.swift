@@ -72,4 +72,28 @@ final class EditDeckViewModelTests: XCTestCase {
         XCTAssertTrue(vm.showErrors)
         XCTAssertNil(repo.updatedDeck)
     }
+
+    func test_load_populatesCategoryFromFirstTag() async {
+        let repo = FakeFlashcardRepository()
+        repo.deck = makeDeck(id: 1, "Flags", cards: [makeCard("Bonjour", "Hello")], tags: ["Geography"])
+        let vm = makeVM(repo)
+
+        await vm.load()
+
+        XCTAssertEqual(vm.category, "Geography")
+        XCTAssertFalse(vm.isDirty)
+    }
+
+    func test_changingCategory_marksDirtyAndSavesAsSingleTag() async {
+        let repo = FakeFlashcardRepository()
+        repo.deck = makeDeck(id: 1, "Flags", cards: [makeCard("Bonjour", "Hello")], tags: ["Geography"])
+        let vm = makeVM(repo)
+        await vm.load()
+
+        vm.category = "History"
+        XCTAssertTrue(vm.isDirty)
+
+        await vm.save()
+        XCTAssertEqual(repo.updatedDeck?.tags as? [String], ["History"])
+    }
 }

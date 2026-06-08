@@ -52,10 +52,14 @@ export function DeckLibrary({
     };
   }, [sortOrder, sessionsLoaded]);
 
-  // Client-side title filter over the decks loaded so far (case-insensitive).
+  // Client-side filter over the decks loaded so far (case-insensitive); matches the title or any tag.
   const normalizedSearch = search.trim().toLowerCase();
   const filteredDecks = normalizedSearch
-    ? decks.filter((deck) => deck.title.toLowerCase().includes(normalizedSearch))
+    ? decks.filter(
+        (deck) =>
+          deck.title.toLowerCase().includes(normalizedSearch) ||
+          (deck.tags ?? []).some((tag) => tag.toLowerCase().includes(normalizedSearch)),
+      )
     : decks;
 
   const sortedDecks = [...filteredDecks].sort((a, b) =>
@@ -135,7 +139,10 @@ export function DeckLibrary({
                 className="deck-row-main"
                 onClick={() => navigate(`/decks/${deck.id}/edit`, { state: { from: origin } })}
               >
-                <span className="deck-title">{deck.title}</span>
+                <span className="deck-row-text">
+                  <span className="deck-title">{deck.title}</span>
+                  {deck.tags?.[0] && <span className="deck-category">{deck.tags[0]}</span>}
+                </span>
                 <span className="muted">
                   {deck.flashcards.length} card{deck.flashcards.length === 1 ? '' : 's'}
                 </span>

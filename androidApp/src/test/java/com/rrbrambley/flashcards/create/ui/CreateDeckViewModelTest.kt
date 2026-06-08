@@ -92,6 +92,36 @@ class CreateDeckViewModelTest {
         assertEquals(CreateDeckUiState(deckSaved = true), viewModel.uiState.value)
     }
 
+    @Test
+    fun finishDeckCreation_withCategory_savesItAsTheSingleTag() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository()
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.onDeckTitleChange("Capitals")
+        viewModel.onCategoryChange("  Geography  ")
+        viewModel.onTermChange(1L, "France")
+        viewModel.onDefinitionChange(1L, "Paris")
+
+        viewModel.finishDeckCreation()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The trimmed category becomes the deck's single tag.
+        assertEquals(listOf("Geography"), repository.savedDeck?.tags)
+    }
+
+    @Test
+    fun finishDeckCreation_withBlankCategory_savesNoTags() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository()
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.onDeckTitleChange("Capitals")
+        viewModel.onTermChange(1L, "France")
+        viewModel.onDefinitionChange(1L, "Paris")
+
+        viewModel.finishDeckCreation()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(emptyList<String>(), repository.savedDeck?.tags)
+    }
+
     private class FakeFlashcardRepository : FlashcardRepository {
         var savedDeck: FlashcardDeck? = null
 

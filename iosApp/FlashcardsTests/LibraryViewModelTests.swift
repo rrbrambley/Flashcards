@@ -43,6 +43,18 @@ final class LibraryViewModelTests: XCTestCase {
         XCTAssertEqual(loadedTitles(vm.state), ["French", "Frenemies"])
     }
 
+    func test_search_alsoMatchesTags() async {
+        let repo = FakeFlashcardRepository()
+        repo.decks = [makeDeck(id: 1, "Flags", tags: ["Geography"]), makeDeck(id: 2, "French", tags: ["Language"])]
+        let vm = makeVM(repo)
+        await vm.observeDecks()
+
+        // "geo" matches the Geography tag even though no title contains it.
+        vm.searchQuery = "geo"
+
+        XCTAssertEqual(loadedTitles(vm.state), ["Flags"])
+    }
+
     func test_recentlyPracticedSort_ordersByLastPracticedThenIdDesc() async {
         let repo = FakeFlashcardRepository()
         repo.decks = [makeDeck(id: 1, "A"), makeDeck(id: 2, "B"), makeDeck(id: 3, "C")]

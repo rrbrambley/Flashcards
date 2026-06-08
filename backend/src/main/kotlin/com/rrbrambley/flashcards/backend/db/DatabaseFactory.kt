@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.backend.db
 import com.rrbrambley.flashcards.backend.auth.Passwords
 import com.rrbrambley.flashcards.backend.auth.Permission
 import com.rrbrambley.flashcards.backend.auth.Role
+import com.rrbrambley.flashcards.data.mapping.DeckTags
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import kotlinx.serialization.json.Json
@@ -110,13 +111,21 @@ object DatabaseFactory {
         // it stays the lowest-id global deck, which the home feed features.
         Decks.deleteWhere { (Decks.ownerUserId eq null) and (Decks.title eq LEGACY_FLAGS_TITLE) }
 
-        seedGlobalDeck(now, FLAGS_TITLE, flagSeedCards())
+        // The geography catalog decks carry a starter "Geography" category so the tag UI has
+        // something to group/filter on out of the box.
+        seedGlobalDeck(now, FLAGS_TITLE, flagSeedCards(), tags = listOf(GEOGRAPHY_TAG))
         seedGlobalDeck(
             now,
             NATIONAL_CAPITALS_TITLE,
             textSeedCards("/seed/national-capitals.json", "country", "capital"),
+            tags = listOf(GEOGRAPHY_TAG),
         )
-        seedGlobalDeck(now, US_STATE_CAPITALS_TITLE, textSeedCards("/seed/us-state-capitals.json", "state", "capital"))
+        seedGlobalDeck(
+            now,
+            US_STATE_CAPITALS_TITLE,
+            textSeedCards("/seed/us-state-capitals.json", "state", "capital"),
+            tags = listOf(GEOGRAPHY_TAG),
+        )
         seedGlobalDeck(now, WORLD_CURRENCIES_TITLE, textSeedCards("/seed/world-currencies.json", "country", "currency"))
 
         seedRbac(demoUserId)
@@ -189,7 +198,7 @@ object DatabaseFactory {
      * Inserts a global (ownerless) catalog deck with [cards] under [title], unless a global deck with
      * that title already exists. Guarded so restarts don't duplicate it; rebuilt on a reset + reseed.
      */
-    private fun seedGlobalDeck(now: Long, title: String, cards: List<SeedCard>) {
+    private fun seedGlobalDeck(now: Long, title: String, cards: List<SeedCard>, tags: List<String> = emptyList()) {
         val exists = Decks
             .selectAll()
             .where { (Decks.ownerUserId eq null) and (Decks.title eq title) }
@@ -200,6 +209,7 @@ object DatabaseFactory {
             it[Decks.title] = title
             it[ownerUserId] = null
             it[createdAtMillis] = now
+            it[Decks.tags] = DeckTags.encode(tags)
         }.value
         cards.forEachIndexed { index, card ->
             Flashcards.insert {
@@ -218,6 +228,7 @@ object DatabaseFactory {
     const val US_STATE_CAPITALS_TITLE = "U.S. State Capitals"
     const val WORLD_CURRENCIES_TITLE = "World Currencies"
     private const val LEGACY_FLAGS_TITLE = "Country Flags"
+    private const val GEOGRAPHY_TAG = "Geography"
 
     private data class SeedCard(val question: String, val answer: String, val imageUrl: String?)
 

@@ -8,6 +8,7 @@ import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.create.ui.isComplete
 import com.rrbrambley.flashcards.create.ui.isStarted
+import com.rrbrambley.flashcards.create.ui.toCategoryTags
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
@@ -36,8 +37,6 @@ class EditDeckViewModel @Inject constructor(
     private var nextDraftCardId = 1L
     private var initialSnapshot: EditDeckFormSnapshot? = null
     private var loadDeckJob: Job? = null
-    // No tag UI yet (FLA-70): carry the loaded deck's tags through an edit so update doesn't wipe them.
-    private var loadedTags: List<String> = emptyList()
 
     fun loadDeck(deckId: Long) {
         if (this.deckId == deckId) return
@@ -52,15 +51,18 @@ class EditDeckViewModel @Inject constructor(
                 if (deck == null) return@collect
                 val drafts = deck.toDrafts()
                 nextDraftCardId = (drafts.maxOfOrNull { it.id } ?: 0L) + 1L
+                // Surface only the first tag as the editable category (the backend keeps a list).
+                val category = deck.tags.firstOrNull().orEmpty()
                 val snapshot = EditDeckFormSnapshot(
                     deckTitle = deck.title,
+                    category = category,
                     cards = drafts,
                 )
                 initialSnapshot = snapshot
-                loadedTags = deck.tags
                 _uiState.update {
                     EditDeckUiState(
                         deckTitle = deck.title,
+                        category = category,
                         cards = drafts,
                         isLoading = false,
                         isEditable = deck.isEditable,
@@ -75,7 +77,18 @@ class EditDeckViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 deckTitle = deckTitle,
-                isDirty = isDirty(deckTitle = deckTitle, cards = it.cards),
+                isDirty = isDirty(deckTitle = deckTitle, category = it.category, cards = it.cards),
+                showValidationErrors = false,
+                deckSaved = false,
+            )
+        }
+    }
+
+    fun onCategoryChange(category: String) {
+        _uiState.update {
+            it.copy(
+                category = category,
+                isDirty = isDirty(deckTitle = it.deckTitle, category = category, cards = it.cards),
                 showValidationErrors = false,
                 deckSaved = false,
             )
@@ -115,7 +128,7 @@ class EditDeckViewModel @Inject constructor(
             val updatedCards = it.cards + DeckFlashcardDraft(id = nextDraftCardId)
             it.copy(
                 cards = updatedCards,
-                isDirty = isDirty(deckTitle = it.deckTitle, cards = updatedCards),
+                isDirty = isDirty(deckTitle = it.deckTitle, category = it.category, cards = updatedCards),
                 deckSaved = false,
             )
         }
@@ -128,7 +141,7 @@ class EditDeckViewModel @Inject constructor(
             val updatedCards = state.cards.filterNot { it.id == cardId }
             state.copy(
                 cards = updatedCards,
-                isDirty = isDirty(deckTitle = state.deckTitle, cards = updatedCards),
+                isDirty = isDirty(deckTitle = state.deckTitle, category = state.category, cards = updatedCards),
                 showValidationErrors = false,
                 deckSaved = false,
             )
@@ -163,7 +176,7 @@ class EditDeckViewModel @Inject constructor(
                                 imageUrl = card.imageUrl,
                             )
                         },
-                        tags = loadedTags,
+                        tags = currentState.category.toCategoryTags(),
                     ),
                 )
             }.isSuccess
@@ -172,6 +185,7 @@ class EditDeckViewModel @Inject constructor(
 
             val snapshot = EditDeckFormSnapshot(
                 deckTitle = currentState.deckTitle,
+                category = currentState.category,
                 cards = currentState.cards.stableForDirtyCheck(),
             )
             initialSnapshot = snapshot
@@ -199,16 +213,20 @@ class EditDeckViewModel @Inject constructor(
             }
             state.copy(
                 cards = updatedCards,
-                isDirty = isDirty(deckTitle = state.deckTitle, cards = updatedCards),
+                isDirty = isDirty(deckTitle = state.deckTitle, category = state.category, cards = updatedCards),
                 showValidationErrors = false,
                 deckSaved = false,
             )
         }
     }
 
-    private fun isDirty(deckTitle: String, cards: List<DeckFlashcardDraft>): Boolean {
+    private fun isDirty(deckTitle: String, category: String, cards: List<DeckFlashcardDraft>): Boolean {
         val snapshot = initialSnapshot ?: return false
-        return snapshot != EditDeckFormSnapshot(deckTitle = deckTitle, cards = cards.stableForDirtyCheck())
+        return snapshot != EditDeckFormSnapshot(
+            deckTitle = deckTitle,
+            category = category,
+            cards = cards.stableForDirtyCheck(),
+        )
     }
 
     /** Drops transient per-card UI state (upload progress/errors) so it can't mark the form dirty. */
@@ -228,6 +246,7 @@ class EditDeckViewModel @Inject constructor(
 
     private data class EditDeckFormSnapshot(
         val deckTitle: String,
+        val category: String,
         val cards: List<DeckFlashcardDraft>,
     )
 }

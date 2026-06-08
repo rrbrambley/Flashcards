@@ -4,6 +4,8 @@ import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 
 data class EditDeckUiState(
     val deckTitle: String = "",
+    /** Optional category — surfaced as the deck's single tag (the backend stores a list). */
+    val category: String = "",
     val cards: List<DeckFlashcardDraft> = emptyList(),
     val isLoading: Boolean = true,
     val isDirty: Boolean = false,
