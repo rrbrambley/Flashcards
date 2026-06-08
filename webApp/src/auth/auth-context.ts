@@ -2,6 +2,10 @@ import { createContext, useContext } from 'react';
 
 export interface AuthContextValue {
   token: string | null;
+  /** The user's effective feature permissions (empty until loaded / for a signed-out user). */
+  permissions: string[];
+  /** Whether the user holds a given permission (e.g. `can('manage_global_decks')`). */
+  can: (permission: string) => boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   googleSignIn: (idToken: string) => Promise<void>;

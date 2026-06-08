@@ -5,7 +5,7 @@ import type { FlashcardDeckDto } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 
 export function LibraryPage() {
-  const { signOut } = useAuth();
+  const { signOut, can } = useAuth();
   const navigate = useNavigate();
   const [decks, setDecks] = useState<FlashcardDeckDto[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -94,6 +94,11 @@ export function LibraryPage() {
       <main className="container">
         <div className="library-actions">
           <button onClick={() => navigate('/create')}>+ Create deck</button>
+          {can('manage_global_decks') && (
+            <button className="secondary" onClick={() => navigate('/create?global=1')}>
+              + New global deck
+            </button>
+          )}
         </div>
 
         {!loading && !error && (decks.length > 0 || search) && (

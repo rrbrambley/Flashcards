@@ -4,8 +4,10 @@ import com.rrbrambley.flashcards.backend.db.RefreshTokens
 import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.ConflictException
+import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
 import com.rrbrambley.flashcards.shared.api.AuthResponse
+import com.rrbrambley.flashcards.shared.api.MeResponse
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
@@ -135,6 +137,18 @@ object AuthService {
         RefreshTokens.deleteWhere { expiresAtMillis less now }
     }
 
+    /** Identity + roles + effective permissions for the authenticated user (GET /auth/me). */
+    suspend fun me(userId: Long): MeResponse = dbQuery {
+        val email = Users.selectAll().where { Users.id eq userId }.firstOrNull()?.get(Users.email)
+            ?: throw NotFoundException("User $userId not found")
+        MeResponse(
+            userId = userId,
+            email = email,
+            roles = PermissionRepository.rolesTx(userId).toList(),
+            permissions = PermissionRepository.effectivePermissionsTx(userId).toList(),
+        )
+    }
+
     /** Mints an access-token JWT plus a stored, opaque refresh token. Runs inside a transaction. */
     private fun issueTokens(userId: Long, now: Long): AuthResponse {
         val refreshToken = generateOpaqueToken()
@@ -148,6 +162,7 @@ object AuthService {
             accessToken = TokenService.generateAccessToken(userId),
             refreshToken = refreshToken,
             userId = userId,
+            permissions = PermissionRepository.effectivePermissionsTx(userId).toList(),
         )
     }
 

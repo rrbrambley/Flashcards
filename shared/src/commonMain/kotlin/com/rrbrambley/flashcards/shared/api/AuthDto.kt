@@ -23,7 +23,22 @@ data class LogoutRequest(val refreshToken: String)
 /**
  * Issued by register/login/google and refresh. [accessToken] is a short-lived JWT sent as the
  * bearer on every request; [refreshToken] is an opaque, long-lived token exchanged at
- * /auth/refresh and revoked at /auth/logout.
+ * /auth/refresh and revoked at /auth/logout. [permissions] are the user's effective feature
+ * permissions (defaulted so older clients that ignore the field keep working).
  */
 @Serializable
-data class AuthResponse(val accessToken: String, val refreshToken: String, val userId: Long)
+data class AuthResponse(
+    val accessToken: String,
+    val refreshToken: String,
+    val userId: Long,
+    val permissions: List<String> = emptyList(),
+)
+
+/** GET /auth/me — the current user's identity, roles, and effective permissions. */
+@Serializable
+data class MeResponse(
+    val userId: Long,
+    val email: String,
+    val roles: List<String> = emptyList(),
+    val permissions: List<String> = emptyList(),
+)
