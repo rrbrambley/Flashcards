@@ -479,8 +479,14 @@ button.danger:hover:not(:disabled) {
   text-align: left;
   padding: 1rem;
   background: var(--panel);
+  color: var(--text);
   border: 1px solid var(--border);
   border-radius: 0.75rem;
+}
+
+.mode-option:hover:not(:disabled) {
+  background: var(--panel);
+  border-color: var(--primary);
 }
 
 .mode-option-label {

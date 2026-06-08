@@ -16,7 +16,7 @@ export const PRACTICE_MODES: PracticeMode[] = [
   {
     key: 'test',
     label: 'Test',
-    description: 'Type the answer; small typos are okay.',
+    description: 'Type the answer.',
     Component: TestMode,
   },
 ];
