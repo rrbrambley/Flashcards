@@ -556,3 +556,64 @@ button.danger:hover:not(:disabled) {
   text-align: center;
   color: var(--muted);
 }
+
+/* Multiple choice mode */
+.mc-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.mc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mc-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.mc-option:hover:not(:disabled) {
+  border-color: var(--primary);
+}
+
+.mc-option:disabled {
+  opacity: 1; /* keep revealed options fully readable */
+}
+
+.mc-option.correct {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, var(--panel));
+}
+
+.mc-option.incorrect {
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 14%, var(--panel));
+}
+
+.mc-key {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--muted);
+}

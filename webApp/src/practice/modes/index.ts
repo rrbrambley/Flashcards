@@ -1,5 +1,6 @@
 import type { PracticeMode } from './types';
 import { ClassicMode } from './ClassicMode';
+import { MultipleChoiceMode } from './MultipleChoiceMode';
 import { TestMode } from './TestMode';
 
 /**
@@ -18,6 +19,12 @@ export const PRACTICE_MODES: PracticeMode[] = [
     label: 'Test',
     description: 'Type the answer.',
     Component: TestMode,
+  },
+  {
+    key: 'multiple_choice',
+    label: 'Multiple Choice',
+    description: 'Pick the answer from four options.',
+    Component: MultipleChoiceMode,
   },
 ];
 
