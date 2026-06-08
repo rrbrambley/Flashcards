@@ -839,6 +839,44 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun sessions_are_distinct_per_mode_and_mode_round_trips() = runApp { client ->
+        val auth = client.register("modey", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // Same (deck, mode) resumes the same session.
+        val classic = client.createSession(auth.accessToken, deckId, "flashcards")
+        assertEquals("flashcards", classic.mode)
+        assertEquals(classic.id, client.createSession(auth.accessToken, deckId, "flashcards").id)
+
+        // A different mode on the same deck is a distinct, concurrent session.
+        val test = client.createSession(auth.accessToken, deckId, "test")
+        assertEquals("test", test.mode)
+        assertNotEquals(classic.id, test.id)
+
+        // Mode round-trips through GET and the active list shows both concurrent sessions.
+        assertEquals(
+            "test",
+            client.get("/sessions/${test.id}") { bearerAuth(auth.accessToken) }.decode<PracticeSessionDto>().mode,
+        )
+        val activeModes = client.get("/sessions?active=true") { bearerAuth(auth.accessToken) }
+            .decode<Page<PracticeSessionDto>>().items
+            .filter { it.deckId == deckId }
+            .map { it.mode }
+            .toSet()
+        assertEquals(setOf("flashcards", "test"), activeModes)
+
+        // Omitting mode defaults to classic flashcards (and resumes the classic session).
+        val defaulted = client.post("/sessions") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody("""{"deckId":$deckId}""")
+        }.decode<PracticeSessionDto>()
+        assertEquals("flashcards", defaulted.mode)
+        assertEquals(classic.id, defaulted.id)
+    }
+
+    @Test
     fun home_feed_orders_active_sessions_by_recency() = runApp { client ->
         val auth = client.register("olivia", "password1")
         val flagsDeckId = client.get("/decks") { bearerAuth(auth.accessToken) }
@@ -1123,10 +1161,14 @@ class ApplicationFlowTest {
         },
     )
 
-    private suspend fun HttpClient.createSession(token: String, deckId: Long): PracticeSessionDto = post("/sessions") {
+    private suspend fun HttpClient.createSession(
+        token: String,
+        deckId: Long,
+        mode: String = "flashcards",
+    ): PracticeSessionDto = post("/sessions") {
         bearerAuth(token)
         contentType(ContentType.Application.Json)
-        setBody(json.encodeToString(CreateSessionRequest(deckId)))
+        setBody(json.encodeToString(CreateSessionRequest(deckId, mode)))
     }.decode()
 
     private suspend fun HttpClient.refresh(refreshToken: String): HttpResponse = post("/auth/refresh") {

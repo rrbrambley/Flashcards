@@ -186,8 +186,8 @@ export const api = {
   deleteDeck: (id: number) => request<void>(`/decks/${id}`, { method: 'DELETE', auth: true }),
 
   // Practice sessions
-  createSession: (deckId: number) =>
-    request<PracticeSessionDto>('/sessions', { method: 'POST', body: { deckId }, auth: true }),
+  createSession: (deckId: number, mode = 'flashcards') =>
+    request<PracticeSessionDto>('/sessions', { method: 'POST', body: { deckId, mode }, auth: true }),
   getSession: (id: number) => request<PracticeSessionDto>(`/sessions/${id}`, { auth: true }),
   // Every session across all pages (active + completed) — used to derive per-deck last-practiced time.
   getAllSessions: () => fetchAllPages((cursor) => getSessionsPage(cursor)),

@@ -104,12 +104,19 @@ object PracticeSessions : LongIdTable("practice_sessions") {
     val numCorrect = integer("num_correct").default(0)
     val numIncorrect = integer("num_incorrect").default(0)
     val isCompleted = bool("is_completed").default(false)
+
+    // The practice mode (web: flashcards / test / multiple_choice). An opaque, client-driven string;
+    // defaulted so createMissingTablesAndColumns backfills existing rows and mobile (which omits it)
+    // keeps doing classic flashcards. start-or-resume keys on it, so one active session per (user,
+    // deck, mode).
+    val mode = varchar("mode", 32).default("flashcards")
+
     val createdAtMillis = long("created_at_millis")
     val updatedAtMillis = long("updated_at_millis")
 
     init {
-        // Active-session-for-deck lookup (start-or-resume).
-        index(false, userId, deckId, isCompleted)
+        // Active-session-for-(deck, mode) lookup (start-or-resume).
+        index(false, userId, deckId, mode, isCompleted)
         // List active sessions for a user.
         index(false, userId, isCompleted)
     }

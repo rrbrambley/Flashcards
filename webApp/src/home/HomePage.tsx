@@ -36,9 +36,9 @@ export function HomePage() {
           navigate('/create');
           break;
         case 'continue_practice': {
-          // Resume the session by its deck; createSession on that deck resumes the active one.
+          // Resume the session in its own mode; createSession on (deck, mode) resumes the active one.
           const session = await api.getSession(action.sessionId);
-          navigate(`/decks/${session.deckId}/practice`);
+          navigate(`/decks/${session.deckId}/practice?mode=${session.mode}`);
           break;
         }
         case 'navigate_to_practice': {

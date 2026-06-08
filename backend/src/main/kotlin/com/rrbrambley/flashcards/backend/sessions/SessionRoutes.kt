@@ -16,10 +16,10 @@ import io.ktor.server.routing.route
 
 fun Route.sessionRoutes() {
     route("/sessions") {
-        // Create = start-or-resume the deck's active session.
+        // Create = start-or-resume the deck's active session for the requested mode.
         post {
             val request = call.receive<CreateSessionRequest>()
-            call.respond(SessionRepository.startOrResume(call.userId(), request.deckId))
+            call.respond(SessionRepository.startOrResume(call.userId(), request.deckId, request.mode))
         }
         get {
             val activeOnly = call.request.queryParameters["active"]?.toBooleanStrictOrNull() ?: false

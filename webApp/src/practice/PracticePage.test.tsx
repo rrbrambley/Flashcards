@@ -18,6 +18,7 @@ const session = (over: Partial<PracticeSessionDto> = {}): PracticeSessionDto => 
   numCorrect: 0,
   numIncorrect: 0,
   isCompleted: false,
+  mode: 'flashcards',
   createdAtMillis: 0,
   updatedAtMillis: 0,
   ...over,
@@ -47,9 +48,10 @@ const threeCards: FlashcardDto[] = [
 describe('PracticePage', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('starts a session and shows the (resumed) current card', async () => {
+  it('starts a session in the default (classic) mode and shows the (resumed) current card', async () => {
     setup(threeCards, { currentCardIndex: 1 });
     expect(await screen.findByText('Q2')).toBeInTheDocument();
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards');
   });
 
   it('clicking the card flips it', async () => {

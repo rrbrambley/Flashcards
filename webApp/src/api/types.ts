@@ -51,12 +51,15 @@ export interface PracticeSessionDto {
   numCorrect: number;
   numIncorrect: number;
   isCompleted: boolean;
+  // The practice mode this session runs in (flashcards / test / multiple_choice). Defaulted server-side.
+  mode: string;
   createdAtMillis: number;
   updatedAtMillis: number;
 }
 
 export interface CreateSessionRequest {
   deckId: number;
+  mode?: string;
 }
 
 export interface UpdateProgressRequest {

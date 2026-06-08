@@ -21,8 +21,12 @@ import org.jetbrains.exposed.sql.update
 
 object SessionRepository {
 
-    /** Mirrors the app's startOrResumeSession: resume the deck's active session if one exists, else create. */
-    suspend fun startOrResume(userId: Long, deckId: Long): PracticeSessionDto = dbQuery {
+    /**
+     * Resume the active session for this (deck, mode) if one exists, else create one. Keying on mode
+     * means a user can have concurrent in-progress sessions on the same deck in different modes (e.g.
+     * classic + test), each resuming to its own mode.
+     */
+    suspend fun startOrResume(userId: Long, deckId: Long, mode: String): PracticeSessionDto = dbQuery {
         val deckTitle = visibleDeckTitle(userId, deckId)
             ?: throw NotFoundException("Deck $deckId not found")
 
@@ -30,6 +34,7 @@ object SessionRepository {
             .where {
                 (PracticeSessions.userId eq userId) and
                     (PracticeSessions.deckId eq deckId) and
+                    (PracticeSessions.mode eq mode) and
                     (PracticeSessions.isCompleted eq false)
             }
             .firstOrNull()
@@ -39,6 +44,7 @@ object SessionRepository {
         val newId = PracticeSessions.insertAndGetId {
             it[PracticeSessions.userId] = userId
             it[PracticeSessions.deckId] = deckId
+            it[PracticeSessions.mode] = mode
             it[createdAtMillis] = now
             it[updatedAtMillis] = now
         }.value
@@ -50,6 +56,7 @@ object SessionRepository {
             numCorrect = 0,
             numIncorrect = 0,
             isCompleted = false,
+            mode = mode,
             createdAtMillis = now,
             updatedAtMillis = now,
         )

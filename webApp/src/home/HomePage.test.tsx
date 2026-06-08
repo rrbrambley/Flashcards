@@ -56,7 +56,7 @@ describe('HomePage', () => {
 
   it('continue tile resumes the session via its deck', async () => {
     vi.mocked(api.getHome).mockResolvedValue([continueItem]);
-    vi.mocked(api.getSession).mockResolvedValue({ id: 7, deckId: 3 } as never);
+    vi.mocked(api.getSession).mockResolvedValue({ id: 7, deckId: 3, mode: 'flashcards' } as never);
     renderHome();
 
     await userEvent.click(await screen.findByRole('button', { name: 'Continue practice' }));
