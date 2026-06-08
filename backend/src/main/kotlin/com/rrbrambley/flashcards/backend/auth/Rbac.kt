@@ -11,9 +11,10 @@ package com.rrbrambley.flashcards.backend.auth
  */
 enum class Permission(val key: String, val description: String) {
     MANAGE_GLOBAL_DECKS("manage_global_decks", "Create, edit, and delete global (catalog) flashcard decks"),
+    MANAGE_ROLES("manage_roles", "View users and grant or revoke their roles"),
 }
 
 enum class Role(val key: String, val description: String, val permissions: Set<Permission>) {
-    ADMIN("admin", "Full administrative access", setOf(Permission.MANAGE_GLOBAL_DECKS)),
+    ADMIN("admin", "Full administrative access", setOf(Permission.MANAGE_GLOBAL_DECKS, Permission.MANAGE_ROLES)),
     USER("user", "A standard, non-privileged user", emptySet()),
 }

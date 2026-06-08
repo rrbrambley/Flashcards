@@ -1,5 +1,6 @@
 import { clearToken, getRefreshToken, getToken, setTokens } from '../auth/token';
 import type {
+  AdminUserDto,
   AuthResponse,
   CreateDeckRequest,
   ErrorResponse,
@@ -9,6 +10,7 @@ import type {
   MeResponse,
   Page,
   PracticeSessionDto,
+  RoleDto,
   UpdateProgressRequest,
 } from './types';
 
@@ -206,4 +208,14 @@ export const api = {
     request<PracticeSessionDto>(`/sessions/${id}/complete`, { method: 'POST', auth: true }),
 
   uploadImage: (file: File) => uploadImage(file),
+
+  // Admin RBAC (gated server-side on manage_roles). One page of users, optionally filtered by an
+  // email substring `q`; the role catalog; and grant/revoke of a user's roles.
+  getAdminUsers: (params: { q?: string; limit?: number; cursor?: string } = {}) =>
+    request<Page<AdminUserDto>>(`/admin/users${buildQuery(params)}`, { auth: true }),
+  getRoles: () => request<RoleDto[]>('/admin/roles', { auth: true }),
+  grantRole: (userId: number, role: string) =>
+    request<AdminUserDto>(`/admin/users/${userId}/roles`, { method: 'POST', body: { role }, auth: true }),
+  revokeRole: (userId: number, role: string) =>
+    request<AdminUserDto>(`/admin/users/${userId}/roles/${role}`, { method: 'DELETE', auth: true }),
 };

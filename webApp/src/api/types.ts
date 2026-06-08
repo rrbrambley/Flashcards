@@ -44,6 +44,20 @@ export interface MeResponse {
   permissions: string[];
 }
 
+// GET /admin/users — a user as seen by the admin RBAC UI.
+export interface AdminUserDto {
+  id: number;
+  email: string;
+  roles: string[];
+}
+
+// GET /admin/roles — a code-defined role from the catalog (read-only on the web).
+export interface RoleDto {
+  key: string;
+  description: string;
+  permissions: string[];
+}
+
 export interface ErrorResponse {
   error: string;
   message?: string | null;

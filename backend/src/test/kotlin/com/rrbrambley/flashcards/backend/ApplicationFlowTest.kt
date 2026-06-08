@@ -1,5 +1,8 @@
 package com.rrbrambley.flashcards.backend
 
+import com.rrbrambley.flashcards.backend.admin.AdminUserDto
+import com.rrbrambley.flashcards.backend.admin.GrantRoleRequest
+import com.rrbrambley.flashcards.backend.admin.RoleDto
 import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
 import com.rrbrambley.flashcards.backend.auth.Permission
 import com.rrbrambley.flashcards.backend.auth.PermissionRepository
@@ -65,6 +68,8 @@ import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.testcontainers.containers.PostgreSQLContainer
@@ -281,7 +286,10 @@ class ApplicationFlowTest {
         val demoUserId = dbQuery {
             Users.selectAll().where { Users.email eq DatabaseFactory.DEMO_EMAIL }.first()[Users.id].value
         }
-        assertEquals(setOf(Permission.MANAGE_GLOBAL_DECKS.key), PermissionRepository.effectivePermissions(demoUserId))
+        assertEquals(
+            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key),
+            PermissionRepository.effectivePermissions(demoUserId),
+        )
 
         // A freshly registered user has no roles, so no permissions.
         val auth = client.register("permless", "password1")
@@ -355,7 +363,10 @@ class ApplicationFlowTest {
             contentType(ContentType.Application.Json)
             setBody(json.encodeToString(LoginRequest("cli-made@example.com", "password1")))
         }.decode<AuthResponse>().userId
-        assertEquals(setOf(Permission.MANAGE_GLOBAL_DECKS.key), PermissionRepository.effectivePermissions(userId))
+        assertEquals(
+            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key),
+            PermissionRepository.effectivePermissions(userId),
+        )
     }
 
     @Test
@@ -413,7 +424,10 @@ class ApplicationFlowTest {
         assertTrue(PermissionRepository.effectivePermissions(auth.userId).isEmpty())
 
         RoleGrantCommand.run(AdminArgs(listOf("--email", "cli-role@example.com", "--role", "admin")), StringBuilder())
-        assertEquals(setOf(Permission.MANAGE_GLOBAL_DECKS.key), PermissionRepository.effectivePermissions(auth.userId))
+        assertEquals(
+            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key),
+            PermissionRepository.effectivePermissions(auth.userId),
+        )
 
         RoleRevokeCommand.run(AdminArgs(listOf("--email", "cli-role@example.com", "--role", "admin")), StringBuilder())
         assertTrue(PermissionRepository.effectivePermissions(auth.userId).isEmpty())
@@ -1218,14 +1232,152 @@ class ApplicationFlowTest {
         grantAdmin(user.userId)
         val me1 = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(listOf("admin"), me1.roles)
-        assertEquals(listOf("manage_global_decks"), me1.permissions)
+        assertEquals(setOf("manage_global_decks", "manage_roles"), me1.permissions.toSet())
 
-        // ...and a fresh login carries the permission too.
+        // ...and a fresh login carries the permissions too.
         val login = client.post("/auth/login") {
             contentType(ContentType.Application.Json)
             setBody(json.encodeToString(LoginRequest("meuser@example.com", "password1")))
         }.decode<AuthResponse>()
-        assertEquals(listOf("manage_global_decks"), login.permissions)
+        assertEquals(setOf("manage_global_decks", "manage_roles"), login.permissions.toSet())
+    }
+
+    @Test
+    fun admin_rbac_endpoints_require_manage_roles_permission() = runApp { client ->
+        val user = client.register("rbacforbidden", "password1")
+        assertEquals(HttpStatusCode.Forbidden, client.get("/admin/users") { bearerAuth(user.accessToken) }.status)
+        assertEquals(HttpStatusCode.Forbidden, client.get("/admin/roles") { bearerAuth(user.accessToken) }.status)
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.post("/admin/users/${user.userId}/roles") {
+                bearerAuth(user.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(GrantRoleRequest("admin")))
+            }.status,
+        )
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.delete("/admin/users/${user.userId}/roles/admin") { bearerAuth(user.accessToken) }.status,
+        )
+    }
+
+    @Test
+    fun admin_roles_catalog_lists_the_code_defined_roles() = runApp { client ->
+        val admin = client.register("catalogadmin", "password1")
+        grantAdmin(admin.userId)
+
+        val roles = client.get("/admin/roles") { bearerAuth(admin.accessToken) }.decode<List<RoleDto>>()
+        val adminRole = roles.single { it.key == "admin" }
+        assertEquals(setOf("manage_global_decks", "manage_roles"), adminRole.permissions.toSet())
+        assertTrue(roles.any { it.key == "user" && it.permissions.isEmpty() })
+    }
+
+    @Test
+    fun admin_lists_users_with_search_and_paging() = runApp { client ->
+        val admin = client.register("listadmin", "password1")
+        grantAdmin(admin.userId)
+        client.register("rbacsearchtarget", "password1")
+
+        // Case-insensitive email substring search finds just the one user.
+        val found = client.get("/admin/users?q=RBACSEARCHTARGET") { bearerAuth(admin.accessToken) }
+            .decode<Page<AdminUserDto>>()
+        assertEquals(listOf("rbacsearchtarget@example.com"), found.items.map { it.email })
+
+        // Paging: a limit of 1 yields a cursor, and the next page continues by ascending id.
+        val page1 = client.get("/admin/users?limit=1") { bearerAuth(admin.accessToken) }.decode<Page<AdminUserDto>>()
+        assertEquals(1, page1.items.size)
+        assertTrue(page1.nextCursor != null)
+        val page2 = client.get("/admin/users?limit=1&cursor=${page1.nextCursor}") { bearerAuth(admin.accessToken) }
+            .decode<Page<AdminUserDto>>()
+        assertEquals(1, page2.items.size)
+        assertTrue(page2.items.first().id > page1.items.first().id)
+    }
+
+    @Test
+    fun admin_grants_and_revokes_roles_idempotently_reflected_by_me() = runApp { client ->
+        val admin = client.register("granteradmin", "password1")
+        grantAdmin(admin.userId)
+        val target = client.register("grantee", "password1")
+
+        // Grant admin; reflected on the returned dto and the target's own /me (loaded fresh).
+        val granted = client.post("/admin/users/${target.userId}/roles") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(GrantRoleRequest(Role.ADMIN.key)))
+        }.decode<AdminUserDto>()
+        assertEquals(listOf("admin"), granted.roles)
+        val targetMe = client.get("/auth/me") { bearerAuth(target.accessToken) }.decode<MeResponse>()
+        assertEquals(listOf("admin"), targetMe.roles)
+        assertTrue("manage_roles" in targetMe.permissions)
+
+        // Granting the same role again is a no-op (no duplicate assignment).
+        val again = client.post("/admin/users/${target.userId}/roles") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(GrantRoleRequest(Role.ADMIN.key)))
+        }.decode<AdminUserDto>()
+        assertEquals(listOf("admin"), again.roles)
+
+        // Revoke it — the original admin remains, so this is allowed.
+        val revoked = client.delete("/admin/users/${target.userId}/roles/admin") {
+            bearerAuth(admin.accessToken)
+        }.decode<AdminUserDto>()
+        assertTrue(revoked.roles.isEmpty())
+    }
+
+    @Test
+    fun grant_role_for_unknown_user_or_role_is_404() = runApp { client ->
+        val admin = client.register("notfoundadmin", "password1")
+        grantAdmin(admin.userId)
+
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.post("/admin/users/9999999/roles") {
+                bearerAuth(admin.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(GrantRoleRequest("admin")))
+            }.status,
+        )
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.post("/admin/users/${admin.userId}/roles") {
+                bearerAuth(admin.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(GrantRoleRequest("not_a_role")))
+            }.status,
+        )
+    }
+
+    @Test
+    fun cannot_revoke_the_last_admin() = runApp { client ->
+        val admin = client.register("lockoutadmin", "password1")
+        // Make this user the ONLY admin (clear the seed + any admins other tests accumulated).
+        dbQuery {
+            val adminRoleId = Roles.selectAll().where { Roles.key eq Role.ADMIN.key }.first()[Roles.id].value
+            UserRoles.deleteWhere { UserRoles.roleId eq adminRoleId }
+            UserRoles.insert {
+                it[userId] = admin.userId
+                it[roleId] = adminRoleId
+            }
+        }
+
+        // Revoking the sole admin is refused (409); they keep the role.
+        val refused = client.delete("/admin/users/${admin.userId}/roles/admin") { bearerAuth(admin.accessToken) }
+        assertEquals(HttpStatusCode.Conflict, refused.status)
+        assertEquals(
+            listOf("admin"),
+            client.get("/auth/me") {
+                bearerAuth(admin.accessToken)
+            }.decode<MeResponse>().roles,
+        )
+
+        // With a second admin present, revoking is allowed again.
+        val second = client.register("lockoutadmin2", "password1")
+        grantAdmin(second.userId)
+        assertEquals(
+            HttpStatusCode.OK,
+            client.delete("/admin/users/${second.userId}/roles/admin") { bearerAuth(admin.accessToken) }.status,
+        )
     }
 
     @Test
