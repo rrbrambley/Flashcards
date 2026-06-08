@@ -487,3 +487,53 @@ button.danger:hover:not(:disabled) {
   font-weight: 600;
   font-size: 1.1rem;
 }
+
+/* Test (text-entry) mode */
+.test-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.test-prompt {
+  min-height: 7rem;
+  cursor: default;
+}
+
+.text-answer {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.text-answer-input {
+  flex: 1;
+}
+
+.test-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  text-align: center;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.test-feedback.correct {
+  border-color: var(--success);
+}
+
+.test-feedback.incorrect {
+  border-color: var(--error);
+}
+
+.test-verdict {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.test-answer {
+  font-size: 1.25rem;
+}
