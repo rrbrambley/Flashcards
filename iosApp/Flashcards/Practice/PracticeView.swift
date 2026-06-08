@@ -2,7 +2,7 @@ import Shared
 import SwiftUI
 
 /// The practice run (parity with Android's FlashcardsScreen): a flip card, swipe right = correct /
-/// left = needs practice, a running score, Previous/Skip, and a completion summary. Presented as a
+/// left = needs practice, a running score, Previous/Next, and a completion summary. Presented as a
 /// full-screen cover; closes when done.
 struct PracticeView: View {
     @StateObject private var viewModel: PracticeViewModel
@@ -54,7 +54,7 @@ struct PracticeView: View {
                 )
                 .id(position)
                 .frame(maxHeight: .infinity)
-                NavRow(canGoBack: canGoBack, onPrevious: viewModel.goBack, onSkip: viewModel.goForward)
+                NavRow(canGoBack: canGoBack, onPrevious: viewModel.goBack, onNext: viewModel.goForward)
             }
             .padding(Spacing.lg)
         case let .completed(numCorrect, numIncorrect):
@@ -173,18 +173,18 @@ private struct FlashcardCardView: View {
     }
 }
 
-/// Previous / Skip navigation. Previous is disabled on the first card.
+/// Previous / Next navigation. Previous is disabled on the first card.
 private struct NavRow: View {
     let canGoBack: Bool
     let onPrevious: () -> Void
-    let onSkip: () -> Void
+    let onNext: () -> Void
 
     var body: some View {
         HStack {
             Button("Previous", systemImage: "chevron.left", action: onPrevious)
                 .disabled(!canGoBack)
             Spacer()
-            Button("Skip", systemImage: "chevron.right", action: onSkip)
+            Button("Next", systemImage: "chevron.right", action: onNext)
                 .labelStyle(.titleAndIcon)
         }
         .font(.headline)

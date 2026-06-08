@@ -127,7 +127,7 @@ fun FlashcardsScreen(
                 enabled = showFlashcard != null,
                 canGoBack = showFlashcard?.canGoBack == true,
                 onPrevious = flashcardsViewModel::goBack,
-                onSkip = flashcardsViewModel::goForward,
+                onNext = flashcardsViewModel::goForward,
             )
         }
     }
@@ -403,7 +403,7 @@ fun NavRow(
     enabled: Boolean,
     canGoBack: Boolean,
     onPrevious: () -> Unit,
-    onSkip: () -> Unit,
+    onNext: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -418,10 +418,10 @@ fun NavRow(
                 contentDescription = stringResource(R.string.practice_cd_previous_card),
             )
         }
-        IconButton(onClick = onSkip, enabled = enabled) {
+        IconButton(onClick = onNext, enabled = enabled) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = stringResource(R.string.practice_cd_skip_card),
+                contentDescription = stringResource(R.string.practice_cd_next_card),
             )
         }
     }

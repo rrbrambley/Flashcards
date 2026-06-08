@@ -97,7 +97,7 @@
     <string name="practice_complete_title">Practice complete</string>
     <string name="practice_complete_subtitle">Nice work reviewing this deck.</string>
     <string name="practice_cd_previous_card">Previous card</string>
-    <string name="practice_cd_skip_card">Skip card</string>
+    <string name="practice_cd_next_card">Next card</string>
 
     <!-- Main scaffolding / bottom navigation -->
     <string name="nav_home">Home</string>
