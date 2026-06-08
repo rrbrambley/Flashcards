@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.backend.plugins
 
 import com.rrbrambley.flashcards.backend.error.ConflictException
+import com.rrbrambley.flashcards.backend.error.ForbiddenException
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.error.PayloadTooLargeException
 import com.rrbrambley.flashcards.backend.error.ServiceUnavailableException
@@ -27,6 +28,9 @@ fun Application.configureStatusPages() {
         }
         exception<UnauthorizedException> { call, cause ->
             call.respond(HttpStatusCode.Unauthorized, ErrorResponse("unauthorized", cause.message))
+        }
+        exception<ForbiddenException> { call, cause ->
+            call.respond(HttpStatusCode.Forbidden, ErrorResponse("forbidden", cause.message))
         }
         exception<ServiceUnavailableException> { call, cause ->
             call.respond(HttpStatusCode.ServiceUnavailable, ErrorResponse("unavailable", cause.message))
