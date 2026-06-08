@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.backend.plugins
 
+import com.rrbrambley.flashcards.backend.admin.adminRoutes
 import com.rrbrambley.flashcards.backend.auth.authRoutes
 import com.rrbrambley.flashcards.backend.auth.authenticatedAuthRoutes
 import com.rrbrambley.flashcards.backend.decks.deckRoutes
@@ -26,6 +27,7 @@ fun Application.configureRouting() {
             sessionRoutes()
             homeRoutes()
             imageRoutes()
+            adminRoutes()
         }
     }
 }

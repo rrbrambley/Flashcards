@@ -5,11 +5,15 @@ import { MemoryRouter } from 'react-router-dom';
 import { LibraryPage } from './LibraryPage';
 import { api } from '../api/client';
 
-const authState = vi.hoisted(() => ({ canManageGlobal: false }));
+const authState = vi.hoisted(() => ({ canManageGlobal: false, canManageRoles: false }));
 
 vi.mock('../api/client', () => ({ api: { getDecks: vi.fn(), getAllSessions: vi.fn() } }));
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ signOut: vi.fn(), can: (p: string) => p === 'manage_global_decks' && authState.canManageGlobal }),
+  useAuth: () => ({
+    signOut: vi.fn(),
+    can: (p: string) =>
+      (p === 'manage_global_decks' && authState.canManageGlobal) || (p === 'manage_roles' && authState.canManageRoles),
+  }),
 }));
 
 function renderPage() {
@@ -24,6 +28,7 @@ describe('LibraryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authState.canManageGlobal = false;
+    authState.canManageRoles = false;
   });
 
   it('hides the "Manage global decks" action for non-admins', async () => {
@@ -38,6 +43,20 @@ describe('LibraryPage', () => {
     authState.canManageGlobal = true;
     renderPage();
     expect(await screen.findByRole('button', { name: 'Manage global decks' })).toBeInTheDocument();
+  });
+
+  it('shows the "Manage users" action only for users with manage_roles', async () => {
+    vi.mocked(api.getDecks).mockResolvedValue({ items: [], nextCursor: null });
+    renderPage();
+    await screen.findByText(/No decks yet/);
+    expect(screen.queryByRole('button', { name: 'Manage users' })).not.toBeInTheDocument();
+  });
+
+  it('shows the "Manage users" action for role admins', async () => {
+    vi.mocked(api.getDecks).mockResolvedValue({ items: [], nextCursor: null });
+    authState.canManageRoles = true;
+    renderPage();
+    expect(await screen.findByRole('button', { name: 'Manage users' })).toBeInTheDocument();
   });
 
   it('renders the fetched decks', async () => {

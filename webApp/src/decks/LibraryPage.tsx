@@ -32,6 +32,11 @@ export function LibraryPage() {
                 Manage global decks
               </button>
             )}
+            {can('manage_roles') && (
+              <button className="secondary" onClick={() => navigate('/admin/users')}>
+                Manage users
+              </button>
+            )}
           </>
         }
       />
