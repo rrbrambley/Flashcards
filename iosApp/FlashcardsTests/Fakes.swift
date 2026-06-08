@@ -6,8 +6,15 @@ import SwiftUI
 
 // MARK: - Domain builders
 
-func makeDeck(id: Int64, _ title: String, cards: [Flashcard] = [], editable: Bool = true) -> FlashcardDeck {
-    FlashcardDeck(id: id, title: title, flashcards: cards, isEditable: editable)
+func makeDeck(
+    id: Int64,
+    _ title: String,
+    cards: [Flashcard] = [],
+    editable: Bool = true,
+    tags: [String] = []
+) -> FlashcardDeck {
+    // Kotlin default args don't bridge, so `tags` must be passed explicitly.
+    FlashcardDeck(id: id, title: title, flashcards: cards, isEditable: editable, tags: tags)
 }
 
 func makeCard(_ question: String, _ answer: String, imageUrl: String? = nil) -> Flashcard {
