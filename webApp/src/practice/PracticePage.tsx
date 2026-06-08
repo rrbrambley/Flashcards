@@ -1,10 +1,25 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import type { FlashcardDeckDto, FlashcardDto, PracticeSessionDto } from '../api/types';
 import { BackHeader } from '../decks/BackHeader';
-import { PracticeCard } from './PracticeCard';
+import { ModeChooser } from './ModeChooser';
+import { DEFAULT_MODE, findMode, PRACTICE_MODES } from './modes';
+import type { PracticeMode } from './modes/types';
 import { initPractice, practiceReducer } from './practiceReducer';
+
+// Resolves the practice mode from the `?mode=` query param. When the deck has only one registered
+// mode we run it directly (preserving the one-click classic flow); with several modes and none
+// chosen yet, we show the chooser. Once a mode is resolved, PracticeSession owns the run.
+export function PracticePage() {
+  const { id } = useParams();
+  const deckId = Number(id);
+  const [searchParams] = useSearchParams();
+  const mode = findMode(searchParams.get('mode')) ?? (PRACTICE_MODES.length === 1 ? DEFAULT_MODE : undefined);
+
+  if (!mode) return <ModeChooser deckId={deckId} />;
+  return <PracticeSession key={mode.key} deckId={deckId} mode={mode} />;
+}
 
 interface LoadedPractice {
   sessionId: number;
@@ -13,9 +28,7 @@ interface LoadedPractice {
   session: PracticeSessionDto;
 }
 
-export function PracticePage() {
-  const { id } = useParams();
-  const deckId = Number(id);
+function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode }) {
   const navigate = useNavigate();
   const [reloadToken, setReloadToken] = useState(0);
   const [data, setData] = useState<LoadedPractice | null>(null);
@@ -26,15 +39,15 @@ export function PracticePage() {
   const loading = loadedToken !== reloadToken;
   // Dedupe the start-session request across React StrictMode's double-invoked effect (and
   // rapid remounts): both runs share one in-flight createSession, so we never create
-  // duplicate sessions for the same deck.
+  // duplicate sessions for the same (deck, mode).
   const loadRef = useRef<{ key: string; promise: Promise<[PracticeSessionDto, FlashcardDeckDto]> } | null>(null);
 
   useEffect(() => {
     let active = true;
-    const key = `${deckId}:${reloadToken}`;
+    const key = `${deckId}:${mode.key}:${reloadToken}`;
     if (loadRef.current?.key !== key) {
-      // createSession starts a fresh session or resumes the deck's active one.
-      loadRef.current = { key, promise: Promise.all([api.createSession(deckId), api.getDeck(deckId)]) };
+      // createSession starts a fresh session or resumes the deck's active one for this mode.
+      loadRef.current = { key, promise: Promise.all([api.createSession(deckId, mode.key), api.getDeck(deckId)]) };
     }
     loadRef.current.promise
       .then(([session, deck]) => {
@@ -55,7 +68,7 @@ export function PracticePage() {
     return () => {
       active = false;
     };
-  }, [deckId, reloadToken]);
+  }, [deckId, mode.key, reloadToken]);
 
   return (
     <div className="app">
@@ -73,6 +86,7 @@ export function PracticePage() {
             sessionId={data.sessionId}
             cards={data.cards}
             session={data.session}
+            mode={mode}
             onAgain={() => setReloadToken((t) => t + 1)}
             onExit={() => navigate('/library')}
           />
@@ -86,11 +100,14 @@ interface PracticeRunnerProps {
   sessionId: number;
   cards: FlashcardDto[];
   session: PracticeSessionDto;
+  mode: PracticeMode;
   onAgain: () => void;
   onExit: () => void;
 }
 
-function PracticeRunner({ sessionId, cards, session, onAgain, onExit }: PracticeRunnerProps) {
+// Mode-agnostic session loop: owns progress/score (reducer), best-effort persistence, and the
+// completion summary. The current mode renders the card and reports each outcome via onResult.
+function PracticeRunner({ sessionId, cards, session, mode, onAgain, onExit }: PracticeRunnerProps) {
   const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, session));
 
   const mark = useCallback(
@@ -114,19 +131,6 @@ function PracticeRunner({ sessionId, cards, session, onAgain, onExit }: Practice
     [state, sessionId],
   );
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight') mark(true);
-      else if (e.key === 'ArrowLeft') mark(false);
-      else if (e.key === ' ' || e.key === 'Enter') {
-        e.preventDefault();
-        dispatch({ type: 'FLIP' });
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [mark]);
-
   if (state.status === 'completed') {
     return (
       <div className="practice-complete">
@@ -148,6 +152,7 @@ function PracticeRunner({ sessionId, cards, session, onAgain, onExit }: Practice
     );
   }
 
+  const ModeComponent = mode.Component;
   return (
     <div className="practice">
       <div className="score-row">
@@ -162,24 +167,8 @@ function PracticeRunner({ sessionId, cards, session, onAgain, onExit }: Practice
         </span>
       </div>
 
-      <PracticeCard
-        card={state.cards[state.index]}
-        isFlipped={state.isFlipped}
-        onFlip={() => dispatch({ type: 'FLIP' })}
-        onSwipeLeft={() => mark(false)}
-        onSwipeRight={() => mark(true)}
-      />
-
-      <p className="muted practice-hint">Tap to flip · swipe or ← / → (or the buttons) to mark</p>
-
-      <div className="practice-actions">
-        <button className="secondary mark-incorrect" onClick={() => mark(false)}>
-          ✗ Still learning
-        </button>
-        <button className="mark-correct" onClick={() => mark(true)}>
-          ✓ Got it
-        </button>
-      </div>
+      {/* Keyed by index so each card gets a fresh mode instance (flip/input/selection reset). */}
+      <ModeComponent key={state.index} card={state.cards[state.index]} cards={state.cards} onResult={mark} />
     </div>
   );
 }

@@ -20,6 +20,7 @@ fun ResultRow.toPracticeSessionDto(deckTitle: String): PracticeSessionDto = Prac
     numCorrect = this[PracticeSessions.numCorrect],
     numIncorrect = this[PracticeSessions.numIncorrect],
     isCompleted = this[PracticeSessions.isCompleted],
+    mode = this[PracticeSessions.mode],
     createdAtMillis = this[PracticeSessions.createdAtMillis],
     updatedAtMillis = this[PracticeSessions.updatedAtMillis],
 )
