@@ -70,7 +70,9 @@ final class CreateDeckViewModel: ObservableObject {
             flashcards: complete.map {
                 Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: $0.imageUrl)
             },
-            isEditable: true
+            isEditable: true,
+            // No tag UI yet (FLA-70); send empty. Kotlin default args don't bridge, so pass it explicitly.
+            tags: []
         )
         do {
             try await repository.saveFlashcardDeck(deck: deck)

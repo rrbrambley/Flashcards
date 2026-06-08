@@ -36,6 +36,8 @@ class EditDeckViewModel @Inject constructor(
     private var nextDraftCardId = 1L
     private var initialSnapshot: EditDeckFormSnapshot? = null
     private var loadDeckJob: Job? = null
+    // No tag UI yet (FLA-70): carry the loaded deck's tags through an edit so update doesn't wipe them.
+    private var loadedTags: List<String> = emptyList()
 
     fun loadDeck(deckId: Long) {
         if (this.deckId == deckId) return
@@ -55,6 +57,7 @@ class EditDeckViewModel @Inject constructor(
                     cards = drafts,
                 )
                 initialSnapshot = snapshot
+                loadedTags = deck.tags
                 _uiState.update {
                     EditDeckUiState(
                         deckTitle = deck.title,
@@ -160,6 +163,7 @@ class EditDeckViewModel @Inject constructor(
                                 imageUrl = card.imageUrl,
                             )
                         },
+                        tags = loadedTags,
                     ),
                 )
             }.isSuccess
