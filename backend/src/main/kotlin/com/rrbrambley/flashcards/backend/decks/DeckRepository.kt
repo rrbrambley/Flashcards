@@ -6,6 +6,8 @@ import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.mapping.toFlashcardDto
 import com.rrbrambley.flashcards.backend.routes.Cursor
+import com.rrbrambley.flashcards.backend.validation.Validation
+import com.rrbrambley.flashcards.data.mapping.DeckTags
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
@@ -59,13 +61,15 @@ object DeckRepository {
     }
 
     suspend fun createDeck(userId: Long, request: CreateDeckRequest): FlashcardDeckDto = dbQuery {
+        val tags = Validation.normalizeTags(request.tags)
         val deckId = Decks.insertAndGetId {
             it[title] = request.title
             it[ownerUserId] = userId
             it[createdAtMillis] = System.currentTimeMillis()
+            it[Decks.tags] = DeckTags.encode(tags)
         }.value
         insertFlashcards(deckId, request.flashcards)
-        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards)
+        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards, tags = tags)
     }
 
     /** Only the deck's owner may edit it; the global catalog deck (NULL owner) is read-only. */
@@ -75,10 +79,14 @@ object DeckRepository {
             .any()
         if (!owned) throw NotFoundException("Deck $deckId not found")
 
-        Decks.update({ Decks.id eq deckId }) { it[title] = request.title }
+        val tags = Validation.normalizeTags(request.tags)
+        Decks.update({ Decks.id eq deckId }) {
+            it[title] = request.title
+            it[Decks.tags] = DeckTags.encode(tags)
+        }
         Flashcards.deleteWhere { Flashcards.deckId eq deckId }
         insertFlashcards(deckId, request.flashcards)
-        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards)
+        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards, tags = tags)
     }
 
     /**
@@ -118,6 +126,7 @@ object DeckRepository {
             flashcards = cards,
             // Only the owner may edit; the global catalog deck (NULL owner) is read-only.
             editable = this[Decks.ownerUserId]?.value == userId,
+            tags = DeckTags.decode(this[Decks.tags]),
         )
     }
 }

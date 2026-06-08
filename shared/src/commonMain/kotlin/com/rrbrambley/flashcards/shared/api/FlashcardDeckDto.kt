@@ -13,4 +13,7 @@ data class FlashcardDeckDto(
      * behavior (editing allowed, rejected only at save time).
      */
     val editable: Boolean = true,
+    /** User-facing tags / categories for grouping, sorting, and search. Defaults to empty so an
+     *  older payload that omits the field degrades to "untagged". */
+    val tags: List<String> = emptyList(),
 )

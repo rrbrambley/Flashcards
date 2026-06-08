@@ -34,12 +34,13 @@ class ApiMappersTest {
     }
 
     @Test
-    fun flashcardDeckDto_toDomain_mapsCardsAndEditableFlag() {
+    fun flashcardDeckDto_toDomain_mapsCardsEditableFlagAndTags() {
         val dto = FlashcardDeckDto(
             id = 7L,
             title = "Spanish",
             flashcards = listOf(FlashcardDto("Hola", "Hello")),
             editable = false,
+            tags = listOf("Language", "Verbs"),
         )
 
         assertEquals(
@@ -48,6 +49,7 @@ class ApiMappersTest {
                 title = "Spanish",
                 flashcards = listOf(Flashcard("Hola", "Hello")),
                 isEditable = false,
+                tags = listOf("Language", "Verbs"),
             ),
             dto.toDomain(),
         )
@@ -60,14 +62,19 @@ class ApiMappersTest {
     }
 
     @Test
-    fun flashcardDeck_toCreateRequest_mapsTitleAndCards() {
+    fun flashcardDeck_toCreateRequest_mapsTitleCardsAndTags() {
         val deck = FlashcardDeck(
             id = 3L,
             title = "Capitals",
             flashcards = listOf(Flashcard("France?", "Paris", imageUrl = null)),
+            tags = listOf("Geography"),
         )
         assertEquals(
-            CreateDeckRequest(title = "Capitals", flashcards = listOf(FlashcardDto("France?", "Paris", null))),
+            CreateDeckRequest(
+                title = "Capitals",
+                flashcards = listOf(FlashcardDto("France?", "Paris", null)),
+                tags = listOf("Geography"),
+            ),
             deck.toCreateRequest(),
         )
     }

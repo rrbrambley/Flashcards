@@ -924,6 +924,66 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun decks_persist_normalize_and_round_trip_tags() = runApp { client ->
+        val auth = client.register("tagger", "password1")
+        // Create with messy tags: surrounding whitespace, a blank, and a case-insensitive duplicate.
+        val created = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest(
+                        title = "Spanish",
+                        flashcards = listOf(FlashcardDto("Hola", "Hello")),
+                        tags = listOf("  Language ", "Verbs", "language", "  "),
+                    ),
+                ),
+            )
+        }.decode<FlashcardDeckDto>()
+        assertEquals(listOf("Language", "Verbs"), created.tags)
+
+        // Tags survive a re-fetch.
+        val refetched = client.get("/decks/${created.id}") { bearerAuth(auth.accessToken) }.decode<FlashcardDeckDto>()
+        assertEquals(listOf("Language", "Verbs"), refetched.tags)
+
+        // Update replaces the tags.
+        val updated = client.put("/decks/${created.id}") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest("Spanish", listOf(FlashcardDto("Hola", "Hello")), tags = listOf("Grammar")),
+                ),
+            )
+        }.decode<FlashcardDeckDto>()
+        assertEquals(listOf("Grammar"), updated.tags)
+
+        // Omitting tags defaults to empty (and a seeded global deck is untagged).
+        val global = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.single { it.title == "Flags of the World" }
+        assertEquals(emptyList(), global.tags)
+    }
+
+    @Test
+    fun create_deck_with_too_many_tags_is_bad_request() = runApp { client ->
+        val auth = client.register("overtagger", "password1")
+        val response = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest(
+                        title = "Too many",
+                        flashcards = listOf(FlashcardDto("Q", "A")),
+                        tags = (1..11).map { "tag$it" },
+                    ),
+                ),
+            )
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
     fun cannot_edit_a_deck_you_do_not_own() = runApp { client ->
         val auth = client.register("heidi", "password1")
         // The seeded global Flags of the World deck has no owner, so it is read-only.
