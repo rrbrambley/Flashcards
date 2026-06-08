@@ -32,7 +32,12 @@ object DatabaseFactory {
     private const val DEMO_PASSWORD = "demo"
     private const val TEN_YEARS_MILLIS = 10L * 365 * 24 * 60 * 60 * 1000
 
-    fun init(config: DbConfig) {
+    /**
+     * Connects Exposed to the database (HikariCP pool) without creating or seeding the schema. For
+     * tools that operate on an already-provisioned database — e.g. the admin CLI — and for [init],
+     * which connects and then provisions/seeds.
+     */
+    fun connect(config: DbConfig) {
         val hikari = HikariConfig().apply {
             jdbcUrl = config.jdbcUrl
             username = config.user
@@ -44,6 +49,10 @@ object DatabaseFactory {
             validate()
         }
         Database.connect(HikariDataSource(hikari))
+    }
+
+    fun init(config: DbConfig) {
+        connect(config)
 
         transaction {
             // createMissingTablesAndColumns (vs. create) also adds newly-introduced nullable columns

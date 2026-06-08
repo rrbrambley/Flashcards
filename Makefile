@@ -9,6 +9,7 @@
 #   make db        Start just the local Postgres
 #   make db-stop   Stop the local Postgres container
 #   make reseed    Wipe the Postgres volume + restart so the backend reseeds from scratch
+#   make admin ARGS="user list"   Run the admin CLI against the local Postgres
 #
 # The backend points at whatever host port the flashcards-postgres container publishes
 # for 5432, so a non-default mapping (e.g. 5433 when 5432 is taken) is handled automatically.
@@ -16,7 +17,7 @@
 SHELL := /bin/bash
 BACKEND_LOG := backend.local.log
 
-.PHONY: start stop restart logs status web db db-stop reseed
+.PHONY: start stop restart logs status web db db-stop reseed admin
 
 db:
 	@if docker ps --format '{{.Names}}' | grep -q '^flashcards-postgres$$'; then \
@@ -30,6 +31,15 @@ db:
 
 db-stop:
 	docker compose stop postgres
+
+# Run the admin CLI against the local Postgres. Pass the subcommand via ARGS, e.g.
+#   make admin ARGS="user create --email a@b.com --password password1"
+#   make admin ARGS="user list"
+admin: db
+	@port=$$(docker port flashcards-postgres 5432/tcp 2>/dev/null | head -1 | sed 's/.*://'); \
+	port=$${port:-5432}; \
+	DB_JDBC_URL=jdbc:postgresql://localhost:$$port/flashcards \
+		./gradlew --quiet --console=plain :backend:admin --args="$(ARGS)"
 
 # Destructive: deletes the flashcards-pgdata volume so the next backend boot recreates
 # the tables and runs DatabaseFactory.seed() from scratch (demo user/token + global decks).
