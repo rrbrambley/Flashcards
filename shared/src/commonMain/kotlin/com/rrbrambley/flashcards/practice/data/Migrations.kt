@@ -22,5 +22,12 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+/** v4 → v5: add the cached `tags` column to flashcard_decks (JSON `List<String>`, default empty). */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `flashcard_decks` ADD COLUMN `tags` TEXT NOT NULL DEFAULT '[]'")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
-val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4)
+val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4, MIGRATION_4_5)

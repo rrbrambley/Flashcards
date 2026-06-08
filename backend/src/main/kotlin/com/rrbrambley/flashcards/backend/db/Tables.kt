@@ -43,6 +43,10 @@ object Decks : LongIdTable("decks") {
     val ownerUserId = reference("owner_user_id", Users, onDelete = ReferenceOption.CASCADE).nullable()
     val createdAtMillis = long("created_at_millis")
 
+    // User-facing tags/categories, stored as a JSON-encoded List<String> (see shared DeckTags).
+    // Nullable so createMissingTablesAndColumns adds it to an existing DB without a manual migration.
+    val tags = text("tags").nullable()
+
     init {
         index(false, ownerUserId)
     }

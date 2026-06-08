@@ -12,6 +12,8 @@ object Validation {
     const val MAX_EMAIL_LENGTH = 254
     const val MAX_TITLE_LENGTH = 200
     const val MAX_CARD_TEXT_LENGTH = 2_000
+    const val MAX_TAGS = 10
+    const val MAX_TAG_LENGTH = 40
 
     /** Coarse cap on request bodies, enforced from Content-Length before parsing. Above the 5 MB
      *  image-upload limit so multipart uploads still pass and hit their own check. */
@@ -41,5 +43,19 @@ object Validation {
             require(card.question.length <= MAX_CARD_TEXT_LENGTH) { "card text is too long" }
             require(card.answer.length <= MAX_CARD_TEXT_LENGTH) { "card text is too long" }
         }
+    }
+
+    /**
+     * Normalizes deck tags for storage: trims, drops blanks, and de-duplicates case-insensitively
+     * (keeping the first spelling). Throws [IllegalArgumentException] (→ 400) if there are too many
+     * tags or any tag is too long.
+     */
+    fun normalizeTags(tags: List<String>): List<String> {
+        val cleaned = tags.map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinctBy { it.lowercase() }
+        require(cleaned.size <= MAX_TAGS) { "a deck can have at most $MAX_TAGS tags" }
+        cleaned.forEach { require(it.length <= MAX_TAG_LENGTH) { "a tag must be at most $MAX_TAG_LENGTH characters" } }
+        return cleaned
     }
 }

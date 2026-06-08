@@ -21,6 +21,9 @@ final class EditDeckViewModel: ObservableObject {
     private let deckId: Int64
     private var originalTitle = ""
     private var originalCards: [CardDraft] = []
+    // Preserved across save: there's no tag UI yet (FLA-70), so carry the loaded deck's tags through
+    // an edit instead of clobbering them (update replaces the deck's tags with the request's).
+    private var tags: [String] = []
 
     init(repository: FlashcardRepository, imageUploader: ImageUploading, deckId: Int64) {
         self.repository = repository
@@ -92,7 +95,9 @@ final class EditDeckViewModel: ObservableObject {
             flashcards: complete.map {
                 Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: $0.imageUrl)
             },
-            isEditable: true
+            isEditable: true,
+            // Carry the loaded deck's tags through unchanged (no tag UI yet — FLA-70).
+            tags: tags
         )
         do {
             try await repository.updateFlashcardDeck(deck: deck)
@@ -113,6 +118,7 @@ final class EditDeckViewModel: ObservableObject {
         deckTitle = deck.title
         self.cards = cards
         isEditable = deck.isEditable
+        tags = (deck.tags as? [String]) ?? []
         originalTitle = deck.title
         originalCards = cards
         isLoading = false

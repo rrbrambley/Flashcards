@@ -96,6 +96,27 @@ class EntityMappersTest {
     }
 
     @Test
+    fun toDeckEntity_encodesTagsAsJson() {
+        val dto =
+            FlashcardDeckDto(id = 5L, title = "Spanish", flashcards = emptyList(), tags = listOf("Language", "Verbs"))
+        assertEquals("""["Language","Verbs"]""", dto.toDeckEntity().tags)
+    }
+
+    @Test
+    fun toDeckEntity_encodesNoTagsAsEmptyJsonArray() {
+        assertEquals("[]", deckDto().toDeckEntity().tags)
+    }
+
+    @Test
+    fun flashcardDeckWithCards_toDomain_decodesTags() {
+        val withCards = FlashcardDeckWithCards(
+            deck = FlashcardDeckEntity(id = 5L, title = "Spanish", tags = """["Language","Verbs"]"""),
+            flashcards = emptyList(),
+        )
+        assertEquals(listOf("Language", "Verbs"), withCards.toDomain().tags)
+    }
+
+    @Test
     fun practiceSessionWithDeck_toDomain_pullsTitleFromDeck() {
         val withDeck = PracticeSessionWithDeck(
             session = PracticeSessionEntity(

@@ -58,4 +58,23 @@ class FlashcardsDatabaseMigrationTest {
             assertTrue(cursor.moveToFirst())
         }
     }
+
+    @Test
+    fun migrate4To5_preservesRowsAndAddsTagsColumn() {
+        // Seed a v4 database with a deck (no tags column yet).
+        helper.createDatabase(testDb, 4).apply {
+            execSQL("INSERT INTO flashcard_decks (id, title, editable) VALUES (1, 'Spanish basics', 1)")
+            close()
+        }
+
+        // Run MIGRATION_4_5 and validate against the exported v5 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 5, true, MIGRATION_4_5)
+
+        // The existing row survived and got the default (empty) tags.
+        db.query("SELECT title, tags FROM flashcard_decks WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Spanish basics", cursor.getString(0))
+            assertEquals("[]", cursor.getString(1))
+        }
+    }
 }

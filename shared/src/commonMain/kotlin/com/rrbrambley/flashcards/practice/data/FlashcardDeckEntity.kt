@@ -10,4 +10,6 @@ data class FlashcardDeckEntity(
     val title: String,
     /** Cached from the backend: whether the current user may edit this deck. */
     val editable: Boolean = true,
+    /** Cached tags as a JSON-encoded `List<String>` (see DeckTags). `"[]"` = untagged. */
+    val tags: String = "[]",
 )
