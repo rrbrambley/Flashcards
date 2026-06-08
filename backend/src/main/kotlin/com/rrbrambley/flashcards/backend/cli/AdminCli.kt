@@ -101,12 +101,23 @@ private fun quietConnectionLogs() {
 /** Connects to the database using the same config keys as the server (no schema/seed). */
 private fun connectDatabase() {
     val config = HoconApplicationConfig(ConfigFactory.load())
-    DatabaseFactory.connect(
-        DbConfig(
-            jdbcUrl = config.property("db.jdbcUrl").getString(),
-            user = config.property("db.user").getString(),
-            password = config.property("db.password").getString(),
-            maxPoolSize = config.property("db.maxPoolSize").getString().toInt(),
-        ),
-    )
+    val jdbcUrl = config.property("db.jdbcUrl").getString()
+    try {
+        DatabaseFactory.connect(
+            DbConfig(
+                jdbcUrl = jdbcUrl,
+                user = config.property("db.user").getString(),
+                password = config.property("db.password").getString(),
+                maxPoolSize = config.property("db.maxPoolSize").getString().toInt(),
+            ),
+        )
+    } catch (e: Exception) {
+        // The most common cause is the local Postgres being on a non-default port (e.g. 5433 when
+        // 5432 is taken) — `make admin` detects it; the bare Gradle invocation defaults to 5432.
+        throw AdminError(
+            "could not connect to the database at $jdbcUrl (${e.message}). " +
+                "If your local Postgres is on a non-default port, run `make admin ARGS=\"…\"` " +
+                "(it detects the port) or set DB_JDBC_URL.",
+        )
+    }
 }

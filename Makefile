@@ -38,8 +38,8 @@ db-stop:
 admin: db
 	@port=$$(docker port flashcards-postgres 5432/tcp 2>/dev/null | head -1 | sed 's/.*://'); \
 	port=$${port:-5432}; \
-	DB_JDBC_URL=jdbc:postgresql://localhost:$$port/flashcards \
-		./gradlew --quiet --console=plain :backend:admin --args="$(ARGS)"
+	./gradlew --quiet --console=plain :backend:admin \
+		-PDB_JDBC_URL=jdbc:postgresql://localhost:$$port/flashcards --args="$(ARGS)"
 
 # Destructive: deletes the flashcards-pgdata volume so the next backend boot recreates
 # the tables and runs DatabaseFactory.seed() from scratch (demo user/token + global decks).
