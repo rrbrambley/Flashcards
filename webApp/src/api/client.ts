@@ -6,6 +6,7 @@ import type {
   FlashcardDeckDto,
   HomeData,
   ImageUploadResponse,
+  MeResponse,
   Page,
   PracticeSessionDto,
   UpdateProgressRequest,
@@ -173,14 +174,22 @@ export const api = {
   // Revokes the refresh token server-side; needs the access bearer (auth: true) too.
   logout: (refreshToken: string) =>
     request<void>('/auth/logout', { method: 'POST', body: { refreshToken }, auth: true }),
+  // The current user's identity, roles, and effective permissions (gates admin UI).
+  getMe: () => request<MeResponse>('/auth/me', { auth: true }),
   getHome: () => request<HomeData[]>('/home', { auth: true }),
   // One cursor-paginated page of decks (newest first). Pass a prior page's nextCursor to continue.
   getDecks: (params: { limit?: number; cursor?: string } = {}) => getDecksPage(params),
   // Every deck across all pages — for flows that need the whole library (e.g. finding a deck by title).
   getAllDecks: () => fetchAllPages((cursor) => getDecksPage({ cursor })),
+  // One page of the global (ownerless) catalog — server-gated on manage_global_decks (admin view).
+  getGlobalDecks: (params: { limit?: number; cursor?: string } = {}) =>
+    request<Page<FlashcardDeckDto>>(`/decks/global${buildQuery(params)}`, { auth: true }),
   getDeck: (id: number) => request<FlashcardDeckDto>(`/decks/${id}`, { auth: true }),
   createDeck: (deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>('/decks', { method: 'POST', body: deck, auth: true }),
+  // Create a global (ownerless) catalog deck — server-gated on the manage_global_decks permission.
+  createGlobalDeck: (deck: CreateDeckRequest) =>
+    request<FlashcardDeckDto>('/decks/global', { method: 'POST', body: deck, auth: true }),
   updateDeck: (id: number, deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>(`/decks/${id}`, { method: 'PUT', body: deck, auth: true }),
   deleteDeck: (id: number) => request<void>(`/decks/${id}`, { method: 'DELETE', auth: true }),

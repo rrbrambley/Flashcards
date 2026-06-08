@@ -32,6 +32,7 @@ import com.rrbrambley.flashcards.shared.api.HomeDataDto
 import com.rrbrambley.flashcards.shared.api.ImageUploadResponse
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.LogoutRequest
+import com.rrbrambley.flashcards.shared.api.MeResponse
 import com.rrbrambley.flashcards.shared.api.Page
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
@@ -1098,6 +1099,136 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun admin_can_create_edit_delete_a_global_deck_others_cannot() = runApp { client ->
+        val admin = client.register("globaladmin", "password1")
+        grantAdmin(admin.userId)
+        val user = client.register("plainuser", "password1")
+
+        // A non-admin can't create a global deck (403 from the gated route).
+        val rejected = client.post("/decks/global") {
+            bearerAuth(user.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Nope", listOf(FlashcardDto("Q", "A")))))
+        }
+        assertEquals(HttpStatusCode.Forbidden, rejected.status)
+
+        // The admin creates a global deck.
+        val created = client.post("/decks/global") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest("Capitals", listOf(FlashcardDto("France?", "Paris")), tags = listOf("Geography")),
+                ),
+            )
+        }
+        assertEquals(HttpStatusCode.Created, created.status)
+        val deck = created.decode<FlashcardDeckDto>()
+        assertTrue(deck.id > 0)
+        assertEquals(listOf("Geography"), deck.tags)
+
+        // It's a global deck: editable for the admin, read-only for a normal user.
+        assertTrue(
+            client.get("/decks/${deck.id}") {
+                bearerAuth(admin.accessToken)
+            }.decode<FlashcardDeckDto>().editable,
+        )
+        assertFalse(
+            client.get("/decks/${deck.id}") {
+                bearerAuth(user.accessToken)
+            }.decode<FlashcardDeckDto>().editable,
+        )
+
+        // A normal user can't edit or delete it (404 — hidden), the admin can.
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.put("/decks/${deck.id}") {
+                bearerAuth(user.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(CreateDeckRequest("Hacked", listOf(FlashcardDto("Q", "A")))))
+            }.status,
+        )
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.delete("/decks/${deck.id}") { bearerAuth(user.accessToken) }.status,
+        )
+
+        val updated = client.put("/decks/${deck.id}") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("World Capitals", listOf(FlashcardDto("Japan?", "Tokyo")))))
+        }.decode<FlashcardDeckDto>()
+        assertEquals("World Capitals", updated.title)
+
+        assertEquals(
+            HttpStatusCode.NoContent,
+            client.delete("/decks/${deck.id}") { bearerAuth(admin.accessToken) }.status,
+        )
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.get("/decks/${deck.id}") { bearerAuth(admin.accessToken) }.status,
+        )
+    }
+
+    @Test
+    fun global_deck_list_endpoint_is_admin_only_and_returns_only_global_decks() = runApp { client ->
+        val admin = client.register("globallist", "password1")
+        grantAdmin(admin.userId)
+
+        // A non-admin is forbidden from the management list.
+        val user = client.register("listplain", "password1")
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.get("/decks/global") { bearerAuth(user.accessToken) }.status,
+        )
+
+        // The admin owns a personal deck and creates a global one.
+        client.post("/decks") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("My Deck", listOf(FlashcardDto("Q", "A")))))
+        }
+        client.post("/decks/global") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Admin Catalog", listOf(FlashcardDto("France?", "Paris")))))
+        }
+
+        // The list is scoped to ownerless decks (the new one + any seeded global decks), all editable
+        // for the admin, and never includes the admin's personal deck.
+        val globals = client.get("/decks/global") { bearerAuth(admin.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items
+        assertTrue(globals.any { it.title == "Admin Catalog" })
+        assertFalse(globals.any { it.title == "My Deck" })
+        assertTrue(globals.all { it.editable })
+    }
+
+    @Test
+    fun auth_me_and_login_expose_roles_and_permissions() = runApp { client ->
+        val user = client.register("meuser", "password1")
+        // Fresh user: no roles or permissions, on the login response and /me.
+        assertTrue(user.permissions.isEmpty())
+        val me0 = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
+        assertEquals(user.userId, me0.userId)
+        assertEquals("meuser@example.com", me0.email)
+        assertTrue(me0.roles.isEmpty())
+        assertTrue(me0.permissions.isEmpty())
+
+        // Granting the admin role is reflected by /me on the SAME token (loaded fresh).
+        grantAdmin(user.userId)
+        val me1 = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
+        assertEquals(listOf("admin"), me1.roles)
+        assertEquals(listOf("manage_global_decks"), me1.permissions)
+
+        // ...and a fresh login carries the permission too.
+        val login = client.post("/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(LoginRequest("meuser@example.com", "password1")))
+        }.decode<AuthResponse>()
+        assertEquals(listOf("manage_global_decks"), login.permissions)
+    }
+
+    @Test
     fun delete_nonexistent_deck_returns_404() = runApp { client ->
         val auth = client.register("rita", "password1")
         assertEquals(
@@ -1170,6 +1301,15 @@ class ApplicationFlowTest {
         contentType(ContentType.Application.Json)
         setBody(json.encodeToString(CreateSessionRequest(deckId, mode)))
     }.decode()
+
+    /** Grants the seeded `admin` role to [userId] (bootstraps an admin for a test). */
+    private suspend fun grantAdmin(userId: Long) = dbQuery {
+        val adminRoleId = Roles.selectAll().where { Roles.key eq Role.ADMIN.key }.first()[Roles.id].value
+        UserRoles.insert {
+            it[UserRoles.userId] = userId
+            it[roleId] = adminRoleId
+        }
+    }
 
     private suspend fun HttpClient.refresh(refreshToken: String): HttpResponse = post("/auth/refresh") {
         contentType(ContentType.Application.Json)

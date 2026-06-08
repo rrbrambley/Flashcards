@@ -11,12 +11,13 @@ vi.mock('../api/client', async (importOriginal) => {
   return { ...actual, api: { getDeck: vi.fn(), updateDeck: vi.fn(), deleteDeck: vi.fn() } };
 });
 
-function renderPage() {
+function renderPage(from?: string) {
   render(
-    <MemoryRouter initialEntries={['/decks/5/edit']}>
+    <MemoryRouter initialEntries={[{ pathname: '/decks/5/edit', state: from ? { from } : undefined }]}>
       <Routes>
         <Route path="/decks/:id/edit" element={<EditDeckPage />} />
         <Route path="/library" element={<div>library</div>} />
+        <Route path="/library/global" element={<div>global library</div>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -73,6 +74,21 @@ describe('EditDeckPage', () => {
 
     expect(api.deleteDeck).toHaveBeenCalledWith(5);
     expect(await screen.findByText('library')).toBeInTheDocument();
+  });
+
+  it('returns to the global list after deleting a deck opened from it', async () => {
+    vi.mocked(api.getDeck).mockResolvedValue(deck());
+    vi.mocked(api.deleteDeck).mockResolvedValue(undefined);
+    renderPage('/library/global');
+
+    // The back link points at the global list, not the personal library.
+    expect(await screen.findByRole('link', { name: '← Global decks' })).toHaveAttribute('href', '/library/global');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete deck' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete deck' }));
+
+    expect(api.deleteDeck).toHaveBeenCalledWith(5);
+    expect(await screen.findByText('global library')).toBeInTheDocument();
   });
 
   it('does not offer delete for a read-only deck', async () => {

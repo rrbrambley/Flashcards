@@ -16,10 +16,15 @@ fun ApplicationCall.userId(): Long = principal<UserPrincipal>()!!.userId
  * revoked role takes effect immediately. Call inside an `authenticate(BEARER_AUTH)` block.
  */
 suspend fun ApplicationCall.requirePermission(permission: Permission) {
-    if (permission.key !in PermissionRepository.effectivePermissions(userId())) {
+    if (!hasPermission(permission)) {
         throw ForbiddenException("Missing required permission: ${permission.key}")
     }
 }
+
+/** Whether the current user holds [permission] — for branching (e.g. computing `editable`) rather
+ *  than gating. Loaded fresh per call. */
+suspend fun ApplicationCall.hasPermission(permission: Permission): Boolean =
+    permission.key in PermissionRepository.effectivePermissions(userId())
 
 /** Reads a required Long path parameter, throwing 400 on a missing/invalid value. */
 fun ApplicationCall.pathLong(name: String): Long = parameters[name]?.toLongOrNull()

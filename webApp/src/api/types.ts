@@ -32,6 +32,16 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   userId: number;
+  // The user's effective feature permissions (e.g. 'manage_global_decks'). May be absent on older responses.
+  permissions?: string[];
+}
+
+// GET /auth/me — the current user's identity, roles, and effective permissions.
+export interface MeResponse {
+  userId: number;
+  email: string;
+  roles: string[];
+  permissions: string[];
 }
 
 export interface ErrorResponse {

@@ -1,7 +1,7 @@
 package com.rrbrambley.flashcards.backend.plugins
 
 import com.rrbrambley.flashcards.backend.auth.authRoutes
-import com.rrbrambley.flashcards.backend.auth.logoutRoute
+import com.rrbrambley.flashcards.backend.auth.authenticatedAuthRoutes
 import com.rrbrambley.flashcards.backend.decks.deckRoutes
 import com.rrbrambley.flashcards.backend.health.healthRoutes
 import com.rrbrambley.flashcards.backend.home.homeRoutes
@@ -21,7 +21,7 @@ fun Application.configureRouting() {
             authRoutes()
         }
         authenticate(BEARER_AUTH) {
-            logoutRoute()
+            authenticatedAuthRoutes()
             deckRoutes()
             sessionRoutes()
             homeRoutes()

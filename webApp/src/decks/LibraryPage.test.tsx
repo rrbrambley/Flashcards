@@ -5,8 +5,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { LibraryPage } from './LibraryPage';
 import { api } from '../api/client';
 
+const authState = vi.hoisted(() => ({ canManageGlobal: false }));
+
 vi.mock('../api/client', () => ({ api: { getDecks: vi.fn(), getAllSessions: vi.fn() } }));
-vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn() }) }));
+vi.mock('../auth/auth-context', () => ({
+  useAuth: () => ({ signOut: vi.fn(), can: (p: string) => p === 'manage_global_decks' && authState.canManageGlobal }),
+}));
 
 function renderPage() {
   render(
@@ -17,7 +21,24 @@ function renderPage() {
 }
 
 describe('LibraryPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authState.canManageGlobal = false;
+  });
+
+  it('hides the "Manage global decks" action for non-admins', async () => {
+    vi.mocked(api.getDecks).mockResolvedValue({ items: [], nextCursor: null });
+    renderPage();
+    await screen.findByText(/No decks yet/);
+    expect(screen.queryByRole('button', { name: 'Manage global decks' })).not.toBeInTheDocument();
+  });
+
+  it('shows the "Manage global decks" action for admins', async () => {
+    vi.mocked(api.getDecks).mockResolvedValue({ items: [], nextCursor: null });
+    authState.canManageGlobal = true;
+    renderPage();
+    expect(await screen.findByRole('button', { name: 'Manage global decks' })).toBeInTheDocument();
+  });
 
   it('renders the fetched decks', async () => {
     vi.mocked(api.getDecks).mockResolvedValue({
