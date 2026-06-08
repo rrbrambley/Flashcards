@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.backend.db
 
 import org.jetbrains.exposed.dao.id.LongIdTable
 import org.jetbrains.exposed.sql.ReferenceOption
+import org.jetbrains.exposed.sql.Table
 
 object Users : LongIdTable("users") {
     val email = varchar("email", 255).uniqueIndex()
@@ -56,6 +57,39 @@ object Flashcards : LongIdTable("flashcards") {
 
     init {
         index(false, deckId)
+    }
+}
+
+/**
+ * RBAC catalog + assignments. The `key`s in [Roles]/[Permissions] are seeded from the code-defined
+ * `auth/Rbac.kt` enums (the source of truth); the join tables hold the runtime assignments — which
+ * role grants which permission, and which user holds which role. A user's effective permissions are
+ * the union of their roles' permissions.
+ */
+object Roles : LongIdTable("roles") {
+    val key = varchar("key", 64).uniqueIndex() // e.g. "admin", "user"
+    val description = varchar("description", 255)
+}
+
+object Permissions : LongIdTable("permissions") {
+    val key = varchar("key", 64).uniqueIndex() // e.g. "manage_global_decks"
+    val description = varchar("description", 255)
+}
+
+object RolePermissions : Table("role_permissions") {
+    val roleId = reference("role_id", Roles, onDelete = ReferenceOption.CASCADE)
+    val permissionId = reference("permission_id", Permissions, onDelete = ReferenceOption.CASCADE)
+    override val primaryKey = PrimaryKey(roleId, permissionId)
+}
+
+object UserRoles : Table("user_roles") {
+    val userId = reference("user_id", Users, onDelete = ReferenceOption.CASCADE)
+    val roleId = reference("role_id", Roles, onDelete = ReferenceOption.CASCADE)
+    override val primaryKey = PrimaryKey(userId, roleId)
+
+    init {
+        // Effective-permissions lookup starts from the user.
+        index(false, userId)
     }
 }
 

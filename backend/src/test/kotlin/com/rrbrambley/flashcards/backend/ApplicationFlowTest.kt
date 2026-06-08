@@ -1,9 +1,18 @@
 package com.rrbrambley.flashcards.backend
 
 import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
+import com.rrbrambley.flashcards.backend.auth.Permission
+import com.rrbrambley.flashcards.backend.auth.PermissionRepository
+import com.rrbrambley.flashcards.backend.auth.Role
 import com.rrbrambley.flashcards.backend.auth.TokenService
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.db.Roles
+import com.rrbrambley.flashcards.backend.db.UserRoles
+import com.rrbrambley.flashcards.backend.db.Users
+import com.rrbrambley.flashcards.backend.db.dbQuery
+import com.rrbrambley.flashcards.backend.plugins.BEARER_AUTH
+import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.storage.Storage
 import com.rrbrambley.flashcards.backend.storage.StorageService
 import com.rrbrambley.flashcards.shared.api.AuthResponse
@@ -40,10 +49,17 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.server.auth.authenticate
 import io.ktor.server.config.HoconApplicationConfig
+import io.ktor.server.response.respond
+import io.ktor.server.routing.Route
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.selectAll
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import kotlin.test.Test
@@ -82,22 +98,29 @@ class ApplicationFlowTest {
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    private fun runApp(authRateLimit: Int = 100_000, block: suspend ApplicationTestBuilder.(HttpClient) -> Unit) =
-        testApplication {
-            // Load the real application.conf so module() sees jwt config (testApplication's default
-            // config is empty). Google stays unconfigured since main()'s configure() isn't called.
-            // The auth rate limit is bumped far above what tests send, except where a test opts into a
-            // low limit to exercise throttling.
-            environment {
-                config = HoconApplicationConfig(
-                    ConfigFactory.parseString(
-                        "ratelimit.auth.limit = $authRateLimit",
-                    ).withFallback(ConfigFactory.load()),
-                )
-            }
-            application { module() }
-            block(client)
+    private fun runApp(
+        authRateLimit: Int = 100_000,
+        extraRouting: (Route.() -> Unit)? = null,
+        block: suspend ApplicationTestBuilder.(HttpClient) -> Unit,
+    ) = testApplication {
+        // Load the real application.conf so module() sees jwt config (testApplication's default
+        // config is empty). Google stays unconfigured since main()'s configure() isn't called.
+        // The auth rate limit is bumped far above what tests send, except where a test opts into a
+        // low limit to exercise throttling.
+        environment {
+            config = HoconApplicationConfig(
+                ConfigFactory.parseString(
+                    "ratelimit.auth.limit = $authRateLimit",
+                ).withFallback(ConfigFactory.load()),
+            )
         }
+        application {
+            module()
+            // Lets a test mount an extra route (e.g. a permission-guarded one) on top of the real app.
+            if (extraRouting != null) routing { extraRouting() }
+        }
+        block(client)
+    }
 
     private fun emailFor(name: String) = "$name@example.com"
 
@@ -242,6 +265,53 @@ class ApplicationFlowTest {
             }
             assertEquals(HttpStatusCode.Unauthorized, response.status)
         }
+    }
+
+    @Test
+    fun rbac_seeds_admin_for_the_demo_user_and_no_permissions_for_new_users() = runApp { client ->
+        // The demo user is bootstrapped as an admin (DatabaseFactory.seedRbac).
+        val demoUserId = dbQuery {
+            Users.selectAll().where { Users.email eq DatabaseFactory.DEMO_EMAIL }.first()[Users.id].value
+        }
+        assertEquals(setOf(Permission.MANAGE_GLOBAL_DECKS.key), PermissionRepository.effectivePermissions(demoUserId))
+
+        // A freshly registered user has no roles, so no permissions.
+        val auth = client.register("permless", "password1")
+        assertTrue(PermissionRepository.effectivePermissions(auth.userId).isEmpty())
+    }
+
+    @Test
+    fun requirePermission_forbids_without_and_allows_with_the_permission() = runApp(
+        extraRouting = {
+            authenticate(BEARER_AUTH) {
+                get("/test/manage-global-decks") {
+                    call.requirePermission(Permission.MANAGE_GLOBAL_DECKS)
+                    call.respond(HttpStatusCode.OK)
+                }
+            }
+        },
+    ) { client ->
+        val auth = client.register("aspiring-admin", "password1")
+
+        // Without the permission the guard returns 403.
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.get("/test/manage-global-decks") { bearerAuth(auth.accessToken) }.status,
+        )
+
+        // Grant the admin role directly; the SAME access token now passes, since the guard loads
+        // permissions from the DB per request (no token-staleness window).
+        dbQuery {
+            val adminRoleId = Roles.selectAll().where { Roles.key eq Role.ADMIN.key }.first()[Roles.id].value
+            UserRoles.insert {
+                it[userId] = auth.userId
+                it[roleId] = adminRoleId
+            }
+        }
+        assertEquals(
+            HttpStatusCode.OK,
+            client.get("/test/manage-global-decks") { bearerAuth(auth.accessToken) }.status,
+        )
     }
 
     @Test

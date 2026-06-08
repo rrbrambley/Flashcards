@@ -1,6 +1,8 @@
 package com.rrbrambley.flashcards.backend.db
 
 import com.rrbrambley.flashcards.backend.auth.Passwords
+import com.rrbrambley.flashcards.backend.auth.Permission
+import com.rrbrambley.flashcards.backend.auth.Role
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import kotlinx.serialization.json.Json
@@ -46,7 +48,17 @@ object DatabaseFactory {
         transaction {
             // createMissingTablesAndColumns (vs. create) also adds newly-introduced nullable columns
             // — e.g. refresh_tokens.rotated_at_millis — to an already-provisioned dev database.
-            SchemaUtils.createMissingTablesAndColumns(Users, RefreshTokens, Decks, Flashcards, PracticeSessions)
+            SchemaUtils.createMissingTablesAndColumns(
+                Users,
+                RefreshTokens,
+                Decks,
+                Flashcards,
+                PracticeSessions,
+                Roles,
+                Permissions,
+                RolePermissions,
+                UserRoles,
+            )
             seed()
         }
     }
@@ -97,6 +109,71 @@ object DatabaseFactory {
         )
         seedGlobalDeck(now, US_STATE_CAPITALS_TITLE, textSeedCards("/seed/us-state-capitals.json", "state", "capital"))
         seedGlobalDeck(now, WORLD_CURRENCIES_TITLE, textSeedCards("/seed/world-currencies.json", "country", "currency"))
+
+        seedRbac(demoUserId)
+    }
+
+    /**
+     * Seeds the RBAC catalog (roles, permissions, and each role's grants) from the code-defined
+     * [Role]/[Permission] enums, then bootstraps the demo user as an admin. Idempotent across restarts
+     * (guarded inserts); rebuilt on a reset + reseed. Real-world admin assignment is a separate
+     * concern (initially SQL/seed; a future "manage users & roles" feature).
+     */
+    private fun seedRbac(demoUserId: Long) {
+        val permissionIds = Permission.entries.associate { permission ->
+            val id = Permissions
+                .selectAll()
+                .where { Permissions.key eq permission.key }
+                .firstOrNull()
+                ?.get(Permissions.id)
+                ?.value
+                ?: Permissions.insertAndGetId {
+                    it[key] = permission.key
+                    it[description] = permission.description
+                }.value
+            permission to id
+        }
+
+        Role.entries.forEach { role ->
+            val roleId = Roles
+                .selectAll()
+                .where { Roles.key eq role.key }
+                .firstOrNull()
+                ?.get(Roles.id)
+                ?.value
+                ?: Roles.insertAndGetId {
+                    it[key] = role.key
+                    it[description] = role.description
+                }.value
+
+            role.permissions.forEach { permission ->
+                val permissionId = permissionIds.getValue(permission)
+                val granted = RolePermissions
+                    .selectAll()
+                    .where { (RolePermissions.roleId eq roleId) and (RolePermissions.permissionId eq permissionId) }
+                    .any()
+                if (!granted) {
+                    RolePermissions.insert {
+                        it[RolePermissions.roleId] = roleId
+                        it[RolePermissions.permissionId] = permissionId
+                    }
+                }
+            }
+
+            // Bootstrap: the demo user is an admin so there's a working admin for dev/testing.
+            if (role == Role.ADMIN) {
+                val assigned = UserRoles
+                    .selectAll()
+                    .where { (UserRoles.userId eq demoUserId) and (UserRoles.roleId eq roleId) }
+                    .any()
+                if (!assigned) {
+                    UserRoles.insert {
+                        it[userId] = demoUserId
+                        it[UserRoles.roleId] = roleId
+                    }
+                }
+            }
+        }
     }
 
     /**
