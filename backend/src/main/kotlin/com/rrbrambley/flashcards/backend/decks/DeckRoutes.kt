@@ -40,6 +40,11 @@ fun Route.deckRoutes() {
             Validation.validateDeck(request)
             call.respond(HttpStatusCode.Created, DeckRepository.createDeck(call.userId(), request))
         }
+        // The global (ownerless) catalog — admins only (the web "Manage global decks" view).
+        get("/global") {
+            call.requirePermission(Permission.MANAGE_GLOBAL_DECKS)
+            call.respond(DeckRepository.listGlobalDecks(call.userId(), call.pageLimit(), call.pageCursor()))
+        }
         // Create a global (ownerless) catalog deck — admins only.
         post("/global") {
             call.requirePermission(Permission.MANAGE_GLOBAL_DECKS)

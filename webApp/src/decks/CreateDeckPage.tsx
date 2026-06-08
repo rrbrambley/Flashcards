@@ -16,7 +16,7 @@ export function CreateDeckPage() {
           submitLabel={isGlobal ? 'Create global deck' : 'Create deck'}
           onSubmit={async (title, flashcards) => {
             await (isGlobal ? api.createGlobalDeck({ title, flashcards }) : api.createDeck({ title, flashcards }));
-            navigate('/library');
+            navigate(isGlobal ? '/library/global' : '/library');
           }}
         />
       </main>

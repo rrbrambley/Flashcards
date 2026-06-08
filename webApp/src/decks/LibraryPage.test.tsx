@@ -26,18 +26,18 @@ describe('LibraryPage', () => {
     authState.canManageGlobal = false;
   });
 
-  it('hides the "New global deck" action for non-admins', async () => {
+  it('hides the "Manage global decks" action for non-admins', async () => {
     vi.mocked(api.getDecks).mockResolvedValue({ items: [], nextCursor: null });
     renderPage();
     await screen.findByText(/No decks yet/);
-    expect(screen.queryByRole('button', { name: '+ New global deck' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Manage global decks' })).not.toBeInTheDocument();
   });
 
-  it('shows the "New global deck" action for admins', async () => {
+  it('shows the "Manage global decks" action for admins', async () => {
     vi.mocked(api.getDecks).mockResolvedValue({ items: [], nextCursor: null });
     authState.canManageGlobal = true;
     renderPage();
-    expect(await screen.findByRole('button', { name: '+ New global deck' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Manage global decks' })).toBeInTheDocument();
   });
 
   it('renders the fetched decks', async () => {

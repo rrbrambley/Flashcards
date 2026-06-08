@@ -1171,6 +1171,39 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun global_deck_list_endpoint_is_admin_only_and_returns_only_global_decks() = runApp { client ->
+        val admin = client.register("globallist", "password1")
+        grantAdmin(admin.userId)
+
+        // A non-admin is forbidden from the management list.
+        val user = client.register("listplain", "password1")
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.get("/decks/global") { bearerAuth(user.accessToken) }.status,
+        )
+
+        // The admin owns a personal deck and creates a global one.
+        client.post("/decks") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("My Deck", listOf(FlashcardDto("Q", "A")))))
+        }
+        client.post("/decks/global") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Admin Catalog", listOf(FlashcardDto("France?", "Paris")))))
+        }
+
+        // The list is scoped to ownerless decks (the new one + any seeded global decks), all editable
+        // for the admin, and never includes the admin's personal deck.
+        val globals = client.get("/decks/global") { bearerAuth(admin.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items
+        assertTrue(globals.any { it.title == "Admin Catalog" })
+        assertFalse(globals.any { it.title == "My Deck" })
+        assertTrue(globals.all { it.editable })
+    }
+
+    @Test
     fun auth_me_and_login_expose_roles_and_permissions() = runApp { client ->
         val user = client.register("meuser", "password1")
         // Fresh user: no roles or permissions, on the login response and /me.

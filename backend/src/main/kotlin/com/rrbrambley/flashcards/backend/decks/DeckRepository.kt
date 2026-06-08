@@ -56,6 +56,34 @@ object DeckRepository {
         Page(items = pageRows.map { it.toDeckDtoWithCards(userId, canManageGlobal) }, nextCursor = nextCursor)
     }
 
+    /**
+     * One page of the global (NULL owner) catalog decks, newest first — the admin "manage global
+     * decks" view. The route gates this on manage-global-decks, so the caller can always edit them
+     * ([canManageGlobal] is implicitly true here); [adminUserId] is only used for the editable flag.
+     */
+    suspend fun listGlobalDecks(adminUserId: Long, limit: Int, cursor: String?): Page<FlashcardDeckDto> = dbQuery {
+        val afterId = cursor?.let {
+            Cursor.decode(it).toLongOrNull() ?: throw IllegalArgumentException("Invalid pagination cursor")
+        }
+        val query = Decks.selectAll().where { Decks.ownerUserId.isNull() }
+        if (afterId != null) {
+            query.andWhere { Decks.id less afterId }
+        }
+        val rows = query
+            .orderBy(Decks.id to SortOrder.DESC)
+            .limit(limit + 1)
+            .toList()
+
+        val pageRows = rows.take(limit)
+        val nextCursor = if (rows.size > limit) Cursor.encode(pageRows.last()[Decks.id].value.toString()) else null
+        Page(
+            items = pageRows.map {
+                it.toDeckDtoWithCards(adminUserId, canManageGlobal = true)
+            },
+            nextCursor = nextCursor,
+        )
+    }
+
     suspend fun getDeck(userId: Long, canManageGlobal: Boolean, deckId: Long): FlashcardDeckDto? = dbQuery {
         Decks.selectAll()
             .where {

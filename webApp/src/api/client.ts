@@ -181,6 +181,9 @@ export const api = {
   getDecks: (params: { limit?: number; cursor?: string } = {}) => getDecksPage(params),
   // Every deck across all pages — for flows that need the whole library (e.g. finding a deck by title).
   getAllDecks: () => fetchAllPages((cursor) => getDecksPage({ cursor })),
+  // One page of the global (ownerless) catalog — server-gated on manage_global_decks (admin view).
+  getGlobalDecks: (params: { limit?: number; cursor?: string } = {}) =>
+    request<Page<FlashcardDeckDto>>(`/decks/global${buildQuery(params)}`, { auth: true }),
   getDeck: (id: number) => request<FlashcardDeckDto>(`/decks/${id}`, { auth: true }),
   createDeck: (deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>('/decks', { method: 'POST', body: deck, auth: true }),
