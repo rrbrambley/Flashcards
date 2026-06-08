@@ -13,7 +13,7 @@ describe('TestMode', () => {
     await userEvent.type(screen.getByLabelText('Your answer'), 'paris');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
 
-    expect(screen.getByText(/Correct/)).toBeInTheDocument();
+    expect(screen.getByText('✓ Correct')).toBeInTheDocument();
     expect(onResult).not.toHaveBeenCalled(); // not until the user proceeds
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
@@ -27,7 +27,7 @@ describe('TestMode', () => {
     await userEvent.type(screen.getByLabelText('Your answer'), 'mississipi');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
 
-    expect(screen.getByText(/Correct/)).toBeInTheDocument();
+    expect(screen.getByText('✓ Correct')).toBeInTheDocument();
   });
 
   it('a wrong answer reveals the correct answer and advances as incorrect', async () => {
@@ -37,7 +37,8 @@ describe('TestMode', () => {
     await userEvent.type(screen.getByLabelText('Your answer'), 'Berlin');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
 
-    expect(screen.getByText(/Not quite/)).toBeInTheDocument();
+    expect(screen.getByText('✗ Incorrect')).toBeInTheDocument();
+    expect(screen.getByText('Berlin')).toBeInTheDocument(); // the typed answer stays in place
     expect(screen.getByText('Paris')).toBeInTheDocument(); // the correct answer is revealed
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));

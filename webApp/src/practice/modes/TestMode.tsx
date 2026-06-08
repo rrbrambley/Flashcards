@@ -29,7 +29,7 @@ export function TestMode({ card, onResult }: PracticeModeProps) {
 
   return (
     <div className="test-mode">
-      <div className="practice-card test-prompt">
+      <div className="test-prompt">
         {card.question && <p className="practice-term">{card.question}</p>}
         {hasImage && <img src={card.imageUrl ?? ''} alt={card.question || 'card image'} className="practice-image" />}
       </div>
@@ -37,18 +37,25 @@ export function TestMode({ card, onResult }: PracticeModeProps) {
       {!graded ? (
         <TextAnswerInput onSubmit={(input) => setGraded({ input, correct: gradeTextAnswer(input, card.answer).correct })} />
       ) : (
-        <div className={`test-feedback ${graded.correct ? 'correct' : 'incorrect'}`}>
-          <p className="test-verdict">{graded.correct ? '✓ Correct' : '✗ Not quite'}</p>
-          {!graded.correct && <p className="muted">You wrote: {graded.input.trim() || '(blank)'}</p>}
-          <p className="test-answer">
-            Answer: <strong>{card.answer}</strong>
-          </p>
+        <>
+          {/* Keep the typed answer where the input was, with the verdict beside it. */}
+          <div className="test-submitted">
+            <span className="test-submitted-answer">{graded.input.trim() || '(blank)'}</span>
+            <span className={`test-verdict ${graded.correct ? 'correct' : 'incorrect'}`}>
+              {graded.correct ? '✓ Correct' : '✗ Incorrect'}
+            </span>
+          </div>
+          {!graded.correct && (
+            <p className="test-answer">
+              Answer: <strong>{card.answer}</strong>
+            </p>
+          )}
           <div className="practice-actions">
             <button className="mark-correct" onClick={() => onResult(graded.correct)}>
               Next
             </button>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

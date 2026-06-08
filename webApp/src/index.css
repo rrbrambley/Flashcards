@@ -498,13 +498,21 @@ button.danger:hover:not(:disabled) {
 .test-mode {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: stretch;
 }
 
 .test-prompt {
-  min-height: 7rem;
-  cursor: default;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.test-prompt .practice-image {
+  max-height: 30vh;
 }
 
 .text-answer {
@@ -516,30 +524,35 @@ button.danger:hover:not(:disabled) {
   flex: 1;
 }
 
-.test-feedback {
+/* Post-submit: the typed answer stays in place, with a ✓/✗ verdict beside it. */
+.test-submitted {
   display: flex;
-  flex-direction: column;
   gap: 0.5rem;
   align-items: center;
-  text-align: center;
-  padding: 1rem;
+}
+
+.test-submitted-answer {
+  flex: 1;
+  padding: 0.6rem 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 0.75rem;
-}
-
-.test-feedback.correct {
-  border-color: var(--success);
-}
-
-.test-feedback.incorrect {
-  border-color: var(--error);
+  border-radius: 8px;
+  background: var(--panel);
 }
 
 .test-verdict {
   font-weight: 600;
-  font-size: 1.1rem;
+  white-space: nowrap;
+}
+
+.test-verdict.correct {
+  color: var(--success);
+}
+
+.test-verdict.incorrect {
+  color: var(--error);
 }
 
 .test-answer {
-  font-size: 1.25rem;
+  text-align: center;
+  color: var(--muted);
 }
