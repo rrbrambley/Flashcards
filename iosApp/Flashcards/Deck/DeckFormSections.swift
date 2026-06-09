@@ -7,6 +7,7 @@ import SwiftUI
 /// shows card images.
 struct DeckFormSections: View {
     @Binding var deckTitle: String
+    @Binding var category: String
     @Binding var cards: [CardDraft]
     var isEditable: Bool = true
     let showErrors: Bool
@@ -22,6 +23,11 @@ struct DeckFormSections: View {
             if showErrors && deckTitle.trimmed.isEmpty {
                 FormErrorText("Enter a deck title")
             }
+        }
+
+        Section("Category") {
+            TextField("Category (optional)", text: $category)
+                .disabled(!isEditable)
         }
 
         ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in

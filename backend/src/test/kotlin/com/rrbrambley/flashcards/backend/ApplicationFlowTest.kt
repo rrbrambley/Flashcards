@@ -1011,10 +1011,10 @@ class ApplicationFlowTest {
         }.decode<FlashcardDeckDto>()
         assertEquals(listOf("Grammar"), updated.tags)
 
-        // Omitting tags defaults to empty (and a seeded global deck is untagged).
+        // The seeded geography catalog decks carry a starter "Geography" category.
         val global = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
             .decode<Page<FlashcardDeckDto>>().items.single { it.title == "Flags of the World" }
-        assertEquals(emptyList(), global.tags)
+        assertEquals(listOf("Geography"), global.tags)
     }
 
     @Test

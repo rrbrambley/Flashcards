@@ -64,6 +64,7 @@
     <string name="create_deck_description">Add a title, then create the terms and definitions you want to practice.</string>
     <string name="create_deck_readonly">This deck is read-only and can\'t be edited.</string>
     <string name="create_deck_title_label">Deck title</string>
+    <string name="create_deck_category_label">Category (optional)</string>
     <string name="create_deck_title_error">Enter a deck title</string>
     <string name="create_deck_card_count_error">Add at least one card with a definition and a term or image.</string>
     <string name="create_deck_incomplete_error">Finish each started card: a definition plus a term or image.</string>

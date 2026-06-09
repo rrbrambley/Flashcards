@@ -30,11 +30,23 @@ interface DeckFormProps {
   initialCards?: InitialCard[];
   /** Read-only decks (e.g. the global catalog) are shown but can't be edited. */
   readOnly?: boolean;
-  /** Receives validated values (term -> question, definition -> answer). Throw to surface an error. */
-  onSubmit: (title: string, flashcards: FlashcardDto[]) => Promise<void>;
+  /** The deck's category (its first tag); the form surfaces a single optional category. */
+  initialCategory?: string;
+  /**
+   * Receives validated values (term -> question, definition -> answer) plus the category as a tag
+   * list (empty when blank). Throw to surface an error.
+   */
+  onSubmit: (title: string, flashcards: FlashcardDto[], tags: string[]) => Promise<void>;
 }
 
-export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnly = false, onSubmit }: DeckFormProps) {
+export function DeckForm({
+  submitLabel,
+  initialTitle = '',
+  initialCategory = '',
+  initialCards,
+  readOnly = false,
+  onSubmit,
+}: DeckFormProps) {
   const seededCards: CardDraft[] = (initialCards && initialCards.length > 0
     ? initialCards
     : [{ term: '', definition: '' }]
@@ -47,6 +59,7 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnl
   }));
 
   const [title, setTitle] = useState(initialTitle);
+  const [category, setCategory] = useState(initialCategory);
   const [cards, setCards] = useState<CardDraft[]>(seededCards);
   const [nextId, setNextId] = useState(seededCards.length + 1);
   const [showErrors, setShowErrors] = useState(false);
@@ -106,6 +119,7 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnl
     setError(null);
     try {
       // term -> question, definition -> answer (same mapping as Android).
+      const trimmedCategory = category.trim();
       await onSubmit(
         title.trim(),
         completeCards.map((c) => ({
@@ -113,6 +127,7 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnl
           answer: c.definition.trim(),
           imageUrl: c.imageUrl,
         })),
+        trimmedCategory ? [trimmedCategory] : [],
       );
     } catch (err) {
       setSubmitting(false);
@@ -136,6 +151,20 @@ export function DeckForm({ submitLabel, initialTitle = '', initialCards, readOnl
           aria-invalid={titleError}
         />
         {titleError && <span className="field-error">Enter a deck title</span>}
+      </label>
+
+      <label>
+        Category (optional)
+        <input
+          type="text"
+          value={category}
+          disabled={readOnly}
+          placeholder="e.g. Geography"
+          onChange={(e) => {
+            setCategory(e.target.value);
+            setShowErrors(false);
+          }}
+        />
       </label>
 
       {cards.map((card, index) => {

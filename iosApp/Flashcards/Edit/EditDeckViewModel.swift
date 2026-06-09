@@ -8,6 +8,8 @@ import SwiftUI
 @MainActor
 final class EditDeckViewModel: ObservableObject {
     @Published var deckTitle = ""
+    /// Optional category — surfaced as the deck's single tag (the backend stores a list).
+    @Published var category = ""
     @Published var cards: [CardDraft] = []
     @Published private(set) var isLoading = true
     @Published private(set) var isEditable = true
@@ -20,10 +22,8 @@ final class EditDeckViewModel: ObservableObject {
     private let imageUploader: ImageUploading
     private let deckId: Int64
     private var originalTitle = ""
+    private var originalCategory = ""
     private var originalCards: [CardDraft] = []
-    // Preserved across save: there's no tag UI yet (FLA-70), so carry the loaded deck's tags through
-    // an edit instead of clobbering them (update replaces the deck's tags with the request's).
-    private var tags: [String] = []
 
     init(repository: FlashcardRepository, imageUploader: ImageUploading, deckId: Int64) {
         self.repository = repository
@@ -34,7 +34,7 @@ final class EditDeckViewModel: ObservableObject {
     /// Unsaved edits exist (drives the discard-changes guard). False while loading or read-only.
     var isDirty: Bool {
         guard !isLoading, isEditable else { return false }
-        return deckTitle != originalTitle || cards != originalCards
+        return deckTitle != originalTitle || category != originalCategory || cards != originalCards
     }
 
     /// Loads the deck once (the stream re-syncs the full deck from the backend on subscribe); we
@@ -96,12 +96,13 @@ final class EditDeckViewModel: ObservableObject {
                 Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: $0.imageUrl)
             },
             isEditable: true,
-            // Carry the loaded deck's tags through unchanged (no tag UI yet — FLA-70).
-            tags: tags
+            // The optional category as a single tag (empty when blank).
+            tags: category.toCategoryTags()
         )
         do {
             try await repository.updateFlashcardDeck(deck: deck)
             originalTitle = deckTitle
+            originalCategory = category
             originalCards = cards
             didSave = true
         } catch {
@@ -115,11 +116,14 @@ final class EditDeckViewModel: ObservableObject {
             CardDraft(term: $0.question, definition: $0.answer, imageUrl: $0.imageUrl)
         } ?? []
         let cards = drafts.isEmpty ? [CardDraft()] : drafts
+        // Surface only the first tag as the editable category (the backend keeps a list).
+        let category = ((deck.tags as? [String]) ?? []).first ?? ""
         deckTitle = deck.title
+        self.category = category
         self.cards = cards
         isEditable = deck.isEditable
-        tags = (deck.tags as? [String]) ?? []
         originalTitle = deck.title
+        originalCategory = category
         originalCards = cards
         isLoading = false
     }

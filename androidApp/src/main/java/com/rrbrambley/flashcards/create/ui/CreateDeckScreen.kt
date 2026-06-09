@@ -64,6 +64,9 @@ fun DeckFlashcardDraft.isComplete(): Boolean =
 fun DeckFlashcardDraft.isStarted(): Boolean =
     term.isNotBlank() || definition.isNotBlank() || imageUrl != null
 
+/** The optional category as the deck's tag list: a single trimmed tag, or empty when blank. */
+fun String.toCategoryTags(): List<String> = trim().let { if (it.isEmpty()) emptyList() else listOf(it) }
+
 @Composable
 fun CreateDeckScreen(
     modifier: Modifier = Modifier,
@@ -75,9 +78,11 @@ fun CreateDeckScreen(
         title = stringResource(R.string.create_deck_title),
         description = stringResource(R.string.create_deck_description),
         deckTitle = uiState.deckTitle,
+        category = uiState.category,
         cards = uiState.cards,
         showValidationErrors = uiState.showValidationErrors,
         onDeckTitleChange = createDeckViewModel::onDeckTitleChange,
+        onCategoryChange = createDeckViewModel::onCategoryChange,
         onTermChange = createDeckViewModel::onTermChange,
         onDefinitionChange = createDeckViewModel::onDefinitionChange,
         onImageSelected = createDeckViewModel::onImagePicked,
@@ -93,9 +98,11 @@ fun CreateDeckContent(
     modifier: Modifier = Modifier,
     title: String? = null,
     description: String? = null,
+    category: String = "",
     cards: List<DeckFlashcardDraft>,
     showValidationErrors: Boolean,
     onDeckTitleChange: (String) -> Unit,
+    onCategoryChange: (String) -> Unit = {},
     onTermChange: (Long, String) -> Unit,
     onDefinitionChange: (Long, String) -> Unit,
     onImageSelected: (Long, Uri) -> Unit,
@@ -166,6 +173,17 @@ fun CreateDeckContent(
                         Text(stringResource(R.string.create_deck_title_error))
                     }
                 },
+            )
+        }
+
+        item {
+            OutlinedTextField(
+                value = category,
+                onValueChange = onCategoryChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.create_deck_category_label)) },
+                singleLine = true,
+                enabled = editable,
             )
         }
 

@@ -29,6 +29,7 @@ struct EditDeckView: View {
                         }
                         DeckFormSections(
                             deckTitle: $viewModel.deckTitle,
+                            category: $viewModel.category,
                             cards: $viewModel.cards,
                             isEditable: viewModel.isEditable,
                             showErrors: viewModel.showErrors,

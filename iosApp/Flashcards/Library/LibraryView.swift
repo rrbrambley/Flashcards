@@ -130,7 +130,11 @@ struct LibraryView: View {
                 Button {
                     selectedDeck = SelectedDeck(deck: deck)
                 } label: {
-                    DeckCard(title: deck.title, cardCount: deck.flashcards.count)
+                    DeckCard(
+                        title: deck.title,
+                        category: (deck.tags as? [String])?.first,
+                        cardCount: deck.flashcards.count
+                    )
                 }
                 .buttonStyle(.plain)
                 .listRowSeparator(.hidden)

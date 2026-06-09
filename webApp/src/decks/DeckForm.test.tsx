@@ -50,8 +50,46 @@ describe('DeckForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Create deck' }));
 
     await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith('Spanish', [{ question: 'Hola', answer: 'Hello', imageUrl: null }]),
+      expect(onSubmit).toHaveBeenCalledWith('Spanish', [{ question: 'Hola', answer: 'Hello', imageUrl: null }], []),
     );
+  });
+
+  it('round-trips the category as a single tag, seeded from initialCategory', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <DeckForm
+        submitLabel="Save changes"
+        initialTitle="Capitals"
+        initialCategory="Geography"
+        initialCards={[{ term: 'France', definition: 'Paris' }]}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    // The category field is pre-filled from initialCategory; edit it, then save.
+    const categoryField = screen.getByLabelText('Category (optional)');
+    expect(categoryField).toHaveValue('Geography');
+    await userEvent.clear(categoryField);
+    await userEvent.type(categoryField, 'History');
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith('Capitals', [{ question: 'France', answer: 'Paris', imageUrl: null }], [
+        'History',
+      ]),
+    );
+  });
+
+  it('sends an empty tag list when the category is left blank', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(<DeckForm submitLabel="Create deck" onSubmit={onSubmit} />);
+
+    await userEvent.type(screen.getByLabelText('Deck title'), 'Spanish');
+    await userEvent.type(screen.getByLabelText('Term'), 'Hola');
+    await userEvent.type(screen.getByLabelText('Definition'), 'Hello');
+    await userEvent.click(screen.getByRole('button', { name: 'Create deck' }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith('Spanish', expect.anything(), []));
   });
 
   it('removes an individual card, and hides the remove control when only one remains', async () => {

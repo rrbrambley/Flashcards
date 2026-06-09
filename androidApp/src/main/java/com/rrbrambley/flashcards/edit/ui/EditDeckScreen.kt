@@ -22,9 +22,11 @@ fun EditDeckScreen(
 
     CreateDeckContent(
         deckTitle = uiState.deckTitle,
+        category = uiState.category,
         cards = uiState.cards,
         showValidationErrors = uiState.showValidationErrors,
         onDeckTitleChange = editDeckViewModel::onDeckTitleChange,
+        onCategoryChange = editDeckViewModel::onCategoryChange,
         onTermChange = editDeckViewModel::onTermChange,
         onDefinitionChange = editDeckViewModel::onDefinitionChange,
         onImageSelected = editDeckViewModel::onImagePicked,

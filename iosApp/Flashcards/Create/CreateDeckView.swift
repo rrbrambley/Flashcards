@@ -27,6 +27,7 @@ struct CreateDeckView: View {
 
             DeckFormSections(
                 deckTitle: $viewModel.deckTitle,
+                category: $viewModel.category,
                 cards: $viewModel.cards,
                 showErrors: viewModel.showErrors,
                 onAddCard: viewModel.addCard,

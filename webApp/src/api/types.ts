@@ -21,11 +21,15 @@ export interface FlashcardDeckDto {
   // Whether the current user may edit this deck. Omitted (treated as true) for older payloads;
   // false for the read-only global catalog deck.
   editable?: boolean;
+  // Category tags. The backend stores a list; the UI surfaces only the first as the "Category".
+  // Omitted on older payloads → treated as untagged.
+  tags?: string[];
 }
 
 export interface CreateDeckRequest {
   title: string;
   flashcards: FlashcardDto[];
+  tags?: string[];
 }
 
 export interface AuthResponse {

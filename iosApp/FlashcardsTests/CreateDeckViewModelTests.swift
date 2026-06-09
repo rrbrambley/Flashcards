@@ -49,6 +49,30 @@ final class CreateDeckViewModelTests: XCTestCase {
         XCTAssertEqual(vm.deckTitle, "") // form reset
     }
 
+    func test_save_withCategory_setsSingleTag() async {
+        let repo = FakeFlashcardRepository()
+        let vm = makeVM(repo)
+        vm.deckTitle = "Capitals"
+        vm.category = "  Geography  "
+        vm.cards = [CardDraft(term: "France", definition: "Paris")]
+
+        await vm.save()
+
+        // The trimmed category becomes the deck's single tag.
+        XCTAssertEqual(repo.savedDeck?.tags as? [String], ["Geography"])
+    }
+
+    func test_save_withBlankCategory_setsNoTags() async {
+        let repo = FakeFlashcardRepository()
+        let vm = makeVM(repo)
+        vm.deckTitle = "Capitals"
+        vm.cards = [CardDraft(term: "France", definition: "Paris")]
+
+        await vm.save()
+
+        XCTAssertEqual(repo.savedDeck?.tags as? [String], [])
+    }
+
     func test_save_failure_keepsFormAndSetsError() async {
         let repo = FakeFlashcardRepository()
         repo.saveError = NSError(domain: "test", code: 1)

@@ -36,6 +36,10 @@ class CreateDeckViewModel @Inject constructor(
         }
     }
 
+    fun onCategoryChange(category: String) {
+        _uiState.update { it.copy(category = category, deckSaved = false) }
+    }
+
     fun onTermChange(cardId: Long, term: String) {
         updateCard(cardId) { card -> card.copy(term = term) }
     }
@@ -105,6 +109,7 @@ class CreateDeckViewModel @Inject constructor(
                                 imageUrl = card.imageUrl,
                             )
                         },
+                        tags = currentState.category.toCategoryTags(),
                     ),
                 )
             }.isSuccess

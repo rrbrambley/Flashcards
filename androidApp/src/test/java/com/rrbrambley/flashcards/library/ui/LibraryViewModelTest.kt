@@ -111,6 +111,27 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun searchQuery_alsoMatchesDeckTags() = runTest(testDispatcher) {
+        val decks = listOf(
+            FlashcardDeck(id = 1L, title = "Flags", flashcards = emptyList(), tags = listOf("Geography")),
+            FlashcardDeck(id = 2L, title = "French verbs", flashcards = emptyList(), tags = listOf("Language")),
+        )
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(decks),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // "geo" matches the Geography tag even though no title contains it.
+        viewModel.onSearchQueryChange("geo")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val filtered = viewModel.uiState.value as LibraryUiState.ShowDecks
+        assertEquals(listOf(1L), filtered.decks.map { it.id })
+    }
+
+    @Test
     fun sortOrder_defaultsToAlphabeticalByTitle() = runTest(testDispatcher) {
         val decks = listOf(
             FlashcardDeck(id = 1L, title = "Zebra facts", flashcards = emptyList()),

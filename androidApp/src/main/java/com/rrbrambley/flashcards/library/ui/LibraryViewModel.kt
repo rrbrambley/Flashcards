@@ -76,7 +76,12 @@ class LibraryViewModel @Inject constructor(
                 val filtered = if (query.isBlank()) {
                     decks
                 } else {
-                    decks.filter { it.title.contains(query.trim(), ignoreCase = true) }
+                    val trimmedQuery = query.trim()
+                    // Match the deck title or any of its tags (the category surfaced in the UI).
+                    decks.filter { deck ->
+                        deck.title.contains(trimmedQuery, ignoreCase = true) ||
+                            deck.tags.any { it.contains(trimmedQuery, ignoreCase = true) }
+                    }
                 }
                 sortDecks(filtered, order, lastPracticed)
             }
