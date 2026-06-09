@@ -68,7 +68,8 @@ struct HomeView: View {
             practice = PracticePresentation(entry: .session(resume.sessionId))
         } else if let practiceDeck = action as? HomeButtonActionNavigateToPractice {
             // The backend/offline layer resolves which deck (the featured global deck) and its id.
-            practice = PracticePresentation(entry: .deck(practiceDeck.deckId))
+            // Featured practice from Home uses Classic; the Library offers the mode chooser.
+            practice = PracticePresentation(entry: .deck(practiceDeck.deckId, mode: PracticeMode.classic.rawValue))
         }
     }
 

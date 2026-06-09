@@ -1,9 +1,11 @@
 import Shared
 import SwiftUI
 
-/// The practice run (parity with Android's FlashcardsScreen): a flip card, swipe right = correct /
-/// left = needs practice, a running score, Previous/Next, and a completion summary. Presented as a
-/// full-screen cover; closes when done.
+/// The mode-agnostic practice runner (parity with Android's FlashcardsScreen). The toolbar + score
+/// row + loading/completion states are shared; each card is rendered by the per-mode view chosen
+/// from the session's mode (Classic flip / Test text-entry / Multiple Choice). The view model owns
+/// the session loop — index, score, persistence, completion — and every mode reports its outcome via
+/// `onResult(correct:)`. Presented as a full-screen cover; closes when done.
 struct PracticeView: View {
     @StateObject private var viewModel: PracticeViewModel
     @Environment(\.dismiss) private var dismiss
@@ -19,6 +21,14 @@ struct PracticeView: View {
         )
     }
 
+    /// The help copy explains flip/swipe, so it's only offered in Classic mode.
+    private var isClassic: Bool {
+        if case let .showCard(_, _, _, _, _, mode, _) = viewModel.state {
+            return (PracticeMode(rawValue: mode) ?? .classic) == .classic
+        }
+        return true
+    }
+
     var body: some View {
         NavigationStack {
             content
@@ -26,9 +36,11 @@ struct PracticeView: View {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close") { dismiss() }
                     }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button { showHelp = true } label: { Image(systemName: "questionmark.circle") }
-                            .accessibilityLabel("How to practice")
+                    if isClassic {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button { showHelp = true } label: { Image(systemName: "questionmark.circle") }
+                                .accessibilityLabel("How to practice")
+                        }
                     }
                 }
                 .alert("How to practice", isPresented: $showHelp) {
@@ -44,17 +56,13 @@ struct PracticeView: View {
         switch viewModel.state {
         case .loading:
             LoadingView()
-        case let .showCard(card, position, numCorrect, numIncorrect, canGoBack):
+        case let .showCard(card, position, numCorrect, numIncorrect, canGoBack, mode, deck):
             VStack(spacing: Spacing.lg) {
                 ScoreRow(numIncorrect: numIncorrect, numCorrect: numCorrect)
-                FlashcardCardView(
-                    card: card,
-                    onSwipeRight: viewModel.swipeRight,
-                    onSwipeLeft: viewModel.swipeLeft
-                )
-                .id(position)
-                .frame(maxHeight: .infinity)
-                NavRow(canGoBack: canGoBack, onPrevious: viewModel.goBack, onNext: viewModel.goForward)
+                modeView(mode: mode, card: card, deck: deck, canGoBack: canGoBack)
+                    // Re-init the per-card view (flip / two-phase Test+MC state) on advance.
+                    .id(position)
+                    .frame(maxHeight: .infinity)
             }
             .padding(Spacing.lg)
         case let .completed(numCorrect, numIncorrect):
@@ -67,6 +75,24 @@ struct PracticeView: View {
             } actions: {
                 Button("Close") { dismiss() }.buttonStyle(.borderedProminent)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func modeView(mode: String, card: Flashcard, deck: [Flashcard], canGoBack: Bool) -> some View {
+        switch PracticeMode(rawValue: mode) ?? .classic {
+        case .classic:
+            ClassicModeView(
+                card: card,
+                canGoBack: canGoBack,
+                onResult: viewModel.onResult,
+                onPrevious: viewModel.goBack,
+                onNext: viewModel.goForward
+            )
+        case .test:
+            TestModeView(card: card, onResult: viewModel.onResult)
+        case .multipleChoice:
+            MultipleChoiceModeView(card: card, deck: deck, onResult: viewModel.onResult)
         }
     }
 }
@@ -94,100 +120,22 @@ private struct ScoreRow: View {
     }
 }
 
-/// A tappable (flip) + draggable (swipe) flashcard. `question = term` on the front, `answer =
-/// definition` on the back. (Front-of-card images arrive in FLA-52.)
-private struct FlashcardCardView: View {
+/// The card's question text + optional image — the prompt shared by the Test + Multiple-Choice modes.
+struct CardPrompt: View {
     let card: Flashcard
-    let onSwipeRight: () -> Void
-    let onSwipeLeft: () -> Void
-
-    @State private var flipped = false
-    @State private var drag: CGSize = .zero
-
-    private let threshold: CGFloat = 120
 
     var body: some View {
-        ZStack {
-            face(text: card.question, imageUrl: card.imageUrl, caption: "Tap to flip")
-                .opacity(flipped ? 0 : 1)
-            face(text: card.answer, imageUrl: nil, caption: "Answer")
-                .opacity(flipped ? 1 : 0)
-                .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
-        }
-        .rotation3DEffect(.degrees(flipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
-        .offset(x: drag.width, y: drag.height * 0.15)
-        .rotationEffect(.degrees(Double(drag.width) / 25))
-        .gesture(
-            DragGesture()
-                .onChanged { drag = $0.translation }
-                .onEnded { value in
-                    let width = value.translation.width
-                    if width > threshold {
-                        swipeAway(right: true)
-                    } else if width < -threshold {
-                        swipeAway(right: false)
-                    } else {
-                        withAnimation(.spring) { drag = .zero }
-                    }
-                }
-        )
-        .onTapGesture {
-            withAnimation(.spring) { flipped.toggle() }
-        }
-    }
-
-    private func swipeAway(right: Bool) {
-        withAnimation(.easeOut(duration: 0.2)) {
-            drag.width = right ? 700 : -700
-        }
-        Task {
-            try? await Task.sleep(for: .milliseconds(200))
-            // The view model swaps in the next card; this view re-inits via `.id(position)`.
-            right ? onSwipeRight() : onSwipeLeft()
-        }
-    }
-
-    private func face(text: String, imageUrl: String?, caption: String) -> some View {
-        RoundedRectangle(cornerRadius: 20)
-            .fill(Color(.secondarySystemBackground))
-            .overlay {
-                VStack(spacing: Spacing.md) {
-                    if let imageUrl, !imageUrl.isEmpty {
-                        RemoteCardImage(url: imageUrl)
-                            .frame(maxHeight: 220)
-                    }
-                    if !text.isEmpty {
-                        Text(text)
-                            .font(.title2.weight(.semibold))
-                            .multilineTextAlignment(.center)
-                    }
-                }
-                .padding(Spacing.lg)
+        VStack(spacing: Spacing.md) {
+            if let imageUrl = card.imageUrl, !imageUrl.isEmpty {
+                RemoteCardImage(url: imageUrl)
+                    .frame(maxHeight: 220)
             }
-            .overlay(alignment: .bottom) {
-                Text(caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.bottom, Spacing.md)
+            if !card.question.isEmpty {
+                Text(card.question)
+                    .font(.title2.weight(.semibold))
+                    .multilineTextAlignment(.center)
             }
-    }
-}
-
-/// Previous / Next navigation. Previous is disabled on the first card.
-private struct NavRow: View {
-    let canGoBack: Bool
-    let onPrevious: () -> Void
-    let onNext: () -> Void
-
-    var body: some View {
-        HStack {
-            Button("Previous", systemImage: "chevron.left", action: onPrevious)
-                .disabled(!canGoBack)
-            Spacer()
-            Button("Next", systemImage: "chevron.right", action: onNext)
-                .labelStyle(.titleAndIcon)
         }
-        .font(.headline)
     }
 }
 

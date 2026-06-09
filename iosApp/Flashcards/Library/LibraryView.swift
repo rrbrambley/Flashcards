@@ -27,7 +27,10 @@ struct LibraryView: View {
     @State private var pendingDelete: PendingDelete?
 
     /// The deck being practiced (presents the full-screen practice run).
-    private struct PracticingDeck: Identifiable { let id: Int64 }
+    private struct PracticingDeck: Identifiable {
+        let id: Int64
+        let mode: String
+    }
     @State private var practicing: PracticingDeck?
 
     init(
@@ -58,7 +61,7 @@ struct LibraryView: View {
                 PracticeView(
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
-                    entry: .deck(item.id)
+                    entry: .deck(item.id, mode: item.mode)
                 )
             }
             // Deck-actions sheet on tap (parity with Android): Practice / Edit / Delete. Edit opens
@@ -69,8 +72,13 @@ struct LibraryView: View {
                 titleVisibility: .visible,
                 presenting: selectedDeck
             ) { selected in
+                // One button per mode (the iOS take on the Android mode chooser).
                 if !selected.deck.flashcards.isEmpty {
-                    Button("Practice") { practicing = PracticingDeck(id: selected.deck.id) }
+                    ForEach(PracticeMode.allCases) { mode in
+                        Button("Practice (\(mode.label))") {
+                            practicing = PracticingDeck(id: selected.deck.id, mode: mode.rawValue)
+                        }
+                    }
                 }
                 Button("Edit deck") { editing = EditingDeck(id: selected.deck.id) }
                 if selected.deck.isEditable {
@@ -140,8 +148,9 @@ struct LibraryView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Spacing.xs, leading: Spacing.md, bottom: Spacing.xs, trailing: Spacing.md))
                 .swipeActions(edge: .leading) {
+                    // Quick swipe-to-practice uses Classic; tap the deck to choose another mode.
                     Button {
-                        practicing = PracticingDeck(id: deck.id)
+                        practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.rawValue)
                     } label: {
                         Label("Practice", systemImage: "play.fill")
                     }
