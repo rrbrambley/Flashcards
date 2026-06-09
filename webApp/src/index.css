@@ -6,6 +6,8 @@
   --muted: #6b6b72;
   --primary: #5b4ddb;
   --primary-hover: #4a3dc4;
+  /* Subtle primary tint for hover fills (e.g. a deck row). */
+  --primary-soft: rgba(91, 77, 219, 0.08);
   --error: #b3261e;
   --success: #1d7a45;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -74,6 +76,12 @@ button.secondary {
   background: transparent;
   color: var(--primary);
   border: 1px solid var(--border);
+}
+/* Light tint on hover (same as the deck-row fill) — the global button:hover would otherwise paint
+   the dark --primary-hover behind the purple label, making it unreadable. */
+button.secondary:hover:not(:disabled) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
 }
 button.link-btn {
   background: none;
@@ -242,6 +250,15 @@ button.danger:hover:not(:disabled) {
 
 .deck-sort {
   flex: 0 0 auto;
+  /* The global input/textarea rule skips <select>, so give it matching padding + chrome
+     (without it the option text sits flush against the left edge). */
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+  margin-top: 0.25rem;
 }
 
 .deck-list {
@@ -255,9 +272,10 @@ button.danger:hover:not(:disabled) {
 .deck-row {
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 0.75rem 0.5rem 1.25rem;
+  align-items: stretch;
+  gap: 0.5rem;
+  /* Slim outer padding; the main button owns its own padding so its hover fill spans the row. */
+  padding: 0.4rem;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -316,17 +334,24 @@ button.danger:hover:not(:disabled) {
 }
 .deck-row-main {
   flex: 1;
+  align-self: stretch;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 0.5rem 0;
+  /* left padding keeps the title's original indent (0.4 row + 0.85 here ≈ 1.25rem). */
+  padding: 0.55rem 0.85rem;
   background: none;
   border: none;
+  border-radius: 9px;
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+/* A light fill over the whole main region on hover (overrides the global button:hover). */
+.deck-row-main:hover:not(:disabled) {
+  background: var(--primary-soft);
 }
 .deck-practice {
   flex: none;
