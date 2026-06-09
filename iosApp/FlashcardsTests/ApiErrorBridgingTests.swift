@@ -35,7 +35,7 @@ final class ApiErrorBridgingTests: XCTestCase {
     func test_startOrResumeSession_failure_isCatchable() async {
         let repo = unreachableSdk().practiceSessionRepository
         do {
-            _ = try await repo.startOrResumeSession(deckId: 1)
+            _ = try await repo.startOrResumeSession(deckId: 1, mode: "flashcards")
             XCTFail("expected the unreachable backend to throw")
         } catch {
             // Caught (not crashed). ✅

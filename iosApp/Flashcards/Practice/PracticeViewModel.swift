@@ -44,7 +44,9 @@ final class PracticeViewModel: ObservableObject {
     func start() async {
         switch entry {
         case let .deck(deckId):
-            guard let started = try? await sessionRepository.startOrResumeSession(deckId: deckId) else {
+            // Classic until iOS gains a mode picker (FLA-80); the backend keys start-or-resume on mode.
+            guard let started = try? await sessionRepository.startOrResumeSession(deckId: deckId, mode: "flashcards")
+            else {
                 state = .failed
                 return
             }

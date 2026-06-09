@@ -41,6 +41,22 @@ class PracticeSessionRepositoryTest {
     }
 
     @Test
+    fun startOrResumeSession_cachesTheSessionMode() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        val repository = repository(
+            flashcardDao,
+            sessionDao,
+            mockEngine(HttpMethod.Post to "/sessions" to sessionJson(id = 7, deckId = 5, mode = "test")),
+        )
+
+        repository.startOrResumeSession(deckId = 5, mode = "test")
+
+        // The mode round-trips DTO -> entity -> domain through the offline cache.
+        assertEquals("test", sessionDao.observeSession(7L).first()?.toDomain()?.mode)
+    }
+
+    @Test
     fun observeActiveSessions_refreshesFromBackendThenServesCache() = runTest {
         val flashcardDao = FakeFlashcardDao()
         val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
@@ -148,8 +164,9 @@ class PracticeSessionRepositoryTest {
         numCorrect: Int = 0,
         numIncorrect: Int = 0,
         isCompleted: Boolean = false,
+        mode: String = "flashcards",
     ): String = """{"id":$id,"deckId":$deckId,"deckTitle":"$deckTitle","currentCardIndex":$currentCardIndex,""" +
-        """"numCorrect":$numCorrect,"numIncorrect":$numIncorrect,"isCompleted":$isCompleted,""" +
+        """"numCorrect":$numCorrect,"numIncorrect":$numIncorrect,"isCompleted":$isCompleted,"mode":"$mode",""" +
         """"createdAtMillis":100,"updatedAtMillis":200}"""
 
     private fun sessionEntity(id: Long, deckId: Long) = PracticeSessionEntity(

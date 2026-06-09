@@ -77,4 +77,28 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals("[]", cursor.getString(1))
         }
     }
+
+    @Test
+    fun migrate5To6_preservesRowsAndAddsModeColumn() {
+        // Seed a v5 database with a deck + a practice session (no mode column yet).
+        helper.createDatabase(testDb, 5).apply {
+            execSQL("INSERT INTO flashcard_decks (id, title, editable, tags) VALUES (1, 'Spanish basics', 1, '[]')")
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, " +
+                    "createdAtMillis, updatedAtMillis) VALUES (10, 1, 2, 3, 1, 0, 100, 200)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_5_6 and validate against the exported v6 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 6, true, MIGRATION_5_6)
+
+        // The session survived and got the default (classic) mode.
+        db.query("SELECT numCorrect, mode FROM practice_sessions WHERE id = 10").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(3, cursor.getInt(0))
+            assertEquals("flashcards", cursor.getString(1))
+        }
+    }
 }

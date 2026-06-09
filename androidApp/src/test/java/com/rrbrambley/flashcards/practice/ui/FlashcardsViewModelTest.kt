@@ -248,7 +248,7 @@ class FlashcardsViewModelTest {
         var completedSessionId: Long? = null
         var startOrResumeDeckId: Long? = null
 
-        override suspend fun startOrResumeSession(deckId: Long): Long {
+        override suspend fun startOrResumeSession(deckId: Long, mode: String): Long {
             startOrResumeDeckId = deckId
             return session?.id ?: 0L
         }

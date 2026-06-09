@@ -29,5 +29,14 @@ val MIGRATION_4_5 = object : Migration(4, 5) {
     }
 }
 
+/** v5 → v6: add the `mode` column to practice_sessions (practice mode; default classic flashcards). */
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "ALTER TABLE `practice_sessions` ADD COLUMN `mode` TEXT NOT NULL DEFAULT 'flashcards'",
+        )
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
-val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4, MIGRATION_4_5)
+val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)

@@ -274,7 +274,7 @@ class LibraryViewModelTest {
     ) : PracticeSessionRepository {
         var startedDeckId: Long? = null
 
-        override suspend fun startOrResumeSession(deckId: Long): Long {
+        override suspend fun startOrResumeSession(deckId: Long, mode: String): Long {
             startedDeckId = deckId
             return sessionId
         }

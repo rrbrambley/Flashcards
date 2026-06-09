@@ -128,9 +128,10 @@ class FlashcardApiClient(
         auth()
     }.body()
 
-    suspend fun createSession(deckId: Long): PracticeSessionDto = client.post(url("/sessions")) {
-        jsonBody(CreateSessionRequest(deckId))
-    }.body()
+    suspend fun createSession(deckId: Long, mode: String = "flashcards"): PracticeSessionDto =
+        client.post(url("/sessions")) {
+            jsonBody(CreateSessionRequest(deckId, mode))
+        }.body()
 
     suspend fun updateProgress(sessionId: Long, request: UpdateProgressRequest): PracticeSessionDto =
         client.patch(url("/sessions/$sessionId")) {

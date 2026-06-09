@@ -21,8 +21,9 @@ class PracticeSessionRepositoryImpl(
 ) : PracticeSessionRepository {
 
     @Throws(Exception::class)
-    override suspend fun startOrResumeSession(deckId: Long): Long {
-        val session = apiClient.createSession(deckId)
+    override suspend fun startOrResumeSession(deckId: Long, mode: String): Long {
+        // Start-or-resume is the backend's job (it keys on user+deck+mode); we just cache the result.
+        val session = apiClient.createSession(deckId, mode)
         cache(session)
         return session.id
     }
