@@ -4,16 +4,24 @@ import SwiftUI
 /// What the practice screen shows (mirrors Android's `FlashcardsUiState`).
 enum PracticeState {
     case loading
-    case showCard(card: Flashcard, position: Int, numCorrect: Int, numIncorrect: Int, canGoBack: Bool)
+    case showCard(
+        card: Flashcard,
+        position: Int,
+        numCorrect: Int,
+        numIncorrect: Int,
+        canGoBack: Bool,
+        mode: String,
+        deck: [Flashcard]
+    )
     case completed(numCorrect: Int, numIncorrect: Int)
     case failed
 }
 
 /// How a practice run is launched.
 enum PracticeEntry {
-    /// Start or resume a session for a deck (Library "Practice" + the Home "Practice" action).
-    case deck(Int64)
-    /// Resume an existing session (Home "Continue practice").
+    /// Start or resume a session for a deck in a given mode (Library "Practice" + Home "Practice").
+    case deck(Int64, mode: String)
+    /// Resume an existing session (Home "Continue practice"); the mode comes from the session.
     case session(Int64)
 }
 
@@ -34,6 +42,7 @@ final class PracticeViewModel: ObservableObject {
     private var index = 0
     private var numCorrect = 0
     private var numIncorrect = 0
+    private var mode = "flashcards"
 
     init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository, entry: PracticeEntry) {
         self.flashcardRepository = flashcardRepository
@@ -43,9 +52,10 @@ final class PracticeViewModel: ObservableObject {
 
     func start() async {
         switch entry {
-        case let .deck(deckId):
-            // Classic until iOS gains a mode picker (FLA-80); the backend keys start-or-resume on mode.
-            guard let started = try? await sessionRepository.startOrResumeSession(deckId: deckId, mode: "flashcards")
+        case let .deck(deckId, mode):
+            // The backend keys start-or-resume on (user, deck, mode); restore then reads back the
+            // session's mode as the source of truth.
+            guard let started = try? await sessionRepository.startOrResumeSession(deckId: deckId, mode: mode)
             else {
                 state = .failed
                 return
@@ -60,13 +70,10 @@ final class PracticeViewModel: ObservableObject {
         }
     }
 
-    func swipeRight() {
-        numCorrect += 1
-        goForward()
-    }
-
-    func swipeLeft() {
-        numIncorrect += 1
+    /// Records the outcome for the current card and advances. Used by every mode — a Classic swipe,
+    /// or Test/Multiple-Choice after the answer is graded.
+    func onResult(correct: Bool) {
+        if correct { numCorrect += 1 } else { numIncorrect += 1 }
         goForward()
     }
 
@@ -97,6 +104,7 @@ final class PracticeViewModel: ObservableObject {
             index = Int(session.currentCardIndex)
             numCorrect = Int(session.numCorrect)
             numIncorrect = Int(session.numIncorrect)
+            mode = session.mode
             return session.deckId
         }
         return nil
@@ -120,7 +128,9 @@ final class PracticeViewModel: ObservableObject {
             position: index,
             numCorrect: numCorrect,
             numIncorrect: numIncorrect,
-            canGoBack: index > 0
+            canGoBack: index > 0,
+            mode: mode,
+            deck: cards
         )
     }
 
