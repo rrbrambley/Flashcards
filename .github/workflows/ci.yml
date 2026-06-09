@@ -347,6 +347,18 @@ jobs:
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
 
+      # Restore Xcode DerivedData so `xcodebuild test` does an incremental Swift compile and reuses
+      # the already-built SwiftPM dependencies (SDWebImage*, GoogleSignIn) instead of rebuilding them
+      # from scratch. The key is intentionally stable (no source hash) so it persists across commits;
+      # `project.yml` bumps it when the package set / build settings change. If a stale module cache
+      # ever breaks a build, bump the key suffix to clear it.
+      - name: Cache Xcode DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: deriveddata-${{ runner.os }}-${{ hashFiles('iosApp/project.yml') }}
+          restore-keys: deriveddata-${{ runner.os }}-
+
       # Surface the toolchain versions to make first-run debugging easy (Xcode/SDK/runtimes).
       - name: Toolchain versions
         run: |
