@@ -28,6 +28,7 @@ class FlashcardsViewModel @Inject constructor(
     private var numCorrect = 0
     private var currentFlashcardIndex = 0
     private var flashcards: List<Flashcard> = emptyList()
+    private var mode: String = PracticeMode.CLASSIC.key
     private var loadJob: Job? = null
     private var loadedKey: Pair<Long?, Long?>? = null
 
@@ -53,13 +54,12 @@ class FlashcardsViewModel @Inject constructor(
         }
     }
 
-    fun swipeLeft() {
-        numIncorrect++
-        goForward()
-    }
-
-    fun swipeRight() {
-        numCorrect++
+    /**
+     * Records the outcome for the current card and advances. Used by every mode — a Classic swipe, or
+     * Test/Multiple-Choice after the answer is graded.
+     */
+    fun onResult(correct: Boolean) {
+        if (correct) numCorrect++ else numIncorrect++
         goForward()
     }
 
@@ -86,6 +86,7 @@ class FlashcardsViewModel @Inject constructor(
         }
 
         flashcards = deckFlashcards
+        mode = session.mode
         currentFlashcardIndex = session.currentCardIndex.coerceIn(0, flashcards.lastIndex)
         numCorrect = session.numCorrect
         numIncorrect = session.numIncorrect
@@ -103,6 +104,8 @@ class FlashcardsViewModel @Inject constructor(
                 numIncorrect = numIncorrect,
                 numCorrect = numCorrect,
                 flashcard = flashcards[currentFlashcardIndex],
+                deck = flashcards,
+                mode = mode,
                 canGoBack = currentFlashcardIndex > 0,
             )
         }

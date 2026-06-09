@@ -183,10 +183,11 @@ class LibraryViewModelTest {
             stringProvider = FakeStringProvider(),
         )
 
-        viewModel.startPractice(deckId = 7L) { startedSessionId = it }
+        viewModel.startPractice(deckId = 7L, mode = "test") { startedSessionId = it }
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(7L, practiceSessionRepository.startedDeckId)
+        assertEquals("test", practiceSessionRepository.startedMode)
         assertEquals(42L, startedSessionId)
     }
 
@@ -273,9 +274,11 @@ class LibraryViewModelTest {
         private val lastPracticed: Map<Long, Long> = emptyMap(),
     ) : PracticeSessionRepository {
         var startedDeckId: Long? = null
+        var startedMode: String? = null
 
         override suspend fun startOrResumeSession(deckId: Long, mode: String): Long {
             startedDeckId = deckId
+            startedMode = mode
             return sessionId
         }
 

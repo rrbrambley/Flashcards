@@ -120,9 +120,9 @@ class LibraryViewModel @Inject constructor(
         observeDecks()
     }
 
-    fun startPractice(deckId: Long, onSessionStarted: (Long) -> Unit) {
+    fun startPractice(deckId: Long, mode: String, onSessionStarted: (Long) -> Unit) {
         viewModelScope.launch {
-            val sessionId = practiceSessionRepository.startOrResumeSession(deckId)
+            val sessionId = practiceSessionRepository.startOrResumeSession(deckId, mode)
             onSessionStarted(sessionId)
         }
     }

@@ -99,6 +99,21 @@
     <string name="practice_complete_subtitle">Nice work reviewing this deck.</string>
     <string name="practice_cd_previous_card">Previous card</string>
     <string name="practice_cd_next_card">Next card</string>
+    <!-- Practice modes -->
+    <string name="practice_choose_mode">Choose a practice mode</string>
+    <string name="practice_mode_classic">Classic</string>
+    <string name="practice_mode_classic_desc">Flip the card and mark whether you knew it.</string>
+    <string name="practice_mode_test">Test</string>
+    <string name="practice_mode_test_desc">Type the answer.</string>
+    <string name="practice_mode_mc">Multiple Choice</string>
+    <string name="practice_mode_mc_desc">Pick the answer from four options.</string>
+    <string name="practice_test_hint">Type the answer</string>
+    <string name="practice_test_check">Check</string>
+    <string name="practice_next">Next</string>
+    <string name="practice_test_correct">Correct</string>
+    <string name="practice_test_incorrect">Incorrect</string>
+    <string name="practice_test_answer_label">Answer: %1$s</string>
+    <string name="practice_test_blank">(blank)</string>
 
     <!-- Main scaffolding / bottom navigation -->
     <string name="nav_home">Home</string>
