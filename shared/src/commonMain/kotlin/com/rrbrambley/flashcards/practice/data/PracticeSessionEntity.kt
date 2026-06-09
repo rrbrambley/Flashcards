@@ -30,6 +30,9 @@ data class PracticeSessionEntity(
     val numCorrect: Int = 0,
     val numIncorrect: Int = 0,
     val isCompleted: Boolean = false,
+    // Practice mode (e.g. flashcards / test / multiple_choice). Default keeps existing rows (and the
+    // v5→v6 migration's added column) on classic flashcards. See MIGRATION_5_6.
+    val mode: String = "flashcards",
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
 )

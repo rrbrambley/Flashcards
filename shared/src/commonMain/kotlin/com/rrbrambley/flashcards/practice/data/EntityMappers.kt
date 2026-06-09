@@ -23,6 +23,7 @@ fun PracticeSessionDto.toEntity(): PracticeSessionEntity = PracticeSessionEntity
     numCorrect = numCorrect,
     numIncorrect = numIncorrect,
     isCompleted = isCompleted,
+    mode = mode,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
@@ -48,6 +49,7 @@ fun PracticeSessionWithDeck.toDomain(): PracticeSession = PracticeSession(
     numCorrect = session.numCorrect,
     numIncorrect = session.numIncorrect,
     isCompleted = session.isCompleted,
+    mode = session.mode,
     createdAtMillis = session.createdAtMillis,
     updatedAtMillis = session.updatedAtMillis,
 )

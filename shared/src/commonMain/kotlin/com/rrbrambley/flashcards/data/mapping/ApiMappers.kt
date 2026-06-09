@@ -37,6 +37,7 @@ fun PracticeSessionDto.toDomain(): PracticeSession = PracticeSession(
     numCorrect = numCorrect,
     numIncorrect = numIncorrect,
     isCompleted = isCompleted,
+    mode = mode,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )

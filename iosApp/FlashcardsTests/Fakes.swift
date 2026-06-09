@@ -23,11 +23,11 @@ func makeCard(_ question: String, _ answer: String, imageUrl: String? = nil) -> 
 
 func makeSession(
     id: Int64 = 1, deckId: Int64 = 1, index: Int32 = 0,
-    correct: Int32 = 0, incorrect: Int32 = 0, completed: Bool = false
+    correct: Int32 = 0, incorrect: Int32 = 0, completed: Bool = false, mode: String = "flashcards"
 ) -> PracticeSession {
     PracticeSession(
         id: id, deckId: deckId, deckTitle: "Deck", currentCardIndex: index,
-        numCorrect: correct, numIncorrect: incorrect, isCompleted: completed,
+        numCorrect: correct, numIncorrect: incorrect, isCompleted: completed, mode: mode,
         createdAtMillis: 0, updatedAtMillis: 0
     )
 }
@@ -72,9 +72,11 @@ final class FakePracticeSessionRepository: PracticeSessionRepository {
 
     private(set) var updatedProgress: (sessionId: Int64, index: Int32, correct: Int32, incorrect: Int32)?
     private(set) var completedSessionId: Int64?
+    private(set) var startedMode: String?
 
-    func startOrResumeSession(deckId: Int64) async throws -> KotlinLong {
+    func startOrResumeSession(deckId: Int64, mode: String) async throws -> KotlinLong {
         if let startError { throw startError }
+        startedMode = mode
         return KotlinLong(longLong: startSessionId)
     }
 
