@@ -58,6 +58,7 @@ jobs:
             gradle: &gradle
               - 'build.gradle.kts'
               - 'settings.gradle.kts'
+              - 'gradle.properties'
               - 'gradle/**'
               - 'gradlew'
               - 'gradlew.bat'
