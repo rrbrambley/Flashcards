@@ -1,8 +1,9 @@
 # Contributing
 
 Thanks for your interest in Flashcards! This is a Kotlin Multiplatform monorepo with an
-Android app, a Ktor backend, a shared KMP library, and a React/TypeScript web app. See the
-[README](README.md) for the full layout, setup, and optional Google/AWS configuration.
+Android app, a Ktor backend, a shared KMP library, a React/TypeScript web app, and an
+in-progress SwiftUI iOS app. See the [README](README.md) for the full layout, setup, and
+optional Google/AWS configuration.
 
 ## Getting set up
 
@@ -36,13 +37,15 @@ cd webApp && npm run build && npm run lint && npm run test  # web app
 ```
 
 > When you change the `shared` module, run `:shared:jvmTest` (not just a compile) — the shared
-> compile can pass while `commonTest` is broken, and CI runs `:shared:jvmTest`. Schema changes
-> to the Room DB need a migration + the instrumented migration test (`:androidApp:connectedDebugAndroidTest`);
-> see `androidApp/src/main/.../practice/data/Migrations.kt`.
+> compile can pass while `commonTest` is broken, and CI runs `:shared:jvmTest`. The Room DB lives
+> in `:shared`; schema changes need a migration + the instrumented migration test
+> (`:androidApp:connectedDebugAndroidTest`) — see `shared/src/commonMain/.../practice/data/Migrations.kt`.
 
-CI runs these on every PR (see `.github/workflows/ci.yml`), including instrumented tests on an
-emulator. Kotlin style is enforced by [ktlint](https://pinterest.github.io/ktlint/) (configured
-in `.editorconfig`).
+CI runs the fast checks (ktlint, JVM tests, web) on every relevant PR, **path-gated** so each runs
+only when its area changed (see `.github/workflows/ci.yml`). The two expensive native jobs — Android
+instrumented (emulator) and iOS (macOS) — are **opt-in**: add a `ci:android` / `ci:ios` / `ci:native`
+label to the PR (or run them locally) when you want device/simulator verification. Kotlin style is
+enforced by [ktlint](https://pinterest.github.io/ktlint/) (configured in `.editorconfig`).
 
 - Keep changes focused and described in the PR body.
 - **Never commit secrets** or account-specific identifiers. Personal config goes in

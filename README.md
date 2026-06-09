@@ -17,9 +17,11 @@ app is offline-first; the web app is a thin client over the same API.
 | Android app — Compose, offline-first, synced to the backend | ✅ Done |
 | Email/password + Google sign-in (Android & web) | ✅ Done |
 | Flashcard images (front side), uploaded to S3 and served via CloudFront | ✅ Done |
-| Web app (React/TypeScript) — auth, library (search + sort), deck create/edit, practice | ✅ Done |
+| Web app (React/TypeScript) — auth, library (search + sort + categories), deck create/edit, practice (3 modes), admin UI | ✅ Done |
 | JWT access + refresh tokens, transparent refresh-on-401, logout (server-side revocation) | ✅ Done |
-| iOS app (SwiftUI) | ⏳ Not started |
+| Role-based access control — roles + feature permissions; admins manage the global deck catalog & user roles (web + operator CLI) | ✅ Done |
+| Practice modes (web) — classic flip, text-entry Test, Multiple Choice | ✅ Done |
+| iOS app (SwiftUI) — auth, library, deck create/edit, classic practice | 🚧 In progress |
 
 ## Repository layout
 
@@ -85,7 +87,9 @@ npm run dev                          # http://localhost:5173
 ```
 
 Register a new account in either client, or use the seeded demo login
-(`demo@flashcards.dev` / `demo`). The backend ships a seeded **Flags of the World** deck.
+(`demo@flashcards.dev` / `demo`, seeded as an **admin**). The backend ships a seeded global
+deck catalog (**Flags of the World**, **National Capitals**, **U.S. State Capitals**,
+**World Currencies**).
 
 ---
 
@@ -116,8 +120,10 @@ DB_JDBC_URL=jdbc:postgresql://localhost:5433/flashcards ./gradlew :backend:run
 ```
 
 The server is ready when it logs `Responding at http://0.0.0.0:8080`. On first boot it
-creates its schema and seeds a demo user (`demo@flashcards.dev` / `demo`), a fixed dev
-**refresh** token (`demo-token`), and the global "Flags of the World" deck.
+creates its schema and seeds a demo user (`demo@flashcards.dev` / `demo`, granted the **admin**
+role), a fixed dev **refresh** token (`demo-token`), the RBAC catalog (roles + permissions), and
+the global deck catalog (Flags of the World, National Capitals, U.S. State Capitals, World
+Currencies — the geography decks tagged "Geography").
 
 ### Smoke-test the API
 
@@ -215,9 +221,12 @@ npm run dev              # http://localhost:5173
 ```
 
 The web app calls the backend at `VITE_API_BASE_URL` (default `http://localhost:8080`),
-which is allowed by the backend's CORS config out of the box. It has parity with the Android
-client's core flows: auth, the deck library (with title search + sort), deck create/edit, and
-a practice screen (routed at `/decks/:id/practice`).
+which is allowed by the backend's CORS config out of the box. It covers the Android client's
+core flows — auth, the deck library (title + category search, sort), deck create/edit (with an
+optional Category) — and goes further: three **practice modes** (classic flip, text-entry Test,
+Multiple Choice; routed at `/decks/:id/practice`) and **admin** screens for users with the right
+permissions (manage the global deck catalog at `/library/global`; assign user roles at
+`/admin/users`).
 
 > The dev server is pinned to **port 5173** (`vite.config.ts`, `strictPort`) because that's the
 > origin registered with the Google OAuth client; if 5173 is taken it fails loudly rather than
@@ -358,16 +367,22 @@ expires the client transparently calls `/auth/refresh` and retries. Bodies are t
 | `POST /auth/google` | Exchange a Google ID token for access + refresh tokens (requires `GOOGLE_WEB_CLIENT_ID`) |
 | `POST /auth/refresh` | Exchange a refresh token for a fresh access token (rotates the refresh token) |
 | `POST /auth/logout` | Revoke a refresh token server-side (ends the session) |
+| `GET /auth/me` | The caller's identity, roles, and effective permissions |
 | `GET /decks`, `GET /decks/{id}` | List (cursor-paginated: `?limit&cursor`) / fetch decks (a user's decks + the global catalog) |
-| `POST /decks`, `PUT /decks/{id}`, `DELETE /decks/{id}` | Create / update / delete a deck (owner-scoped; the seeded deck is read-only) |
-| `POST /sessions` | Start or resume a practice session for a deck |
+| `POST /decks`, `PUT /decks/{id}`, `DELETE /decks/{id}` | Create / update / delete a deck (owner-scoped; global decks are writable only by an admin) |
+| `GET /decks/global`, `POST /decks/global` | List / create global (ownerless) catalog decks — admin only (`manage_global_decks`) |
+| `POST /sessions` | Start or resume a practice session for a deck (in a given `mode`) |
 | `GET /sessions?active=`, `GET /sessions/{id}` | List (cursor-paginated) / fetch practice sessions |
 | `PATCH /sessions/{id}`, `POST /sessions/{id}/complete` | Update progress / complete a session |
 | `GET /home` | Server-computed home feed |
 | `POST /images` | Upload a flashcard image; returns its CloudFront URL (requires S3 config) |
+| `GET /admin/users`, `GET /admin/roles` | List users (paginated + `?q=` email search) / the role catalog — admin only (`manage_roles`) |
+| `POST /admin/users/{id}/roles`, `DELETE /admin/users/{id}/roles/{key}` | Grant / revoke a user's role — admin only |
 
-> The `/auth/*` routes are rate-limited per client IP (`429` on exceed). List endpoints return a
+> The `/auth/*` routes are rate-limited per client IP (`429` on exceed). Login/register/google and
+> `/auth/me` carry the user's `permissions` so clients can gate admin UI. List endpoints return a
 > `Page<T>` envelope (`{ items, nextCursor }`); pass `nextCursor` back as `cursor` for the next page.
+> Admin routes (`/admin/*`, `/decks/global`) require a feature permission and return `403` otherwise.
 
 ---
 
@@ -385,8 +400,11 @@ cd webApp && npm run build && npm run lint && npm run test  # build + lint + tes
 ```
 
 CI (`.github/workflows/ci.yml`) runs ktlint, the JVM unit tests (backend/android/shared) with
-coverage, the web build/lint/tests, and the **instrumented tests on an emulator** (which covers
-the Room migration test).
+coverage, and the web build/lint/tests on every relevant PR (jobs are **path-gated** so each runs
+only when its area changed). Two expensive native jobs — **Android instrumented** (emulator;
+covers the Room migration test) and **iOS** (a macOS runner: shared iOS tests + an `xcodebuild`
+of the app) — are **opt-in**: they run only when their paths changed *and* the PR carries a label
+(`ci:android` / `ci:ios` / `ci:native`), or via a manual workflow dispatch.
 
 The backend tests start a real Postgres via Testcontainers, so they need Docker. Under
 Colima they additionally need:

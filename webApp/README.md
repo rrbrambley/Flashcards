@@ -1,9 +1,11 @@
 # Flashcards — Web App
 
-A React + TypeScript + Vite single-page app for Flashcards. It's a thin client over the
-backend API with parity to the Android client's core flows: auth, the deck library (with
-title search + sort), deck create/edit (optional front-of-card images), and a practice
-screen (card flip + reducer, routed at `/decks/:id/practice`).
+A React + TypeScript + Vite single-page app for Flashcards. It's a client over the backend API
+covering the Android client's core flows — auth, the deck library (title + category search,
+sort), deck create/edit (optional front-of-card images + a Category) — plus extras the other
+clients don't have yet: three **practice modes** (classic flip, text-entry Test, Multiple Choice;
+routed at `/decks/:id/practice`) and **admin** screens (manage the global deck catalog; assign
+user roles) gated on the signed-in user's permissions.
 
 This app has its **own npm toolchain** and is **not** part of the repo's Gradle build.
 
@@ -45,9 +47,15 @@ Use the **same** Google client ID the backend verifies against. See the root REA
 ## Structure
 
 - `src/api/` — `types.ts` (hand-written mirrors of the shared API DTOs, including the
-  `Page<T>` envelope) and `client.ts` (fetch-based API client; access + refresh tokens in
-  `localStorage`, with single-flight transparent refresh on `401`).
-- `src/auth/` — login/register + Google sign-in (Google Identity Services).
-- `src/decks/` — library list (title search + sort, cursor "Load more") and the create/edit
-  deck form (`DeckForm`).
-- `src/practice/` — the practice flow (card flip + reducer), routed at `/decks/:id/practice`.
+  `Page<T>` envelope, plus the web-only `AdminUserDto`/`RoleDto`) and `client.ts` (fetch-based API
+  client; access + refresh tokens in `localStorage`, with single-flight transparent refresh on `401`).
+- `src/auth/` — login/register + Google sign-in (Google Identity Services), and an `AuthContext`
+  that stores the user's `permissions` and exposes `can(permission)` to gate admin UI.
+- `src/decks/` — a reusable `DeckLibrary` (title + tag search + sort, cursor "Load more") used by
+  the personal library and the admin global-catalog view (`/library/global`), plus the create/edit
+  deck form (`DeckForm`, including the optional Category).
+- `src/admin/` — the admin RBAC screen (`/admin/users`): a searchable, paginated user list with
+  grant/revoke role controls.
+- `src/practice/` — a mode-agnostic runner (reducer + session persistence) delegating to a
+  registered mode view (`modes/ClassicMode`, `modes/TestMode`, `modes/MultipleChoiceMode`), routed
+  at `/decks/:id/practice`.
