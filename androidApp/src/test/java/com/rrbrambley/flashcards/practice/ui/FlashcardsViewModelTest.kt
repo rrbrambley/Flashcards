@@ -52,7 +52,13 @@ class FlashcardsViewModelTest {
 
         assertEquals(DECK_ID, sessions.startOrResumeDeckId)
         assertEquals(
-            FlashcardsUiState.ShowFlashcard(numIncorrect = 0, numCorrect = 0, flashcard = flashcards.first()),
+            FlashcardsUiState.ShowFlashcard(
+                numIncorrect = 0,
+                numCorrect = 0,
+                flashcard = flashcards.first(),
+                deck = flashcards,
+                mode = "flashcards",
+            ),
             viewModel.uiState.value,
         )
     }
@@ -62,13 +68,15 @@ class FlashcardsViewModelTest {
         val flashcards = testFlashcards()
         val viewModel = createViewModel(flashcards).also { it.loadDeck() }
 
-        viewModel.swipeRight()
+        viewModel.onResult(correct = true)
 
         assertEquals(
             FlashcardsUiState.ShowFlashcard(
                 numIncorrect = 0,
                 numCorrect = 1,
                 flashcard = flashcards[1],
+                deck = flashcards,
+                mode = "flashcards",
                 canGoBack = true,
             ),
             viewModel.uiState.value,
@@ -80,13 +88,15 @@ class FlashcardsViewModelTest {
         val flashcards = testFlashcards()
         val viewModel = createViewModel(flashcards).also { it.loadDeck() }
 
-        viewModel.swipeLeft()
+        viewModel.onResult(correct = false)
 
         assertEquals(
             FlashcardsUiState.ShowFlashcard(
                 numIncorrect = 1,
                 numCorrect = 0,
                 flashcard = flashcards[1],
+                deck = flashcards,
+                mode = "flashcards",
                 canGoBack = true,
             ),
             viewModel.uiState.value,
@@ -105,6 +115,8 @@ class FlashcardsViewModelTest {
                 numIncorrect = 0,
                 numCorrect = 0,
                 flashcard = flashcards[1],
+                deck = flashcards,
+                mode = "flashcards",
                 canGoBack = true,
             ),
             viewModel.uiState.value,
@@ -115,7 +127,7 @@ class FlashcardsViewModelTest {
     fun goBack_whenOnSecondFlashcard_showsPreviousFlashcardWithoutChangingScores() = runTest(testDispatcher) {
         val flashcards = testFlashcards()
         val viewModel = createViewModel(flashcards).also { it.loadDeck() }
-        viewModel.swipeRight()
+        viewModel.onResult(correct = true)
 
         viewModel.goBack()
 
@@ -124,6 +136,8 @@ class FlashcardsViewModelTest {
                 numIncorrect = 0,
                 numCorrect = 1,
                 flashcard = flashcards.first(),
+                deck = flashcards,
+                mode = "flashcards",
             ),
             viewModel.uiState.value,
         )
@@ -155,6 +169,8 @@ class FlashcardsViewModelTest {
                 numIncorrect = 1,
                 numCorrect = 2,
                 flashcard = flashcards[1],
+                deck = flashcards,
+                mode = "flashcards",
                 canGoBack = true,
             ),
             viewModel.uiState.value,
@@ -168,7 +184,7 @@ class FlashcardsViewModelTest {
         viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        viewModel.swipeRight()
+        viewModel.onResult(correct = true)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(
@@ -184,7 +200,7 @@ class FlashcardsViewModelTest {
         viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        viewModel.swipeLeft()
+        viewModel.onResult(correct = false)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(SESSION_ID, sessions.completedSessionId)
@@ -192,6 +208,19 @@ class FlashcardsViewModelTest {
             FlashcardsUiState.SessionCompleted(numIncorrect = 1, numCorrect = 0),
             viewModel.uiState.value,
         )
+    }
+
+    @Test
+    fun load_exposesTheSessionMode() = runTest(testDispatcher) {
+        val sessions = FakePracticeSessionRepository(session(mode = "multiple_choice"))
+        val viewModel = createViewModel(testFlashcards(), sessions)
+
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
+        assertEquals("multiple_choice", state.mode)
+        assertEquals(testFlashcards(), state.deck)
     }
 
     // --- Helpers ---
@@ -217,6 +246,7 @@ class FlashcardsViewModelTest {
         currentCardIndex: Int = 0,
         numCorrect: Int = 0,
         numIncorrect: Int = 0,
+        mode: String = "flashcards",
     ) = PracticeSession(
         id = SESSION_ID,
         deckId = deckId,
@@ -224,6 +254,7 @@ class FlashcardsViewModelTest {
         currentCardIndex = currentCardIndex,
         numCorrect = numCorrect,
         numIncorrect = numIncorrect,
+        mode = mode,
     )
 
     private fun testFlashcards(): List<Flashcard> = listOf(

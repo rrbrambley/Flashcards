@@ -53,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.practice.ui.PracticeMode
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
@@ -75,9 +76,9 @@ fun LibraryScreen(
         LibraryDeckActionsSheet(
             deck = deck,
             onDismissRequest = { selectedDeck = null },
-            onPracticeClick = {
+            onPracticeWithMode = { mode ->
                 selectedDeck = null
-                libraryViewModel.startPractice(deck.id, onPracticeDeck)
+                libraryViewModel.startPractice(deck.id, mode.key, onPracticeDeck)
             },
             onEditClick = {
                 selectedDeck = null
@@ -357,10 +358,12 @@ private fun LibraryDeckCard(
 private fun LibraryDeckActionsSheet(
     deck: FlashcardDeck,
     onDismissRequest: () -> Unit,
-    onPracticeClick: () -> Unit,
+    onPracticeWithMode: (PracticeMode) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
+    // Tapping "Practice" swaps the sheet to a mode chooser; everything else dismisses on action.
+    var choosingMode by remember { mutableStateOf(false) }
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
         Column(
             modifier = Modifier
@@ -374,40 +377,76 @@ private fun LibraryDeckActionsSheet(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = pluralStringResource(
-                    R.plurals.deck_card_count,
-                    deck.flashcards.size,
-                    deck.flashcards.size,
-                ),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Button(
-                onClick = onPracticeClick,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = deck.flashcards.isNotEmpty(),
-            ) {
-                Text(stringResource(R.string.library_practice))
-            }
-            OutlinedButton(
-                onClick = onEditClick,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.library_edit_deck))
-            }
-            // Delete only applies to decks the user owns; the global catalog deck is undeletable.
-            if (deck.isEditable) {
-                OutlinedButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
+            if (choosingMode) {
+                Text(
+                    text = stringResource(R.string.practice_choose_mode),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                PracticeMode.entries.forEach { mode ->
+                    PracticeModeOption(mode = mode, onClick = { onPracticeWithMode(mode) })
+                }
+            } else {
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.deck_card_count,
+                        deck.flashcards.size,
+                        deck.flashcards.size,
                     ),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = { choosingMode = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = deck.flashcards.isNotEmpty(),
                 ) {
-                    Text(stringResource(R.string.library_delete_deck))
+                    Text(stringResource(R.string.library_practice))
+                }
+                OutlinedButton(
+                    onClick = onEditClick,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.library_edit_deck))
+                }
+                // Delete only applies to decks the user owns; the global catalog deck is undeletable.
+                if (deck.isEditable) {
+                    OutlinedButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error,
+                        ),
+                    ) {
+                        Text(stringResource(R.string.library_delete_deck))
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PracticeModeOption(mode: PracticeMode, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(16.dp),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = stringResource(mode.label),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(mode.description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
