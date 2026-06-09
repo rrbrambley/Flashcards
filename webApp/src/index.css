@@ -77,6 +77,12 @@ button.secondary {
   color: var(--primary);
   border: 1px solid var(--border);
 }
+/* Light tint on hover (same as the deck-row fill) — the global button:hover would otherwise paint
+   the dark --primary-hover behind the purple label, making it unreadable. */
+button.secondary:hover:not(:disabled) {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
 button.link-btn {
   background: none;
   color: var(--muted);
