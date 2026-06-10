@@ -56,6 +56,12 @@ kotlin {
             implementation(libs.ktor.client.mock)
             implementation(libs.coroutines.test)
         }
+        // The canonical practice-grading golden fixture (FLA-81) lives at the repo root so both this
+        // module and the web app share one copy. Expose it on the jvmTest classpath as a resource so
+        // GradingParityFixtureTest can load it; the web reads the same file directly via node:fs.
+        jvmTest {
+            resources.srcDir(rootDir.resolve("testFixtures/practice-grading"))
+        }
     }
 }
 

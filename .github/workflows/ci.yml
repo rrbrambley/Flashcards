@@ -68,6 +68,9 @@ jobs:
               - 'shared/**'
               - 'backend/**'
               - 'androidApp/**'
+              # The shared grading golden fixture (FLA-81) drives both this job's :shared:jvmTest and
+              # the web job below, so a fixture-only edit must re-run both to catch parity drift.
+              - 'testFixtures/practice-grading/**'
             android:
               - *gradle
               - 'shared/**'
@@ -79,6 +82,7 @@ jobs:
             web:
               - '.github/workflows/ci.yml'
               - 'webApp/**'
+              - 'testFixtures/practice-grading/**'
 
   kotlin-lint:
     name: Kotlin lint (ktlint)
