@@ -1,0 +1,187 @@
+{
+  "_comment": "Canonical, source-of-truth golden vectors that pin the practice-mode grading logic to identical behavior across platforms. The web (TypeScript: webApp/src/practice/grading/) and mobile (shared Kotlin: shared/.../practice/grading/) keep separate implementations by design — :shared has no Kotlin/JS target — so both test suites load THIS file and assert against it. A change to the threshold or choice rules on only one side then fails that side's test (drift is caught in CI). Readers: webApp/src/practice/grading/parity.test.ts (node:fs) and shared/src/jvmTest/.../GradingParityFixtureTest.kt (classpath resource). See FLA-81.",
+
+  "textGrading": [
+    {
+      "name": "exact match",
+      "input": "Paris",
+      "answer": "Paris",
+      "expectedCorrect": true,
+      "expectedSimilarity": 1.0
+    },
+    {
+      "name": "ignores case and surrounding whitespace",
+      "input": "  pARiS ",
+      "answer": "Paris",
+      "expectedCorrect": true,
+      "expectedSimilarity": 1.0
+    },
+    {
+      "name": "collapses internal whitespace",
+      "input": "new   york",
+      "answer": "New York",
+      "expectedCorrect": true,
+      "expectedSimilarity": 1.0
+    },
+    {
+      "name": "typo within tolerance (one missing letter, ~0.909)",
+      "input": "Mississipi",
+      "answer": "Mississippi",
+      "expectedCorrect": true,
+      "expectedSimilarity": 0.9090909090909091
+    },
+    {
+      "name": "exactly at the 0.85 threshold (3 edits over 20 chars) is correct",
+      "input": "abcdefghijklmnopqrst",
+      "answer": "abcdefghijklmnopqxyz",
+      "expectedCorrect": true,
+      "expectedSimilarity": 0.85
+    },
+    {
+      "name": "just below the threshold (4 edits over 20 chars = 0.80) is incorrect",
+      "input": "abcdefghijklmnopqrst",
+      "answer": "abcdefghijklmnopwxyz",
+      "expectedCorrect": false,
+      "expectedSimilarity": 0.8
+    },
+    {
+      "name": "below tolerance, equal length",
+      "input": "cat",
+      "answer": "dog",
+      "expectedCorrect": false,
+      "expectedSimilarity": 0.0
+    },
+    {
+      "name": "below tolerance, different words",
+      "input": "Berlin",
+      "answer": "Paris",
+      "expectedCorrect": false
+    },
+    {
+      "name": "empty input against a real answer",
+      "input": "",
+      "answer": "Paris",
+      "expectedCorrect": false,
+      "expectedSimilarity": 0.0
+    },
+    {
+      "name": "whitespace-only input normalizes to empty",
+      "input": "   ",
+      "answer": "Paris",
+      "expectedCorrect": false,
+      "expectedSimilarity": 0.0
+    },
+    {
+      "name": "both empty normalize equal (maxLen 0 short-circuits to 1.0)",
+      "input": "",
+      "answer": "",
+      "expectedCorrect": true,
+      "expectedSimilarity": 1.0
+    }
+  ],
+
+  "multipleChoice": [
+    {
+      "name": "standard 5-card deck, default count",
+      "cards": [
+        { "question": "France", "answer": "Paris" },
+        { "question": "Japan", "answer": "Tokyo" },
+        { "question": "Italy", "answer": "Rome" },
+        { "question": "Spain", "answer": "Madrid" },
+        { "question": "Germany", "answer": "Berlin" }
+      ],
+      "cardIndex": 0,
+      "count": 4,
+      "expectedSize": 4,
+      "correct": "Paris",
+      "allowedDistractors": ["Tokyo", "Rome", "Madrid", "Berlin"]
+    },
+    {
+      "name": "de-duplicates case-insensitively and skips blank answers",
+      "cards": [
+        { "question": "France", "answer": "Paris" },
+        { "question": "Capital of France", "answer": "paris" },
+        { "question": "Mystery", "answer": "   " },
+        { "question": "Japan", "answer": "Tokyo" },
+        { "question": "Nippon", "answer": "tokyo" }
+      ],
+      "cardIndex": 0,
+      "count": 4,
+      "expectedSize": 2,
+      "correct": "Paris",
+      "allowedDistractors": ["Tokyo"]
+    },
+    {
+      "name": "small deck yields fewer than count",
+      "cards": [
+        { "question": "France", "answer": "Paris" },
+        { "question": "Japan", "answer": "Tokyo" }
+      ],
+      "cardIndex": 0,
+      "count": 4,
+      "expectedSize": 2,
+      "correct": "Paris",
+      "allowedDistractors": ["Tokyo"]
+    },
+    {
+      "name": "count smaller than the available distractor pool",
+      "cards": [
+        { "question": "France", "answer": "Paris" },
+        { "question": "Japan", "answer": "Tokyo" },
+        { "question": "Italy", "answer": "Rome" },
+        { "question": "Spain", "answer": "Madrid" },
+        { "question": "Germany", "answer": "Berlin" }
+      ],
+      "cardIndex": 0,
+      "count": 3,
+      "expectedSize": 3,
+      "correct": "Paris",
+      "allowedDistractors": ["Tokyo", "Rome", "Madrid", "Berlin"]
+    },
+    {
+      "name": "count of 1 yields only the correct answer",
+      "cards": [
+        { "question": "France", "answer": "Paris" },
+        { "question": "Japan", "answer": "Tokyo" },
+        { "question": "Italy", "answer": "Rome" },
+        { "question": "Spain", "answer": "Madrid" },
+        { "question": "Germany", "answer": "Berlin" }
+      ],
+      "cardIndex": 0,
+      "count": 1,
+      "expectedSize": 1,
+      "correct": "Paris",
+      "allowedDistractors": []
+    },
+    {
+      "name": "count larger than the deck is clamped to available distinct answers",
+      "cards": [
+        { "question": "France", "answer": "Paris" },
+        { "question": "Japan", "answer": "Tokyo" },
+        { "question": "Italy", "answer": "Rome" },
+        { "question": "Spain", "answer": "Madrid" },
+        { "question": "Germany", "answer": "Berlin" }
+      ],
+      "cardIndex": 0,
+      "count": 10,
+      "expectedSize": 5,
+      "correct": "Paris",
+      "allowedDistractors": ["Tokyo", "Rome", "Madrid", "Berlin"]
+    },
+    {
+      "name": "non-zero card index uses that card as the correct answer",
+      "cards": [
+        { "question": "France", "answer": "Paris" },
+        { "question": "Japan", "answer": "Tokyo" },
+        { "question": "Italy", "answer": "Rome" },
+        { "question": "Spain", "answer": "Madrid" },
+        { "question": "Germany", "answer": "Berlin" }
+      ],
+      "cardIndex": 2,
+      "count": 4,
+      "expectedSize": 4,
+      "correct": "Rome",
+      "allowedDistractors": ["Paris", "Tokyo", "Madrid", "Berlin"]
+    }
+  ]
+}
