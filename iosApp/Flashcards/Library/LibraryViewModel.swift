@@ -18,6 +18,9 @@ final class LibraryViewModel: ObservableObject {
     @Published var searchQuery = "" { didSet { recompute() } }
     @Published var sortOrder: DeckSortOrder = .alphabetical { didSet { recompute() } }
     @Published var deleteError: String?
+    /// True when the latest background deck refresh failed but cached decks are still shown — the
+    /// view surfaces an unobtrusive banner (parity with Android's snackbar).
+    @Published private(set) var refreshFailed = false
 
     /// True once decks have loaded — lets the view tell "no decks yet" from "no search matches".
     var hasAnyDecks: Bool { !rawDecks.isEmpty }
@@ -39,6 +42,14 @@ final class LibraryViewModel: ObservableObject {
             rawDecks = (decks as? [FlashcardDeck]) ?? []
             loaded = true
             recompute()
+        }
+    }
+
+    /// Flags `refreshFailed` whenever a background deck refresh fails, so the view can warn the user
+    /// it's showing cached decks. Long-lived for the screen's lifetime.
+    func observeRefreshFailures() async {
+        for await _ in asyncStream(BridgingKt.deckRefreshFailuresAdapter(flashcardRepository)) {
+            refreshFailed = true
         }
     }
 
@@ -64,6 +75,9 @@ final class LibraryViewModel: ObservableObject {
     }
 
     func refresh() async {
+        // Optimistically clear the failure banner; the failure stream re-sets it if this refresh
+        // also fails (a successful refresh emits no signal, so it simply stays cleared).
+        refreshFailed = false
         for await decks in asyncStream(BridgingKt.flashcardDecksAdapter(flashcardRepository)) {
             rawDecks = (decks as? [FlashcardDeck]) ?? []
             loaded = true

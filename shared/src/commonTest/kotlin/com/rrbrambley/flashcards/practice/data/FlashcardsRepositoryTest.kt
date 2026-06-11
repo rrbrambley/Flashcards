@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,6 +49,21 @@ class FlashcardsRepositoryTest {
             ),
             decks,
         )
+    }
+
+    @Test
+    fun observeFlashcardDecks_whenRefreshFails_signalsADeckRefreshFailure() = runTest {
+        val dao = FakeFlashcardDao()
+        // No /decks route → the background refresh (GET /decks) fails.
+        val repository = FlashcardRepositoryImpl(apiClient(mockEngine()), dao)
+
+        // Keep the decks subscription alive so the background refresh runs (and fails).
+        val decksJob = launch { repository.observeFlashcardDecks().collect {} }
+        // Subscribe before the refresh emits (the signal has no replay), then await the failure.
+        val failure = repository.observeDeckRefreshFailures().first()
+
+        assertEquals(true, failure)
+        decksJob.cancel()
     }
 
     @Test

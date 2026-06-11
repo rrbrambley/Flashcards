@@ -108,6 +108,12 @@ struct LibraryView: View {
             }
             .task { await viewModel.observeDecks() }
             .task { await viewModel.observeLastPracticed() }
+            .task { await viewModel.observeRefreshFailures() }
+            .safeAreaInset(edge: .bottom) {
+                if viewModel.refreshFailed {
+                    RefreshFailedBanner(message: "Couldn't refresh your decks. Showing your saved library.")
+                }
+            }
     }
 
     @ViewBuilder private var content: some View {

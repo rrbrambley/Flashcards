@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.shared
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -9,3 +10,6 @@ import kotlinx.coroutines.flow.flowOf
  * canned data. Ships in the framework like [InMemoryTokenStore]; not used by production code.
  */
 fun <T> oneShotFlow(value: T): Flow<T> = flowOf(value)
+
+/** A never-emitting [Flow] for Swift fakes of optional signal streams (e.g. deck-refresh failures). */
+fun emptyBooleanFlow(): Flow<Boolean> = emptyFlow()

@@ -7,6 +7,8 @@ import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -21,9 +23,14 @@ import kotlinx.coroutines.launch
 class FlashcardRepositoryImpl(private val apiClient: FlashcardApiClient, private val flashcardDao: FlashcardDao) :
     FlashcardRepository {
 
+    // Signals (replay-less, so off-screen events are dropped) that a background deck refresh failed.
+    private val deckRefreshFailures = MutableSharedFlow<Boolean>(extraBufferCapacity = 1)
+
+    override fun observeDeckRefreshFailures(): Flow<Boolean> = deckRefreshFailures.asSharedFlow()
+
     override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flow {
         coroutineScope {
-            launch { runCatching { refreshDecks() } }
+            launch { runCatching { refreshDecks() }.onFailure { deckRefreshFailures.tryEmit(true) } }
             emitAll(flashcardDao.observeDecks().map { decks -> decks.map { it.toDomain() } })
         }
     }
