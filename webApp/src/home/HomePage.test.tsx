@@ -33,6 +33,11 @@ const continueItem: HomeData = {
   title: 'Continue Spanish practice',
   button: { message: 'Continue practice', action: { type: 'continue_practice', sessionId: 7 } },
 };
+const continueItemWithSession: HomeData = {
+  title: 'Continue Spanish practice',
+  button: { message: 'Continue practice', action: { type: 'continue_practice', sessionId: 7 } },
+  session: { mode: 'multiple_choice', numCorrect: 3, numIncorrect: 1, currentCardIndex: 4, totalCards: 10 },
+};
 const practiceItem: HomeData = {
   title: 'Practice Flags of the World',
   button: { message: 'Practice', action: { type: 'navigate_to_practice', deckId: 9 } },
@@ -52,6 +57,18 @@ describe('HomePage', () => {
     expect(await screen.findByText('Continue Spanish practice')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue practice' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
+  });
+
+  it('shows mode, score and progress for an in-progress session', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([continueItemWithSession]);
+    renderHome();
+
+    expect(await screen.findByText('Multiple Choice')).toBeInTheDocument();
+    expect(screen.getByText('✓ 3 correct')).toBeInTheDocument();
+    expect(screen.getByText('✗ 1 incorrect')).toBeInTheDocument();
+    expect(screen.getByText('Card 5 of 10')).toBeInTheDocument();
+    // 4 of 10 cards reached → 40%.
+    expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
   });
 
   it('continue tile resumes the session via its deck', async () => {

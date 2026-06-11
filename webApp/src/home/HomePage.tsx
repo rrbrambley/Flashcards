@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { HomeButtonAction, HomeData } from '../api/types';
+import type { HomeButtonAction, HomeData, HomeSessionInfo } from '../api/types';
 import { useAuth } from '../auth/auth-context';
+import { findMode } from '../practice/modes';
 
 export function HomePage() {
   const { signOut } = useAuth();
@@ -77,6 +78,7 @@ export function HomePage() {
             {items.map((item, index) => (
               <li key={index} className="home-card">
                 <span className="home-card-title">{item.title}</span>
+                {item.session && <SessionDetail session={item.session} />}
                 {item.button && (
                   <button onClick={() => runAction(item.button!.action)}>{item.button.message}</button>
                 )}
@@ -85,6 +87,40 @@ export function HomePage() {
           </ul>
         )}
       </main>
+    </div>
+  );
+}
+
+/** Mode + score + a progress bar for an in-progress session, shown on its "continue" home card. */
+function SessionDetail({ session }: { session: HomeSessionInfo }) {
+  const modeLabel = findMode(session.mode)?.label ?? session.mode;
+  const { totalCards, currentCardIndex, numCorrect, numIncorrect } = session;
+  const progressPct = totalCards > 0 ? Math.round((currentCardIndex / totalCards) * 100) : 0;
+
+  return (
+    <div className="home-card-session">
+      <div className="home-card-session-meta">
+        <span className="badge">{modeLabel}</span>
+        <span className="muted">✓ {numCorrect} correct</span>
+        <span className="muted">✗ {numIncorrect} incorrect</span>
+        {totalCards > 0 && (
+          <span className="muted">
+            Card {Math.min(currentCardIndex + 1, totalCards)} of {totalCards}
+          </span>
+        )}
+      </div>
+      {totalCards > 0 && (
+        <div
+          className="progress"
+          role="progressbar"
+          aria-label="Practice progress"
+          aria-valuenow={progressPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
+          <div className="progress-bar" style={{ width: `${progressPct}%` }} />
+        </div>
+      )}
     </div>
   );
 }
