@@ -5,26 +5,34 @@ import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
- * Offline-first: reads serve the Room cache immediately after a best-effort remote
- * refresh; writes go to the backend first, then update the cache keyed by backend ids.
+ * Offline-first: reads serve the Room cache immediately while a best-effort remote refresh runs
+ * in the background (the Room flow re-emits when the refresh writes through, so callers never wait
+ * on the network to see cached data); writes go to the backend first, then update the cache keyed
+ * by backend ids.
  */
 class FlashcardRepositoryImpl(private val apiClient: FlashcardApiClient, private val flashcardDao: FlashcardDao) :
     FlashcardRepository {
 
     override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flow {
-        runCatching { refreshDecks() }
-        emitAll(flashcardDao.observeDecks().map { decks -> decks.map { it.toDomain() } })
+        coroutineScope {
+            launch { runCatching { refreshDecks() } }
+            emitAll(flashcardDao.observeDecks().map { decks -> decks.map { it.toDomain() } })
+        }
     }
 
     override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flow {
-        runCatching { cache(apiClient.getDeck(deckId)) }
-        emitAll(flashcardDao.observeDeck(deckId).map { it?.toDomain() })
+        coroutineScope {
+            launch { runCatching { cache(apiClient.getDeck(deckId)) } }
+            emitAll(flashcardDao.observeDeck(deckId).map { it?.toDomain() })
+        }
     }
 
     @Throws(Exception::class)

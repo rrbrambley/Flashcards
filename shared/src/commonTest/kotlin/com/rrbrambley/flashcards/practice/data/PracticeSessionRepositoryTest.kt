@@ -68,7 +68,8 @@ class PracticeSessionRepositoryTest {
             ),
         )
 
-        val active = repository.observeActiveSessions().first()
+        // Offline-first: the cache (empty) emits first, then the background refresh writes through.
+        val active = repository.observeActiveSessions().first { it.isNotEmpty() }
 
         assertEquals(listOf(1L), active.map { it.id })
         assertEquals("Spanish", active.single().deckTitle)
