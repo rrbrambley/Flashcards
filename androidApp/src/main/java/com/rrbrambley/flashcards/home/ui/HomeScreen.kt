@@ -4,19 +4,24 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,10 +38,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.practice.ui.PracticeMode
 import com.rrbrambley.flashcards.shared.domain.HomeButton
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.HomeSessionInfo
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
+import kotlin.math.min
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -143,6 +151,7 @@ fun HomeCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+            card.session?.let { SessionDetail(it) }
             card.button?.let {
                 Button(
                     onClick = { onButtonAction(it.action) },
@@ -152,6 +161,70 @@ fun HomeCard(
                 }
             }
         }
+    }
+}
+
+/** Mode + score + a progress bar for an in-progress session, shown on its "continue" home card. */
+@Composable
+private fun SessionDetail(session: HomeSessionInfo) {
+    val modeLabel = PracticeMode.entries.firstOrNull { it.key == session.mode }?.label
+    val total = session.totalCards
+    val progress = if (total > 0) (session.currentCardIndex.toFloat() / total).coerceIn(0f, 1f) else 0f
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            modeLabel?.let { ModeBadge(text = stringResource(it)) }
+            Text(
+                text = stringResource(R.string.home_session_correct, session.numCorrect),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(R.string.home_session_incorrect, session.numIncorrect),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (total > 0) {
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = stringResource(
+                        R.string.home_session_progress,
+                        min(session.currentCardIndex + 1, total),
+                        total,
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (total > 0) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ModeBadge(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        shape = RoundedCornerShape(999.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
     }
 }
 

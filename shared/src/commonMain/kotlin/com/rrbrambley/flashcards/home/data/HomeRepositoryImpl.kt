@@ -9,6 +9,7 @@ import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.shared.domain.HomeData
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.HomeSessionInfo
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.flow.Flow
@@ -48,18 +49,26 @@ class HomeRepositoryImpl(
                 // refresh in place without re-flashing the fallback.
                 if (!emittedCachedFeed) {
                     emittedCachedFeed = true
-                    send(activeSessions.map { it.toContinueItem() } + offlineItems(decks))
+                    send(activeSessions.map { it.toContinueItem(decks) } + offlineItems(decks))
                 }
                 // Throws when the backend is unreachable; the cached feed above stays on screen.
                 send(apiClient.getHome().map { it.toDomain() })
             }
     }
 
-    private fun PracticeSession.toContinueItem(): HomeData = HomeData(
+    private fun PracticeSession.toContinueItem(decks: List<FlashcardDeck>): HomeData = HomeData(
         title = strings.continuePracticeTitle(deckTitle),
         button = HomeButton(
             message = strings.continuePracticeButton,
             action = HomeButtonAction.ContinuePractice(id),
+        ),
+        // Mirror the backend feed's session detail so online/offline cards match (FLA-93).
+        session = HomeSessionInfo(
+            mode = mode,
+            numCorrect = numCorrect,
+            numIncorrect = numIncorrect,
+            currentCardIndex = currentCardIndex,
+            totalCards = decks.firstOrNull { it.id == deckId }?.flashcards?.size ?: 0,
         ),
     )
 
