@@ -80,6 +80,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ApplicationFlowTest {
@@ -761,6 +763,17 @@ class ApplicationFlowTest {
         val homeBefore = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
         assertEquals("Continue Flags of the World practice", homeBefore.first().title)
         assertEquals(3, homeBefore.size) // 1 continue + 2 static
+
+        // The continue item carries session detail (mode + score + progress) for the UI (FLA-92).
+        val continueSession = homeBefore.first().session
+        assertNotNull(continueSession)
+        assertEquals("flashcards", continueSession.mode)
+        assertEquals(2, continueSession.numCorrect)
+        assertEquals(0, continueSession.numIncorrect)
+        assertEquals(2, continueSession.currentCardIndex)
+        assertTrue(continueSession.totalCards > 0)
+        // Static items (Practice / Create) have no session detail.
+        assertNull(homeBefore.last().session)
 
         // Complete
         val completed = client.post("/sessions/${session.id}/complete") { bearerAuth(auth.accessToken) }

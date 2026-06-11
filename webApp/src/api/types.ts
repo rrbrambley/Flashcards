@@ -108,7 +108,18 @@ export interface HomeButton {
   action: HomeButtonAction;
 }
 
+// Per-session detail on a "continue practice" home item: mode, score so far, and progress.
+export interface HomeSessionInfo {
+  mode: string;
+  numCorrect: number;
+  numIncorrect: number;
+  currentCardIndex: number;
+  totalCards: number;
+}
+
 export interface HomeData {
   title: string;
   button?: HomeButton | null;
+  // Present on "continue practice" items so the card can show mode + progress; null otherwise.
+  session?: HomeSessionInfo | null;
 }
