@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.home.data
 
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
@@ -77,6 +78,33 @@ class HomeRepositoryTest {
         assertEquals("Continue Spanish basics", homeData.first().title)
         assertEquals("Continue", homeData.first().button?.message)
         assertEquals(HomeButtonAction.ContinuePractice(12L), homeData.first().button?.action)
+    }
+
+    @Test
+    fun observeHomeData_continueItemCarriesSessionDetail() = runTest {
+        val deck = FlashcardDeck(
+            id = 1L,
+            title = "Spanish basics",
+            flashcards = listOf(Flashcard("a", "1"), Flashcard("b", "2"), Flashcard("c", "3")),
+        )
+        val session = PracticeSession(
+            id = 12L,
+            deckId = 1L,
+            deckTitle = "Spanish basics",
+            currentCardIndex = 1,
+            numCorrect = 2,
+            numIncorrect = 0,
+            mode = "test",
+        )
+        val homeData = repository(sessions = listOf(session), decks = listOf(deck)).observeHomeData().first()
+
+        val info = homeData.first().session
+        assertNotNull(info)
+        assertEquals("test", info.mode)
+        assertEquals(2, info.numCorrect)
+        assertEquals(0, info.numIncorrect)
+        assertEquals(1, info.currentCardIndex)
+        assertEquals(3, info.totalCards) // resolved from the cached deck's card count
     }
 
     private companion object {

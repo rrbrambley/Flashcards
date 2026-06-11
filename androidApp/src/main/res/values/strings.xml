@@ -46,6 +46,9 @@
     <!-- Home -->
     <string name="home_load_error">Couldn\'t load your home feed. Check your connection.</string>
     <string name="home_refresh_error">Couldn\'t refresh. Showing your saved home feed.</string>
+    <string name="home_session_correct">✓ %1$d correct</string>
+    <string name="home_session_incorrect">✗ %1$d incorrect</string>
+    <string name="home_session_progress">Progress: %1$d of %2$d</string>
 
     <!-- Library -->
     <string name="library_load_error">Couldn\'t load your decks. Check your connection.</string>

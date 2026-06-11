@@ -6,12 +6,14 @@ import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.HomeButtonActionDto
 import com.rrbrambley.flashcards.shared.api.HomeButtonDto
 import com.rrbrambley.flashcards.shared.api.HomeDataDto
+import com.rrbrambley.flashcards.shared.api.HomeSessionInfoDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.HomeButton
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.HomeSessionInfo
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 
 fun FlashcardDto.toDomain(): Flashcard = Flashcard(question, answer, imageUrl)
@@ -42,7 +44,11 @@ fun PracticeSessionDto.toDomain(): PracticeSession = PracticeSession(
     updatedAtMillis = updatedAtMillis,
 )
 
-fun HomeDataDto.toDomain(): HomeData = HomeData(title = title, button = button?.toDomain())
+fun HomeDataDto.toDomain(): HomeData =
+    HomeData(title = title, button = button?.toDomain(), session = session?.toDomain())
+
+private fun HomeSessionInfoDto.toDomain(): HomeSessionInfo =
+    HomeSessionInfo(mode, numCorrect, numIncorrect, currentCardIndex, totalCards)
 
 private fun HomeButtonDto.toDomain(): HomeButton = HomeButton(message = message, action = action.toDomain())
 
