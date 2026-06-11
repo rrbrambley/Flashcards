@@ -126,8 +126,10 @@ class FlashcardsViewModel @Inject constructor(
             persistProgress()
             updateUiState()
         } else if (currentSessionId != null) {
+            // Best-effort server sync; offline it throws, so swallow it (an uncaught failure in this
+            // launch would crash the app). Local progress already drives the completion screen.
             viewModelScope.launch {
-                practiceSessionRepository.completeSession(currentSessionId)
+                runCatching { practiceSessionRepository.completeSession(currentSessionId) }
             }
             _uiState.update {
                 FlashcardsUiState.SessionCompleted(
@@ -142,13 +144,17 @@ class FlashcardsViewModel @Inject constructor(
 
     private fun persistProgress() {
         val currentSessionId = sessionId ?: return
+        // Best-effort server sync; offline it throws, so swallow it (an uncaught failure here would
+        // crash the app). In-memory progress keeps the session usable until connectivity returns.
         viewModelScope.launch {
-            practiceSessionRepository.updateProgress(
-                sessionId = currentSessionId,
-                currentCardIndex = currentFlashcardIndex,
-                numCorrect = numCorrect,
-                numIncorrect = numIncorrect,
-            )
+            runCatching {
+                practiceSessionRepository.updateProgress(
+                    sessionId = currentSessionId,
+                    currentCardIndex = currentFlashcardIndex,
+                    numCorrect = numCorrect,
+                    numIncorrect = numIncorrect,
+                )
+            }
         }
     }
 }

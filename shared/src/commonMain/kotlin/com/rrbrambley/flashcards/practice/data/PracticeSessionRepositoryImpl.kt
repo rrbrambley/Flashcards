@@ -5,9 +5,11 @@ import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -24,11 +26,22 @@ class PracticeSessionRepositoryImpl(
 ) : PracticeSessionRepository {
 
     @Throws(Exception::class)
-    override suspend fun startOrResumeSession(deckId: Long, mode: String): Long {
-        // Start-or-resume is the backend's job (it keys on user+deck+mode); we just cache the result.
+    override suspend fun startOrResumeSession(deckId: Long, mode: String): Long = try {
+        // Start-or-resume is the backend's job (it keys on user+deck+mode); we cache the result.
         val session = apiClient.createSession(deckId, mode)
         cache(session)
-        return session.id
+        session.id
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        // Offline: resume a cached active session for this deck + mode so a deck you've already
+        // started stays practiceable without a connection. (Starting a brand-new session still
+        // needs the backend, since the session id is server-owned.)
+        practiceSessionDao.observeActiveSessions().first()
+            .map { it.toDomain() }
+            .firstOrNull { it.deckId == deckId && it.mode == mode }
+            ?.id
+            ?: throw e
     }
 
     override fun observeActiveSessions(): Flow<List<PracticeSession>> = flow {
