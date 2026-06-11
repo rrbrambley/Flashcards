@@ -93,7 +93,7 @@ struct HomeView: View {
     }
 }
 
-/// A single home-feed card: a title and an optional action button.
+/// A single home-feed card: a title, optional in-progress session detail, and an action button.
 private struct FeedCard: View {
     let item: HomeData
     let onAction: (HomeButtonAction) -> Void
@@ -103,6 +103,9 @@ private struct FeedCard: View {
             Text(item.title)
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
+            if let session = item.session {
+                SessionDetail(session: session)
+            }
             if let button = item.button {
                 Button(button.message) { onAction(button.action) }
                     .buttonStyle(.primary)
@@ -110,5 +113,40 @@ private struct FeedCard: View {
         }
         .padding(Spacing.md)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: CornerRadius.card))
+    }
+}
+
+/// Mode + score + a progress bar for an in-progress session, shown on its "continue" home card.
+private struct SessionDetail: View {
+    let session: HomeSessionInfo
+
+    var body: some View {
+        let total = Int(session.totalCards)
+        let current = Int(session.currentCardIndex)
+        let modeLabel = PracticeMode(rawValue: session.mode)?.label ?? session.mode
+
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack(spacing: Spacing.sm) {
+                Text(modeLabel)
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, Spacing.sm)
+                    .padding(.vertical, 2)
+                    .background(Color.accentColor.opacity(0.15), in: Capsule())
+                    .foregroundStyle(Color.accentColor)
+                Text("✓ \(session.numCorrect) correct").font(.caption).foregroundStyle(.secondary)
+                Text("✗ \(session.numIncorrect) incorrect").font(.caption).foregroundStyle(.secondary)
+                if total > 0 {
+                    Spacer()
+                    Text("Progress: \(min(current + 1, total)) of \(total)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if total > 0 {
+                ProgressView(value: Double(current), total: Double(total))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
