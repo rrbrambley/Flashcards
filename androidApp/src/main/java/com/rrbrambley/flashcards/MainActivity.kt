@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.auth.AuthState
@@ -141,11 +143,18 @@ private fun HomeScaffolding(
                 actions = {
                     when (currentDestination) {
                         BottomDestination.New -> {
-                            IconButton(onClick = createDeckViewModel::finishDeckCreation) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = stringResource(R.string.main_cd_finish_deck_creation),
-                                )
+                            IconButton(
+                                onClick = createDeckViewModel::finishDeckCreation,
+                                enabled = !createDeckUiState.isSaving,
+                            ) {
+                                if (createDeckUiState.isSaving) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = stringResource(R.string.main_cd_finish_deck_creation),
+                                    )
+                                }
                             }
                         }
                         BottomDestination.Home,

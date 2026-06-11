@@ -222,6 +222,23 @@ class EditDeckViewModelTest {
         collectJob.cancel()
     }
 
+    @Test
+    fun finishDeckEditing_ignoresRepeatTapsWhileSaving() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository(testDeck())
+        val viewModel = EditDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onDeckTitleChange("Spanish greetings")
+
+        viewModel.finishDeckEditing() // starts the save (isSaving = true)
+        assertTrue(viewModel.uiState.value.isSaving)
+        viewModel.finishDeckEditing() // tapped again before it finishes — must be ignored
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, repository.updateCount)
+        assertFalse(viewModel.uiState.value.isSaving)
+    }
+
     private fun testDeck(editable: Boolean = true, tags: List<String> = emptyList()): FlashcardDeck = FlashcardDeck(
         id = 42L,
         title = "Spanish basics",
@@ -238,6 +255,7 @@ class EditDeckViewModelTest {
         private val failUpdate: Boolean = false,
     ) : FlashcardRepository {
         var updatedDeck: FlashcardDeck? = null
+        var updateCount: Int = 0
 
         override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(listOf(deck))
 
@@ -246,6 +264,7 @@ class EditDeckViewModelTest {
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
 
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) {
+            updateCount++
             if (failUpdate) throw RuntimeException("offline")
             updatedDeck = deck
         }

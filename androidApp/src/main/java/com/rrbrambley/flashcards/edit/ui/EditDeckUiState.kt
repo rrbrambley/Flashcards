@@ -11,6 +11,8 @@ data class EditDeckUiState(
     val isDirty: Boolean = false,
     val showValidationErrors: Boolean = false,
     val deckSaved: Boolean = false,
+    /** True while a save is in flight, so the UI can show progress and block repeat taps. */
+    val isSaving: Boolean = false,
     /** Read-only decks (e.g. the global catalog) are shown but can't be edited. */
     val isEditable: Boolean = true,
 )
