@@ -1,15 +1,18 @@
 package com.rrbrambley.flashcards.create.ui
 
+import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.FakeStringProvider
 
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -122,7 +125,29 @@ class CreateDeckViewModelTest {
         assertEquals(emptyList<String>(), repository.savedDeck?.tags)
     }
 
-    private class FakeFlashcardRepository : FlashcardRepository {
+    @Test
+    fun finishDeckCreation_whenSaveFails_keepsFormAndEmitsMessage() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository(failSave = true)
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.onDeckTitleChange("Spanish basics")
+        viewModel.onTermChange(1L, "Hola")
+        viewModel.onDefinitionChange(1L, "Hello")
+
+        val messages = mutableListOf<String>()
+        val collectJob = launch(start = CoroutineStart.UNDISPATCHED) {
+            viewModel.userMessages.collect { messages.add(it) }
+        }
+        viewModel.finishDeckCreation()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The form is kept (not reset to deckSaved) and the user is told the save failed.
+        assertFalse(viewModel.uiState.value.deckSaved)
+        assertEquals("Spanish basics", viewModel.uiState.value.deckTitle)
+        assertEquals(listOf("string:${R.string.deck_save_error}"), messages)
+        collectJob.cancel()
+    }
+
+    private class FakeFlashcardRepository(private val failSave: Boolean = false) : FlashcardRepository {
         var savedDeck: FlashcardDeck? = null
 
         override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(emptyList())
@@ -130,6 +155,7 @@ class CreateDeckViewModelTest {
         override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(null)
 
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
+            if (failSave) throw RuntimeException("offline")
             savedDeck = deck
         }
 
