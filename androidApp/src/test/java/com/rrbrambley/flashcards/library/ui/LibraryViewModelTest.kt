@@ -10,6 +10,7 @@ import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -226,6 +227,25 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun deckRefreshFailure_emitsAUserMessage() = runTest(testDispatcher) {
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(emptyList(), refreshFails = true),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+            stringProvider = FakeStringProvider(),
+        )
+        val messages = mutableListOf<String>()
+        // Unconfined so the collector subscribes eagerly (before we emit) — SharedFlow has no replay.
+        backgroundScope.launch(UnconfinedTestDispatcher(testDispatcher.scheduler)) {
+            viewModel.userMessages.collect { messages.add(it) }
+        }
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The background deck-refresh failure surfaces as a (single) snackbar message.
+        assertEquals(1, messages.size)
+    }
+
+    @Test
     fun retry_afterFailure_reloadsDecks() = runTest(testDispatcher) {
         val decks = listOf(FlashcardDeck(id = 1L, title = "Spanish basics", flashcards = emptyList()))
         val viewModel = LibraryViewModel(
@@ -246,6 +266,7 @@ class LibraryViewModelTest {
         private val decks: List<FlashcardDeck>,
         private val deleteShouldFail: Boolean = false,
         private var failFirstSubscription: Boolean = false,
+        private val refreshFails: Boolean = false,
     ) : FlashcardRepository {
         var deletedDeckId: Long? = null
 
@@ -256,6 +277,9 @@ class LibraryViewModelTest {
             }
             emit(decks)
         }
+
+        override fun observeDeckRefreshFailures(): Flow<Boolean> =
+            if (refreshFails) flowOf(true) else emptyFlow()
 
         override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(decks.firstOrNull { it.id == deckId })
 

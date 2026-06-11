@@ -38,6 +38,24 @@ struct EmptyStateView: View {
     }
 }
 
+/// Unobtrusive bottom banner shown over cached content when a background refresh fails (offline /
+/// server down) — parity with Android's "couldn't refresh" snackbar. Use via `.safeAreaInset`.
+struct RefreshFailedBanner: View {
+    let message: String
+
+    var body: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "wifi.slash")
+            Text(message)
+                .font(.footnote)
+        }
+        .padding(.vertical, Spacing.sm)
+        .padding(.horizontal, Spacing.md)
+        .frame(maxWidth: .infinity)
+        .background(.thinMaterial)
+    }
+}
+
 /// Inline form validation/error text (red, footnote) — used by the deck form sections.
 struct FormErrorText: View {
     private let message: String

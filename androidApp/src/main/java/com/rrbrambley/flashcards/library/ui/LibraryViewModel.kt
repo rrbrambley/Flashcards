@@ -49,6 +49,19 @@ class LibraryViewModel @Inject constructor(
 
     init {
         observeDecks()
+        observeRefreshFailures()
+    }
+
+    /**
+     * Warns (via a snackbar) when a background deck refresh fails while the cache stays on screen —
+     * so the user knows they may be looking at stale data. Collected once for the VM's lifetime.
+     */
+    private fun observeRefreshFailures() {
+        viewModelScope.launch {
+            flashcardRepository.observeDeckRefreshFailures().collect {
+                _userMessages.tryEmit(stringProvider.getString(R.string.library_refresh_error))
+            }
+        }
     }
 
     fun onSearchQueryChange(query: String) {

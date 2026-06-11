@@ -23,6 +23,9 @@ fun TokenStore.loggedInAdapter(): FlowAdapter<Boolean> = FlowAdapter(tokenFlow()
 /** The user's decks + the global catalog (offline-first; best-effort re-syncs on subscribe). */
 fun FlashcardRepository.flashcardDecksAdapter(): FlowAdapter<List<FlashcardDeck>> = FlowAdapter(observeFlashcardDecks())
 
+/** Emits `true` when a background deck refresh fails, so the Library can warn it's showing cache. */
+fun FlashcardRepository.deckRefreshFailuresAdapter(): FlowAdapter<Boolean> = FlowAdapter(observeDeckRefreshFailures())
+
 /** A single deck by id for the edit screen (non-null emissions only; syncs the full deck on subscribe). */
 fun FlashcardRepository.flashcardDeckAdapter(deckId: Long): FlowAdapter<FlashcardDeck> =
     FlowAdapter(observeFlashcardDeck(deckId).filterNotNull())

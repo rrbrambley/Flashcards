@@ -46,6 +46,7 @@ final class FakeFlashcardRepository: FlashcardRepository {
 
     func observeFlashcardDecks() -> any Kotlinx_coroutines_coreFlow { FlowTestSupportKt.oneShotFlow(value: decks) }
     func observeFlashcardDeck(deckId: Int64) -> any Kotlinx_coroutines_coreFlow { FlowTestSupportKt.oneShotFlow(value: deck) }
+    func observeDeckRefreshFailures() -> any Kotlinx_coroutines_coreFlow { FlowTestSupportKt.emptyBooleanFlow() }
 
     func saveFlashcardDeck(deck: FlashcardDeck) async throws {
         if let saveError { throw saveError }
