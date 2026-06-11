@@ -93,6 +93,7 @@ class CreateDeckViewModel @Inject constructor(
 
     fun finishDeckCreation() {
         val currentState = _uiState.value
+        if (currentState.isSaving) return // ignore repeat taps while a save is already in flight
         val completeCards = currentState.cards.filter { it.isComplete() }
         val hasIncompleteStartedCard = currentState.cards.any { it.isStarted() && !it.isComplete() }
         val isValid = currentState.deckTitle.isNotBlank() &&
@@ -104,6 +105,7 @@ class CreateDeckViewModel @Inject constructor(
             return
         }
 
+        _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
             val saved = runCatching {
                 flashcardRepository.saveFlashcardDeck(
@@ -122,8 +124,9 @@ class CreateDeckViewModel @Inject constructor(
             }.isSuccess
             // On failure (e.g. offline) keep the form so the user can retry, and tell them why.
             if (saved) {
-                resetDeckCreation()
+                resetDeckCreation() // resets to a fresh state (isSaving = false)
             } else {
+                _uiState.update { it.copy(isSaving = false) }
                 _userMessages.tryEmit(stringProvider.getString(R.string.deck_save_error))
             }
         }

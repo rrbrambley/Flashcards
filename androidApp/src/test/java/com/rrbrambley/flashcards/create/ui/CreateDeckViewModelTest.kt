@@ -147,14 +147,47 @@ class CreateDeckViewModelTest {
         collectJob.cancel()
     }
 
+    @Test
+    fun finishDeckCreation_showsSavingWhileInFlightThenClears() = runTest(testDispatcher) {
+        val viewModel = CreateDeckViewModel(FakeFlashcardRepository(), NoOpImageUploader, FakeStringProvider())
+        viewModel.onDeckTitleChange("Spanish basics")
+        viewModel.onTermChange(1L, "Hola")
+        viewModel.onDefinitionChange(1L, "Hello")
+
+        viewModel.finishDeckCreation()
+        // The save coroutine hasn't run yet — the button should already show "saving".
+        assertTrue(viewModel.uiState.value.isSaving)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isSaving)
+        assertTrue(viewModel.uiState.value.deckSaved)
+    }
+
+    @Test
+    fun finishDeckCreation_ignoresRepeatTapsWhileSaving() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository()
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.onDeckTitleChange("Spanish basics")
+        viewModel.onTermChange(1L, "Hola")
+        viewModel.onDefinitionChange(1L, "Hello")
+
+        viewModel.finishDeckCreation() // starts the save (isSaving = true)
+        viewModel.finishDeckCreation() // tapped again before it finishes — must be ignored
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, repository.saveCount)
+    }
+
     private class FakeFlashcardRepository(private val failSave: Boolean = false) : FlashcardRepository {
         var savedDeck: FlashcardDeck? = null
+        var saveCount: Int = 0
 
         override fun observeFlashcardDecks(): Flow<List<FlashcardDeck>> = flowOf(emptyList())
 
         override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(null)
 
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {
+            saveCount++
             if (failSave) throw RuntimeException("offline")
             savedDeck = deck
         }

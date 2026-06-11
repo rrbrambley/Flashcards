@@ -7,4 +7,6 @@ data class CreateDeckUiState(
     val cards: List<DeckFlashcardDraft> = listOf(DeckFlashcardDraft(id = 1L)),
     val showValidationErrors: Boolean = false,
     val deckSaved: Boolean = false,
+    /** True while a save is in flight, so the UI can show progress and block repeat taps. */
+    val isSaving: Boolean = false,
 )

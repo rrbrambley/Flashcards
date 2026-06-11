@@ -158,7 +158,7 @@ class EditDeckViewModel @Inject constructor(
     fun finishDeckEditing() {
         val currentDeckId = deckId ?: return
         val currentState = _uiState.value
-        if (!currentState.isEditable) return
+        if (!currentState.isEditable || currentState.isSaving) return // block repeat taps mid-save
         val completeCards = currentState.cards.filter { it.isComplete() }
         val hasIncompleteStartedCard = currentState.cards.any { it.isStarted() && !it.isComplete() }
         val isValid = currentState.deckTitle.isNotBlank() &&
@@ -170,6 +170,7 @@ class EditDeckViewModel @Inject constructor(
             return
         }
 
+        _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
             val saved = runCatching {
                 flashcardRepository.updateFlashcardDeck(
@@ -189,6 +190,7 @@ class EditDeckViewModel @Inject constructor(
             }.isSuccess
             // On failure (e.g. offline) keep the form for retry, and tell the user why.
             if (!saved) {
+                _uiState.update { it.copy(isSaving = false) }
                 _userMessages.tryEmit(stringProvider.getString(R.string.deck_save_error))
                 return@launch
             }
@@ -202,6 +204,7 @@ class EditDeckViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     deckSaved = true,
+                    isSaving = false,
                     isDirty = false,
                     showValidationErrors = false,
                 )
