@@ -211,6 +211,24 @@ class FlashcardsViewModelTest {
     }
 
     @Test
+    fun progressAndCompletionSyncFailures_doNotCrashAndUiStillAdvances() = runTest(testDispatcher) {
+        // Offline-style: the server sync for progress AND completion throws. The UI must keep
+        // advancing on local state (an uncaught failure in the persist coroutine would crash).
+        val sessions = FakePracticeSessionRepository(session(currentCardIndex = 2), failWrites = true)
+        val viewModel = createViewModel(testFlashcards(), sessions)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onResult(correct = true)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(
+            FlashcardsUiState.SessionCompleted(numIncorrect = 0, numCorrect = 1),
+            viewModel.uiState.value,
+        )
+    }
+
+    @Test
     fun load_exposesTheSessionMode() = runTest(testDispatcher) {
         val sessions = FakePracticeSessionRepository(session(mode = "multiple_choice"))
         val viewModel = createViewModel(testFlashcards(), sessions)
@@ -274,6 +292,7 @@ class FlashcardsViewModelTest {
 
     private class FakePracticeSessionRepository(
         private val session: PracticeSession? = null,
+        private val failWrites: Boolean = false,
     ) : PracticeSessionRepository {
         var updatedProgress: PracticeProgress? = null
         var completedSessionId: Long? = null
@@ -294,6 +313,7 @@ class FlashcardsViewModelTest {
             numCorrect: Int,
             numIncorrect: Int,
         ) {
+            if (failWrites) throw RuntimeException("offline")
             updatedProgress = PracticeProgress(
                 sessionId = sessionId,
                 currentCardIndex = currentCardIndex,
@@ -303,6 +323,7 @@ class FlashcardsViewModelTest {
         }
 
         override suspend fun completeSession(sessionId: Long) {
+            if (failWrites) throw RuntimeException("offline")
             completedSessionId = sessionId
         }
     }

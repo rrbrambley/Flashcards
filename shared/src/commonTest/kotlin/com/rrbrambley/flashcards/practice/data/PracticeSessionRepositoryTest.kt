@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class PracticeSessionRepositoryTest {
@@ -54,6 +55,31 @@ class PracticeSessionRepositoryTest {
 
         // The mode round-trips DTO -> entity -> domain through the offline cache.
         assertEquals("test", sessionDao.observeSession(7L).first()?.toDomain()?.mode)
+    }
+
+    @Test
+    fun startOrResumeSession_whenOfflineResumesACachedActiveSession() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        // A cached active session for deck 5 (mode defaults to "flashcards"), and the backend is down.
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        sessionDao.upsertSession(sessionEntity(id = 9, deckId = 5))
+        val repository = repository(flashcardDao, sessionDao, offlineEngine(HttpMethod.Post to "/sessions"))
+
+        val id = repository.startOrResumeSession(deckId = 5)
+
+        // Resumed the cached session instead of failing, so the deck stays practiceable offline.
+        assertEquals(9L, id)
+    }
+
+    @Test
+    fun startOrResumeSession_whenOfflineWithNoCachedSession_rethrows() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        val repository = repository(flashcardDao, sessionDao, offlineEngine(HttpMethod.Post to "/sessions"))
+
+        // No cached session to resume → starting a brand-new session offline still fails.
+        assertFailsWith<RuntimeException> { repository.startOrResumeSession(deckId = 5) }
     }
 
     @Test
