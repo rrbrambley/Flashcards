@@ -15,11 +15,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -43,19 +47,27 @@ fun HomeScreen(
     val uiState by homeViewModel.uiState.collectAsState()
     val isRefreshing by homeViewModel.isRefreshing.collectAsState()
 
-    PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = homeViewModel::refresh,
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        when (val state = uiState) {
-            HomeUiState.Loading -> LoadingIndicator()
-            HomeUiState.LoadingFailed -> ErrorMessage(onRetry = homeViewModel::retry)
-            is HomeUiState.ShowHome -> HomeScreenContent(
-                cards = state.cards,
-                onButtonAction = onButtonAction,
-            )
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        homeViewModel.userMessages.collect { snackbarHostState.showSnackbar(it) }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = homeViewModel::refresh,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            when (val state = uiState) {
+                HomeUiState.Loading -> LoadingIndicator()
+                HomeUiState.LoadingFailed -> ErrorMessage(onRetry = homeViewModel::retry)
+                is HomeUiState.ShowHome -> HomeScreenContent(
+                    cards = state.cards,
+                    onButtonAction = onButtonAction,
+                )
+            }
         }
+        SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
 }
 

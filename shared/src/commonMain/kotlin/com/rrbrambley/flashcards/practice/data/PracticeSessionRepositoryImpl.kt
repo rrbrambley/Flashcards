@@ -5,14 +5,17 @@ import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 /**
- * Sessions are owned by the backend. Writes (start/resume, progress, complete) hit the
- * server first and cache the returned state; reads refresh from the server then serve Room.
+ * Sessions are owned by the backend. Writes (start/resume, progress, complete) hit the server
+ * first and cache the returned state; reads serve the Room cache immediately while a best-effort
+ * remote refresh runs in the background (the Room flow re-emits when it writes through).
  */
 class PracticeSessionRepositoryImpl(
     private val apiClient: FlashcardApiClient,
@@ -29,13 +32,17 @@ class PracticeSessionRepositoryImpl(
     }
 
     override fun observeActiveSessions(): Flow<List<PracticeSession>> = flow {
-        runCatching { apiClient.getAllSessions(activeOnly = true).forEach { cache(it) } }
-        emitAll(practiceSessionDao.observeActiveSessions().map { sessions -> sessions.map { it.toDomain() } })
+        coroutineScope {
+            launch { runCatching { apiClient.getAllSessions(activeOnly = true).forEach { cache(it) } } }
+            emitAll(practiceSessionDao.observeActiveSessions().map { sessions -> sessions.map { it.toDomain() } })
+        }
     }
 
     override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flow {
-        runCatching { cache(apiClient.getSession(sessionId)) }
-        emitAll(practiceSessionDao.observeSession(sessionId).map { it?.toDomain() })
+        coroutineScope {
+            launch { runCatching { cache(apiClient.getSession(sessionId)) } }
+            emitAll(practiceSessionDao.observeSession(sessionId).map { it?.toDomain() })
+        }
     }
 
     override fun observeLastPracticedByDeck(): Flow<Map<Long, Long>> =

@@ -35,7 +35,8 @@ class FlashcardsRepositoryTest {
         )
         val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
 
-        val decks = repository.observeFlashcardDecks().first()
+        // Offline-first: the cache (empty) emits first, then the background refresh writes through.
+        val decks = repository.observeFlashcardDecks().first { it.isNotEmpty() }
 
         assertEquals(
             listOf(
@@ -56,7 +57,7 @@ class FlashcardsRepositoryTest {
         )
         val repository = FlashcardRepositoryImpl(apiClient(engine), dao)
 
-        val deck = repository.observeFlashcardDeck(7L).first()
+        val deck = repository.observeFlashcardDeck(7L).first { it != null }
 
         assertEquals("Capitals", deck?.title)
         assertEquals(listOf("Paris"), deck?.flashcards?.map { it.answer })

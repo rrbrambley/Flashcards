@@ -12,15 +12,20 @@ import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 /**
- * The feed comes from the backend (GET /home). It re-fetches whenever the locally-cached active
- * sessions or decks change (which also keeps the offline fallback fresh); if the network is
- * unavailable, it derives the same feed from cache. The offline "Practice" item points at the
- * cached global catalog deck (resolved by its read-only flag — never a hardcoded title), so it
- * matches whatever the backend seeds.
+ * Offline-first home feed. On subscribe it immediately emits a feed derived from the local cache
+ * (active sessions + the cached global deck), then replaces it with the authoritative backend feed
+ * (GET /home). It re-fetches — without re-flashing the fallback — whenever the cached sessions or
+ * decks change. When the backend is unreachable the remote fetch throws, so the collector keeps the
+ * already-shown cached feed (the ViewModel can surface an unobtrusive "couldn't refresh" message).
+ * The offline "Practice" item points at the cached global catalog deck (resolved by its read-only
+ * flag — never a hardcoded title), so it matches whatever the backend seeds.
  */
 class HomeRepositoryImpl(
     private val apiClient: FlashcardApiClient,
@@ -29,12 +34,25 @@ class HomeRepositoryImpl(
     private val strings: HomeFeedStrings,
 ) : HomeRepository {
 
-    override fun observeHomeData(): Flow<List<HomeData>> = combine(
-        practiceSessionRepository.observeActiveSessions(),
-        flashcardRepository.observeFlashcardDecks(),
-    ) { activeSessions, decks ->
-        runCatching { apiClient.getHome().map { it.toDomain() } }
-            .getOrElse { activeSessions.map { it.toContinueItem() } + offlineItems(decks) }
+    override fun observeHomeData(): Flow<List<HomeData>> = channelFlow {
+        // channelFlow (not flow): collectLatest runs its body in a child coroutine, so we send()
+        // across coroutines rather than emit() (which must stay on the flow's own coroutine).
+        var emittedCachedFeed = false
+        combine(
+            practiceSessionRepository.observeActiveSessions(),
+            flashcardRepository.observeFlashcardDecks(),
+        ) { activeSessions, decks -> activeSessions to decks }
+            .distinctUntilChanged()
+            .collectLatest { (activeSessions, decks) ->
+                // Show the cache-derived feed instantly on first subscribe; later cache changes
+                // refresh in place without re-flashing the fallback.
+                if (!emittedCachedFeed) {
+                    emittedCachedFeed = true
+                    send(activeSessions.map { it.toContinueItem() } + offlineItems(decks))
+                }
+                // Throws when the backend is unreachable; the cached feed above stays on screen.
+                send(apiClient.getHome().map { it.toDomain() })
+            }
     }
 
     private fun PracticeSession.toContinueItem(): HomeData = HomeData(
