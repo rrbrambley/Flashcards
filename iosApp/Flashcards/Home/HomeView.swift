@@ -32,6 +32,11 @@ struct HomeView: View {
                 )
             }
             .task { await viewModel.observe() }
+            .safeAreaInset(edge: .bottom) {
+                if viewModel.refreshFailed {
+                    RefreshFailedBanner()
+                }
+            }
     }
 
     @ViewBuilder private var content: some View {
@@ -85,6 +90,22 @@ struct HomeView: View {
             }
             .accessibilityLabel("Account")
         }
+    }
+}
+
+/// Unobtrusive banner shown over the cached feed when a background refresh fails (offline / server
+/// down). Parity with Android's "couldn't refresh" snackbar.
+private struct RefreshFailedBanner: View {
+    var body: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "wifi.slash")
+            Text("Couldn't refresh. Showing your saved feed.")
+                .font(.footnote)
+        }
+        .padding(.vertical, Spacing.sm)
+        .padding(.horizontal, Spacing.md)
+        .frame(maxWidth: .infinity)
+        .background(.thinMaterial)
     }
 }
 

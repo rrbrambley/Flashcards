@@ -6,6 +6,9 @@ import SwiftUI
 @MainActor
 final class HomeViewModel: ObservableObject {
     @Published private(set) var state: LoadState<[HomeData]> = .loading
+    /// True when the latest background refresh failed but cached data is still shown — the view
+    /// surfaces an unobtrusive banner (parity with Android's "couldn't refresh" snackbar).
+    @Published private(set) var refreshFailed = false
 
     private let repository: HomeRepository
 
@@ -13,17 +16,42 @@ final class HomeViewModel: ObservableObject {
         self.repository = repository
     }
 
+    /// The offline-first feed emits the cached data first, then the backend feed. If the backend
+    /// fetch fails after we've shown cached data we keep it and flag a failed refresh; a failure with
+    /// nothing cached is a hard error.
     func observe() async {
-        for await items in asyncStream(BridgingKt.homeAdapter(repository)) {
-            state = .loaded((items as? [HomeData]) ?? [])
+        do {
+            for try await items in asyncThrowingStream(BridgingKt.homeAdapter(repository)) {
+                refreshFailed = false
+                state = .loaded((items as? [HomeData]) ?? [])
+            }
+        } catch {
+            markRefreshFailed()
         }
     }
 
-    /// Pull-to-refresh: re-subscribe (which re-fetches) and await the first feed.
+    /// Pull-to-refresh: re-subscribe and await the backend feed (the stream emits cached data first,
+    /// then the server feed), so the spinner reflects a real refresh rather than just the cache.
     func refresh() async {
-        for await items in asyncStream(BridgingKt.homeAdapter(repository)) {
-            state = .loaded((items as? [HomeData]) ?? [])
-            return
+        do {
+            var emissions = 0
+            for try await items in asyncThrowingStream(BridgingKt.homeAdapter(repository)) {
+                refreshFailed = false
+                state = .loaded((items as? [HomeData]) ?? [])
+                emissions += 1
+                // First emission is the cache, second is the backend feed — stop once refreshed.
+                if emissions >= 2 { return }
+            }
+        } catch {
+            markRefreshFailed()
+        }
+    }
+
+    private func markRefreshFailed() {
+        if case .loaded = state {
+            refreshFailed = true
+        } else {
+            state = .failed("Couldn't load your home feed. Check your connection.")
         }
     }
 }
