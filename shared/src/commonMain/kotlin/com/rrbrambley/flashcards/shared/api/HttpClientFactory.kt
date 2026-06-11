@@ -4,7 +4,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.network.sockets.SocketTimeoutException
 import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.ResponseException
@@ -35,13 +37,20 @@ fun createFlashcardHttpClient(engine: HttpClientEngine, configure: HttpClientCon
         }
         install(HttpTimeout) {
             requestTimeoutMillis = 30_000
-            connectTimeoutMillis = 15_000
+            // Fail fast when there's no route to the server (offline / server down) instead of
+            // waiting out a long connect timeout on every attempt.
+            connectTimeoutMillis = 5_000
             socketTimeoutMillis = 30_000
         }
-        // Retry transient failures (5xx + connection/timeout errors); 4xx are not retried.
+        // Retry only failures a retry can plausibly fix: transient 5xx, and read/request timeouts
+        // (server reachable but slow). Connection failures — refused, no route, connect timeout —
+        // are NOT retried, so an offline request errors after one quick attempt instead of burning
+        // ~connect-timeout × retries (it used to hang up to ~45s). 4xx are never retried.
         install(HttpRequestRetry) {
             retryOnServerErrors(maxRetries = 2)
-            retryOnException(maxRetries = 2, retryOnTimeout = true)
+            retryOnExceptionIf(maxRetries = 2) { _, cause ->
+                cause is HttpRequestTimeoutException || cause is SocketTimeoutException
+            }
             exponentialDelay()
         }
         // Surface non-2xx responses as a typed ApiError instead of a raw Ktor ResponseException.
