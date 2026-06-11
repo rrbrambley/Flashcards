@@ -135,8 +135,11 @@ class LibraryViewModel @Inject constructor(
 
     fun startPractice(deckId: Long, mode: String, onSessionStarted: (Long) -> Unit) {
         viewModelScope.launch {
-            val sessionId = practiceSessionRepository.startOrResumeSession(deckId, mode)
-            onSessionStarted(sessionId)
+            // Backend-first; offline (and no cached session to resume) it throws — catch it so an
+            // uncaught failure here can't crash the app, and tell the user why nothing opened.
+            runCatching { practiceSessionRepository.startOrResumeSession(deckId, mode) }
+                .onSuccess { onSessionStarted(it) }
+                .onFailure { _userMessages.tryEmit(stringProvider.getString(R.string.library_practice_start_error)) }
         }
     }
 

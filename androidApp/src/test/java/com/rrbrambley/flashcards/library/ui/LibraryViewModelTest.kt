@@ -193,6 +193,27 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun startPractice_whenItFails_emitsAUserMessageAndDoesNotNavigate() = runTest(testDispatcher) {
+        var startedSessionId: Long? = null
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(emptyList()),
+            practiceSessionRepository = FakePracticeSessionRepository(startShouldFail = true),
+            stringProvider = FakeStringProvider(),
+        )
+        val messages = mutableListOf<String>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testDispatcher.scheduler)) {
+            viewModel.userMessages.collect { messages.add(it) }
+        }
+
+        // Offline / server down: this used to crash (uncaught ConnectException). Now it's caught.
+        viewModel.startPractice(deckId = 7L, mode = "multiple_choice") { startedSessionId = it }
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(null, startedSessionId) // no navigation
+        assertEquals(1, messages.size) // user is told why
+    }
+
+    @Test
     fun deleteDeck_delegatesToRepository() = runTest(testDispatcher) {
         val flashcardRepository = FakeFlashcardRepository(emptyList())
         val viewModel = LibraryViewModel(
@@ -296,11 +317,13 @@ class LibraryViewModelTest {
     private class FakePracticeSessionRepository(
         private val sessionId: Long = 0L,
         private val lastPracticed: Map<Long, Long> = emptyMap(),
+        private val startShouldFail: Boolean = false,
     ) : PracticeSessionRepository {
         var startedDeckId: Long? = null
         var startedMode: String? = null
 
         override suspend fun startOrResumeSession(deckId: Long, mode: String): Long {
+            if (startShouldFail) throw RuntimeException("offline")
             startedDeckId = deckId
             startedMode = mode
             return sessionId
