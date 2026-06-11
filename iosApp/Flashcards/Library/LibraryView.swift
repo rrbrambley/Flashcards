@@ -110,7 +110,8 @@ struct LibraryView: View {
             .task { await viewModel.observeLastPracticed() }
             .task { await viewModel.observeRefreshFailures() }
             .safeAreaInset(edge: .bottom) {
-                if viewModel.refreshFailed {
+                // Only banner over an actual deck list; the empty state has its own offline copy.
+                if viewModel.refreshFailed && viewModel.hasAnyDecks {
                     RefreshFailedBanner(message: "Couldn't refresh your decks. Showing your saved library.")
                 }
             }
@@ -131,11 +132,20 @@ struct LibraryView: View {
         }
     }
 
-    private var emptyState: some View {
-        // Distinguish an empty library from a search with no matches.
-        viewModel.hasAnyDecks
-            ? EmptyStateView(title: "No matches", systemImage: "magnifyingglass", message: "No decks match your search.")
-            : EmptyStateView(title: "No decks yet", systemImage: "rectangle.stack", message: "Create a set from the New tab.")
+    @ViewBuilder private var emptyState: some View {
+        if viewModel.hasAnyDecks {
+            // Decks exist, but the active search matched none.
+            EmptyStateView(title: "No matches", systemImage: "magnifyingglass", message: "No decks match your search.")
+        } else if viewModel.refreshFailed {
+            // Nothing cached and the refresh failed (offline / server down) — not "you have none".
+            EmptyStateView(
+                title: "Can't reach the server",
+                systemImage: "wifi.slash",
+                message: "Check your connection and pull to refresh."
+            )
+        } else {
+            EmptyStateView(title: "No decks yet", systemImage: "rectangle.stack", message: "Create a set from the New tab.")
+        }
     }
 
     private func deckList(_ decks: [FlashcardDeck]) -> some View {
