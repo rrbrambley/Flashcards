@@ -66,7 +66,7 @@ describe('HomePage', () => {
     expect(await screen.findByText('Multiple Choice')).toBeInTheDocument();
     expect(screen.getByText('✓ 3 correct')).toBeInTheDocument();
     expect(screen.getByText('✗ 1 incorrect')).toBeInTheDocument();
-    expect(screen.getByText('Card 5 of 10')).toBeInTheDocument();
+    expect(screen.getByText('Progress: 5 of 10')).toBeInTheDocument();
     // 4 of 10 cards reached → 40%.
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
   });

@@ -239,6 +239,10 @@ button.danger:hover:not(:disabled) {
   gap: 0.5rem 0.75rem;
   font-size: 0.85rem;
 }
+/* Push the progress label to the right edge, aligning it with the progress bar below. */
+.home-card-session-progress {
+  margin-left: auto;
+}
 .badge {
   display: inline-block;
   padding: 0.15rem 0.5rem;

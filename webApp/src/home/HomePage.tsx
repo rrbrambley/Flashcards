@@ -104,8 +104,8 @@ function SessionDetail({ session }: { session: HomeSessionInfo }) {
         <span className="muted">✓ {numCorrect} correct</span>
         <span className="muted">✗ {numIncorrect} incorrect</span>
         {totalCards > 0 && (
-          <span className="muted">
-            Card {Math.min(currentCardIndex + 1, totalCards)} of {totalCards}
+          <span className="muted home-card-session-progress">
+            Progress: {Math.min(currentCardIndex + 1, totalCards)} of {totalCards}
           </span>
         )}
       </div>
