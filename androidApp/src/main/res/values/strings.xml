@@ -60,6 +60,8 @@
     <string name="library_delete_dialog_title">Delete deck?</string>
     <string name="library_delete_dialog_message">\"%1$s\" and its cards will be permanently deleted. This can\'t be undone.</string>
 
+    <!-- Create / edit deck -->
+    <string name="deck_save_error">Couldn\'t save the deck. Check your connection and try again.</string>
     <!-- Create deck -->
     <string name="create_deck_title">Create deck</string>
     <string name="create_deck_description">Add a title, then create the terms and definitions you want to practice.</string>

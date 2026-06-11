@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.edit.ui
 
+import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.FakeStringProvider
 
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
@@ -7,10 +8,12 @@ import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -197,6 +200,28 @@ class EditDeckViewModelTest {
         assertEquals(listOf("History"), repository.updatedDeck?.tags)
     }
 
+    @Test
+    fun finishDeckEditing_whenUpdateFails_keepsFormAndEmitsMessage() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository(testDeck(), failUpdate = true)
+        val viewModel = EditDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onDeckTitleChange("Spanish greetings")
+
+        val messages = mutableListOf<String>()
+        val collectJob = launch(start = CoroutineStart.UNDISPATCHED) {
+            viewModel.userMessages.collect { messages.add(it) }
+        }
+        viewModel.finishDeckEditing()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The edits are kept (not marked saved) and the user is told the save failed.
+        assertFalse(viewModel.uiState.value.deckSaved)
+        assertTrue(viewModel.uiState.value.isDirty)
+        assertEquals(listOf("string:${R.string.deck_save_error}"), messages)
+        collectJob.cancel()
+    }
+
     private fun testDeck(editable: Boolean = true, tags: List<String> = emptyList()): FlashcardDeck = FlashcardDeck(
         id = 42L,
         title = "Spanish basics",
@@ -210,6 +235,7 @@ class EditDeckViewModelTest {
 
     private class FakeFlashcardRepository(
         private val deck: FlashcardDeck,
+        private val failUpdate: Boolean = false,
     ) : FlashcardRepository {
         var updatedDeck: FlashcardDeck? = null
 
@@ -220,6 +246,7 @@ class EditDeckViewModelTest {
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
 
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) {
+            if (failUpdate) throw RuntimeException("offline")
             updatedDeck = deck
         }
 

@@ -10,8 +10,11 @@ import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -27,6 +30,10 @@ class CreateDeckViewModel @Inject constructor(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(CreateDeckUiState())
     val uiState: StateFlow<CreateDeckUiState> = _uiState.asStateFlow()
+
+    // One-shot user-facing messages (e.g. a failed save), surfaced as a snackbar.
+    private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val userMessages: SharedFlow<String> = _userMessages.asSharedFlow()
 
     private var nextDraftCardId = 2L
 
@@ -113,8 +120,12 @@ class CreateDeckViewModel @Inject constructor(
                     ),
                 )
             }.isSuccess
-            // On failure (e.g. offline) keep the form so the user can retry.
-            if (saved) resetDeckCreation()
+            // On failure (e.g. offline) keep the form so the user can retry, and tell them why.
+            if (saved) {
+                resetDeckCreation()
+            } else {
+                _userMessages.tryEmit(stringProvider.getString(R.string.deck_save_error))
+            }
         }
     }
 
