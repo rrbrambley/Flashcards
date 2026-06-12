@@ -56,14 +56,46 @@ struct HomeView: View {
 
     private func feed(_ items: [HomeData]) -> some View {
         ScrollView {
-            VStack(spacing: Spacing.md) {
-                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                    FeedCard(item: item) { action in handle(action) }
+            VStack(alignment: .leading, spacing: Spacing.lg) {
+                // Group consecutive cards under their section header (FLA-96); header-less for nil.
+                ForEach(Array(groupedBySection(items).enumerated()), id: \.offset) { _, group in
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        if let section = group.section {
+                            Text(section.uppercased())
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                        }
+                        ForEach(Array(group.items.enumerated()), id: \.offset) { _, item in
+                            FeedCard(item: item) { action in handle(action) }
+                        }
+                    }
                 }
             }
             .padding(Spacing.md)
         }
         .refreshable { await viewModel.refresh() }
+    }
+
+    /// A run of consecutive feed cards sharing a section header (FLA-96).
+    private struct FeedSection {
+        let section: String?
+        var items: [HomeData]
+    }
+
+    /// Group consecutive feed cards by their section header, preserving feed order so each section
+    /// renders under one header. Cards with a nil section form their own header-less group.
+    private func groupedBySection(_ items: [HomeData]) -> [FeedSection] {
+        var groups: [FeedSection] = []
+        for item in items {
+            if var last = groups.last, last.section == item.section {
+                last.items.append(item)
+                groups[groups.count - 1] = last
+            } else {
+                groups.append(FeedSection(section: item.section, items: [item]))
+            }
+        }
+        return groups
     }
 
     private func handle(_ action: HomeButtonAction) {
