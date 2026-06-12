@@ -122,13 +122,46 @@ private fun HomeScreenContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(cards) { card ->
-            HomeCard(
-                card = card,
-                onButtonAction = onButtonAction,
-            )
+        // Group consecutive cards under their section header (FLA-96); header-less for null sections.
+        groupBySection(cards).forEach { (section, sectionCards) ->
+            section?.let { item { SectionHeader(text = it) } }
+            items(sectionCards) { card ->
+                HomeCard(
+                    card = card,
+                    onButtonAction = onButtonAction,
+                )
+            }
         }
     }
+}
+
+/**
+ * Group consecutive feed cards by their section header (FLA-96), preserving feed order so each
+ * section renders under one header. Cards with a null section form their own header-less group.
+ */
+private fun groupBySection(cards: List<HomeData>): List<Pair<String?, List<HomeData>>> {
+    val groups = mutableListOf<Pair<String?, MutableList<HomeData>>>()
+    for (card in cards) {
+        val last = groups.lastOrNull()
+        if (last != null && last.first == card.section) {
+            last.second.add(card)
+        } else {
+            groups.add(card.section to mutableListOf(card))
+        }
+    }
+    return groups
+}
+
+/** A muted, uppercase section header above a group of home cards (mirrors the web's home-section-header). */
+@Composable
+private fun SectionHeader(text: String) {
+    Text(
+        text = text.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 8.dp),
+    )
 }
 
 @Composable
