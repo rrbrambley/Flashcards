@@ -31,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +46,10 @@ import com.rrbrambley.flashcards.shared.domain.HomeData
 import com.rrbrambley.flashcards.shared.domain.HomeSessionInfo
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import kotlin.math.min
+
+// Score colors for the home session detail: a green correct count and a red incorrect count.
+private val CorrectGreen = Color(0xFF2E7D32)
+private val IncorrectRed = Color(0xFFC62828)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -184,12 +189,14 @@ private fun SessionDetail(session: HomeSessionInfo) {
             Text(
                 text = stringResource(R.string.home_session_correct, session.numCorrect),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                color = CorrectGreen,
             )
             Text(
                 text = stringResource(R.string.home_session_incorrect, session.numIncorrect),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                color = IncorrectRed,
             )
             if (total > 0) {
                 Spacer(modifier = Modifier.weight(1f))

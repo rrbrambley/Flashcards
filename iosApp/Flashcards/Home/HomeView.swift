@@ -134,11 +134,11 @@ private struct SessionDetail: View {
                     .padding(.vertical, 2)
                     .background(Color.accentColor.opacity(0.15), in: Capsule())
                     .foregroundStyle(Color.accentColor)
-                Text("✓ \(session.numCorrect) correct").font(.caption).foregroundStyle(.secondary)
-                Text("✗ \(session.numIncorrect) incorrect").font(.caption).foregroundStyle(.secondary)
+                Text("✓ \(session.numCorrect)").font(.caption).fontWeight(.medium).foregroundStyle(.green)
+                Text("✗ \(session.numIncorrect)").font(.caption).fontWeight(.medium).foregroundStyle(.red)
                 if total > 0 {
                     Spacer()
-                    Text("Progress: \(min(current + 1, total)) of \(total)")
+                    Text("\(min(current + 1, total)) of \(total)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
