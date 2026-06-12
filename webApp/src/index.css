@@ -201,6 +201,17 @@ button.danger:hover:not(:disabled) {
   width: 64px;
 }
 
+.home-section {
+  margin-bottom: 2rem;
+}
+.home-section-header {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0 0 0.75rem;
+}
 .home-list {
   list-style: none;
   margin: 0;

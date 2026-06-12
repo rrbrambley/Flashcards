@@ -9,11 +9,14 @@ import javax.inject.Inject
 class AndroidHomeFeedStrings @Inject constructor(
     private val stringProvider: StringProvider,
 ) : HomeFeedStrings {
-    override fun continuePracticeTitle(deckTitle: String): String =
-        stringProvider.getString(R.string.home_continue_practice_title, deckTitle)
+    override val continueStudyingSection: String
+        get() = stringProvider.getString(R.string.home_section_continue_studying)
 
-    override val continuePracticeButton: String
-        get() = stringProvider.getString(R.string.home_continue_practice_button)
+    override val studySomethingNewSection: String
+        get() = stringProvider.getString(R.string.home_section_study_something_new)
+
+    override val resumeButton: String
+        get() = stringProvider.getString(R.string.home_resume_button)
 
     override fun practiceDeckTitle(deckTitle: String): String =
         stringProvider.getString(R.string.home_practice_deck_title, deckTitle)

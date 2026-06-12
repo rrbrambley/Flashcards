@@ -142,6 +142,13 @@ class ApiMappersTest {
     }
 
     @Test
+    fun homeDataDto_toDomain_carriesSectionHeader() {
+        val domain = HomeDataDto(title = "Spanish", section = "Continue studying").toDomain()
+
+        assertEquals("Continue studying", domain.section)
+    }
+
+    @Test
     fun homeDataDto_toDomain_continuePracticeAction_carriesSessionId() {
         val action = HomeDataDto(
             title = "Continue",

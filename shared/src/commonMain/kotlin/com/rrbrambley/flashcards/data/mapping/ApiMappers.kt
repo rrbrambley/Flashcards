@@ -45,7 +45,7 @@ fun PracticeSessionDto.toDomain(): PracticeSession = PracticeSession(
 )
 
 fun HomeDataDto.toDomain(): HomeData =
-    HomeData(title = title, button = button?.toDomain(), session = session?.toDomain())
+    HomeData(title = title, button = button?.toDomain(), session = session?.toDomain(), section = section)
 
 private fun HomeSessionInfoDto.toDomain(): HomeSessionInfo =
     HomeSessionInfo(mode, numCorrect, numIncorrect, currentCardIndex, totalCards)

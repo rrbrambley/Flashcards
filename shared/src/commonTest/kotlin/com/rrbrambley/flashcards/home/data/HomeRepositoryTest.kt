@@ -46,6 +46,7 @@ class HomeRepositoryTest {
         val homeData = repository().observeHomeData().first()
 
         assertEquals("Practice Flags of the World", homeData.first().title)
+        assertEquals("Study something new", homeData.first().section)
         assertNotNull(homeData.first().button)
         assertEquals("Practice", homeData.first().button?.message)
         // The deck id comes from the cached global deck — never a hardcoded title.
@@ -75,8 +76,10 @@ class HomeRepositoryTest {
             sessions = listOf(PracticeSession(id = 12L, deckId = 1L, deckTitle = "Spanish basics")),
         ).observeHomeData().first()
 
-        assertEquals("Continue Spanish basics", homeData.first().title)
-        assertEquals("Continue", homeData.first().button?.message)
+        // FLA-96: title is the bare deck name; the "Continue studying" header is on `section`.
+        assertEquals("Spanish basics", homeData.first().title)
+        assertEquals("Continue studying", homeData.first().section)
+        assertEquals("Resume", homeData.first().button?.message)
         assertEquals(HomeButtonAction.ContinuePractice(12L), homeData.first().button?.action)
     }
 
@@ -113,8 +116,9 @@ class HomeRepositoryTest {
     }
 
     private object FakeHomeFeedStrings : HomeFeedStrings {
-        override fun continuePracticeTitle(deckTitle: String) = "Continue $deckTitle"
-        override val continuePracticeButton = "Continue"
+        override val continueStudyingSection = "Continue studying"
+        override val studySomethingNewSection = "Study something new"
+        override val resumeButton = "Resume"
         override fun practiceDeckTitle(deckTitle: String) = "Practice $deckTitle"
         override val practiceButton = "Practice"
         override val createNewSetTitle = "Create a set"

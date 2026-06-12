@@ -57,9 +57,11 @@ class HomeRepositoryImpl(
     }
 
     private fun PracticeSession.toContinueItem(decks: List<FlashcardDeck>): HomeData = HomeData(
-        title = strings.continuePracticeTitle(deckTitle),
+        // FLA-96: the card title is just the deck name; "Continue studying" is the section header.
+        title = deckTitle,
+        section = strings.continueStudyingSection,
         button = HomeButton(
-            message = strings.continuePracticeButton,
+            message = strings.resumeButton,
             action = HomeButtonAction.ContinuePractice(id),
         ),
         // Mirror the backend feed's session detail so online/offline cards match (FLA-93).
@@ -81,6 +83,7 @@ class HomeRepositoryImpl(
         val practiceItem = globalDeck?.let { deck ->
             HomeData(
                 title = strings.practiceDeckTitle(deck.title),
+                section = strings.studySomethingNewSection,
                 button = HomeButton(
                     message = strings.practiceButton,
                     action = HomeButtonAction.NavigateToPractice(deck.id),
@@ -89,6 +92,7 @@ class HomeRepositoryImpl(
         }
         return listOfNotNull(practiceItem) + HomeData(
             title = strings.createNewSetTitle,
+            section = strings.studySomethingNewSection,
             button = HomeButton(
                 message = strings.createNewSetButton,
                 action = HomeButtonAction.CreateNewFlashcardSet,

@@ -42,9 +42,11 @@ object HomeService {
 
         val continueItems = sessions.map { session ->
             HomeDataDto(
-                title = "Continue ${session.deckTitle} practice",
+                // FLA-96: title is just the deck name; "Continue studying" is the section header.
+                title = session.deckTitle,
+                section = CONTINUE_STUDYING_SECTION,
                 button = HomeButtonDto(
-                    message = "Continue practice",
+                    message = "Resume",
                     action = HomeButtonActionDto.ContinuePractice(session.id),
                 ),
                 session = HomeSessionInfoDto(
@@ -66,6 +68,7 @@ object HomeService {
             ?.let { row ->
                 HomeDataDto(
                     title = "Practice ${row[Decks.title]}",
+                    section = STUDY_SOMETHING_NEW_SECTION,
                     button = HomeButtonDto(
                         message = "Practice",
                         action = HomeButtonActionDto.NavigateToPractice(row[Decks.id].value),
@@ -76,8 +79,13 @@ object HomeService {
         continueItems + listOfNotNull(practiceItem) + CREATE_ITEM
     }
 
+    // Section headers (FLA-96). Plain English here; the offline feed localizes via HomeFeedStrings.
+    private const val CONTINUE_STUDYING_SECTION = "Continue studying"
+    private const val STUDY_SOMETHING_NEW_SECTION = "Study something new"
+
     private val CREATE_ITEM = HomeDataDto(
         title = "Create a new flashcard set",
+        section = STUDY_SOMETHING_NEW_SECTION,
         button = HomeButtonDto(
             message = "Create",
             action = HomeButtonActionDto.CreateNewFlashcardSet,

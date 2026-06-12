@@ -8,8 +8,9 @@ import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
  * later swap in a localized implementation. Copy mirrors `androidApp`'s `home_*` string resources.
  */
 object DefaultHomeFeedStrings : HomeFeedStrings {
-    override fun continuePracticeTitle(deckTitle: String): String = "Continue $deckTitle practice"
-    override val continuePracticeButton: String = "Continue practice"
+    override val continueStudyingSection: String = "Continue studying"
+    override val studySomethingNewSection: String = "Study something new"
+    override val resumeButton: String = "Resume"
     override fun practiceDeckTitle(deckTitle: String): String = "Practice $deckTitle"
     override val practiceButton: String = "Practice"
     override val createNewSetTitle: String = "Create a new flashcard set"

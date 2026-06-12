@@ -30,20 +30,24 @@ function renderHome() {
 }
 
 const continueItem: HomeData = {
-  title: 'Continue Spanish practice',
-  button: { message: 'Continue practice', action: { type: 'continue_practice', sessionId: 7 } },
+  title: 'Spanish',
+  section: 'Continue studying',
+  button: { message: 'Resume', action: { type: 'continue_practice', sessionId: 7 } },
 };
 const continueItemWithSession: HomeData = {
-  title: 'Continue Spanish practice',
-  button: { message: 'Continue practice', action: { type: 'continue_practice', sessionId: 7 } },
+  title: 'Spanish',
+  section: 'Continue studying',
+  button: { message: 'Resume', action: { type: 'continue_practice', sessionId: 7 } },
   session: { mode: 'multiple_choice', numCorrect: 3, numIncorrect: 1, currentCardIndex: 4, totalCards: 10 },
 };
 const practiceItem: HomeData = {
   title: 'Practice Flags of the World',
+  section: 'Study something new',
   button: { message: 'Practice', action: { type: 'navigate_to_practice', deckId: 9 } },
 };
 const createItem: HomeData = {
   title: 'Create a new flashcard set',
+  section: 'Study something new',
   button: { message: 'Create', action: { type: 'create_new_flashcard_set' } },
 };
 
@@ -54,9 +58,19 @@ describe('HomePage', () => {
     vi.mocked(api.getHome).mockResolvedValue([continueItem, practiceItem, createItem]);
     renderHome();
 
-    expect(await screen.findByText('Continue Spanish practice')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Continue practice' })).toBeInTheDocument();
+    expect(await screen.findByText('Spanish')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resume' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
+  });
+
+  it('groups items under their section headers', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([continueItem, practiceItem, createItem]);
+    renderHome();
+
+    expect(await screen.findByRole('heading', { name: 'Continue studying' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Study something new' })).toBeInTheDocument();
+    // The two "Study something new" items share a single header, not one each.
+    expect(screen.getAllByRole('heading', { name: 'Study something new' })).toHaveLength(1);
   });
 
   it('shows mode, score and progress for an in-progress session', async () => {
@@ -76,7 +90,7 @@ describe('HomePage', () => {
     vi.mocked(api.getSession).mockResolvedValue({ id: 7, deckId: 3, mode: 'flashcards' } as never);
     renderHome();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Continue practice' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Resume' }));
 
     expect(api.getSession).toHaveBeenCalledWith(7);
     expect(await screen.findByText('practice-3')).toBeInTheDocument();

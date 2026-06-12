@@ -20,8 +20,9 @@
     <string name="library_practice_start_error">Couldn\'t start practice. Check your connection and try again.</string>
     <string name="image_upload_error">Couldn\'t add the image. Use a JPEG, PNG, WebP or GIF under 5 MB and try again.</string>
     <!-- Home feed offline-fallback copy (the primary feed comes from the backend). -->
-    <string name="home_continue_practice_title">Continue %1$s practice</string>
-    <string name="home_continue_practice_button">Continue practice</string>
+    <string name="home_section_continue_studying">Continue studying</string>
+    <string name="home_section_study_something_new">Study something new</string>
+    <string name="home_resume_button">Resume</string>
     <string name="home_practice_deck_title">Practice %1$s</string>
     <string name="home_practice_button">Practice</string>
     <string name="home_create_set_title">Create a new flashcard set</string>

@@ -74,21 +74,41 @@ export function HomePage() {
         ) : error ? (
           <p className="error">{error}</p>
         ) : (
-          <ul className="home-list">
-            {items.map((item, index) => (
-              <li key={index} className="home-card">
-                <span className="home-card-title">{item.title}</span>
-                {item.session && <SessionDetail session={item.session} />}
-                {item.button && (
-                  <button onClick={() => runAction(item.button!.action)}>{item.button.message}</button>
-                )}
-              </li>
-            ))}
-          </ul>
+          groupBySection(items).map((group, groupIndex) => (
+            <section key={groupIndex} className="home-section">
+              {group.section && <h2 className="home-section-header">{group.section}</h2>}
+              <ul className="home-list">
+                {group.items.map((item, index) => (
+                  <li key={index} className="home-card">
+                    <span className="home-card-title">{item.title}</span>
+                    {item.session && <SessionDetail session={item.session} />}
+                    {item.button && (
+                      <button onClick={() => runAction(item.button!.action)}>{item.button.message}</button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))
         )}
       </main>
     </div>
   );
+}
+
+/**
+ * Group consecutive feed items by their `section` header (FLA-96), preserving feed order so each
+ * section renders under one header. Items without a section form their own header-less group.
+ */
+function groupBySection(items: HomeData[]): { section: string | null; items: HomeData[] }[] {
+  const groups: { section: string | null; items: HomeData[] }[] = [];
+  for (const item of items) {
+    const section = item.section ?? null;
+    const last = groups[groups.length - 1];
+    if (last && last.section === section) last.items.push(item);
+    else groups.push({ section, items: [item] });
+  }
+  return groups;
 }
 
 /** Mode + score + a progress bar for an in-progress session, shown on its "continue" home card. */
