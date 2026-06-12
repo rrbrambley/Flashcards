@@ -12,6 +12,12 @@ data class HomeDataDto(
      * Defaulted/null for the static items (and ignored by clients that don't render it).
      */
     val session: HomeSessionInfoDto? = null,
+    /**
+     * The section header this item belongs to, e.g. "Continue studying" / "Study something new"
+     * (FLA-96). Consecutive items sharing a section render under one header. Defaulted/null for
+     * clients that render a flat list.
+     */
+    val section: String? = null,
 )
 
 /** Per-session detail for a "continue practice" home item: mode, score so far, and progress. */

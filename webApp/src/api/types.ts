@@ -122,4 +122,7 @@ export interface HomeData {
   button?: HomeButton | null;
   // Present on "continue practice" items so the card can show mode + progress; null otherwise.
   session?: HomeSessionInfo | null;
+  // Section header this item belongs to (e.g. "Continue studying"); consecutive items sharing a
+  // section render under one header. Null/absent for a flat, header-less item.
+  section?: string | null;
 }

@@ -1,6 +1,12 @@
 package com.rrbrambley.flashcards.shared.domain
 
-data class HomeData(val title: String, val button: HomeButton? = null, val session: HomeSessionInfo? = null)
+data class HomeData(
+    val title: String,
+    val button: HomeButton? = null,
+    val session: HomeSessionInfo? = null,
+    /** The section header this item belongs to (e.g. "Continue studying"); null = no header (FLA-96). */
+    val section: String? = null,
+)
 
 /** Per-session detail for a "continue practice" home item: mode, score so far, and progress. */
 data class HomeSessionInfo(

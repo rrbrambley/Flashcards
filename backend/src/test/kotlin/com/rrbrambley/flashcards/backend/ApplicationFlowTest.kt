@@ -761,7 +761,10 @@ class ApplicationFlowTest {
         assertEquals(listOf(session.id), activeBefore.map { it.id })
 
         val homeBefore = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
-        assertEquals("Continue Flags of the World practice", homeBefore.first().title)
+        // FLA-96: title is the bare deck name; the "Continue studying" header is on `section`.
+        assertEquals("Flags of the World", homeBefore.first().title)
+        assertEquals("Continue studying", homeBefore.first().section)
+        assertEquals("Resume", homeBefore.first().button?.message)
         assertEquals(3, homeBefore.size) // 1 continue + 2 static
 
         // The continue item carries session detail (mode + score + progress) for the UI (FLA-92).
@@ -927,7 +930,7 @@ class ApplicationFlowTest {
 
         val home = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
         assertEquals(4, home.size) // 2 continue + 2 static
-        assertEquals("Continue World Capitals practice", home.first().title)
+        assertEquals("World Capitals", home.first().title) // bare deck name (FLA-96)
     }
 
     @Test

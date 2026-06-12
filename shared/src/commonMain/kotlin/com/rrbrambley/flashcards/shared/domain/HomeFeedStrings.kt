@@ -6,8 +6,14 @@ package com.rrbrambley.flashcards.shared.domain
  * own localization.
  */
 interface HomeFeedStrings {
-    fun continuePracticeTitle(deckTitle: String): String
-    val continuePracticeButton: String
+    /** Section header above the "continue studying" cards (FLA-96). */
+    val continueStudyingSection: String
+
+    /** Section header above the "study something new" cards — featured deck + create (FLA-96). */
+    val studySomethingNewSection: String
+
+    /** Button on a continue-practice card (the card title is just the deck name). */
+    val resumeButton: String
     fun practiceDeckTitle(deckTitle: String): String
     val practiceButton: String
     val createNewSetTitle: String
