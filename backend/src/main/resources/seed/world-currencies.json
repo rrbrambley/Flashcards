@@ -1,15 +1,15 @@
 [
   {
     "country": "Afghanistan",
-    "currency": "Afghan afghani"
+    "currency": "Afghani"
   },
   {
     "country": "Albania",
-    "currency": "Albanian lek"
+    "currency": "Lek"
   },
   {
     "country": "Algeria",
-    "currency": "Algerian dinar"
+    "currency": "Dinar"
   },
   {
     "country": "Andorra",
@@ -17,23 +17,23 @@
   },
   {
     "country": "Angola",
-    "currency": "Angolan kwanza"
+    "currency": "Kwanza"
   },
   {
     "country": "Antigua and Barbuda",
-    "currency": "Eastern Caribbean dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Argentina",
-    "currency": "Argentine peso"
+    "currency": "Peso"
   },
   {
     "country": "Armenia",
-    "currency": "Armenian dram"
+    "currency": "Dram"
   },
   {
     "country": "Australia",
-    "currency": "Australian dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Austria",
@@ -41,27 +41,27 @@
   },
   {
     "country": "Azerbaijan",
-    "currency": "Azerbaijani manat"
+    "currency": "Manat"
   },
   {
     "country": "Bahamas",
-    "currency": "Bahamian dollar / United States dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Bahrain",
-    "currency": "Bahraini dinar"
+    "currency": "Dinar"
   },
   {
     "country": "Bangladesh",
-    "currency": "Bangladeshi taka"
+    "currency": "Taka"
   },
   {
     "country": "Barbados",
-    "currency": "Barbadian dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Belarus",
-    "currency": "Belarusian ruble"
+    "currency": "Ruble"
   },
   {
     "country": "Belgium",
@@ -69,91 +69,91 @@
   },
   {
     "country": "Belize",
-    "currency": "Belize dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Benin",
-    "currency": "West African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Bhutan",
-    "currency": "Bhutanese ngultrum / Indian rupee"
+    "currency": "Ngultrum / Rupee"
   },
   {
     "country": "Bolivia",
-    "currency": "Bolivian boliviano"
+    "currency": "Boliviano"
   },
   {
     "country": "Bosnia and Herzegovina",
-    "currency": "Bosnia and Herzegovina convertible mark"
+    "currency": "Convertible mark"
   },
   {
     "country": "Botswana",
-    "currency": "Botswana pula"
+    "currency": "Pula"
   },
   {
     "country": "Brazil",
-    "currency": "Brazilian real"
+    "currency": "Real"
   },
   {
     "country": "Brunei",
-    "currency": "Brunei dollar / Singapore dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Bulgaria",
-    "currency": "Bulgarian lev"
+    "currency": "Lev"
   },
   {
     "country": "Burkina Faso",
-    "currency": "West African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Burundi",
-    "currency": "Burundian franc"
+    "currency": "Franc"
   },
   {
     "country": "Cambodia",
-    "currency": "Cambodian riel / United States dollar"
+    "currency": "Riel / Dollar"
   },
   {
     "country": "Cameroon",
-    "currency": "Central African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Canada",
-    "currency": "Canadian dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Cape Verde",
-    "currency": "Cape Verdean escudo"
+    "currency": "Escudo"
   },
   {
     "country": "Central African Republic",
-    "currency": "Central African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Chad",
-    "currency": "Central African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Chile",
-    "currency": "Chilean peso"
+    "currency": "Peso"
   },
   {
     "country": "China",
-    "currency": "Chinese yuan"
+    "currency": "Yuan"
   },
   {
     "country": "Colombia",
-    "currency": "Colombian peso"
+    "currency": "Peso"
   },
   {
     "country": "Comoros",
-    "currency": "Comorian franc"
+    "currency": "Franc"
   },
   {
     "country": "Costa Rica",
-    "currency": "Costa Rican colón"
+    "currency": "Colón"
   },
   {
     "country": "Croatia",
@@ -161,7 +161,7 @@
   },
   {
     "country": "Cuba",
-    "currency": "Cuban convertible peso / Cuban peso"
+    "currency": "Convertible peso / Peso"
   },
   {
     "country": "Cyprus",
@@ -169,47 +169,47 @@
   },
   {
     "country": "Czechia",
-    "currency": "Czech koruna"
+    "currency": "Koruna"
   },
   {
     "country": "Denmark",
-    "currency": "Danish krone"
+    "currency": "Krone"
   },
   {
     "country": "Djibouti",
-    "currency": "Djiboutian franc"
+    "currency": "Franc"
   },
   {
     "country": "Dominica",
-    "currency": "Eastern Caribbean dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Dominican Republic",
-    "currency": "Dominican peso"
+    "currency": "Peso"
   },
   {
     "country": "DR Congo",
-    "currency": "Congolese franc"
+    "currency": "Franc"
   },
   {
     "country": "Ecuador",
-    "currency": "United States dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Egypt",
-    "currency": "Egyptian pound"
+    "currency": "Pound"
   },
   {
     "country": "El Salvador",
-    "currency": "United States dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Equatorial Guinea",
-    "currency": "Central African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Eritrea",
-    "currency": "Eritrean nakfa"
+    "currency": "Nakfa"
   },
   {
     "country": "Estonia",
@@ -217,15 +217,15 @@
   },
   {
     "country": "Eswatini",
-    "currency": "South African rand / Swazi lilangeni"
+    "currency": "Rand / Lilangeni"
   },
   {
     "country": "Ethiopia",
-    "currency": "Ethiopian birr"
+    "currency": "Birr"
   },
   {
     "country": "Fiji",
-    "currency": "Fijian dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Finland",
@@ -237,7 +237,7 @@
   },
   {
     "country": "Gabon",
-    "currency": "Central African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Gambia",
@@ -253,7 +253,7 @@
   },
   {
     "country": "Ghana",
-    "currency": "Ghanaian cedi"
+    "currency": "Cedi"
   },
   {
     "country": "Greece",
@@ -261,51 +261,51 @@
   },
   {
     "country": "Grenada",
-    "currency": "Eastern Caribbean dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Guatemala",
-    "currency": "Guatemalan quetzal"
+    "currency": "Quetzal"
   },
   {
     "country": "Guinea",
-    "currency": "Guinean franc"
+    "currency": "Franc"
   },
   {
     "country": "Guyana",
-    "currency": "Guyanese dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Haiti",
-    "currency": "Haitian gourde"
+    "currency": "Gourde"
   },
   {
     "country": "Honduras",
-    "currency": "Honduran lempira"
+    "currency": "Lempira"
   },
   {
     "country": "Hungary",
-    "currency": "Hungarian forint"
+    "currency": "Forint"
   },
   {
     "country": "Iceland",
-    "currency": "Icelandic króna"
+    "currency": "Króna"
   },
   {
     "country": "India",
-    "currency": "Indian rupee"
+    "currency": "Rupee"
   },
   {
     "country": "Indonesia",
-    "currency": "Indonesian rupiah"
+    "currency": "Rupiah"
   },
   {
     "country": "Iran",
-    "currency": "Iranian rial"
+    "currency": "Rial"
   },
   {
     "country": "Iraq",
-    "currency": "Iraqi dinar"
+    "currency": "Dinar"
   },
   {
     "country": "Ireland",
@@ -313,7 +313,7 @@
   },
   {
     "country": "Israel",
-    "currency": "Israeli new shekel"
+    "currency": "New shekel"
   },
   {
     "country": "Italy",
@@ -321,43 +321,43 @@
   },
   {
     "country": "Ivory Coast",
-    "currency": "West African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Jamaica",
-    "currency": "Jamaican dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Japan",
-    "currency": "Japanese yen"
+    "currency": "Yen"
   },
   {
     "country": "Jordan",
-    "currency": "Jordanian dinar"
+    "currency": "Dinar"
   },
   {
     "country": "Kazakhstan",
-    "currency": "Kazakhstani tenge"
+    "currency": "Tenge"
   },
   {
     "country": "Kenya",
-    "currency": "Kenyan shilling"
+    "currency": "Shilling"
   },
   {
     "country": "Kiribati",
-    "currency": "Australian dollar / Kiribati dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Kuwait",
-    "currency": "Kuwaiti dinar"
+    "currency": "Dinar"
   },
   {
     "country": "Kyrgyzstan",
-    "currency": "Kyrgyzstani som"
+    "currency": "Som"
   },
   {
     "country": "Laos",
-    "currency": "Lao kip"
+    "currency": "Kip"
   },
   {
     "country": "Latvia",
@@ -365,23 +365,23 @@
   },
   {
     "country": "Lebanon",
-    "currency": "Lebanese pound"
+    "currency": "Pound"
   },
   {
     "country": "Lesotho",
-    "currency": "Lesotho loti / South African rand"
+    "currency": "Loti / Rand"
   },
   {
     "country": "Liberia",
-    "currency": "Liberian dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Libya",
-    "currency": "Libyan dinar"
+    "currency": "Dinar"
   },
   {
     "country": "Liechtenstein",
-    "currency": "Swiss franc"
+    "currency": "Franc"
   },
   {
     "country": "Lithuania",
@@ -393,23 +393,23 @@
   },
   {
     "country": "Madagascar",
-    "currency": "Malagasy ariary"
+    "currency": "Ariary"
   },
   {
     "country": "Malawi",
-    "currency": "Malawian kwacha"
+    "currency": "Kwacha"
   },
   {
     "country": "Malaysia",
-    "currency": "Malaysian ringgit"
+    "currency": "Ringgit"
   },
   {
     "country": "Maldives",
-    "currency": "Maldivian rufiyaa"
+    "currency": "Rufiyaa"
   },
   {
     "country": "Mali",
-    "currency": "West African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Malta",
@@ -417,27 +417,27 @@
   },
   {
     "country": "Marshall Islands",
-    "currency": "United States dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Mauritania",
-    "currency": "Mauritanian ouguiya"
+    "currency": "Ouguiya"
   },
   {
     "country": "Mauritius",
-    "currency": "Mauritian rupee"
+    "currency": "Rupee"
   },
   {
     "country": "Mexico",
-    "currency": "Mexican peso"
+    "currency": "Peso"
   },
   {
     "country": "Micronesia",
-    "currency": "United States dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Moldova",
-    "currency": "Moldovan leu"
+    "currency": "Leu"
   },
   {
     "country": "Monaco",
@@ -445,7 +445,7 @@
   },
   {
     "country": "Mongolia",
-    "currency": "Mongolian tögrög"
+    "currency": "Tögrög"
   },
   {
     "country": "Montenegro",
@@ -453,27 +453,27 @@
   },
   {
     "country": "Morocco",
-    "currency": "Moroccan dirham"
+    "currency": "Dirham"
   },
   {
     "country": "Mozambique",
-    "currency": "Mozambican metical"
+    "currency": "Metical"
   },
   {
     "country": "Myanmar",
-    "currency": "Burmese kyat"
+    "currency": "Kyat"
   },
   {
     "country": "Namibia",
-    "currency": "Namibian dollar / South African rand"
+    "currency": "Dollar / Rand"
   },
   {
     "country": "Nauru",
-    "currency": "Australian dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Nepal",
-    "currency": "Nepalese rupee"
+    "currency": "Rupee"
   },
   {
     "country": "Netherlands",
@@ -481,23 +481,23 @@
   },
   {
     "country": "New Zealand",
-    "currency": "New Zealand dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Nicaragua",
-    "currency": "Nicaraguan córdoba"
+    "currency": "Córdoba"
   },
   {
     "country": "Niger",
-    "currency": "West African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Nigeria",
-    "currency": "Nigerian naira"
+    "currency": "Naira"
   },
   {
     "country": "North Korea",
-    "currency": "North Korean won"
+    "currency": "Won"
   },
   {
     "country": "North Macedonia",
@@ -505,43 +505,43 @@
   },
   {
     "country": "Norway",
-    "currency": "Norwegian krone"
+    "currency": "Krone"
   },
   {
     "country": "Oman",
-    "currency": "Omani rial"
+    "currency": "Rial"
   },
   {
     "country": "Pakistan",
-    "currency": "Pakistani rupee"
+    "currency": "Rupee"
   },
   {
     "country": "Palau",
-    "currency": "United States dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Panama",
-    "currency": "Panamanian balboa / United States dollar"
+    "currency": "Balboa / Dollar"
   },
   {
     "country": "Papua New Guinea",
-    "currency": "Papua New Guinean kina"
+    "currency": "Kina"
   },
   {
     "country": "Paraguay",
-    "currency": "Paraguayan guaraní"
+    "currency": "Guaraní"
   },
   {
     "country": "Peru",
-    "currency": "Peruvian sol"
+    "currency": "Sol"
   },
   {
     "country": "Philippines",
-    "currency": "Philippine peso"
+    "currency": "Peso"
   },
   {
     "country": "Poland",
-    "currency": "Polish złoty"
+    "currency": "Złoty"
   },
   {
     "country": "Portugal",
@@ -549,39 +549,39 @@
   },
   {
     "country": "Qatar",
-    "currency": "Qatari riyal"
+    "currency": "Riyal"
   },
   {
     "country": "Republic of the Congo",
-    "currency": "Central African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Romania",
-    "currency": "Romanian leu"
+    "currency": "Leu"
   },
   {
     "country": "Russia",
-    "currency": "Russian ruble"
+    "currency": "Ruble"
   },
   {
     "country": "Rwanda",
-    "currency": "Rwandan franc"
+    "currency": "Franc"
   },
   {
     "country": "Saint Kitts and Nevis",
-    "currency": "Eastern Caribbean dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Saint Lucia",
-    "currency": "Eastern Caribbean dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Saint Vincent and the Grenadines",
-    "currency": "Eastern Caribbean dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Samoa",
-    "currency": "Samoan tālā"
+    "currency": "Tālā"
   },
   {
     "country": "San Marino",
@@ -589,23 +589,23 @@
   },
   {
     "country": "São Tomé and Príncipe",
-    "currency": "São Tomé and Príncipe dobra"
+    "currency": "Dobra"
   },
   {
     "country": "Saudi Arabia",
-    "currency": "Saudi riyal"
+    "currency": "Riyal"
   },
   {
     "country": "Senegal",
-    "currency": "West African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Serbia",
-    "currency": "Serbian dinar"
+    "currency": "Dinar"
   },
   {
     "country": "Seychelles",
-    "currency": "Seychellois rupee"
+    "currency": "Rupee"
   },
   {
     "country": "Sierra Leone",
@@ -613,7 +613,7 @@
   },
   {
     "country": "Singapore",
-    "currency": "Singapore dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Slovakia",
@@ -625,23 +625,23 @@
   },
   {
     "country": "Solomon Islands",
-    "currency": "Solomon Islands dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Somalia",
-    "currency": "Somali shilling"
+    "currency": "Shilling"
   },
   {
     "country": "South Africa",
-    "currency": "South African rand"
+    "currency": "Rand"
   },
   {
     "country": "South Korea",
-    "currency": "South Korean won"
+    "currency": "Won"
   },
   {
     "country": "South Sudan",
-    "currency": "South Sudanese pound"
+    "currency": "Pound"
   },
   {
     "country": "Spain",
@@ -649,122 +649,122 @@
   },
   {
     "country": "Sri Lanka",
-    "currency": "Sri Lankan rupee"
+    "currency": "Rupee"
   },
   {
     "country": "Sudan",
-    "currency": "Sudanese pound"
+    "currency": "Pound"
   },
   {
     "country": "Suriname",
-    "currency": "Surinamese dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Sweden",
-    "currency": "Swedish krona"
+    "currency": "Krona"
   },
   {
     "country": "Switzerland",
-    "currency": "Swiss franc"
+    "currency": "Franc"
   },
   {
     "country": "Syria",
-    "currency": "Syrian pound"
+    "currency": "Pound"
   },
   {
     "country": "Tajikistan",
-    "currency": "Tajikistani somoni"
+    "currency": "Somoni"
   },
   {
     "country": "Tanzania",
-    "currency": "Tanzanian shilling"
+    "currency": "Shilling"
   },
   {
     "country": "Thailand",
-    "currency": "Thai baht"
+    "currency": "Baht"
   },
   {
     "country": "Timor-Leste",
-    "currency": "United States dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Togo",
-    "currency": "West African CFA franc"
+    "currency": "CFA franc"
   },
   {
     "country": "Tonga",
-    "currency": "Tongan paʻanga"
+    "currency": "Paʻanga"
   },
   {
     "country": "Trinidad and Tobago",
-    "currency": "Trinidad and Tobago dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Tunisia",
-    "currency": "Tunisian dinar"
+    "currency": "Dinar"
   },
   {
     "country": "Turkey",
-    "currency": "Turkish lira"
+    "currency": "Lira"
   },
   {
     "country": "Turkmenistan",
-    "currency": "Turkmenistan manat"
+    "currency": "Manat"
   },
   {
     "country": "Tuvalu",
-    "currency": "Australian dollar / Tuvaluan dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Uganda",
-    "currency": "Ugandan shilling"
+    "currency": "Shilling"
   },
   {
     "country": "Ukraine",
-    "currency": "Ukrainian hryvnia"
+    "currency": "Hryvnia"
   },
   {
     "country": "United Arab Emirates",
-    "currency": "United Arab Emirates dirham"
+    "currency": "Dirham"
   },
   {
     "country": "United Kingdom",
-    "currency": "British pound"
+    "currency": "Pound"
   },
   {
     "country": "United States",
-    "currency": "United States dollar"
+    "currency": "Dollar"
   },
   {
     "country": "Uruguay",
-    "currency": "Uruguayan peso"
+    "currency": "Peso"
   },
   {
     "country": "Uzbekistan",
-    "currency": "Uzbekistani soʻm"
+    "currency": "Soʻm"
   },
   {
     "country": "Vanuatu",
-    "currency": "Vanuatu vatu"
+    "currency": "Vatu"
   },
   {
     "country": "Venezuela",
-    "currency": "Venezuelan bolívar soberano"
+    "currency": "Bolívar soberano"
   },
   {
     "country": "Vietnam",
-    "currency": "Vietnamese đồng"
+    "currency": "Đồng"
   },
   {
     "country": "Yemen",
-    "currency": "Yemeni rial"
+    "currency": "Rial"
   },
   {
     "country": "Zambia",
-    "currency": "Zambian kwacha"
+    "currency": "Kwacha"
   },
   {
     "country": "Zimbabwe",
-    "currency": "Zimbabwean dollar"
+    "currency": "Dollar"
   }
 ]
