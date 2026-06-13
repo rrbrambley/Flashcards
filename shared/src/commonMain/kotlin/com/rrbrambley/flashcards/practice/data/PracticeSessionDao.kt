@@ -24,6 +24,43 @@ interface PracticeSessionDao {
     @Upsert
     suspend fun upsertSession(session: PracticeSessionEntity)
 
+    /** A single cached session by id (non-Flow), or null. Used by the offline write/sync paths. */
+    @Query("SELECT * FROM practice_sessions WHERE id = :id")
+    suspend fun getSessionById(id: Long): PracticeSessionEntity?
+
+    /**
+     * The most-recently-updated active (incomplete) session for this deck + mode, or null. Used to
+     * resume an existing session offline rather than minting a duplicate (FLA-91).
+     */
+    @Query(
+        "SELECT * FROM practice_sessions WHERE deckId = :deckId AND mode = :mode AND isCompleted = 0 " +
+            "ORDER BY updatedAtMillis DESC LIMIT 1",
+    )
+    suspend fun findActiveByDeckAndMode(deckId: Long, mode: String): PracticeSessionEntity?
+
+    /** Rows with local writes not yet flushed to the backend (FLA-91 sync). */
+    @Query("SELECT * FROM practice_sessions WHERE pendingSync = 1")
+    suspend fun getPendingSessions(): List<PracticeSessionEntity>
+
+    /** Smallest existing id, or null when empty; used to mint a decreasing negative offline id. */
+    @Query("SELECT MIN(id) FROM practice_sessions")
+    suspend fun minSessionId(): Long?
+
+    /** Deletes one cached session by id (used to remap an offline-minted row to its server id). */
+    @Query("DELETE FROM practice_sessions WHERE id = :id")
+    suspend fun deleteSessionById(id: Long)
+
+    /**
+     * Atomically mints a negative, decreasing offline id and inserts [session] under it, returning
+     * the id. Negative ids mark "offline-minted, no server id yet" until reconnect remaps them.
+     */
+    @Transaction
+    suspend fun insertLocalSession(session: PracticeSessionEntity): Long {
+        val localId = (minSessionId() ?: 0L).coerceAtMost(0L) - 1L
+        upsertSession(session.copy(id = localId))
+        return localId
+    }
+
     /** Clears every cached practice session (e.g. on logout). */
     @Query("DELETE FROM practice_sessions")
     suspend fun deleteAllSessions()

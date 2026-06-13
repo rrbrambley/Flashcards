@@ -68,6 +68,8 @@ class EntityMappersTest {
             ),
             sessionDto().toEntity(),
         )
+        // A row sourced from the backend is in sync (FLA-91).
+        assertEquals(false, sessionDto().toEntity().pendingSync)
     }
 
     @Test
