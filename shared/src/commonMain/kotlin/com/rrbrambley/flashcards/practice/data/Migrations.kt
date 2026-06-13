@@ -38,5 +38,14 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+/** v6 → v7: add the `pendingSync` flag to practice_sessions (offline writes awaiting backend sync). */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "ALTER TABLE `practice_sessions` ADD COLUMN `pendingSync` INTEGER NOT NULL DEFAULT 0",
+        )
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
-val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)

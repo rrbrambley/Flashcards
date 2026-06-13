@@ -12,8 +12,10 @@ class FlashcardsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val sessionId = intent.getLongExtra(SESSION_ID_EXTRA, MISSING_ID).takeIf { it != MISSING_ID }
-        val deckId = intent.getLongExtra(DECK_ID_EXTRA, MISSING_ID).takeIf { it != MISSING_ID }
+        // Use hasExtra (not a sentinel value): an offline-minted session id is negative, so a -1L
+        // "missing" sentinel would wrongly discard the first offline session (FLA-91).
+        val sessionId = intent.takeIf { it.hasExtra(SESSION_ID_EXTRA) }?.getLongExtra(SESSION_ID_EXTRA, 0L)
+        val deckId = intent.takeIf { it.hasExtra(DECK_ID_EXTRA) }?.getLongExtra(DECK_ID_EXTRA, 0L)
         setContent {
             FlashcardsTheme {
                 FlashcardsScreen(
@@ -30,6 +32,5 @@ class FlashcardsActivity : ComponentActivity() {
 
         /** Start/resume a session for this deck (the Home "Practice" action). */
         const val DECK_ID_EXTRA = "deck_id"
-        private const val MISSING_ID = -1L
     }
 }

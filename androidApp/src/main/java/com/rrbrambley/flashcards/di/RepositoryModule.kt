@@ -15,10 +15,12 @@ import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionSyncer
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 /**
  * Constructs the shared (commonMain) repository implementations. They can't be `@Inject`-bound like
@@ -43,12 +45,21 @@ object RepositoryModule {
         flashcardDao: FlashcardDao,
     ): FlashcardRepository = FlashcardRepositoryImpl(apiClient, flashcardDao)
 
+    // One impl instance backs both the repository and the offline-session syncer (FLA-91), so the
+    // sync loop and the UI share the same Room writes (and the single-flight mutex).
     @Provides
-    fun providePracticeSessionRepository(
+    @Singleton
+    fun providePracticeSessionRepositoryImpl(
         apiClient: FlashcardApiClient,
         practiceSessionDao: PracticeSessionDao,
         flashcardDao: FlashcardDao,
-    ): PracticeSessionRepository = PracticeSessionRepositoryImpl(apiClient, practiceSessionDao, flashcardDao)
+    ): PracticeSessionRepositoryImpl = PracticeSessionRepositoryImpl(apiClient, practiceSessionDao, flashcardDao)
+
+    @Provides
+    fun providePracticeSessionRepository(impl: PracticeSessionRepositoryImpl): PracticeSessionRepository = impl
+
+    @Provides
+    fun providePracticeSessionSyncer(impl: PracticeSessionRepositoryImpl): PracticeSessionSyncer = impl
 
     @Provides
     fun provideHomeRepository(

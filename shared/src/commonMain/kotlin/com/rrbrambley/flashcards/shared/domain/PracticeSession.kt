@@ -13,4 +13,7 @@ data class PracticeSession(
     val mode: String = "flashcards",
     val createdAtMillis: Long = 0L,
     val updatedAtMillis: Long = 0L,
+    // True when this session has local progress not yet synced to the backend (started/advanced
+    // offline). Defaulted; lets the UI optionally show a "saved locally" affordance (FLA-91).
+    val pendingSync: Boolean = false,
 )

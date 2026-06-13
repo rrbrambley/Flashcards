@@ -11,7 +11,8 @@ import org.junit.runner.RunWith
 
 /**
  * Verifies [FlashcardsDatabase] migrations preserve existing rows. Drives the real SQLite engine via
- * Room's [MigrationTestHelper], using the schemas exported to `androidApp/schemas/`.
+ * Room's [MigrationTestHelper], using the schemas exported to `shared/schemas/` (wired into this
+ * source set's assets by androidApp's build.gradle.kts).
  */
 @RunWith(AndroidJUnit4::class)
 class FlashcardsDatabaseMigrationTest {
@@ -99,6 +100,30 @@ class FlashcardsDatabaseMigrationTest {
             assertTrue(cursor.moveToFirst())
             assertEquals(3, cursor.getInt(0))
             assertEquals("flashcards", cursor.getString(1))
+        }
+    }
+
+    @Test
+    fun migrate6To7_preservesRowsAndAddsPendingSyncColumn() {
+        // Seed a v6 database with a deck + a practice session (no pendingSync column yet).
+        helper.createDatabase(testDb, 6).apply {
+            execSQL("INSERT INTO flashcard_decks (id, title, editable, tags) VALUES (1, 'Spanish basics', 1, '[]')")
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, mode, " +
+                    "createdAtMillis, updatedAtMillis) VALUES (10, 1, 2, 3, 1, 0, 'flashcards', 100, 200)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_6_7 and validate against the exported v7 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 7, true, MIGRATION_6_7)
+
+        // The session survived and got the default (not-pending) sync flag.
+        db.query("SELECT numCorrect, pendingSync FROM practice_sessions WHERE id = 10").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(3, cursor.getInt(0))
+            assertEquals(0, cursor.getInt(1))
         }
     }
 }

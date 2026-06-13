@@ -33,6 +33,10 @@ data class PracticeSessionEntity(
     // Practice mode (e.g. flashcards / test / multiple_choice). Default keeps existing rows (and the
     // v5→v6 migration's added column) on classic flashcards. See MIGRATION_5_6.
     val mode: String = "flashcards",
+    // True when this row has local writes not yet confirmed by the backend (offline create/progress/
+    // complete); the sync routine flushes these on reconnect and clears it once the server confirms.
+    // Distinct from a negative [id], which means "offline-minted, no server id yet". See MIGRATION_6_7.
+    val pendingSync: Boolean = false,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
 )

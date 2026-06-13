@@ -24,6 +24,8 @@ fun PracticeSessionDto.toEntity(): PracticeSessionEntity = PracticeSessionEntity
     numIncorrect = numIncorrect,
     isCompleted = isCompleted,
     mode = mode,
+    // A row sourced from the backend is, by definition, in sync.
+    pendingSync = false,
     createdAtMillis = createdAtMillis,
     updatedAtMillis = updatedAtMillis,
 )
@@ -52,4 +54,5 @@ fun PracticeSessionWithDeck.toDomain(): PracticeSession = PracticeSession(
     mode = session.mode,
     createdAtMillis = session.createdAtMillis,
     updatedAtMillis = session.updatedAtMillis,
+    pendingSync = session.pendingSync,
 )
