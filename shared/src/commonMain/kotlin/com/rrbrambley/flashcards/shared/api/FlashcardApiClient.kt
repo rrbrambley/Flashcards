@@ -90,6 +90,20 @@ class FlashcardApiClient(
 
     suspend fun getDeck(deckId: Long): FlashcardDeckDto = client.get(url("/decks/$deckId")) { auth() }.body()
 
+    // --- Public catalog (guest mode; no auth) ---
+    /**
+     * One cursor-paginated page of the public global catalog — the unauthenticated guest-mode browse
+     * (FLA-101). Read-only; never sends a bearer (the endpoint is public).
+     */
+    suspend fun getCatalog(limit: Int? = null, cursor: String? = null): Page<FlashcardDeckDto> =
+        client.get(url("/catalog")) {
+            limit?.let { parameter("limit", it) }
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
+    /** A single public catalog (global) deck with its cards — guest practice (FLA-101). */
+    suspend fun getCatalogDeck(deckId: Long): FlashcardDeckDto = client.get(url("/catalog/$deckId")).body()
+
     suspend fun createDeck(request: CreateDeckRequest): FlashcardDeckDto = client.post(url("/decks")) {
         jsonBody(request)
     }.body()

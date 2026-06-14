@@ -49,6 +49,7 @@ private enum class AuthScreen { Login, Register }
 fun AuthHost(
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
+    onBrowseAsGuest: () -> Unit = {},
 ) {
     var screen by rememberSaveable { mutableStateOf(AuthScreen.Login) }
     val form by authViewModel.formState.collectAsState()
@@ -92,6 +93,7 @@ fun AuthHost(
                 authViewModel.resetForm()
                 screen = AuthScreen.Register
             },
+            onBrowseAsGuest = onBrowseAsGuest,
             modifier = modifier,
         )
 
@@ -110,6 +112,7 @@ fun AuthHost(
                 authViewModel.resetForm()
                 screen = AuthScreen.Login
             },
+            onBrowseAsGuest = onBrowseAsGuest,
             modifier = modifier,
         )
     }
@@ -128,6 +131,7 @@ private fun AuthForm(
     onSubmit: () -> Unit,
     onGoogle: () -> Unit,
     onSwitch: () -> Unit,
+    onBrowseAsGuest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -213,6 +217,10 @@ private fun AuthForm(
             TextButton(onClick = onSwitch, enabled = !form.isSubmitting) {
                 Text(switchAction)
             }
+        }
+
+        TextButton(onClick = onBrowseAsGuest, enabled = !form.isSubmitting) {
+            Text(stringResource(R.string.auth_browse_as_guest))
         }
     }
 }

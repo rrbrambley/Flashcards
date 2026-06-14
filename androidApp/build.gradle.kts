@@ -23,6 +23,14 @@ android {
         // The Android emulator reaches the host machine at 10.0.2.2.
         buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:8080\"")
 
+        // Base URL of the web app, used to build shareable deck links (guest mode). Override with
+        // WEB_APP_BASE_URL in gradle.properties for a real deployment; defaults to the dev server.
+        buildConfigField(
+            "String",
+            "WEB_APP_BASE_URL",
+            "\"${providers.gradleProperty("WEB_APP_BASE_URL").getOrElse("http://localhost:5173")}\"",
+        )
+
         // Google OAuth Web client ID (server client ID) for Sign in with Google.
         // Set GOOGLE_WEB_CLIENT_ID in gradle.properties or the environment; blank = Google disabled.
         buildConfigField(

@@ -1,13 +1,24 @@
 package com.rrbrambley.flashcards.practice.ui
 
+import com.rrbrambley.flashcards.shared.AuthService
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.TokenStore
+import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -15,6 +26,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -241,7 +254,66 @@ class FlashcardsViewModelTest {
         assertEquals(testFlashcards(), state.deck)
     }
 
+    // The guest tests use a real FlashcardApiClient over a MockEngine (real dispatcher), so they await
+    // the StateFlow rather than the test scheduler.
+    @Test
+    fun guestMode_loadsTheCatalogDeckWithoutCreatingASession() = runTest(testDispatcher) {
+        val sessions = FakePracticeSessionRepository(session())
+        val engine = routedEngine { if (it == "/catalog/$DECK_ID") deckJson(DECK_ID) else null }
+        val viewModel = createViewModel(testFlashcards(), sessions, engine)
+
+        viewModel.load(sessionId = null, deckId = DECK_ID, isGuest = true, mode = "flashcards")
+
+        val state = viewModel.uiState.first { it is FlashcardsUiState.ShowFlashcard } as FlashcardsUiState.ShowFlashcard
+        assertEquals("Q1", state.flashcard.question)
+        // No session was started for a guest.
+        assertEquals(null, sessions.startOrResumeDeckId)
+        assertFalse(viewModel.shouldPromptSave()) // nothing answered yet
+    }
+
+    @Test
+    fun guestMode_promptsToSaveOnceThereIsProgress() = runTest(testDispatcher) {
+        val engine = routedEngine { if (it == "/catalog/$DECK_ID") deckJson(DECK_ID) else null }
+        val viewModel = createViewModel(testFlashcards(), engine = engine)
+        viewModel.load(sessionId = null, deckId = DECK_ID, isGuest = true, mode = "flashcards")
+        viewModel.uiState.first { it is FlashcardsUiState.ShowFlashcard }
+
+        viewModel.onResult(correct = true) // advances to card 2
+
+        assertTrue(viewModel.shouldPromptSave())
+    }
+
+    @Test
+    fun guestMode_saveByCreatingAccount_registersThenPushesTheSession() = runTest(testDispatcher) {
+        val sessionJson = """{"id":7,"deckId":$DECK_ID,"deckTitle":"Catalog deck","currentCardIndex":1,""" +
+            """"numCorrect":1,"numIncorrect":0,"isCompleted":false,"mode":"flashcards",""" +
+            """"createdAtMillis":0,"updatedAtMillis":0}"""
+        val engine = routedEngine { path ->
+            when (path) {
+                "/catalog/$DECK_ID" -> deckJson(DECK_ID)
+                "/auth/register" -> """{"accessToken":"a","refreshToken":"r","userId":1}"""
+                "/sessions" -> sessionJson
+                "/sessions/7" -> sessionJson
+                else -> null
+            }
+        }
+        val viewModel = createViewModel(testFlashcards(), engine = engine)
+        viewModel.load(sessionId = null, deckId = DECK_ID, isGuest = true, mode = "flashcards")
+        viewModel.uiState.first { it is FlashcardsUiState.ShowFlashcard }
+        viewModel.onResult(correct = true)
+
+        viewModel.saveProgressByCreatingAccount("new@user.com", "password1")
+
+        viewModel.saveState.first { it is GuestSaveState.Saved || it is GuestSaveState.Error }
+        assertEquals(GuestSaveState.Saved, viewModel.saveState.value)
+    }
+
     // --- Helpers ---
+
+    private fun routedEngine(route: (path: String) -> String?) = MockEngine { request ->
+        val body = route(request.url.encodedPath) ?: error("unexpected ${request.url.encodedPath}")
+        respond(body, HttpStatusCode.OK, jsonHeaders)
+    }
 
     /** Loads via the deck entry (Home "Practice") and drains the dispatcher. */
     private fun FlashcardsViewModel.loadDeck() {
@@ -252,12 +324,45 @@ class FlashcardsViewModelTest {
     private fun createViewModel(
         flashcards: List<Flashcard>,
         practiceSessionRepository: FakePracticeSessionRepository = FakePracticeSessionRepository(session()),
-    ): FlashcardsViewModel = FlashcardsViewModel(
-        flashcardRepository = FakeFlashcardRepository(
-            listOf(FlashcardDeck(id = DECK_ID, title = "Deck", flashcards = flashcards)),
-        ),
-        practiceSessionRepository = practiceSessionRepository,
-    )
+        engine: MockEngine = unavailableEngine(),
+    ): FlashcardsViewModel {
+        val apiClient = FlashcardApiClient(
+            client = createFlashcardHttpClient(engine),
+            baseUrl = "http://localhost",
+            tokenProvider = { null },
+        )
+        return FlashcardsViewModel(
+            flashcardRepository = FakeFlashcardRepository(
+                listOf(FlashcardDeck(id = DECK_ID, title = "Deck", flashcards = flashcards)),
+            ),
+            practiceSessionRepository = practiceSessionRepository,
+            apiClient = apiClient,
+            authService = AuthService(apiClient, FakeTokenStore(), FakeLocalDataStore()),
+        )
+    }
+
+    /** A MockEngine that fails every request — the default for tests that don't touch the network. */
+    private fun unavailableEngine() = MockEngine { respond("unavailable", HttpStatusCode.ServiceUnavailable) }
+
+    private val jsonHeaders = headersOf("Content-Type", "application/json")
+
+    private fun deckJson(id: Long): String =
+        """{"id":$id,"title":"Catalog deck","flashcards":[{"question":"Q1","answer":"A1"},""" +
+            """{"question":"Q2","answer":"A2"}],"editable":false}"""
+
+    private class FakeTokenStore : TokenStore {
+        private val token = MutableStateFlow<String?>(null)
+        override fun tokenFlow(): Flow<String?> = token
+        override suspend fun currentToken(): String? = token.value
+        override suspend fun currentRefreshToken(): String? = null
+        override suspend fun setToken(token: String) { this.token.value = token }
+        override suspend fun setTokens(accessToken: String, refreshToken: String) { token.value = accessToken }
+        override suspend fun clearToken() { token.value = null }
+    }
+
+    private class FakeLocalDataStore : LocalDataStore {
+        override suspend fun clearAll() = Unit
+    }
 
     private fun session(
         deckId: Long = DECK_ID,
