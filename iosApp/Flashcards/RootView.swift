@@ -14,6 +14,8 @@ enum SessionState {
 struct RootView: View {
     @EnvironmentObject private var container: AppContainer
     @State private var session: SessionState = .loading
+    /// Guest mode (FLA-104): browse + practice the public catalog without an account.
+    @State private var browsingAsGuest = false
 
     var body: some View {
         Group {
@@ -21,7 +23,11 @@ struct RootView: View {
             case .loading:
                 ProgressView()
             case .signedOut:
-                AuthView(authService: container.authService)
+                if browsingAsGuest {
+                    GuestHomeView(apiClient: container.apiClient, onSignIn: { browsingAsGuest = false })
+                } else {
+                    AuthView(authService: container.authService, onBrowseAsGuest: { browsingAsGuest = true })
+                }
             case .signedIn:
                 MainTabView()
             }
@@ -32,6 +38,8 @@ struct RootView: View {
             // updated on sign-in / logout).
             for await loggedIn in asyncStream(BridgingKt.loggedInAdapter(container.tokenStore)) {
                 session = loggedIn?.boolValue == true ? .signedIn : .signedOut
+                // Once signed in, drop the guest flag so a later logout returns to the auth screen.
+                if session == .signedIn { browsingAsGuest = false }
             }
         }
     }

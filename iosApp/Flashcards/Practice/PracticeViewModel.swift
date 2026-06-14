@@ -23,31 +23,63 @@ enum PracticeEntry {
     case deck(Int64, mode: String)
     /// Resume an existing session (Home "Continue practice"); the mode comes from the session.
     case session(Int64)
+    /// Guest mode (FLA-104): practice a public catalog deck in memory — no session, no persistence.
+    case guestDeck(Int64, mode: String)
+}
+
+/// State of the guest "create an account to save your progress" flow (FLA-104).
+enum GuestSaveState: Equatable {
+    case idle
+    case saving
+    case error(String)
+    case saved
 }
 
 /// Drives a practice run: starts-or-resumes (or restores) a session, restores progress, and
-/// persists each step (current card index + correct/incorrect) through the shared
-/// `PracticeSessionRepository` (offline-first → syncs to the backend).
-/// Swipe right = correct, left = needs practice.
+/// persists each step. In guest mode it runs entirely in memory (no session) and offers to save the
+/// session by creating an account. Swipe right = correct, left = needs practice.
 @MainActor
 final class PracticeViewModel: ObservableObject {
     @Published private(set) var state: PracticeState = .loading
+    @Published private(set) var saveState: GuestSaveState = .idle
 
     private let flashcardRepository: FlashcardRepository
     private let sessionRepository: PracticeSessionRepository
+    private let apiClient: FlashcardApiClient?
+    private let authService: AuthenticationService?
     private let entry: PracticeEntry
 
     private var sessionId: Int64?
+    private var deckId: Int64?
+    private(set) var deckTitle = ""
+    private var isGuest = false
     private var cards: [Flashcard] = []
     private var index = 0
     private var numCorrect = 0
     private var numIncorrect = 0
     private var mode = "flashcards"
 
-    init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository, entry: PracticeEntry) {
+    init(
+        flashcardRepository: FlashcardRepository,
+        sessionRepository: PracticeSessionRepository,
+        entry: PracticeEntry,
+        apiClient: FlashcardApiClient? = nil,
+        authService: AuthenticationService? = nil
+    ) {
         self.flashcardRepository = flashcardRepository
         self.sessionRepository = sessionRepository
         self.entry = entry
+        self.apiClient = apiClient
+        self.authService = authService
+    }
+
+    /// The deck being practiced (id + title), for the Share action; nil until loaded.
+    var shareDeckId: Int64? { deckId }
+
+    /// Whether leaving now should prompt a guest to save: guest, mid-session, with some progress.
+    var shouldPromptSave: Bool {
+        guard isGuest, case .showCard = state else { return false }
+        return index > 0 || numCorrect > 0 || numIncorrect > 0
     }
 
     func start() async {
@@ -67,6 +99,11 @@ final class PracticeViewModel: ObservableObject {
             sessionId = sid
             guard let deckId = await restoreFromSession() else { state = .failed; return }
             await loadDeckCards(deckId: deckId)
+        case let .guestDeck(deckId, mode):
+            isGuest = true
+            self.deckId = deckId
+            self.mode = mode
+            await loadGuestDeckCards(deckId: deckId)
         }
     }
 
@@ -95,6 +132,37 @@ final class PracticeViewModel: ObservableObject {
         }
     }
 
+    /// Guest "save my progress": create an account, then create a server session and push the current
+    /// progress so it's resumable. On success the token store flips the app to the signed-in state.
+    func saveProgressByCreatingAccount(email: String, password: String) async {
+        guard let apiClient, let authService, let deckId else { return }
+        let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !password.isEmpty else {
+            saveState = .error("Enter your email and password.")
+            return
+        }
+        saveState = .saving
+        let result = try? await authService.register(email: trimmed, password: password)
+        if let failure = result as? AuthResult.Failure {
+            saveState = .error(failure.message)
+            return
+        }
+        guard result is AuthResult.Success else {
+            saveState = .error("Something went wrong. Check your connection and try again.")
+            return
+        }
+        // Best-effort: the account exists either way; push the in-progress session if we can.
+        let request = UpdateProgressRequest(
+            currentCardIndex: Int32(index),
+            numCorrect: Int32(numCorrect),
+            numIncorrect: Int32(numIncorrect)
+        )
+        if let session = try? await apiClient.createSession(deckId: deckId, mode: mode) {
+            _ = try? await apiClient.updateProgress(sessionId: session.id, request: request)
+        }
+        saveState = .saved
+    }
+
     /// Reads the session once (restoring index + scores) and returns its deck id.
     @discardableResult
     private func restoreFromSession() async -> Int64? {
@@ -105,6 +173,8 @@ final class PracticeViewModel: ObservableObject {
             numCorrect = Int(session.numCorrect)
             numIncorrect = Int(session.numIncorrect)
             mode = session.mode
+            deckId = session.deckId
+            deckTitle = session.deckTitle
             return session.deckId
         }
         return nil
@@ -118,6 +188,21 @@ final class PracticeViewModel: ObservableObject {
         }
         guard !cards.isEmpty else { state = .failed; return }
         index = min(max(index, 0), cards.count - 1)
+        updateState()
+    }
+
+    /// Loads a public catalog deck's cards directly from the API (guest mode — no repository/session).
+    private func loadGuestDeckCards(deckId: Int64) async {
+        guard let apiClient, let deck = try? await apiClient.getCatalogDeck(deckId: deckId) else {
+            state = .failed
+            return
+        }
+        deckTitle = deck.title
+        cards = ((deck.flashcards as? [FlashcardDto]) ?? []).map {
+            Flashcard(question: $0.question, answer: $0.answer, imageUrl: $0.imageUrl)
+        }
+        guard !cards.isEmpty else { state = .failed; return }
+        index = 0
         updateState()
     }
 
@@ -135,7 +220,7 @@ final class PracticeViewModel: ObservableObject {
     }
 
     private func persist() {
-        guard let sid = sessionId else { return }
+        guard let sid = sessionId else { return } // guests have no session
         let (i, c, w) = (index, numCorrect, numIncorrect)
         Task {
             try? await sessionRepository.updateProgress(

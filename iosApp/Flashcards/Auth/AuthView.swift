@@ -5,9 +5,11 @@ import SwiftUI
 /// the shared `AuthService` stores tokens and `RootView` swaps in the main tabs.
 struct AuthView: View {
     @StateObject private var viewModel: AuthViewModel
+    private let onBrowseAsGuest: () -> Void
 
-    init(authService: AuthService) {
+    init(authService: AuthService, onBrowseAsGuest: @escaping () -> Void = {}) {
         _viewModel = StateObject(wrappedValue: AuthViewModel(authService: authService))
+        self.onBrowseAsGuest = onBrowseAsGuest
     }
 
     var body: some View {
@@ -27,6 +29,9 @@ struct AuthView: View {
                     googleButton
                 }
                 switchButton
+                Button("Browse without an account", action: onBrowseAsGuest)
+                    .font(.subheadline)
+                    .disabled(viewModel.isSubmitting)
             }
             .padding(Spacing.lg)
         }

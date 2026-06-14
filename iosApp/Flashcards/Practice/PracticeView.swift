@@ -10,13 +10,22 @@ struct PracticeView: View {
     @StateObject private var viewModel: PracticeViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var showHelp = false
+    @State private var showSavePrompt = false
 
-    init(flashcardRepository: FlashcardRepository, sessionRepository: PracticeSessionRepository, entry: PracticeEntry) {
+    init(
+        flashcardRepository: FlashcardRepository,
+        sessionRepository: PracticeSessionRepository,
+        entry: PracticeEntry,
+        apiClient: FlashcardApiClient? = nil,
+        authService: AuthService? = nil
+    ) {
         _viewModel = StateObject(
             wrappedValue: PracticeViewModel(
                 flashcardRepository: flashcardRepository,
                 sessionRepository: sessionRepository,
-                entry: entry
+                entry: entry,
+                apiClient: apiClient,
+                authService: authService
             )
         )
     }
@@ -34,10 +43,14 @@ struct PracticeView: View {
             content
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { dismiss() }
+                        Button("Close") { handleClose() }
                     }
-                    if isClassic {
-                        ToolbarItem(placement: .topBarTrailing) {
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        if let deckId = viewModel.shareDeckId, let url = shareURL(deckId) {
+                            ShareLink(item: url) { Image(systemName: "square.and.arrow.up") }
+                                .accessibilityLabel("Share deck")
+                        }
+                        if isClassic {
                             Button { showHelp = true } label: { Image(systemName: "questionmark.circle") }
                                 .accessibilityLabel("How to practice")
                         }
@@ -48,8 +61,25 @@ struct PracticeView: View {
                 } message: {
                     Text("Tap a card to flip it.\nSwipe right if you got it, left if you need more practice.")
                 }
+                .sheet(isPresented: $showSavePrompt) {
+                    GuestSavePromptView(viewModel: viewModel, onLeave: { dismiss() }, onCancel: { showSavePrompt = false })
+                }
+                .onChange(of: viewModel.saveState) { _, newValue in
+                    // A successful save signs the user in; leave the practice screen so RootView swaps
+                    // to the main tabs (the saved session shows under "Continue studying").
+                    if newValue == .saved { dismiss() }
+                }
                 .task { await viewModel.start() }
         }
+    }
+
+    /// Guests with progress get the save prompt before leaving; everyone else just dismisses.
+    private func handleClose() {
+        if viewModel.shouldPromptSave { showSavePrompt = true } else { dismiss() }
+    }
+
+    private func shareURL(_ deckId: Int64) -> URL? {
+        URL(string: "\(AppConfig.webAppBaseURL)/decks/\(deckId)/practice")
     }
 
     @ViewBuilder private var content: some View {
