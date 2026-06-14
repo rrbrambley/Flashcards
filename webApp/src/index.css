@@ -767,3 +767,33 @@ button.danger:hover:not(:disabled) {
   font-size: 0.85rem;
   color: var(--muted);
 }
+
+/* Guest catalog + save-on-signup modal (FLA-101) */
+.catalog-intro {
+  margin: 0 0 1rem;
+}
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 50;
+}
+.modal-card {
+  width: 100%;
+  max-width: 22rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+.modal-card h2 {
+  margin-top: 0;
+}
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+}

@@ -93,6 +93,39 @@ object DeckRepository {
             ?.toDeckDtoWithCards(userId, canManageGlobal)
     }
 
+    /**
+     * One page of the global (NULL owner) catalog, newest first — the **public** guest-mode catalog
+     * (no authentication). Only ever exposes ownerless decks, always read-only (`editable = false`).
+     */
+    suspend fun listCatalogDecks(limit: Int, cursor: String?): Page<FlashcardDeckDto> = dbQuery {
+        val afterId = cursor?.let {
+            Cursor.decode(it).toLongOrNull() ?: throw IllegalArgumentException("Invalid pagination cursor")
+        }
+        val query = Decks.selectAll().where { Decks.ownerUserId.isNull() }
+        if (afterId != null) {
+            query.andWhere { Decks.id less afterId }
+        }
+        val rows = query
+            .orderBy(Decks.id to SortOrder.DESC)
+            .limit(limit + 1)
+            .toList()
+
+        val pageRows = rows.take(limit)
+        val nextCursor = if (rows.size > limit) Cursor.encode(pageRows.last()[Decks.id].value.toString()) else null
+        Page(items = pageRows.map { it.toCatalogDeckDto() }, nextCursor = nextCursor)
+    }
+
+    /**
+     * A single global (NULL owner) catalog deck with its cards, for the **public** guest catalog.
+     * Returns null for a non-existent or **user-owned** deck, so a guest can never read a private deck.
+     */
+    suspend fun getCatalogDeck(deckId: Long): FlashcardDeckDto? = dbQuery {
+        Decks.selectAll()
+            .where { (Decks.id eq deckId) and Decks.ownerUserId.isNull() }
+            .firstOrNull()
+            ?.toCatalogDeckDto()
+    }
+
     suspend fun createDeck(userId: Long, request: CreateDeckRequest): FlashcardDeckDto = dbQuery {
         val tags = Validation.normalizeTags(request.tags)
         val deckId = Decks.insertAndGetId {
@@ -169,6 +202,22 @@ object DeckRepository {
                 it[position] = index
             }
         }
+    }
+
+    /** A read-only DTO (cards included, `editable = false`) for the public catalog. */
+    private fun ResultRow.toCatalogDeckDto(): FlashcardDeckDto {
+        val deckId = this[Decks.id].value
+        val cards = Flashcards.selectAll()
+            .where { Flashcards.deckId eq deckId }
+            .orderBy(Flashcards.position to SortOrder.ASC)
+            .map { it.toFlashcardDto() }
+        return FlashcardDeckDto(
+            id = deckId,
+            title = this[Decks.title],
+            flashcards = cards,
+            editable = false,
+            tags = DeckTags.decode(this[Decks.tags]),
+        )
     }
 
     private fun ResultRow.toDeckDtoWithCards(userId: Long, canManageGlobal: Boolean): FlashcardDeckDto {

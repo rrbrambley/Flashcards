@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.backend.plugins
 import com.rrbrambley.flashcards.backend.admin.adminRoutes
 import com.rrbrambley.flashcards.backend.auth.authRoutes
 import com.rrbrambley.flashcards.backend.auth.authenticatedAuthRoutes
+import com.rrbrambley.flashcards.backend.decks.catalogRoutes
 import com.rrbrambley.flashcards.backend.decks.deckRoutes
 import com.rrbrambley.flashcards.backend.health.healthRoutes
 import com.rrbrambley.flashcards.backend.home.homeRoutes
@@ -17,6 +18,8 @@ fun Application.configureRouting() {
     routing {
         // Public, unauthenticated probe for load balancers / orchestrators.
         healthRoutes()
+        // Public, read-only global catalog for guest mode (browse + practice without an account).
+        catalogRoutes()
         // Throttle the unauthenticated auth endpoints per IP.
         rateLimit(AUTH_RATE_LIMIT) {
             authRoutes()
