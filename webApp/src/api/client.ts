@@ -186,6 +186,10 @@ export const api = {
   // One page of the global (ownerless) catalog — server-gated on manage_global_decks (admin view).
   getGlobalDecks: (params: { limit?: number; cursor?: string } = {}) =>
     request<Page<FlashcardDeckDto>>(`/decks/global${buildQuery(params)}`, { auth: true }),
+  // Public, unauthenticated guest-mode catalog (browse + practice without an account). Read-only.
+  getCatalog: (params: { limit?: number; cursor?: string } = {}) =>
+    request<Page<FlashcardDeckDto>>(`/catalog${buildQuery(params)}`),
+  getCatalogDeck: (id: number) => request<FlashcardDeckDto>(`/catalog/${id}`),
   getDeck: (id: number) => request<FlashcardDeckDto>(`/decks/${id}`, { auth: true }),
   createDeck: (deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>('/decks', { method: 'POST', body: deck, auth: true }),

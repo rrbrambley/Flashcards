@@ -7,8 +7,24 @@ import { api } from '../api/client';
 import type { FlashcardDto, PracticeSessionDto } from '../api/types';
 
 vi.mock('../api/client', () => ({
-  api: { createSession: vi.fn(), getDeck: vi.fn(), updateProgress: vi.fn(), completeSession: vi.fn() },
+  ApiError: class ApiError extends Error {},
+  api: {
+    createSession: vi.fn(),
+    getDeck: vi.fn(),
+    getCatalogDeck: vi.fn(),
+    updateProgress: vi.fn(),
+    completeSession: vi.fn(),
+    register: vi.fn(),
+  },
 }));
+
+// Default: signed in. Guest tests set mockToken = null. applyAuth/token come from the auth context.
+let mockToken: string | null = 'test-token';
+const applyAuth = vi.fn();
+vi.mock('../auth/auth-context', () => ({
+  useAuth: () => ({ token: mockToken, applyAuth }),
+}));
+vi.mock('../auth/token', () => ({ setTokens: vi.fn() }));
 
 const session = (over: Partial<PracticeSessionDto> = {}): PracticeSessionDto => ({
   id: 1,
@@ -46,7 +62,10 @@ const threeCards: FlashcardDto[] = [
 ];
 
 describe('PracticePage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockToken = 'test-token';
+  });
 
   it('starts a session in the default (classic) mode and shows the (resumed) current card', async () => {
     setup(threeCards, { currentCardIndex: 1 });
@@ -163,5 +182,87 @@ describe('PracticePage', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('offline')).toBeInTheDocument();
+  });
+
+  describe('guest mode (no account)', () => {
+    function guestSetup(cards: FlashcardDto[]) {
+      mockToken = null;
+      vi.mocked(api.getCatalogDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: false, flashcards: cards });
+      render(
+        <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
+          <Routes>
+            <Route path="/decks/:id/practice" element={<PracticePage />} />
+            <Route path="/" element={<div>catalog</div>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    }
+
+    it('practices session-less: loads via the public catalog and never creates/persists a session', async () => {
+      guestSetup(threeCards);
+      await screen.findByText('Q1');
+
+      expect(api.getCatalogDeck).toHaveBeenCalledWith(5);
+      expect(api.createSession).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+
+      expect(await screen.findByText('Q2')).toBeInTheDocument();
+      expect(api.updateProgress).not.toHaveBeenCalled();
+    });
+
+    it('prompts to save when leaving an in-progress session', async () => {
+      guestSetup(threeCards);
+      await screen.findByText('Q1');
+      // Advance one card so there is progress to lose.
+      await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+      await screen.findByText('Q2');
+
+      await userEvent.click(screen.getByRole('button', { name: /Catalog/ }));
+
+      expect(await screen.findByText('Save your progress?')).toBeInTheDocument();
+    });
+
+    it('"Leave without saving" abandons progress and returns to the catalog', async () => {
+      guestSetup(threeCards);
+      await screen.findByText('Q1');
+      await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+      await screen.findByText('Q2');
+
+      await userEvent.click(screen.getByRole('button', { name: /Catalog/ }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Leave without saving' }));
+
+      expect(await screen.findByText('catalog')).toBeInTheDocument();
+    });
+
+    it('save-on-signup: registers, creates the session, and pushes the current progress', async () => {
+      guestSetup(threeCards);
+      vi.mocked(api.register).mockResolvedValue({ accessToken: 'a', refreshToken: 'r', userId: 1, permissions: [] });
+      vi.mocked(api.createSession).mockResolvedValue(session({ id: 99 }));
+      vi.mocked(api.updateProgress).mockResolvedValue(session({ id: 99 }));
+      await screen.findByText('Q1');
+      await userEvent.click(screen.getByRole('button', { name: /Got it/ })); // now on card index 1
+      await screen.findByText('Q2');
+
+      await userEvent.click(screen.getByRole('button', { name: /Catalog/ }));
+      await userEvent.type(screen.getByLabelText('Email'), 'new@user.com');
+      await userEvent.type(screen.getByLabelText('Password'), 'password1');
+      await userEvent.click(screen.getByRole('button', { name: 'Create account & save' }));
+
+      await vi.waitFor(() => expect(api.register).toHaveBeenCalledWith('new@user.com', 'password1'));
+      expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards');
+      expect(api.updateProgress).toHaveBeenCalledWith(99, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
+      expect(applyAuth).toHaveBeenCalled();
+    });
+
+    it('does not prompt when leaving before answering anything', async () => {
+      guestSetup(threeCards);
+      await screen.findByText('Q1');
+
+      await userEvent.click(screen.getByRole('button', { name: /Catalog/ }));
+
+      expect(await screen.findByText('catalog')).toBeInTheDocument();
+      expect(screen.queryByText('Save your progress?')).not.toBeInTheDocument();
+    });
   });
 });

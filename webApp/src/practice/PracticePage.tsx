@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../auth/auth-context';
 import type { FlashcardDeckDto, FlashcardDto, PracticeSessionDto } from '../api/types';
 import { BackHeader } from '../decks/BackHeader';
 import { ModeChooser } from './ModeChooser';
 import { DEFAULT_MODE, findMode, PRACTICE_MODES } from './modes';
 import type { PracticeMode } from './modes/types';
+import { ShareButton } from './ShareButton';
+import { SavePrompt } from './SavePrompt';
 import { initPractice, practiceReducer } from './practiceReducer';
 
 // Resolves the practice mode from the `?mode=` query param. When the deck has only one registered
@@ -21,33 +24,48 @@ export function PracticePage() {
   return <PracticeSession key={mode.key} deckId={deckId} mode={mode} />;
 }
 
+type Progress = Pick<PracticeSessionDto, 'currentCardIndex' | 'numCorrect' | 'numIncorrect'>;
+
 interface LoadedPractice {
-  sessionId: number;
+  // Null for a guest (no account): practice runs entirely in-memory and is never persisted.
+  sessionId: number | null;
   deckTitle: string;
   cards: FlashcardDto[];
-  session: PracticeSessionDto;
+  progress: Progress;
 }
+
+const ZERO_PROGRESS: Progress = { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 };
 
 function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode }) {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const isGuest = !token;
   const [reloadToken, setReloadToken] = useState(0);
   const [data, setData] = useState<LoadedPractice | null>(null);
   const [error, setError] = useState<string | null>(null);
-  // Derived loading: true until the resolve for the current reloadToken lands, so the
-  // effect doesn't have to setState synchronously to show the loading state on reload.
   const [loadedToken, setLoadedToken] = useState(-1);
   const loading = loadedToken !== reloadToken;
-  // Dedupe the start-session request across React StrictMode's double-invoked effect (and
-  // rapid remounts): both runs share one in-flight createSession, so we never create
-  // duplicate sessions for the same (deck, mode).
-  const loadRef = useRef<{ key: string; promise: Promise<[PracticeSessionDto, FlashcardDeckDto]> } | null>(null);
+  const loadRef = useRef<{ key: string; promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto]> } | null>(null);
+
+  // Latest in-memory progress, mirrored here so the back/close guard can read it without re-rendering.
+  const progressRef = useRef<{ progress: Progress; status: 'practicing' | 'completed' }>({
+    progress: ZERO_PROGRESS,
+    status: 'practicing',
+  });
+  const [guestHasUnsaved, setGuestHasUnsaved] = useState(false);
+  // Non-null while the "save your progress?" prompt is open; holds the snapshot to persist on signup.
+  const [savePromptProgress, setSavePromptProgress] = useState<Progress | null>(null);
 
   useEffect(() => {
     let active = true;
-    const key = `${deckId}:${mode.key}:${reloadToken}`;
+    const key = `${deckId}:${mode.key}:${reloadToken}:${isGuest}`;
     if (loadRef.current?.key !== key) {
-      // createSession starts a fresh session or resumes the deck's active one for this mode.
-      loadRef.current = { key, promise: Promise.all([api.createSession(deckId, mode.key), api.getDeck(deckId)]) };
+      // Guests load the deck from the public catalog and never create a session; signed-in users
+      // create/resume a server session (which carries any existing progress for this deck + mode).
+      const promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto]> = isGuest
+        ? api.getCatalogDeck(deckId).then((deck) => [null, deck])
+        : Promise.all([api.createSession(deckId, mode.key), api.getDeck(deckId)]);
+      loadRef.current = { key, promise };
     }
     loadRef.current.promise
       .then(([session, deck]) => {
@@ -56,7 +74,12 @@ function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode 
           setError('This deck has no cards to practice.');
         } else {
           setError(null);
-          setData({ sessionId: session.id, deckTitle: deck.title, cards: deck.flashcards, session });
+          setData({
+            sessionId: session?.id ?? null,
+            deckTitle: deck.title,
+            cards: deck.flashcards,
+            progress: session ?? ZERO_PROGRESS,
+          });
         }
         setLoadedToken(reloadToken);
       })
@@ -68,11 +91,48 @@ function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode 
     return () => {
       active = false;
     };
-  }, [deckId, mode.key, reloadToken]);
+  }, [deckId, mode.key, reloadToken, isGuest]);
+
+  const onProgress = useCallback(
+    (progress: Progress, status: 'practicing' | 'completed') => {
+      progressRef.current = { progress, status };
+      const touched = progress.currentCardIndex > 0 || progress.numCorrect > 0 || progress.numIncorrect > 0;
+      setGuestHasUnsaved(isGuest && status === 'practicing' && touched);
+    },
+    [isGuest],
+  );
+
+  // Warn on tab close / reload while a guest has unsaved progress.
+  useEffect(() => {
+    if (!guestHasUnsaved) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [guestHasUnsaved]);
+
+  const leaveTo = isGuest ? '/' : '/library';
+
+  const requestExit = () => {
+    const { progress, status } = progressRef.current;
+    const touched = progress.currentCardIndex > 0 || progress.numCorrect > 0 || progress.numIncorrect > 0;
+    if (isGuest && status === 'practicing' && touched) {
+      setSavePromptProgress(progress);
+    } else {
+      navigate(leaveTo);
+    }
+  };
 
   return (
     <div className="app">
-      <BackHeader title={(!loading && data?.deckTitle) || 'Practice'} />
+      <BackHeader
+        title={(!loading && data?.deckTitle) || 'Practice'}
+        backLabel={isGuest ? 'Catalog' : 'Library'}
+        onBack={requestExit}
+        right={<ShareButton deckId={deckId} title={data?.deckTitle} className="link-btn" />}
+      />
       <main className="container">
         {loading ? (
           <p className="muted">Loading…</p>
@@ -85,37 +145,55 @@ function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode 
             key={reloadToken}
             sessionId={data.sessionId}
             cards={data.cards}
-            session={data.session}
+            progress={data.progress}
             mode={mode}
+            onProgress={onProgress}
             onAgain={() => setReloadToken((t) => t + 1)}
-            onExit={() => navigate('/library')}
+            onExit={() => navigate(leaveTo)}
           />
         )}
       </main>
+
+      {savePromptProgress && (
+        <SavePrompt
+          deckId={deckId}
+          mode={mode.key}
+          progress={savePromptProgress}
+          onCancel={() => setSavePromptProgress(null)}
+          onLeave={() => navigate(leaveTo)}
+        />
+      )}
     </div>
   );
 }
 
 interface PracticeRunnerProps {
-  sessionId: number;
+  sessionId: number | null;
   cards: FlashcardDto[];
-  session: PracticeSessionDto;
+  progress: Progress;
   mode: PracticeMode;
+  onProgress: (progress: Progress, status: 'practicing' | 'completed') => void;
   onAgain: () => void;
   onExit: () => void;
 }
 
-// Mode-agnostic session loop: owns progress/score (reducer), best-effort persistence, and the
-// completion summary. The current mode renders the card and reports each outcome via onResult.
-function PracticeRunner({ sessionId, cards, session, mode, onAgain, onExit }: PracticeRunnerProps) {
-  const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, session));
+// Mode-agnostic session loop: owns progress/score (reducer), best-effort persistence (signed-in
+// only), and the completion summary. The current mode renders the card and reports each outcome.
+function PracticeRunner({ sessionId, cards, progress, mode, onProgress, onAgain, onExit }: PracticeRunnerProps) {
+  const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, progress));
+
+  // Mirror progress up so the parent's leave-guard can read it (and persist on guest save).
+  useEffect(() => {
+    onProgress({ currentCardIndex: state.index, numCorrect: state.numCorrect, numIncorrect: state.numIncorrect }, state.status);
+  }, [state, onProgress]);
 
   const mark = useCallback(
     (correct: boolean) => {
       if (state.status !== 'practicing') return;
       const wasLast = state.index >= state.cards.length - 1;
       dispatch({ type: correct ? 'MARK_CORRECT' : 'MARK_INCORRECT' });
-      // Best-effort persistence (mirrors Android): never block the UI on the network.
+      // Best-effort persistence (signed-in only; guests have no session). Never block the UI.
+      if (sessionId == null) return;
       if (wasLast) {
         api.completeSession(sessionId).catch(() => {});
       } else {
@@ -145,7 +223,7 @@ function PracticeRunner({ sessionId, cards, session, mode, onAgain, onExit }: Pr
         <div className="practice-actions">
           <button onClick={onAgain}>Practice again</button>
           <button className="secondary" onClick={onExit}>
-            Back to library
+            Done
           </button>
         </div>
       </div>

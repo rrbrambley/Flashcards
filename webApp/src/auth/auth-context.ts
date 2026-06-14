@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react';
+import type { AuthResponse } from '../api/types';
 
 export interface AuthContextValue {
   token: string | null;
@@ -9,6 +10,12 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   googleSignIn: (idToken: string) => Promise<void>;
+  /**
+   * Apply an already-obtained auth response (tokens + permissions) to the in-memory auth state.
+   * Used by the guest "save my session" flow, which registers and persists a session *before*
+   * flipping auth state so the route tree only swaps once the save is durable.
+   */
+  applyAuth: (auth: AuthResponse) => void;
   signOut: () => void;
 }
 

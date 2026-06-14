@@ -675,6 +675,47 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun catalog_is_public_and_lists_global_decks_without_auth() = runApp { client ->
+        // No bearer token — guest mode (FLA-101).
+        val response = client.get("/catalog?limit=100")
+        assertEquals(HttpStatusCode.OK, response.status)
+        val decks = response.decode<Page<FlashcardDeckDto>>().items
+
+        val flags = decks.single { it.title == "Flags of the World" }
+        assertTrue(flags.flashcards.size >= 200)
+        // The public catalog is always read-only.
+        assertTrue(decks.all { !it.editable })
+    }
+
+    @Test
+    fun catalog_returns_a_single_global_deck_with_cards_without_auth() = runApp { client ->
+        // Resolve a global deck id via the public list, then fetch it directly — both unauthenticated.
+        val flags = client.get("/catalog?limit=100").decode<Page<FlashcardDeckDto>>()
+            .items.single { it.title == "Flags of the World" }
+
+        val response = client.get("/catalog/${flags.id}")
+        assertEquals(HttpStatusCode.OK, response.status)
+        val deck = response.decode<FlashcardDeckDto>()
+        assertEquals("Flags of the World", deck.title)
+        assertTrue(deck.flashcards.isNotEmpty())
+        assertFalse(deck.editable)
+    }
+
+    @Test
+    fun catalog_hides_private_user_decks() = runApp { client ->
+        // A user creates a private deck; its id must NOT be readable via the public catalog.
+        val auth = client.register("private", "password1")
+        val userDeck = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("My secret deck", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+
+        val response = client.get("/catalog/${userDeck.id}")
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
     fun decks_reject_a_malformed_cursor() = runApp { client ->
         val auth = client.register("perry", "password1")
         val response = client.get("/decks?cursor=not%20a%20cursor!") { bearerAuth(auth.accessToken) }
