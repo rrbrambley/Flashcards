@@ -51,11 +51,14 @@ import com.rrbrambley.flashcards.auth.ui.AuthHost
 import com.rrbrambley.flashcards.create.ui.CreateDeckScreen
 import com.rrbrambley.flashcards.create.ui.CreateDeckViewModel
 import com.rrbrambley.flashcards.edit.ui.EditDeckActivity
+import com.rrbrambley.flashcards.guest.ui.GuestCatalogScreen
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.library.ui.LibraryScreen
 import com.rrbrambley.flashcards.practice.ui.FlashcardsActivity
+import com.rrbrambley.flashcards.practice.ui.PracticeMode
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
+import androidx.compose.material3.TextButton
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -71,10 +74,20 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Gates the app: logged-out shows the auth flow; logged-in shows the main scaffolding. */
+/**
+ * Gates the app: logged-out shows the auth flow (or the guest catalog, if the user chose to browse
+ * without an account); logged-in shows the main scaffolding.
+ */
 @Composable
 private fun FlashcardsApp(authViewModel: AuthViewModel = hiltViewModel()) {
     val authState by authViewModel.authState.collectAsState()
+    var browsingAsGuest by rememberSaveable { mutableStateOf(false) }
+
+    // Once signed in, drop the guest flag so a later logout returns to the auth screen, not the catalog.
+    LaunchedEffect(authState) {
+        if (authState == AuthState.LoggedIn) browsingAsGuest = false
+    }
+
     when (authState) {
         AuthState.Loading -> Box(
             modifier = Modifier.fillMaxSize(),
@@ -83,12 +96,59 @@ private fun FlashcardsApp(authViewModel: AuthViewModel = hiltViewModel()) {
             CircularProgressIndicator()
         }
 
-        AuthState.LoggedOut -> AuthHost(
-            authViewModel = authViewModel,
-            modifier = Modifier.fillMaxSize(),
-        )
+        AuthState.LoggedOut -> if (browsingAsGuest) {
+            GuestScaffolding(onSignIn = { browsingAsGuest = false })
+        } else {
+            AuthHost(
+                authViewModel = authViewModel,
+                modifier = Modifier.fillMaxSize(),
+                onBrowseAsGuest = { browsingAsGuest = true },
+            )
+        }
 
         AuthState.LoggedIn -> HomeScaffolding()
+    }
+}
+
+/** The guest shell: the public catalog with a "Sign in" affordance; tapping a deck starts practice. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GuestScaffolding(onSignIn: () -> Unit) {
+    val context = LocalContext.current
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.guest_catalog_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+                actions = {
+                    TextButton(onClick = onSignIn) {
+                        Text(stringResource(R.string.guest_sign_in))
+                    }
+                },
+            )
+        },
+    ) { innerPadding ->
+        GuestCatalogScreen(
+            modifier = Modifier.padding(innerPadding).fillMaxSize(),
+            onPracticeDeck = { deck ->
+                val intent = Intent(context, FlashcardsActivity::class.java).apply {
+                    putExtra(FlashcardsActivity.DECK_ID_EXTRA, deck.id)
+                    putExtra(FlashcardsActivity.GUEST_EXTRA, true)
+                    putExtra(FlashcardsActivity.MODE_EXTRA, PracticeMode.CLASSIC.key)
+                }
+                context.startActivity(intent)
+            },
+        )
     }
 }
 

@@ -38,6 +38,27 @@ class FlashcardApiClientTest {
     }
 
     @Test
+    fun getCatalog_getsCatalogWithoutABearer() = runTest {
+        // Guest mode: even with a token available, the public catalog must not require/break on auth.
+        val engine = jsonEngine(EMPTY_PAGE)
+        apiClient(engine, token = null).getCatalog()
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Get, request.method)
+        assertEquals("/catalog", request.url.encodedPath)
+        assertNull(request.headers[HttpHeaders.Authorization])
+    }
+
+    @Test
+    fun getCatalogDeck_targetsTheCatalogDeckPath() = runTest {
+        val engine = jsonEngine("""{"id":7,"title":"Capitals","flashcards":[],"editable":false}""")
+        val deck = apiClient(engine, token = null).getCatalogDeck(7L)
+
+        assertEquals("/catalog/7", engine.requestHistory.last().url.encodedPath)
+        assertEquals("Capitals", deck.title)
+    }
+
+    @Test
     fun createDeck_postsToDecks() = runTest {
         val engine = jsonEngine("""{"id":1,"title":"T","flashcards":[]}""")
         apiClient(engine).createDeck(CreateDeckRequest("T", emptyList()))

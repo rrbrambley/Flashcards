@@ -1,5 +1,8 @@
 package com.rrbrambley.flashcards.practice.ui
 
+import android.content.Context
+import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,8 +44,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.rrbrambley.flashcards.BuildConfig
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,22 +70,50 @@ import com.rrbrambley.flashcards.shared.domain.Flashcard
 fun FlashcardsScreen(
     sessionId: Long? = null,
     deckId: Long? = null,
+    isGuest: Boolean = false,
+    mode: String = PracticeMode.CLASSIC.key,
     flashcardsViewModel: FlashcardsViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
 ) {
-    LaunchedEffect(sessionId, deckId) {
-        flashcardsViewModel.load(sessionId, deckId)
+    LaunchedEffect(sessionId, deckId, isGuest, mode) {
+        flashcardsViewModel.load(sessionId, deckId, isGuest, mode)
     }
     val flashcardsState by flashcardsViewModel.uiState.collectAsState()
+    val saveState by flashcardsViewModel.saveState.collectAsState()
+    val context = LocalContext.current
     var showHelpDialog by remember { mutableStateOf(false) }
+    var showSavePrompt by remember { mutableStateOf(false) }
 
     // The help copy explains flip/swipe, so it's only offered in Classic mode.
     val isClassic = (flashcardsState as? FlashcardsUiState.ShowFlashcard)?.mode?.let {
         it == PracticeMode.CLASSIC.key
     } ?: true
+    // Share is available once a deck is loaded (a card is showing or the session is complete).
+    val canShare = flashcardsState is FlashcardsUiState.ShowFlashcard ||
+        flashcardsState is FlashcardsUiState.SessionCompleted
+
+    // A guest leaving mid-session is offered the save prompt; everyone else just exits.
+    val handleExit = {
+        if (flashcardsViewModel.shouldPromptSave()) showSavePrompt = true else onBack()
+    }
+    BackHandler(onBack = handleExit)
+
+    // When the guest finishes creating an account, the save is done — leave the practice screen
+    // (the app is now signed in, so MainActivity shows the saved session under "Continue studying").
+    LaunchedEffect(saveState) {
+        if (saveState is GuestSaveState.Saved) onBack()
+    }
 
     if (showHelpDialog) {
         FlashcardsHelpDialog(onDismissRequest = { showHelpDialog = false })
+    }
+    if (showSavePrompt) {
+        GuestSavePromptDialog(
+            saveState = saveState,
+            onSave = { email, password -> flashcardsViewModel.saveProgressByCreatingAccount(email, password) },
+            onLeave = onBack,
+            onCancel = { showSavePrompt = false },
+        )
     }
 
     Scaffold(
@@ -91,11 +127,16 @@ fun FlashcardsScreen(
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = handleExit) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
                     }
                 },
                 actions = {
+                    if (canShare) {
+                        IconButton(onClick = { shareDeck(context, flashcardsViewModel.sharedDeck()) }) {
+                            Icon(Icons.Default.Share, contentDescription = stringResource(R.string.practice_cd_share))
+                        }
+                    }
                     if (isClassic) {
                         IconButton(onClick = { showHelpDialog = true }) {
                             Icon(Icons.Default.Info, contentDescription = stringResource(R.string.practice_help_title))
@@ -142,6 +183,78 @@ fun FlashcardsScreen(
             }
         }
     }
+}
+
+/** Shares a public web link to practice this deck (FLA-103); a recipient can practice it as a guest. */
+private fun shareDeck(context: Context, deck: Pair<Long, String>?) {
+    val (id, title) = deck ?: return
+    val url = "${BuildConfig.WEB_APP_BASE_URL}/decks/$id/practice"
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.share_deck_subject, title))
+        putExtra(Intent.EXTRA_TEXT, url)
+    }
+    context.startActivity(Intent.createChooser(send, context.getString(R.string.share_deck_chooser)))
+}
+
+/** Guest "save your progress?" prompt: register inline to keep the in-progress session (FLA-103). */
+@Composable
+private fun GuestSavePromptDialog(
+    saveState: GuestSaveState,
+    onSave: (String, String) -> Unit,
+    onLeave: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    val saving = saveState is GuestSaveState.Saving
+
+    AlertDialog(
+        onDismissRequest = { if (!saving) onCancel() },
+        title = { Text(stringResource(R.string.guest_save_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.guest_save_message))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text(stringResource(R.string.auth_email_label)) },
+                    singleLine = true,
+                    enabled = !saving,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text(stringResource(R.string.auth_password_label)) },
+                    singleLine = true,
+                    enabled = !saving,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (saveState is GuestSaveState.Error) {
+                    Text(
+                        text = saveState.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(email.trim(), password) },
+                enabled = !saving && email.isNotBlank() && password.isNotBlank(),
+            ) {
+                Text(stringResource(R.string.guest_save_submit))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onLeave, enabled = !saving) {
+                Text(stringResource(R.string.guest_save_leave))
+            }
+        },
+    )
 }
 
 @Composable

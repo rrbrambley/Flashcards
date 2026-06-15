@@ -7,6 +7,21 @@
     <string name="action_cancel">Cancel</string>
     <string name="action_delete">Delete</string>
     <string name="action_log_in">Log in</string>
+
+    <!-- Guest mode (browse + practice without an account) -->
+    <string name="auth_browse_as_guest">Browse without an account</string>
+    <string name="guest_catalog_title">Pick a deck</string>
+    <string name="guest_catalog_subtitle">Start studying — no account needed.</string>
+    <string name="guest_sign_in">Sign in</string>
+    <string name="guest_catalog_empty">No decks are available yet.</string>
+    <string name="guest_catalog_error">Couldn\'t load the deck catalog. Check your connection and try again.</string>
+    <string name="practice_cd_share">Share deck</string>
+    <string name="share_deck_subject">Practice %1$s on Flashcards</string>
+    <string name="share_deck_chooser">Share deck</string>
+    <string name="guest_save_title">Save your progress?</string>
+    <string name="guest_save_message">You\'ll lose your progress if you leave. Create an account to save this session.</string>
+    <string name="guest_save_submit">Create account &amp; save</string>
+    <string name="guest_save_leave">Leave without saving</string>
     <string name="cd_add_flashcard">Add flashcard</string>
     <plurals name="deck_card_count">
         <item quantity="one">%1$d card</item>
