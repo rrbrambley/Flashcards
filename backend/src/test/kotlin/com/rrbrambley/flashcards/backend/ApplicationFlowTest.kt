@@ -16,6 +16,8 @@ import com.rrbrambley.flashcards.backend.cli.UserCreateCommand
 import com.rrbrambley.flashcards.backend.cli.UserDeleteCommand
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.db.Decks
+import com.rrbrambley.flashcards.backend.db.Flashcards
 import com.rrbrambley.flashcards.backend.db.Roles
 import com.rrbrambley.flashcards.backend.db.UserRoles
 import com.rrbrambley.flashcards.backend.db.Users
@@ -69,9 +71,12 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import kotlin.test.Test
@@ -666,6 +671,9 @@ class ApplicationFlowTest {
 
         val currencies = decks.single { it.title == "World Currencies" }
         assertTrue(currencies.flashcards.size >= 190)
+        // FLA-100: answers are the bare currency name, with no nationality/demonym.
+        assertEquals("Afghani", currencies.flashcards.single { it.question == "Afghanistan" }.answer)
+        assertTrue(currencies.flashcards.none { it.answer == "Afghan afghani" })
 
         // All three are text-only: a non-empty front and back, no images.
         for (deck in listOf(stateCapitals, capitals, currencies)) {
@@ -699,6 +707,36 @@ class ApplicationFlowTest {
         assertEquals("Flags of the World", deck.title)
         assertTrue(deck.flashcards.isNotEmpty())
         assertFalse(deck.editable)
+    }
+
+    @Test
+    fun seed_reconcilesAStaleGlobalCatalogDeck() {
+        fun afghanistanCurrency(): String = transaction {
+            val deckId = Decks.selectAll()
+                .where { Decks.ownerUserId.isNull() and (Decks.title eq DatabaseFactory.WORLD_CURRENCIES_TITLE) }
+                .first()[Decks.id].value
+            Flashcards.selectAll()
+                .where { (Flashcards.deckId eq deckId) and (Flashcards.question eq "Afghanistan") }
+                .first()[Flashcards.answer]
+        }
+
+        // Simulate a DB seeded before FLA-100: stomp a currency back to the old nationality form.
+        transaction {
+            val deckId = Decks.selectAll()
+                .where { Decks.ownerUserId.isNull() and (Decks.title eq DatabaseFactory.WORLD_CURRENCIES_TITLE) }
+                .first()[Decks.id].value
+            Flashcards.update({ (Flashcards.deckId eq deckId) and (Flashcards.question eq "Afghanistan") }) {
+                it[Flashcards.answer] = "Afghan afghani"
+            }
+        }
+        assertEquals("Afghan afghani", afghanistanCurrency())
+
+        // A normal app boot re-runs seeding, which reconciles the catalog deck back to the code seed.
+        DatabaseFactory.init(
+            DbConfig(jdbcUrl = postgres.jdbcUrl, user = postgres.username, password = postgres.password),
+        )
+
+        assertEquals("Afghani", afghanistanCurrency())
     }
 
     @Test

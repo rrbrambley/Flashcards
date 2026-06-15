@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
+import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
@@ -199,18 +200,42 @@ object DatabaseFactory {
      * that title already exists. Guarded so restarts don't duplicate it; rebuilt on a reset + reseed.
      */
     private fun seedGlobalDeck(now: Long, title: String, cards: List<SeedCard>, tags: List<String> = emptyList()) {
-        val exists = Decks
+        val existing = Decks
             .selectAll()
             .where { (Decks.ownerUserId eq null) and (Decks.title eq title) }
-            .any()
-        if (exists) return
+            .firstOrNull()
 
-        val deckId = Decks.insertAndGetId {
-            it[Decks.title] = title
-            it[ownerUserId] = null
-            it[createdAtMillis] = now
-            it[Decks.tags] = DeckTags.encode(tags)
-        }.value
+        if (existing == null) {
+            val deckId = Decks.insertAndGetId {
+                it[Decks.title] = title
+                it[ownerUserId] = null
+                it[createdAtMillis] = now
+                it[Decks.tags] = DeckTags.encode(tags)
+            }.value
+            insertCards(deckId, cards)
+            return
+        }
+
+        // The starter catalog is code-owned, so keep an already-seeded deck in sync with the seed —
+        // edits to the seed data (e.g. FLA-100's currency names) must propagate to existing databases,
+        // not just fresh ones. Cards/tags are rewritten only when they differ (no churn on boot);
+        // replacing cards never touches practice sessions (those reference the deck, not its cards).
+        val deckId = existing[Decks.id].value
+        if (DeckTags.decode(existing[Decks.tags]) != tags) {
+            Decks.update({ Decks.id eq deckId }) { it[Decks.tags] = DeckTags.encode(tags) }
+        }
+        val currentCards = Flashcards
+            .selectAll()
+            .where { Flashcards.deckId eq deckId }
+            .orderBy(Flashcards.position to SortOrder.ASC)
+            .map { SeedCard(it[Flashcards.question], it[Flashcards.answer], it[Flashcards.imageUrl]) }
+        if (currentCards != cards) {
+            Flashcards.deleteWhere { Flashcards.deckId eq deckId }
+            insertCards(deckId, cards)
+        }
+    }
+
+    private fun insertCards(deckId: Long, cards: List<SeedCard>) {
         cards.forEachIndexed { index, card ->
             Flashcards.insert {
                 it[Flashcards.deckId] = deckId
