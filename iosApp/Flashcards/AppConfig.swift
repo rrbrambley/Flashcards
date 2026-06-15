@@ -16,4 +16,8 @@ enum AppConfig {
     static var googleIOSClientID: String {
         (Bundle.main.object(forInfoDictionaryKey: "GoogleIOSClientID") as? String) ?? ""
     }
+
+    /// Base URL of the web app, used to build shareable deck links (guest mode). Defaults to the dev
+    /// server; a real deployment should point this at the deployed web app.
+    static var webAppBaseURL: String { "http://localhost:5173" }
 }
