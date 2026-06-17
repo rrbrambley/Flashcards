@@ -14,6 +14,7 @@ vi.mock('../api/client', () => ({
     getCatalogDeck: vi.fn(),
     updateProgress: vi.fn(),
     completeSession: vi.fn(),
+    getStreaks: vi.fn(),
     register: vi.fn(),
   },
 }));
@@ -45,6 +46,7 @@ function setup(cards: FlashcardDto[], sessionOver: Partial<PracticeSessionDto> =
   vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: cards });
   vi.mocked(api.updateProgress).mockResolvedValue(session());
   vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
+  vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 3, longest: 5 }, decks: [] });
   render(
     <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
       <Routes>
@@ -108,6 +110,9 @@ describe('PracticePage', () => {
     expect(await screen.findByText('Practice complete')).toBeInTheDocument();
     // Completion records the device timezone for streaks (FLA-105).
     expect(api.completeSession).toHaveBeenCalledWith(1, expect.any(String));
+    // The just-earned overall streak is read after completing and shown (FLA-106).
+    expect(await screen.findByText(/3 day streak/)).toBeInTheDocument();
+    expect(api.getStreaks).toHaveBeenCalledWith(expect.any(String));
   });
 
   it('shows the mode chooser when no mode is selected', async () => {

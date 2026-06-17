@@ -96,6 +96,24 @@ export interface UpdateProgressRequest {
   numIncorrect: number;
 }
 
+// GET /streaks — the user's practice streak (consecutive days with a completed session). `overall`
+// spans all decks; `decks` carries the same per deck (returned for future per-deck UI).
+export interface StreakDto {
+  current: number;
+  longest: number;
+}
+
+export interface DeckStreakDto {
+  deckId: number;
+  current: number;
+  longest: number;
+}
+
+export interface StreaksResponse {
+  overall: StreakDto;
+  decks: DeckStreakDto[];
+}
+
 // Home feed (GET /home). The action is a discriminated union mirroring the backend's
 // sealed HomeButtonActionDto (kotlinx default class discriminator: "type").
 export type HomeButtonAction =

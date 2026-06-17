@@ -271,6 +271,19 @@ button.danger:hover:not(:disabled) {
   background: var(--primary-soft);
   color: var(--primary);
 }
+/* Practice streak pill (FLA-106) — warm "flame" accent, on Home and the completion screen. */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: #fff1e6;
+  color: #c2410c;
+  white-space: nowrap;
+}
 .progress {
   height: 8px;
   width: 100%;

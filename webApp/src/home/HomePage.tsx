@@ -12,6 +12,8 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Overall practice streak (FLA-106); null until loaded, 0 when there is no active streak.
+  const [streak, setStreak] = useState<number | null>(null);
 
   const loadHome = useCallback(async () => {
     try {
@@ -21,6 +23,13 @@ export function HomePage() {
       setError(err instanceof Error ? err.message : 'Could not load your home feed.');
     } finally {
       setLoading(false);
+    }
+    // Best-effort: a streak failure must never block the feed, so fetch it separately.
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      setStreak((await api.getStreaks(tz)).overall.current);
+    } catch {
+      // leave the badge hidden
     }
   }, []);
 
@@ -58,6 +67,11 @@ export function HomePage() {
       <header className="app-header">
         <h1>Flashcards</h1>
         <nav className="app-header-nav">
+          {streak != null && streak > 0 && (
+            <span className="streak-badge" title="Days in a row with a completed practice">
+              🔥 {streak} day streak
+            </span>
+          )}
           <Link to="/library" className="link-btn">
             Library
           </Link>

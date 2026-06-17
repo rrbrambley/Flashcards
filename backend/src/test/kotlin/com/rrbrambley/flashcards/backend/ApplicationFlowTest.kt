@@ -42,6 +42,7 @@ import com.rrbrambley.flashcards.shared.api.Page
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
+import com.rrbrambley.flashcards.shared.api.StreaksResponse
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import com.typesafe.config.ConfigFactory
 import io.ktor.client.HttpClient
@@ -75,8 +76,11 @@ import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -812,6 +816,64 @@ class ApplicationFlowTest {
         val (completedAt2, tz2) = completion(noBody.id)
         assertNotNull(completedAt2)
         assertNull(tz2)
+    }
+
+    @Test
+    fun streaks_count_consecutive_days_overall_and_per_deck() = runApp { client ->
+        val tz = "America/New_York"
+        val zone = ZoneId.of(tz)
+
+        // A millis at noon on the local day [zone] is [daysAgo] days before today — unambiguous bucketing.
+        fun millisDaysAgo(daysAgo: Long): Long =
+            LocalDate.now(zone).minusDays(daysAgo).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+
+        suspend fun completeOn(token: String, deckId: Long, daysAgo: Long): Long {
+            val session = client.createSession(token, deckId)
+            client.post("/sessions/${session.id}/complete") {
+                bearerAuth(token)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(CompleteSessionRequest(tz)))
+            }
+            // Back-date the completion so consecutive days can be simulated within one test run.
+            transaction {
+                PracticeSessions.update({ PracticeSessions.id eq session.id }) {
+                    it[completedAtMillis] = millisDaysAgo(daysAgo)
+                }
+            }
+            return session.id
+        }
+
+        suspend fun streaks(token: String): StreaksResponse =
+            client.get("/streaks?tz=$tz") { bearerAuth(token) }.decode()
+
+        val auth = client.register("streakcount", "password1")
+        val decks = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items
+        val deckA = decks[0].id
+        val deckB = decks[1].id
+
+        // Deck A completed today only → current 1.
+        completeOn(auth.accessToken, deckA, daysAgo = 0)
+        streaks(auth.accessToken).let { s ->
+            assertEquals(1, s.overall.current)
+            assertEquals(1, s.overall.longest)
+            assertEquals(1, s.decks.single { it.deckId == deckA }.current)
+        }
+
+        // Deck A completed yesterday too → consecutive, current 2.
+        completeOn(auth.accessToken, deckA, daysAgo = 1)
+        streaks(auth.accessToken).let { s ->
+            assertEquals(2, s.overall.current)
+            assertEquals(2, s.decks.single { it.deckId == deckA }.current)
+        }
+
+        // Deck B completed today only → isolated per deck; overall unchanged (today already counted).
+        completeOn(auth.accessToken, deckB, daysAgo = 0)
+        streaks(auth.accessToken).let { s ->
+            assertEquals(2, s.overall.current)
+            assertEquals(2, s.decks.single { it.deckId == deckA }.current)
+            assertEquals(1, s.decks.single { it.deckId == deckB }.current)
+        }
     }
 
     @Test
