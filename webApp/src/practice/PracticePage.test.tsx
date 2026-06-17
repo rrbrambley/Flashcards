@@ -106,7 +106,8 @@ describe('PracticePage', () => {
     await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
 
     expect(await screen.findByText('Practice complete')).toBeInTheDocument();
-    expect(api.completeSession).toHaveBeenCalledWith(1);
+    // Completion records the device timezone for streaks (FLA-105).
+    expect(api.completeSession).toHaveBeenCalledWith(1, expect.any(String));
   });
 
   it('shows the mode chooser when no mode is selected', async () => {

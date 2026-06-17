@@ -208,8 +208,9 @@ export const api = {
   getAllSessions: () => fetchAllPages((cursor) => getSessionsPage(cursor)),
   updateProgress: (id: number, progress: UpdateProgressRequest) =>
     request<PracticeSessionDto>(`/sessions/${id}`, { method: 'PATCH', body: progress, auth: true }),
-  completeSession: (id: number) =>
-    request<PracticeSessionDto>(`/sessions/${id}/complete`, { method: 'POST', auth: true }),
+  // timeZone (IANA): recorded with the completion for day-based streaks (FLA-105).
+  completeSession: (id: number, timeZone?: string) =>
+    request<PracticeSessionDto>(`/sessions/${id}/complete`, { method: 'POST', body: { timeZone }, auth: true }),
 
   uploadImage: (file: File) => uploadImage(file),
 

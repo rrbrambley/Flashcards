@@ -114,10 +114,17 @@ object PracticeSessions : LongIdTable("practice_sessions") {
     val createdAtMillis = long("created_at_millis")
     val updatedAtMillis = long("updated_at_millis")
 
+    // Set once when the session is completed, with the device's IANA timezone, so day-based practice
+    // streaks bucket to the user's local calendar (FLA-105). Nullable: in-progress + pre-feature rows.
+    val completedAtMillis = long("completed_at_millis").nullable()
+    val completedTimeZone = varchar("completed_time_zone", 64).nullable()
+
     init {
         // Active-session-for-(deck, mode) lookup (start-or-resume).
         index(false, userId, deckId, mode, isCompleted)
         // List active sessions for a user.
         index(false, userId, isCompleted)
+        // Completed-session-by-day-and-user, for the streak read (FLA-106).
+        index(false, userId, completedAtMillis)
     }
 }

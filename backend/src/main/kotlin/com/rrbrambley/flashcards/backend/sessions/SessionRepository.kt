@@ -136,12 +136,16 @@ object SessionRepository {
             fetchSession(userId, sessionId)!!
         }
 
-    suspend fun complete(userId: Long, sessionId: Long): PracticeSessionDto = dbQuery {
+    suspend fun complete(userId: Long, sessionId: Long, timeZone: String?): PracticeSessionDto = dbQuery {
+        val now = System.currentTimeMillis()
         val updated = PracticeSessions.update({
             (PracticeSessions.id eq sessionId) and (PracticeSessions.userId eq userId)
         }) {
             it[isCompleted] = true
-            it[updatedAtMillis] = System.currentTimeMillis()
+            it[updatedAtMillis] = now
+            // Stamp the completion instant + device tz for day-based streaks (FLA-105).
+            it[completedAtMillis] = now
+            it[completedTimeZone] = timeZone
         }
         if (updated == 0) throw NotFoundException("Session $sessionId not found")
         fetchSession(userId, sessionId)!!
