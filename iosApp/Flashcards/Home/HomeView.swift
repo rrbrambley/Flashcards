@@ -15,8 +15,8 @@ struct HomeView: View {
     }
     @State private var practice: PracticePresentation?
 
-    init(repository: HomeRepository, onCreateDeck: @escaping () -> Void) {
-        _viewModel = StateObject(wrappedValue: HomeViewModel(repository: repository))
+    init(repository: HomeRepository, apiClient: FlashcardApiClient, onCreateDeck: @escaping () -> Void) {
+        _viewModel = StateObject(wrappedValue: HomeViewModel(repository: repository, apiClient: apiClient))
         self.onCreateDeck = onCreateDeck
     }
 
@@ -28,10 +28,12 @@ struct HomeView: View {
                 PracticeView(
                     flashcardRepository: container.flashcardRepository,
                     sessionRepository: container.practiceSessionRepository,
-                    entry: presentation.entry
+                    entry: presentation.entry,
+                    apiClient: container.apiClient
                 )
             }
             .task { await viewModel.observe() }
+            .task { await viewModel.loadStreak() }
             .safeAreaInset(edge: .bottom) {
                 if viewModel.refreshFailed {
                     RefreshFailedBanner(message: "Couldn't refresh. Showing your saved feed.")
@@ -57,6 +59,10 @@ struct HomeView: View {
     private func feed(_ items: [HomeData]) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
+                // Overall practice streak (FLA-106), pinned above the feed when active.
+                if let streak = viewModel.streak, streak > 0 {
+                    StreakBadge(streak: streak)
+                }
                 // Group consecutive cards under their section header (FLA-96); header-less for nil.
                 ForEach(Array(groupedBySection(items).enumerated()), id: \.offset) { _, group in
                     VStack(alignment: .leading, spacing: Spacing.md) {

@@ -42,6 +42,8 @@ enum GuestSaveState: Equatable {
 final class PracticeViewModel: ObservableObject {
     @Published private(set) var state: PracticeState = .loading
     @Published private(set) var saveState: GuestSaveState = .idle
+    /// Overall practice streak after this completion (FLA-106); nil until read / 0 = no streak.
+    @Published private(set) var streak: Int?
 
     private let flashcardRepository: FlashcardRepository
     private let sessionRepository: PracticeSessionRepository
@@ -234,6 +236,14 @@ final class PracticeViewModel: ObservableObject {
 
     private func complete() {
         guard let sid = sessionId else { return }
-        Task { try? await sessionRepository.completeSession(sessionId: sid) }
+        Task {
+            try? await sessionRepository.completeSession(sessionId: sid)
+            // Read the overall streak only after the completion lands, so it reflects the day just
+            // earned. Best-effort: a failure (or no streak) just leaves the badge hidden.
+            guard let apiClient else { return }
+            if let result = try? await apiClient.getStreaks(tz: TimeZone.current.identifier) {
+                streak = Int(result.overall.current)
+            }
+        }
     }
 }
