@@ -7,7 +7,7 @@ import { api } from '../api/client';
 import type { HomeData } from '../api/types';
 
 vi.mock('../api/client', () => ({
-  api: { getHome: vi.fn(), getSession: vi.fn(), getAllDecks: vi.fn() },
+  api: { getHome: vi.fn(), getSession: vi.fn(), getAllDecks: vi.fn(), getStreaks: vi.fn() },
 }));
 vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn() }) }));
 
@@ -52,7 +52,11 @@ const createItem: HomeData = {
 };
 
 describe('HomePage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default: no active streak, so the badge is absent unless a test opts in.
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 0, longest: 0 }, decks: [] });
+  });
 
   it('renders the home feed items and their buttons', async () => {
     vi.mocked(api.getHome).mockResolvedValue([continueItem, practiceItem, createItem]);
@@ -112,6 +116,22 @@ describe('HomePage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Create' }));
 
     expect(await screen.findByText('create page')).toBeInTheDocument();
+  });
+
+  it('shows the overall streak badge when there is an active streak', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([createItem]);
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 4, longest: 9 }, decks: [] });
+    renderHome();
+
+    expect(await screen.findByText(/4 day streak/)).toBeInTheDocument();
+  });
+
+  it('hides the streak badge when the current streak is zero', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([createItem]);
+    renderHome();
+
+    await screen.findByText('Create a new flashcard set');
+    expect(screen.queryByText(/day streak/)).not.toBeInTheDocument();
   });
 
   it('shows an error when the feed fails to load', async () => {

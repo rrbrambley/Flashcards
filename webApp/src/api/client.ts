@@ -11,6 +11,7 @@ import type {
   Page,
   PracticeSessionDto,
   RoleDto,
+  StreaksResponse,
   UpdateProgressRequest,
 } from './types';
 
@@ -211,6 +212,9 @@ export const api = {
   // timeZone (IANA): recorded with the completion for day-based streaks (FLA-105).
   completeSession: (id: number, timeZone?: string) =>
     request<PracticeSessionDto>(`/sessions/${id}/complete`, { method: 'POST', body: { timeZone }, auth: true }),
+
+  // Practice streak (FLA-106). `tz` (IANA) anchors "today" to the caller's local day.
+  getStreaks: (tz?: string) => request<StreaksResponse>(`/streaks${buildQuery({ tz })}`, { auth: true }),
 
   uploadImage: (file: File) => uploadImage(file),
 

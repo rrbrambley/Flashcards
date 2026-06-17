@@ -181,6 +181,8 @@ interface PracticeRunnerProps {
 // only), and the completion summary. The current mode renders the card and reports each outcome.
 function PracticeRunner({ sessionId, cards, progress, mode, onProgress, onAgain, onExit }: PracticeRunnerProps) {
   const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, progress));
+  // Overall streak after this completion (FLA-106); null until loaded / for guests (no session).
+  const [streak, setStreak] = useState<number | null>(null);
 
   // Mirror progress up so the parent's leave-guard can read it (and persist on guest save).
   useEffect(() => {
@@ -195,7 +197,13 @@ function PracticeRunner({ sessionId, cards, progress, mode, onProgress, onAgain,
       // Best-effort persistence (signed-in only; guests have no session). Never block the UI.
       if (sessionId == null) return;
       if (wasLast) {
-        api.completeSession(sessionId, Intl.DateTimeFormat().resolvedOptions().timeZone).catch(() => {});
+        // Read the streak only after the completion lands, so it reflects the day just earned.
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        api
+          .completeSession(sessionId, tz)
+          .then(() => api.getStreaks(tz))
+          .then((s) => setStreak(s.overall.current))
+          .catch(() => {});
       } else {
         api
           .updateProgress(sessionId, {
@@ -220,6 +228,11 @@ function PracticeRunner({ sessionId, cards, progress, mode, onProgress, onAgain,
           <span className="score-chip incorrect">{state.numIncorrect}</span>
           <span className="score-chip correct">{state.numCorrect}</span>
         </div>
+        {streak != null && streak > 0 && (
+          <p className="streak-badge" title="Days in a row with a completed practice">
+            🔥 {streak} day streak
+          </p>
+        )}
         <div className="practice-actions">
           <button onClick={onAgain}>Practice again</button>
           <button className="secondary" onClick={onExit}>
