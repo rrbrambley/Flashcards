@@ -308,6 +308,24 @@ class FlashcardsViewModelTest {
         assertEquals(GuestSaveState.Saved, viewModel.saveState.value)
     }
 
+    @Test
+    fun completingTheLastCard_loadsTheOverallStreakOntoTheCompletionState() = runTest(testDispatcher) {
+        val sessions = FakePracticeSessionRepository(session())
+        val engine = routedEngine { path ->
+            if (path == "/streaks") """{"overall":{"current":5,"longest":8},"decks":[]}""" else null
+        }
+        val viewModel = createViewModel(testFlashcards(), sessions, engine)
+        viewModel.loadDeck()
+
+        // Advance through every card; the last one completes the session.
+        repeat(testFlashcards().size) { viewModel.onResult(correct = true) }
+
+        val completed = viewModel.uiState
+            .first { it is FlashcardsUiState.SessionCompleted && it.streak != null } as FlashcardsUiState.SessionCompleted
+        assertEquals(5, completed.streak)
+        assertEquals(SESSION_ID, sessions.completedSessionId)
+    }
+
     // --- Helpers ---
 
     private fun routedEngine(route: (path: String) -> String?) = MockEngine { request ->

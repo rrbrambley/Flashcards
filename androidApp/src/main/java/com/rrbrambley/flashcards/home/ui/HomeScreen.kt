@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.home.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +60,7 @@ fun HomeScreen(
 ) {
     val uiState by homeViewModel.uiState.collectAsState()
     val isRefreshing by homeViewModel.isRefreshing.collectAsState()
+    val streak by homeViewModel.streak.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -76,6 +78,7 @@ fun HomeScreen(
                 HomeUiState.LoadingFailed -> ErrorMessage(onRetry = homeViewModel::retry)
                 is HomeUiState.ShowHome -> HomeScreenContent(
                     cards = state.cards,
+                    streak = streak,
                     onButtonAction = onButtonAction,
                 )
             }
@@ -115,6 +118,7 @@ private fun ErrorMessage(onRetry: () -> Unit) {
 @Composable
 private fun HomeScreenContent(
     cards: List<HomeData>,
+    streak: Int?,
     onButtonAction: (HomeButtonAction) -> Unit,
 ) {
     LazyColumn(
@@ -122,6 +126,10 @@ private fun HomeScreenContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        // Overall practice streak (FLA-106), pinned above the feed when active.
+        if (streak != null && streak > 0) {
+            item { HomeStreakBadge(streak = streak) }
+        }
         // Group consecutive cards under their section header (FLA-96); header-less for null sections.
         groupBySection(cards).forEach { (section, sectionCards) ->
             section?.let { item { SectionHeader(text = it) } }
@@ -132,6 +140,23 @@ private fun HomeScreenContent(
                 )
             }
         }
+    }
+}
+
+/** 🔥 N day streak pill above the home feed (FLA-106); warm accent matching web/practice. */
+@Composable
+private fun HomeStreakBadge(streak: Int) {
+    Box(
+        modifier = Modifier
+            .background(color = Color(0xFFFFF1E6), shape = RoundedCornerShape(999.dp))
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.streak_badge, streak),
+            color = Color(0xFFC2410C),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 

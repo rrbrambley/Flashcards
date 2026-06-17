@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.StringProvider
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -16,11 +17,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.ZoneId
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val homeRepository: HomeRepository,
+    private val apiClient: FlashcardApiClient,
     private val stringProvider: StringProvider,
 ) : ViewModel() {
 
@@ -30,6 +33,10 @@ class HomeViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    // Overall practice streak (FLA-106); null until loaded / when there's no active streak.
+    private val _streak = MutableStateFlow<Int?>(null)
+    val streak: StateFlow<Int?> = _streak.asStateFlow()
+
     // One-shot user-facing messages (e.g. a failed background refresh), surfaced as a snackbar.
     private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val userMessages: SharedFlow<String> = _userMessages.asSharedFlow()
@@ -38,6 +45,16 @@ class HomeViewModel @Inject constructor(
 
     init {
         observeHome()
+        loadStreak()
+    }
+
+    /** Best-effort overall-streak fetch; a failure (or no streak) simply leaves the badge hidden. */
+    private fun loadStreak() {
+        viewModelScope.launch {
+            _streak.value = runCatching {
+                apiClient.getStreaks(ZoneId.systemDefault().id).overall.current
+            }.getOrNull()
+        }
     }
 
     /**
@@ -68,6 +85,7 @@ class HomeViewModel @Inject constructor(
     fun refresh() {
         _isRefreshing.value = true
         observeHome()
+        loadStreak()
     }
 
     /** Retry after a load failure: show the loading state, then re-subscribe. */

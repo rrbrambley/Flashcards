@@ -19,5 +19,7 @@ sealed interface FlashcardsUiState {
     data class SessionCompleted(
         val numIncorrect: Int,
         val numCorrect: Int,
+        /** Overall practice streak after this completion (FLA-106); null until read / 0 = no streak. */
+        val streak: Int? = null,
     ) : FlashcardsUiState
 }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.ZoneId
 import javax.inject.Inject
 
 /** State of the guest "create an account to save your progress" flow (FLA-103). */
@@ -210,13 +211,23 @@ class FlashcardsViewModel @Inject constructor(
         } else {
             // Last card: complete. For a server session, best-effort sync (offline it throws —
             // swallow it; local progress already drives the completion screen). Guests just finish.
+            _uiState.update {
+                FlashcardsUiState.SessionCompleted(numIncorrect = numIncorrect, numCorrect = numCorrect)
+            }
             sessionId?.let { id ->
                 viewModelScope.launch {
                     runCatching { practiceSessionRepository.completeSession(id) }
+                    // Read the overall streak only after the completion lands, so it reflects the day
+                    // just earned. Best-effort: a failure (or no streak) just leaves the badge off.
+                    val streak = runCatching {
+                        apiClient.getStreaks(ZoneId.systemDefault().id).overall.current
+                    }.getOrNull()
+                    if (streak != null && streak > 0) {
+                        _uiState.update { state ->
+                            if (state is FlashcardsUiState.SessionCompleted) state.copy(streak = streak) else state
+                        }
+                    }
                 }
-            }
-            _uiState.update {
-                FlashcardsUiState.SessionCompleted(numIncorrect = numIncorrect, numCorrect = numCorrect)
             }
         }
     }

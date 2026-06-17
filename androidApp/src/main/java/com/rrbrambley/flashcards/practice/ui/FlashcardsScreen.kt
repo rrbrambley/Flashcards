@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.practice.ui
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -155,6 +156,7 @@ fun FlashcardsScreen(
 
                     is FlashcardsUiState.SessionCompleted ->
                         FlashcardsCompletionCard(
+                            streak = state.streak,
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .padding(horizontal = 28.dp, vertical = 20.dp),
@@ -319,7 +321,7 @@ private fun ScoreChip(label: String, color: Color) {
 }
 
 @Composable
-private fun FlashcardsCompletionCard(modifier: Modifier = Modifier) {
+private fun FlashcardsCompletionCard(streak: Int?, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -353,8 +355,29 @@ private fun FlashcardsCompletionCard(modifier: Modifier = Modifier) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
+                if (streak != null && streak > 0) {
+                    StreakBadge(streak = streak)
+                }
             }
         }
+    }
+}
+
+/** 🔥 N day streak pill — shown on the completion screen (FLA-106). */
+@Composable
+internal fun StreakBadge(streak: Int, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(color = Color(0xFFFFF1E6), shape = RoundedCornerShape(999.dp))
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.streak_badge, streak),
+            color = Color(0xFFC2410C),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 
