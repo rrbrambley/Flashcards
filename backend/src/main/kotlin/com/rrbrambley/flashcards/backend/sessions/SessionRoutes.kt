@@ -4,9 +4,11 @@ import com.rrbrambley.flashcards.backend.routes.pageCursor
 import com.rrbrambley.flashcards.backend.routes.pageLimit
 import com.rrbrambley.flashcards.backend.routes.pathLong
 import com.rrbrambley.flashcards.backend.routes.userId
+import com.rrbrambley.flashcards.shared.api.CompleteSessionRequest
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import io.ktor.server.request.receive
+import io.ktor.server.request.receiveNullable
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
@@ -35,7 +37,9 @@ fun Route.sessionRoutes() {
             call.respond(SessionRepository.updateProgress(call.userId(), call.pathLong("id"), request))
         }
         post("/{id}/complete") {
-            call.respond(SessionRepository.complete(call.userId(), call.pathLong("id")))
+            // Optional body carrying the device tz (FLA-105); tolerate older clients that send none.
+            val timeZone = runCatching { call.receiveNullable<CompleteSessionRequest>()?.timeZone }.getOrNull()
+            call.respond(SessionRepository.complete(call.userId(), call.pathLong("id"), timeZone))
         }
     }
 }

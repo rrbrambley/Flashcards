@@ -16,6 +16,7 @@ import com.rrbrambley.flashcards.backend.cli.UserCreateCommand
 import com.rrbrambley.flashcards.backend.cli.UserDeleteCommand
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.db.PracticeSessions
 import com.rrbrambley.flashcards.backend.db.Roles
 import com.rrbrambley.flashcards.backend.db.UserRoles
 import com.rrbrambley.flashcards.backend.db.Users
@@ -25,6 +26,7 @@ import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.storage.Storage
 import com.rrbrambley.flashcards.backend.storage.StorageService
 import com.rrbrambley.flashcards.shared.api.AuthResponse
+import com.rrbrambley.flashcards.shared.api.CompleteSessionRequest
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
@@ -72,6 +74,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import kotlin.test.Test
@@ -776,6 +779,39 @@ class ApplicationFlowTest {
         val resumed = client.createSession(auth.accessToken, deckId)
         assertEquals(created.id, resumed.id, "second create should resume the same active session")
         assertEquals(false, created.isCompleted)
+    }
+
+    @Test
+    fun complete_records_completion_time_and_timezone() = runApp { client ->
+        fun completion(sessionId: Long): Pair<Long?, String?> = transaction {
+            PracticeSessions.selectAll().where { PracticeSessions.id eq sessionId }.first()
+                .let { it[PracticeSessions.completedAtMillis] to it[PracticeSessions.completedTimeZone] }
+        }
+
+        val auth = client.register("streaky", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // Complete WITH a timezone body (FLA-105).
+        val withTz = client.createSession(auth.accessToken, deckId)
+        val before = System.currentTimeMillis()
+        client.post("/sessions/${withTz.id}/complete") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CompleteSessionRequest("America/New_York")))
+        }
+        val (completedAt, tz) = completion(withTz.id)
+        assertNotNull(completedAt)
+        assertTrue(completedAt >= before)
+        assertEquals("America/New_York", tz)
+
+        // Complete WITHOUT a body (older client) still succeeds; completion time set, tz null.
+        val noBody = client.createSession(auth.accessToken, deckId)
+        val response = client.post("/sessions/${noBody.id}/complete") { bearerAuth(auth.accessToken) }
+        assertEquals(HttpStatusCode.OK, response.status)
+        val (completedAt2, tz2) = completion(noBody.id)
+        assertNotNull(completedAt2)
+        assertNull(tz2)
     }
 
     @Test

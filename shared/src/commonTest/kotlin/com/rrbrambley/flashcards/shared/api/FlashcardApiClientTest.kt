@@ -6,6 +6,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -56,6 +57,17 @@ class FlashcardApiClientTest {
 
         assertEquals("/catalog/7", engine.requestHistory.last().url.encodedPath)
         assertEquals("Capitals", deck.title)
+    }
+
+    @Test
+    fun completeSession_postsTheTimeZoneInTheBody() = runTest {
+        val engine = jsonEngine("""{"id":12,"deckId":5,"deckTitle":"S","createdAtMillis":0,"updatedAtMillis":0}""")
+        apiClient(engine).completeSession(12L, timeZone = "America/New_York")
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Post, request.method)
+        assertEquals("/sessions/12/complete", request.url.encodedPath)
+        assertTrue((request.body as TextContent).text.contains("America/New_York"))
     }
 
     @Test

@@ -195,7 +195,7 @@ function PracticeRunner({ sessionId, cards, progress, mode, onProgress, onAgain,
       // Best-effort persistence (signed-in only; guests have no session). Never block the UI.
       if (sessionId == null) return;
       if (wasLast) {
-        api.completeSession(sessionId).catch(() => {});
+        api.completeSession(sessionId, Intl.DateTimeFormat().resolvedOptions().timeZone).catch(() => {});
       } else {
         api
           .updateProgress(sessionId, {

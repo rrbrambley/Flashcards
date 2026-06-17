@@ -7,6 +7,7 @@ import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionSyncer
 import com.rrbrambley.flashcards.shared.nowMillis
+import com.rrbrambley.flashcards.shared.systemTimeZoneId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +32,7 @@ class PracticeSessionRepositoryImpl(
     private val practiceSessionDao: PracticeSessionDao,
     private val flashcardDao: FlashcardDao,
     private val now: () -> Long = ::nowMillis,
+    private val timeZoneId: () -> String = ::systemTimeZoneId,
 ) : PracticeSessionRepository,
     PracticeSessionSyncer {
 
@@ -126,7 +128,8 @@ class PracticeSessionRepositoryImpl(
             return
         }
         if (sessionId > 0) {
-            runCatching { cache(apiClient.completeSession(sessionId)) }
+            // Stamp the device tz with the completion so day-based streaks bucket locally (FLA-105).
+            runCatching { cache(apiClient.completeSession(sessionId, timeZoneId())) }
         }
     }
 
@@ -155,7 +158,7 @@ class PracticeSessionRepositoryImpl(
                 server.id,
                 UpdateProgressRequest(row.currentCardIndex, row.numCorrect, row.numIncorrect),
             )
-            if (row.isCompleted) state = apiClient.completeSession(server.id)
+            if (row.isCompleted) state = apiClient.completeSession(server.id, timeZoneId())
         }
         // Remap: drop the negative row and cache the server state under its real id (pendingSync=false).
         // If a server-id row already exists it's updated in place — exactly one row per deck+mode.
@@ -169,7 +172,7 @@ class PracticeSessionRepositoryImpl(
             row.id,
             UpdateProgressRequest(row.currentCardIndex, row.numCorrect, row.numIncorrect),
         )
-        if (row.isCompleted) state = apiClient.completeSession(row.id)
+        if (row.isCompleted) state = apiClient.completeSession(row.id, timeZoneId())
         cache(state)
     }
 

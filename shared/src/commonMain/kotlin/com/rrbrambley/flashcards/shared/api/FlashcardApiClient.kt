@@ -152,9 +152,9 @@ class FlashcardApiClient(
             jsonBody(request)
         }.body()
 
-    suspend fun completeSession(sessionId: Long): PracticeSessionDto =
+    suspend fun completeSession(sessionId: Long, timeZone: String? = null): PracticeSessionDto =
         client.post(url("/sessions/$sessionId/complete")) {
-            auth()
+            jsonBody(CompleteSessionRequest(timeZone))
         }.body()
 
     // --- Home ---
