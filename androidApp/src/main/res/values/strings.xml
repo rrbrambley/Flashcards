@@ -121,6 +121,8 @@
     <string name="practice_help_got_it">Got it</string>
     <string name="practice_complete_title">Practice complete</string>
     <string name="practice_complete_subtitle">Nice work reviewing this deck.</string>
+    <!-- Practice streak pill (FLA-106), shown on Home + the completion screen. %1$d = day count. -->
+    <string name="streak_badge">🔥 %1$d day streak</string>
     <string name="practice_cd_previous_card">Previous card</string>
     <string name="practice_cd_next_card">Next card</string>
     <!-- Practice modes -->

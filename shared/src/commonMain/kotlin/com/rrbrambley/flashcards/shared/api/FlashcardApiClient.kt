@@ -160,6 +160,17 @@ class FlashcardApiClient(
     // --- Home ---
     suspend fun getHome(): List<HomeDataDto> = client.get(url("/home")) { auth() }.body()
 
+    // --- Streaks ---
+    /**
+     * The user's practice streak (FLA-106): overall + per-deck consecutive days with a completed
+     * session. [tz] (IANA, e.g. "America/New_York") anchors "today" to the caller's local day and
+     * buckets any completions that lack a stored zone.
+     */
+    suspend fun getStreaks(tz: String? = null): StreaksResponse = client.get(url("/streaks")) {
+        auth()
+        tz?.let { parameter("tz", it) }
+    }.body()
+
     /** Walks a cursor-paginated endpoint to the end, accumulating every page's items. */
     private suspend fun <T> fetchAllPages(fetchPage: suspend (cursor: String?) -> Page<T>): List<T> {
         val all = mutableListOf<T>()

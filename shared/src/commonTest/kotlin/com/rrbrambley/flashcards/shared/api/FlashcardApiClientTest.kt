@@ -71,6 +71,21 @@ class FlashcardApiClientTest {
     }
 
     @Test
+    fun getStreaks_getsStreaksWithTheTimeZoneQueryAndDeserializes() = runTest {
+        val engine =
+            jsonEngine("""{"overall":{"current":4,"longest":9},"decks":[{"deckId":5,"current":2,"longest":3}]}""")
+        val streaks = apiClient(engine).getStreaks(tz = "America/New_York")
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Get, request.method)
+        assertEquals("/streaks", request.url.encodedPath)
+        assertEquals("America/New_York", request.url.parameters["tz"])
+        assertEquals(4, streaks.overall.current)
+        assertEquals(9, streaks.overall.longest)
+        assertEquals(5L, streaks.decks.single().deckId)
+    }
+
+    @Test
     fun createDeck_postsToDecks() = runTest {
         val engine = jsonEngine("""{"id":1,"title":"T","flashcards":[]}""")
         apiClient(engine).createDeck(CreateDeckRequest("T", emptyList()))
