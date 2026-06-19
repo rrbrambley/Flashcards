@@ -96,7 +96,7 @@ struct PracticeView: View {
             }
             .padding(Spacing.lg)
         case let .completed(numCorrect, numIncorrect):
-            CompletionView(numCorrect: numCorrect, numIncorrect: numIncorrect) { dismiss() }
+            CompletionView(numCorrect: numCorrect, numIncorrect: numIncorrect, streak: viewModel.streak) { dismiss() }
         case .failed:
             ContentUnavailableView {
                 Label("Couldn't start practice", systemImage: "exclamationmark.triangle")
@@ -173,6 +173,7 @@ struct CardPrompt: View {
 private struct CompletionView: View {
     let numCorrect: Int
     let numIncorrect: Int
+    let streak: Int?
     let onDone: () -> Void
 
     var body: some View {
@@ -186,6 +187,9 @@ private struct CompletionView: View {
             HStack(spacing: Spacing.xl) {
                 stat("Correct", numCorrect, color: .green)
                 stat("To review", numIncorrect, color: .red)
+            }
+            if let streak, streak > 0 {
+                StreakBadge(streak: streak)
             }
             Button("Done", action: onDone)
                 .buttonStyle(.primary)

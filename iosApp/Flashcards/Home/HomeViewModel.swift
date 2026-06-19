@@ -9,11 +9,22 @@ final class HomeViewModel: ObservableObject {
     /// True when the latest background refresh failed but cached data is still shown — the view
     /// surfaces an unobtrusive banner (parity with Android's "couldn't refresh" snackbar).
     @Published private(set) var refreshFailed = false
+    /// Overall practice streak (FLA-106); nil until loaded / when there's no active streak.
+    @Published private(set) var streak: Int?
 
     private let repository: HomeRepository
+    private let apiClient: FlashcardApiClient
 
-    init(repository: HomeRepository) {
+    init(repository: HomeRepository, apiClient: FlashcardApiClient) {
         self.repository = repository
+        self.apiClient = apiClient
+    }
+
+    /// Best-effort overall-streak fetch; a failure (or no streak) just leaves the badge hidden.
+    func loadStreak() async {
+        if let result = try? await apiClient.getStreaks(tz: TimeZone.current.identifier) {
+            streak = Int(result.overall.current)
+        }
     }
 
     /// The offline-first feed emits the cached data first, then the backend feed. If the backend

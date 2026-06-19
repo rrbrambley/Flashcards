@@ -9,6 +9,7 @@ struct LibraryView: View {
     private let flashcardRepository: FlashcardRepository
     private let sessionRepository: PracticeSessionRepository
     private let imageUploader: ImageUploader
+    private let apiClient: FlashcardApiClient
 
     /// The tapped deck, presenting the actions sheet. Holds the whole deck (title / card count /
     /// ownership drive the sheet's contents).
@@ -36,11 +37,13 @@ struct LibraryView: View {
     init(
         flashcardRepository: FlashcardRepository,
         sessionRepository: PracticeSessionRepository,
-        imageUploader: ImageUploader
+        imageUploader: ImageUploader,
+        apiClient: FlashcardApiClient
     ) {
         self.flashcardRepository = flashcardRepository
         self.sessionRepository = sessionRepository
         self.imageUploader = imageUploader
+        self.apiClient = apiClient
         _viewModel = StateObject(
             wrappedValue: LibraryViewModel(
                 flashcardRepository: flashcardRepository,
@@ -61,7 +64,8 @@ struct LibraryView: View {
                 PracticeView(
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
-                    entry: .deck(item.id, mode: item.mode)
+                    entry: .deck(item.id, mode: item.mode),
+                    apiClient: apiClient
                 )
             }
             // Deck-actions sheet on tap (parity with Android): Practice / Edit / Delete. Edit opens

@@ -14,7 +14,7 @@ struct MainTabView: View {
     var body: some View {
         TabView(selection: $selection) {
             NavigationStack {
-                HomeView(repository: container.homeRepository) { selection = .new }
+                HomeView(repository: container.homeRepository, apiClient: container.apiClient) { selection = .new }
             }
             .tabItem { Label("Home", systemImage: "house") }
             .tag(Tab.home)
@@ -32,7 +32,8 @@ struct MainTabView: View {
                 LibraryView(
                     flashcardRepository: container.flashcardRepository,
                     sessionRepository: container.practiceSessionRepository,
-                    imageUploader: container.imageUploader
+                    imageUploader: container.imageUploader,
+                    apiClient: container.apiClient
                 )
             }
             .tabItem { Label("Library", systemImage: "rectangle.stack") }
