@@ -70,12 +70,14 @@ final class CreateDeckViewModel: ObservableObject {
             id: 0,
             title: deckTitle.trimmed,
             flashcards: complete.map {
-                // No alternative-answers authoring UI on iOS yet (FLA-109); new cards have none.
+                // No alternative-answers authoring UI on iOS yet (FLA-109); new cards have no cardUid
+                // either — the backend mints one on save (FLA-113).
                 Flashcard(
                     question: $0.term.trimmed,
                     answer: $0.definition.trimmed,
                     imageUrl: $0.imageUrl,
-                    alternativeAnswers: $0.alternativeAnswers
+                    alternativeAnswers: $0.alternativeAnswers,
+                    cardUid: $0.cardUid
                 )
             },
             isEditable: true,

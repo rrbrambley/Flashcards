@@ -16,9 +16,9 @@ import com.rrbrambley.flashcards.shared.domain.HomeData
 import com.rrbrambley.flashcards.shared.domain.HomeSessionInfo
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 
-fun FlashcardDto.toDomain(): Flashcard = Flashcard(question, answer, imageUrl, alternativeAnswers)
+fun FlashcardDto.toDomain(): Flashcard = Flashcard(question, answer, imageUrl, alternativeAnswers, cardUid)
 
-fun Flashcard.toDto(): FlashcardDto = FlashcardDto(question, answer, imageUrl, alternativeAnswers)
+fun Flashcard.toDto(): FlashcardDto = FlashcardDto(question, answer, imageUrl, alternativeAnswers, cardUid)
 
 fun FlashcardDeckDto.toDomain(): FlashcardDeck = FlashcardDeck(
     id = id,

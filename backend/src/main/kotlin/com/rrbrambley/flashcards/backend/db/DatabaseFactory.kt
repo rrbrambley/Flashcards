@@ -69,7 +69,17 @@ object DatabaseFactory {
                 RolePermissions,
                 UserRoles,
             )
+            backfillCardUids()
             seed()
+        }
+    }
+
+    /** Assigns a stable cardUid to any pre-existing flashcard that predates the column (FLA-113). */
+    private fun backfillCardUids() {
+        Flashcards.selectAll().where { Flashcards.cardUid.isNull() }.forEach { row ->
+            Flashcards.update({ Flashcards.id eq row[Flashcards.id] }) {
+                it[cardUid] = java.util.UUID.randomUUID().toString()
+            }
         }
     }
 

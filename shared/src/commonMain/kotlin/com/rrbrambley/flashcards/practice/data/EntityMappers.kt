@@ -20,6 +20,7 @@ fun FlashcardDeckDto.toFlashcardEntities(): List<FlashcardEntity> = flashcards.m
         answer = it.answer,
         imageUrl = it.imageUrl,
         alternativeAnswers = AlternativeAnswers.encode(it.alternativeAnswers),
+        cardUid = it.cardUid,
     )
 }
 
@@ -46,7 +47,7 @@ fun FlashcardDeckWithCards.toDomain(): FlashcardDeck = FlashcardDeck(
     id = deck.id,
     title = deck.title,
     flashcards = flashcards.map {
-        Flashcard(it.question, it.answer, it.imageUrl, AlternativeAnswers.decode(it.alternativeAnswers))
+        Flashcard(it.question, it.answer, it.imageUrl, AlternativeAnswers.decode(it.alternativeAnswers), it.cardUid)
     },
     isEditable = deck.editable,
     tags = DeckTags.decode(deck.tags),

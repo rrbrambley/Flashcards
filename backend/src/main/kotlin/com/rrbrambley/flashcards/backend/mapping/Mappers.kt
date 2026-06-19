@@ -12,6 +12,7 @@ fun ResultRow.toFlashcardDto(): FlashcardDto = FlashcardDto(
     answer = this[Flashcards.answer],
     imageUrl = this[Flashcards.imageUrl],
     alternativeAnswers = AlternativeAnswers.decode(this[Flashcards.alternativeAnswers]),
+    cardUid = this[Flashcards.cardUid].orEmpty(),
 )
 
 fun ResultRow.toPracticeSessionDto(deckTitle: String): PracticeSessionDto = PracticeSessionDto(

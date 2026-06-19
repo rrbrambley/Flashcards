@@ -97,7 +97,8 @@ final class EditDeckViewModel: ObservableObject {
                     question: $0.term.trimmed,
                     answer: $0.definition.trimmed,
                     imageUrl: $0.imageUrl,
-                    alternativeAnswers: $0.alternativeAnswers
+                    alternativeAnswers: $0.alternativeAnswers,
+                    cardUid: $0.cardUid
                 )
             },
             isEditable: true,
@@ -118,12 +119,13 @@ final class EditDeckViewModel: ObservableObject {
 
     private func populate(from deck: FlashcardDeck) {
         let drafts = (deck.flashcards as? [Flashcard])?.map {
-            // Carry alternativeAnswers through so saving an edit preserves them (no iOS authoring UI yet).
+            // Carry alternativeAnswers + cardUid through so saving an edit preserves them (no iOS authoring UI yet).
             CardDraft(
                 term: $0.question,
                 definition: $0.answer,
                 imageUrl: $0.imageUrl,
-                alternativeAnswers: $0.alternativeAnswers
+                alternativeAnswers: $0.alternativeAnswers,
+                cardUid: $0.cardUid
             )
         } ?? []
         let cards = drafts.isEmpty ? [CardDraft()] : drafts

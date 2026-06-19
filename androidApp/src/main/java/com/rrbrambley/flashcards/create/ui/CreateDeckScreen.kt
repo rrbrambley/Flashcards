@@ -60,6 +60,8 @@ data class DeckFlashcardDraft(
     /** Extra accepted answers for Test mode (FLA-109). No authoring UI on Android yet — carried
      *  through edits so they're preserved on save (web is the authoring surface for now). */
     val alternativeAnswers: List<String> = emptyList(),
+    /** Stable backend card id (FLA-113), carried through edits so it's preserved on save; "" when new. */
+    val cardUid: String = "",
     val uploading: Boolean = false,
     /** Transient: set when the last image upload for this card failed, so the UI can show it. */
     val uploadError: String? = null,
