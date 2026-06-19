@@ -41,4 +41,13 @@ data class MeResponse(
     val email: String,
     val roles: List<String> = emptyList(),
     val permissions: List<String> = emptyList(),
+    /**
+     * The user's explicit public display name, or null when unset (then attribution falls back to the
+     * email local-part). Defaulted so older clients keep working (FLA-114).
+     */
+    val displayName: String? = null,
 )
+
+/** Body for PATCH /auth/me — update the caller's profile. A blank/absent [displayName] clears it. */
+@Serializable
+data class UpdateProfileRequest(val displayName: String? = null)

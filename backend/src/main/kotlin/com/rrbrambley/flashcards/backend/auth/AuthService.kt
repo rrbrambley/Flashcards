@@ -6,6 +6,7 @@ import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.ConflictException
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
+import com.rrbrambley.flashcards.backend.validation.Validation
 import com.rrbrambley.flashcards.shared.api.AuthResponse
 import com.rrbrambley.flashcards.shared.api.MeResponse
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -139,15 +140,30 @@ object AuthService {
 
     /** Identity + roles + effective permissions for the authenticated user (GET /auth/me). */
     suspend fun me(userId: Long): MeResponse = dbQuery {
-        val email = Users.selectAll().where { Users.id eq userId }.firstOrNull()?.get(Users.email)
+        val row = Users.selectAll().where { Users.id eq userId }.firstOrNull()
             ?: throw NotFoundException("User $userId not found")
         MeResponse(
             userId = userId,
-            email = email,
+            email = row[Users.email],
             roles = PermissionRepository.rolesTx(userId).toList(),
             permissions = PermissionRepository.effectivePermissionsTx(userId).toList(),
+            displayName = row[Users.displayName],
         )
     }
+
+    /** Sets (or clears, when blank) the caller's display name and returns the refreshed profile (FLA-114). */
+    suspend fun updateProfile(userId: Long, displayName: String?): MeResponse {
+        val normalized = Validation.normalizeDisplayName(displayName)
+        dbQuery {
+            val updated = Users.update({ Users.id eq userId }) { it[Users.displayName] = normalized }
+            if (updated == 0) throw NotFoundException("User $userId not found")
+        }
+        return me(userId)
+    }
+
+    /** Public attribution name for [email]: the explicit [displayName] if set, else the email local-part. */
+    fun displayNameOrDefault(displayName: String?, email: String): String =
+        displayName?.takeIf { it.isNotBlank() } ?: email.substringBefore("@")
 
     /** Mints an access-token JWT plus a stored, opaque refresh token. Runs inside a transaction. */
     private fun issueTokens(userId: Long, now: Long): AuthResponse {

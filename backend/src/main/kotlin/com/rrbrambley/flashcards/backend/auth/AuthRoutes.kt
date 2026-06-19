@@ -9,12 +9,14 @@ import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.LogoutRequest
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
+import com.rrbrambley.flashcards.shared.api.UpdateProfileRequest
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.auth.principal
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.get
+import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 
@@ -66,6 +68,11 @@ fun Route.authenticatedAuthRoutes() {
         // The current user's identity, roles, and effective permissions (drives client admin UI).
         get("/me") {
             call.respond(AuthService.me(call.userId()))
+        }
+        // Update the caller's profile (currently just the display name, FLA-114).
+        patch("/me") {
+            val request = call.receive<UpdateProfileRequest>()
+            call.respond(AuthService.updateProfile(call.userId(), request.displayName))
         }
     }
 }

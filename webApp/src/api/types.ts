@@ -49,6 +49,9 @@ export interface MeResponse {
   email: string;
   roles: string[];
   permissions: string[];
+  // Explicit public display name, or null when unset (attribution then falls back to the email
+  // local-part). FLA-114.
+  displayName?: string | null;
 }
 
 // GET /admin/users — a user as seen by the admin RBAC UI.

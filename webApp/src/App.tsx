@@ -9,6 +9,7 @@ import { AdminUsersPage } from './admin/AdminUsersPage';
 import { CreateDeckPage } from './decks/CreateDeckPage';
 import { EditDeckPage } from './decks/EditDeckPage';
 import { PracticePage } from './practice/PracticePage';
+import { SettingsPage } from './settings/SettingsPage';
 
 export default function App() {
   const { token } = useAuth();
@@ -34,6 +35,7 @@ export default function App() {
       <Route path="/library/global" element={<GlobalLibraryPage />} />
       <Route path="/admin/users" element={<AdminUsersPage />} />
       <Route path="/create" element={<CreateDeckPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
       <Route path="/decks/:id/edit" element={<EditDeckPage />} />
       <Route path="/decks/:id/practice" element={<PracticePage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
