@@ -48,7 +48,10 @@ fun TestMode(
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
 
     fun submit() {
-        graded = TestGrade(input = input, correct = gradeTextAnswer(input, flashcard.answer).correct)
+        graded = TestGrade(
+            input = input,
+            correct = gradeTextAnswer(input, flashcard.answer, flashcard.alternativeAnswers).correct,
+        )
     }
 
     Column(

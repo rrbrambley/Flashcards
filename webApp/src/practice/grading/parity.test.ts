@@ -18,6 +18,7 @@ interface TextCase {
   name: string;
   input: string;
   answer: string;
+  alternativeAnswers?: string[];
   expectedCorrect: boolean;
   expectedSimilarity?: number;
 }
@@ -40,7 +41,7 @@ const fixtures: { textGrading: TextCase[]; multipleChoice: ChoiceCase[] } = JSON
 
 describe('grading parity (golden fixture)', () => {
   it.each(fixtures.textGrading)('text grading: $name', (c) => {
-    const { correct, similarity } = gradeTextAnswer(c.input, c.answer);
+    const { correct, similarity } = gradeTextAnswer(c.input, c.answer, c.alternativeAnswers ?? []);
     expect(correct).toBe(c.expectedCorrect);
     if (c.expectedSimilarity !== undefined) {
       expect(similarity).toBeCloseTo(c.expectedSimilarity, 9);

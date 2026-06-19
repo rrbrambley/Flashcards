@@ -501,6 +501,36 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun create_deck_round_trips_alternative_answers() = runApp { client ->
+        val auth = client.register("altans", "password1")
+        val created = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest(
+                        "Capitals",
+                        listOf(
+                            FlashcardDto("New York", "NYC", alternativeAnswers = listOf("New York City", "  ", "NYC")),
+                            FlashcardDto("Plain", "answer"),
+                        ),
+                    ),
+                ),
+            )
+        }.decode<FlashcardDeckDto>()
+        // The created response echoes what was sent.
+        assertEquals(listOf("New York City", "  ", "NYC"), created.flashcards.first().alternativeAnswers)
+
+        // Re-fetching reads them back from storage, normalized (trimmed, blanks dropped); the second
+        // card persists an empty list.
+        val fetched = client.get("/decks/${created.id}") { bearerAuth(auth.accessToken) }.decode<FlashcardDeckDto>()
+        val nyCard = fetched.flashcards.first { it.question == "New York" }
+        val plainCard = fetched.flashcards.first { it.question == "Plain" }
+        assertEquals(listOf("New York City", "NYC"), nyCard.alternativeAnswers)
+        assertEquals(emptyList<String>(), plainCard.alternativeAnswers)
+    }
+
+    @Test
     fun oversized_request_body_is_rejected_with_413() = runApp { client ->
         val auth = client.register("val4", "password1")
         val huge = "x".repeat(6 * 1024 * 1024 + 1) // just over the 6 MB cap

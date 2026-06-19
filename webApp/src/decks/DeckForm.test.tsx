@@ -50,7 +50,38 @@ describe('DeckForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Create deck' }));
 
     await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith('Spanish', [{ question: 'Hola', answer: 'Hello', imageUrl: null }], []),
+      expect(onSubmit).toHaveBeenCalledWith(
+        'Spanish',
+        [{ question: 'Hola', answer: 'Hello', imageUrl: null, alternativeAnswers: [] }],
+        [],
+      ),
+    );
+  });
+
+  it('collects per-card alternative answers (one per line, trimmed, deduped)', async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    render(
+      <DeckForm
+        submitLabel="Save changes"
+        initialTitle="Capitals"
+        initialCards={[{ term: 'New York', definition: 'NYC', alternativeAnswers: ['New York City'] }]}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    // Seeded alternatives are shown one per line; add another (with blank/dup noise that gets cleaned).
+    const alternatives = screen.getByLabelText(/Other accepted answers/);
+    expect(alternatives).toHaveValue('New York City');
+    await userEvent.clear(alternatives);
+    await userEvent.type(alternatives, 'NYC\n  The Big Apple  \n\nNYC');
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith(
+        'Capitals',
+        [{ question: 'New York', answer: 'NYC', imageUrl: null, alternativeAnswers: ['NYC', 'The Big Apple'] }],
+        [],
+      ),
     );
   });
 
@@ -74,9 +105,11 @@ describe('DeckForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
 
     await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith('Capitals', [{ question: 'France', answer: 'Paris', imageUrl: null }], [
-        'History',
-      ]),
+      expect(onSubmit).toHaveBeenCalledWith(
+        'Capitals',
+        [{ question: 'France', answer: 'Paris', imageUrl: null, alternativeAnswers: [] }],
+        ['History'],
+      ),
     );
   });
 

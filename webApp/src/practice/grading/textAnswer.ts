@@ -27,14 +27,29 @@ function levenshtein(a: string, b: string): number {
   return prev[b.length];
 }
 
-/**
- * Grades [input] against the card's [answer]: normalizes both, then compares by normalized
- * Levenshtein similarity (1 = identical). Correct when similarity ≥ [TEXT_ANSWER_THRESHOLD].
- */
-export function gradeTextAnswer(input: string, answer: string): { correct: boolean; similarity: number } {
-  const a = normalize(input);
-  const b = normalize(answer);
+/** Normalized Levenshtein similarity (0–1, 1 = identical) between two already-normalized strings. */
+function similarityOf(a: string, b: string): number {
   const maxLen = Math.max(a.length, b.length);
-  const similarity = maxLen === 0 ? 1 : 1 - levenshtein(a, b) / maxLen;
-  return { correct: similarity >= TEXT_ANSWER_THRESHOLD, similarity };
+  return maxLen === 0 ? 1 : 1 - levenshtein(a, b) / maxLen;
+}
+
+/**
+ * Grades [input] against the card's [answer] plus any [alternativeAnswers] (FLA-109): normalizes
+ * each, then takes the best normalized Levenshtein similarity (1 = identical). Correct when that best
+ * similarity ≥ [TEXT_ANSWER_THRESHOLD] — i.e. the input matches the primary OR any alternative.
+ * Blank alternatives are ignored (so an empty input can't match an empty alternative).
+ */
+export function gradeTextAnswer(
+  input: string,
+  answer: string,
+  alternativeAnswers: string[] = [],
+): { correct: boolean; similarity: number } {
+  const a = normalize(input);
+  let best = similarityOf(a, normalize(answer));
+  for (const alternative of alternativeAnswers) {
+    const b = normalize(alternative);
+    if (b.length === 0) continue;
+    best = Math.max(best, similarityOf(a, b));
+  }
+  return { correct: best >= TEXT_ANSWER_THRESHOLD, similarity: best };
 }

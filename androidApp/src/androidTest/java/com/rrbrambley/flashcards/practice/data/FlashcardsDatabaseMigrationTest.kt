@@ -126,4 +126,27 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals(0, cursor.getInt(1))
         }
     }
+
+    @Test
+    fun migrate7To8_preservesRowsAndAddsAlternativeAnswersColumn() {
+        // Seed a v7 database with a deck + a flashcard (no alternativeAnswers column yet).
+        helper.createDatabase(testDb, 7).apply {
+            execSQL("INSERT INTO flashcard_decks (id, title, editable, tags) VALUES (1, 'Spanish basics', 1, '[]')")
+            execSQL(
+                "INSERT INTO flashcards (id, deckId, question, answer, imageUrl) " +
+                    "VALUES (5, 1, 'Hola', 'Hello', NULL)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_7_8 and validate against the exported v8 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 8, true, MIGRATION_7_8)
+
+        // The card survived and got the default (empty) alternative answers.
+        db.query("SELECT answer, alternativeAnswers FROM flashcards WHERE id = 5").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Hello", cursor.getString(0))
+            assertEquals("[]", cursor.getString(1))
+        }
+    }
 }

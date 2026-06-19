@@ -7,6 +7,7 @@ import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.mapping.toFlashcardDto
 import com.rrbrambley.flashcards.backend.routes.Cursor
 import com.rrbrambley.flashcards.backend.validation.Validation
+import com.rrbrambley.flashcards.data.mapping.AlternativeAnswers
 import com.rrbrambley.flashcards.data.mapping.DeckTags
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
@@ -194,12 +195,15 @@ object DeckRepository {
 
     private fun insertFlashcards(deckId: Long, cards: List<FlashcardDto>) {
         cards.forEachIndexed { index, card ->
+            // Normalize alternatives defensively (trim, drop blanks) so junk isn't persisted (FLA-109).
+            val alternatives = card.alternativeAnswers.map { it.trim() }.filter { it.isNotEmpty() }
             Flashcards.insert {
                 it[Flashcards.deckId] = deckId
                 it[question] = card.question
                 it[answer] = card.answer
                 it[imageUrl] = card.imageUrl
                 it[position] = index
+                it[alternativeAnswers] = AlternativeAnswers.encode(alternatives)
             }
         }
     }

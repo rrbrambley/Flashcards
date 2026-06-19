@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.practice.data
 
+import com.rrbrambley.flashcards.data.mapping.AlternativeAnswers
 import com.rrbrambley.flashcards.data.mapping.DeckTags
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
@@ -13,7 +14,13 @@ fun FlashcardDeckDto.toDeckEntity(): FlashcardDeckEntity =
     FlashcardDeckEntity(id = id, title = title, editable = editable, tags = DeckTags.encode(tags))
 
 fun FlashcardDeckDto.toFlashcardEntities(): List<FlashcardEntity> = flashcards.map {
-    FlashcardEntity(deckId = id, question = it.question, answer = it.answer, imageUrl = it.imageUrl)
+    FlashcardEntity(
+        deckId = id,
+        question = it.question,
+        answer = it.answer,
+        imageUrl = it.imageUrl,
+        alternativeAnswers = AlternativeAnswers.encode(it.alternativeAnswers),
+    )
 }
 
 fun PracticeSessionDto.toEntity(): PracticeSessionEntity = PracticeSessionEntity(
@@ -38,7 +45,9 @@ fun PracticeSessionDto.toDeckStubEntity(): FlashcardDeckEntity = FlashcardDeckEn
 fun FlashcardDeckWithCards.toDomain(): FlashcardDeck = FlashcardDeck(
     id = deck.id,
     title = deck.title,
-    flashcards = flashcards.map { Flashcard(it.question, it.answer, it.imageUrl) },
+    flashcards = flashcards.map {
+        Flashcard(it.question, it.answer, it.imageUrl, AlternativeAnswers.decode(it.alternativeAnswers))
+    },
     isEditable = deck.editable,
     tags = DeckTags.decode(deck.tags),
 )

@@ -65,7 +65,12 @@ export function EditDeckPage() {
               initialTitle={deck.title}
               initialCategory={deck.tags?.[0] ?? ''}
               readOnly={deck.editable === false}
-              initialCards={deck.flashcards.map((f) => ({ term: f.question, definition: f.answer, imageUrl: f.imageUrl }))}
+              initialCards={deck.flashcards.map((f) => ({
+                term: f.question,
+                definition: f.answer,
+                imageUrl: f.imageUrl,
+                alternativeAnswers: f.alternativeAnswers,
+              }))}
               onSubmit={async (title, flashcards, tags) => {
                 try {
                   await api.updateDeck(deckId, { title, flashcards, tags });
