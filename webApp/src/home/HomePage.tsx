@@ -75,6 +75,9 @@ export function HomePage() {
           <Link to="/library" className="link-btn">
             Library
           </Link>
+          <Link to="/settings" className="link-btn">
+            Settings
+          </Link>
           <button className="link-btn" onClick={signOut}>
             Sign out
           </button>

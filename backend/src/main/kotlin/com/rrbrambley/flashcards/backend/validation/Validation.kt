@@ -14,6 +14,7 @@ object Validation {
     const val MAX_CARD_TEXT_LENGTH = 2_000
     const val MAX_TAGS = 10
     const val MAX_TAG_LENGTH = 40
+    const val MAX_DISPLAY_NAME_LENGTH = 80
 
     /** Coarse cap on request bodies, enforced from Content-Length before parsing. Above the 5 MB
      *  image-upload limit so multipart uploads still pass and hit their own check. */
@@ -43,6 +44,19 @@ object Validation {
             require(card.question.length <= MAX_CARD_TEXT_LENGTH) { "card text is too long" }
             require(card.answer.length <= MAX_CARD_TEXT_LENGTH) { "card text is too long" }
         }
+    }
+
+    /**
+     * Normalizes a display name for storage (FLA-114): trims, then treats a blank as "unset" (null,
+     * so attribution falls back to the email local-part). Throws (→ 400) if it's too long.
+     */
+    fun normalizeDisplayName(displayName: String?): String? {
+        val trimmed = displayName?.trim().orEmpty()
+        if (trimmed.isEmpty()) return null
+        require(trimmed.length <= MAX_DISPLAY_NAME_LENGTH) {
+            "a display name must be at most $MAX_DISPLAY_NAME_LENGTH characters"
+        }
+        return trimmed
     }
 
     /**

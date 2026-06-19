@@ -43,6 +43,7 @@ import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
+import com.rrbrambley.flashcards.shared.api.UpdateProfileRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import com.typesafe.config.ConfigFactory
 import io.ktor.client.HttpClient
@@ -1484,6 +1485,42 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(LoginRequest("meuser@example.com", "password1")))
         }.decode<AuthResponse>()
         assertEquals(setOf("manage_global_decks", "manage_roles"), login.permissions.toSet())
+    }
+
+    @Test
+    fun auth_me_display_name_is_set_trimmed_and_cleared() = runApp { client ->
+        val user = client.register("namer", "password1")
+        // Unset by default.
+        val before = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
+        assertNull(before.displayName)
+
+        // PATCH sets it (trimmed).
+        val set = client.patch("/auth/me") {
+            bearerAuth(user.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(UpdateProfileRequest("  Rob B  ")))
+        }.decode<MeResponse>()
+        assertEquals("Rob B", set.displayName)
+        assertEquals("Rob B", client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>().displayName)
+
+        // A blank value clears it back to the default (null).
+        val cleared = client.patch("/auth/me") {
+            bearerAuth(user.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(UpdateProfileRequest("   ")))
+        }.decode<MeResponse>()
+        assertNull(cleared.displayName)
+    }
+
+    @Test
+    fun auth_me_display_name_too_long_is_rejected() = runApp { client ->
+        val user = client.register("longname", "password1")
+        val response = client.patch("/auth/me") {
+            bearerAuth(user.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(UpdateProfileRequest("x".repeat(81))))
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
     }
 
     @Test

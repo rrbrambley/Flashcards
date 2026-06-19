@@ -13,6 +13,10 @@ object Users : LongIdTable("users") {
     // The Google subject id for accounts created/linked via Sign in with Google.
     val googleSub = varchar("google_sub", 255).nullable()
     val createdAtMillis = long("created_at_millis")
+
+    // Optional public-facing name for message attribution (FLA-114); null falls back to the email
+    // local-part. Nullable so createMissingTablesAndColumns adds it to an existing DB.
+    val displayName = varchar("display_name", 80).nullable()
 }
 
 /**
