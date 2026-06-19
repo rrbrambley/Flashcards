@@ -24,4 +24,6 @@ data class FlashcardEntity(
     val question: String,
     val answer: String,
     val imageUrl: String? = null,
+    /** JSON-encoded List<String> of extra accepted answers (FLA-109); "[]" when none. */
+    val alternativeAnswers: String = "[]",
 )

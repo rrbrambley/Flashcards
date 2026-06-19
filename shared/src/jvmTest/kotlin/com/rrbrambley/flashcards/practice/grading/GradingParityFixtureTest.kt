@@ -30,6 +30,7 @@ class GradingParityFixtureTest {
         val name: String,
         val input: String,
         val answer: String,
+        val alternativeAnswers: List<String> = emptyList(),
         val expectedCorrect: Boolean,
         val expectedSimilarity: Double? = null,
     )
@@ -61,7 +62,7 @@ class GradingParityFixtureTest {
     @Test
     fun textGradingMatchesTheGoldenFixture() {
         for (case in fixtures.textGrading) {
-            val grade = gradeTextAnswer(case.input, case.answer)
+            val grade = gradeTextAnswer(case.input, case.answer, case.alternativeAnswers)
             assertEquals(case.expectedCorrect, grade.correct, "correct mismatch for '${case.name}'")
             case.expectedSimilarity?.let { expected ->
                 assertTrue(

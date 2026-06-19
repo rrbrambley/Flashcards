@@ -59,6 +59,10 @@ object Flashcards : LongIdTable("flashcards") {
     val imageUrl = text("image_url").nullable()
     val position = integer("position").default(0)
 
+    // Extra accepted answers for free-text Test mode (FLA-109), JSON-encoded List<String>. Nullable so
+    // createMissingTablesAndColumns adds it to an existing DB without a manual migration (null = none).
+    val alternativeAnswers = text("alternative_answers").nullable()
+
     init {
         index(false, deckId)
     }

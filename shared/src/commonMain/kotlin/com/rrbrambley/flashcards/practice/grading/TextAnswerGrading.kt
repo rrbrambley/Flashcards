@@ -36,15 +36,25 @@ private fun levenshtein(a: String, b: String): Int {
     return prev[b.length]
 }
 
-/**
- * Grades [input] against the card's [answer]: normalizes both, then compares by normalized
- * Levenshtein similarity (1 = identical). Correct when similarity >= [TEXT_ANSWER_THRESHOLD].
- * Mirrors the web's `gradeTextAnswer` so every platform grades identically.
- */
-fun gradeTextAnswer(input: String, answer: String): TextAnswerGrade {
-    val a = normalize(input)
-    val b = normalize(answer)
+/** Normalized Levenshtein similarity (0–1, 1 = identical) between two already-normalized strings. */
+private fun similarityOf(a: String, b: String): Double {
     val maxLen = maxOf(a.length, b.length)
-    val similarity = if (maxLen == 0) 1.0 else 1.0 - levenshtein(a, b).toDouble() / maxLen
-    return TextAnswerGrade(correct = similarity >= TEXT_ANSWER_THRESHOLD, similarity = similarity)
+    return if (maxLen == 0) 1.0 else 1.0 - levenshtein(a, b).toDouble() / maxLen
+}
+
+/**
+ * Grades [input] against the card's [answer] plus any [alternativeAnswers] (FLA-109): normalizes
+ * each, then takes the best normalized Levenshtein similarity (1 = identical). Correct when that best
+ * similarity >= [TEXT_ANSWER_THRESHOLD] — i.e. the input matches the primary OR any alternative.
+ * Blank alternatives are ignored. Mirrors the web's `gradeTextAnswer` so every platform grades identically.
+ */
+fun gradeTextAnswer(input: String, answer: String, alternativeAnswers: List<String> = emptyList()): TextAnswerGrade {
+    val a = normalize(input)
+    var best = similarityOf(a, normalize(answer))
+    for (alternative in alternativeAnswers) {
+        val b = normalize(alternative)
+        if (b.isEmpty()) continue
+        best = maxOf(best, similarityOf(a, b))
+    }
+    return TextAnswerGrade(correct = best >= TEXT_ANSWER_THRESHOLD, similarity = best)
 }

@@ -47,5 +47,12 @@ val MIGRATION_6_7 = object : Migration(6, 7) {
     }
 }
 
+/** v7 → v8: add the `alternativeAnswers` column to flashcards (JSON `List<String>`, default empty). */
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `flashcards` ADD COLUMN `alternativeAnswers` TEXT NOT NULL DEFAULT '[]'")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
-val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+val ALL_MIGRATIONS = arrayOf(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)

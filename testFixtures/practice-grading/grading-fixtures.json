@@ -77,6 +77,45 @@
       "answer": "",
       "expectedCorrect": true,
       "expectedSimilarity": 1.0
+    },
+    {
+      "name": "alternative answer: exact match on an alternative (primary differs)",
+      "input": "NYC",
+      "answer": "New York",
+      "alternativeAnswers": ["NYC", "New York City"],
+      "expectedCorrect": true,
+      "expectedSimilarity": 1.0
+    },
+    {
+      "name": "alternative answer: fuzzy match on an alternative within tolerance (~0.909)",
+      "input": "Mississipi",
+      "answer": "Spain",
+      "alternativeAnswers": ["Mississippi"],
+      "expectedCorrect": true,
+      "expectedSimilarity": 0.9090909090909091
+    },
+    {
+      "name": "alternative answer: matches neither the primary nor any alternative",
+      "input": "Berlin",
+      "answer": "Paris",
+      "alternativeAnswers": ["Lyon", "Nice"],
+      "expectedCorrect": false
+    },
+    {
+      "name": "alternative answer: best similarity across primary + alternatives is taken",
+      "input": "Paris",
+      "answer": "Lyon",
+      "alternativeAnswers": ["Marseille", "Paris"],
+      "expectedCorrect": true,
+      "expectedSimilarity": 1.0
+    },
+    {
+      "name": "alternative answer: blank alternatives are ignored (empty input stays incorrect)",
+      "input": "",
+      "answer": "Paris",
+      "alternativeAnswers": ["", "   "],
+      "expectedCorrect": false,
+      "expectedSimilarity": 0.0
     }
   ],
 

@@ -137,7 +137,8 @@ class FlashcardsViewModel @Inject constructor(
 
     private suspend fun loadGuestDeck(deckId: Long, mode: String) {
         val deck = runCatching { apiClient.getCatalogDeck(deckId) }.getOrNull()
-        val cards = deck?.flashcards.orEmpty().map { Flashcard(it.question, it.answer, it.imageUrl) }
+        val cards = deck?.flashcards.orEmpty()
+            .map { Flashcard(it.question, it.answer, it.imageUrl, it.alternativeAnswers) }
         if (deck == null || cards.isEmpty()) {
             _uiState.update { FlashcardsUiState.LoadingFailed }
             return

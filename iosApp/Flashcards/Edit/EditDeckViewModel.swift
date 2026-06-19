@@ -93,7 +93,12 @@ final class EditDeckViewModel: ObservableObject {
             id: deckId,
             title: deckTitle.trimmed,
             flashcards: complete.map {
-                Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: $0.imageUrl)
+                Flashcard(
+                    question: $0.term.trimmed,
+                    answer: $0.definition.trimmed,
+                    imageUrl: $0.imageUrl,
+                    alternativeAnswers: $0.alternativeAnswers
+                )
             },
             isEditable: true,
             // The optional category as a single tag (empty when blank).
@@ -113,7 +118,13 @@ final class EditDeckViewModel: ObservableObject {
 
     private func populate(from deck: FlashcardDeck) {
         let drafts = (deck.flashcards as? [Flashcard])?.map {
-            CardDraft(term: $0.question, definition: $0.answer, imageUrl: $0.imageUrl)
+            // Carry alternativeAnswers through so saving an edit preserves them (no iOS authoring UI yet).
+            CardDraft(
+                term: $0.question,
+                definition: $0.answer,
+                imageUrl: $0.imageUrl,
+                alternativeAnswers: $0.alternativeAnswers
+            )
         } ?? []
         let cards = drafts.isEmpty ? [CardDraft()] : drafts
         // Surface only the first tag as the editable category (the backend keeps a list).

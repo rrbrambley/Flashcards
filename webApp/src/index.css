@@ -119,6 +119,12 @@ button.danger:hover:not(:disabled) {
   display: block;
   margin-top: 0.2rem;
 }
+.field-hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  display: block;
+  margin-top: 0.2rem;
+}
 .success {
   color: var(--success);
   font-size: 0.9rem;

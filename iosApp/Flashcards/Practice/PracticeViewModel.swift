@@ -201,7 +201,12 @@ final class PracticeViewModel: ObservableObject {
         }
         deckTitle = deck.title
         cards = ((deck.flashcards as? [FlashcardDto]) ?? []).map {
-            Flashcard(question: $0.question, answer: $0.answer, imageUrl: $0.imageUrl)
+            Flashcard(
+                question: $0.question,
+                answer: $0.answer,
+                imageUrl: $0.imageUrl,
+                alternativeAnswers: $0.alternativeAnswers
+            )
         }
         guard !cards.isEmpty else { state = .failed; return }
         index = 0

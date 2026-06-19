@@ -70,7 +70,13 @@ final class CreateDeckViewModel: ObservableObject {
             id: 0,
             title: deckTitle.trimmed,
             flashcards: complete.map {
-                Flashcard(question: $0.term.trimmed, answer: $0.definition.trimmed, imageUrl: $0.imageUrl)
+                // No alternative-answers authoring UI on iOS yet (FLA-109); new cards have none.
+                Flashcard(
+                    question: $0.term.trimmed,
+                    answer: $0.definition.trimmed,
+                    imageUrl: $0.imageUrl,
+                    alternativeAnswers: $0.alternativeAnswers
+                )
             },
             isEditable: true,
             // The optional category as a single tag (empty when blank). Kotlin default args don't

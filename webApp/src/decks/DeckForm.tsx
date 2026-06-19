@@ -7,9 +7,25 @@ interface CardDraft {
   id: number;
   term: string;
   definition: string;
+  // Raw textarea text, one alternative answer per line; parsed on submit (FLA-109).
+  alternatives: string;
   imageUrl: string | null;
   uploading: boolean;
   uploadError?: string | null;
+}
+
+/** Parses the alternatives textarea: one per line, trimmed, blanks dropped, de-duplicated. */
+function parseAlternatives(raw: string): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const line of raw.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      result.push(trimmed);
+    }
+  }
+  return result;
 }
 
 const MINIMUM_COMPLETE_CARDS = 1;
@@ -22,6 +38,7 @@ interface InitialCard {
   term: string;
   definition: string;
   imageUrl?: string | null;
+  alternativeAnswers?: string[];
 }
 
 interface DeckFormProps {
@@ -54,6 +71,7 @@ export function DeckForm({
     id: index + 1,
     term: card.term,
     definition: card.definition,
+    alternatives: (card.alternativeAnswers ?? []).join('\n'),
     imageUrl: card.imageUrl ?? null,
     uploading: false,
   }));
@@ -72,7 +90,10 @@ export function DeckForm({
   };
 
   const addCard = () => {
-    setCards((current) => [...current, { id: nextId, term: '', definition: '', imageUrl: null, uploading: false }]);
+    setCards((current) => [
+      ...current,
+      { id: nextId, term: '', definition: '', alternatives: '', imageUrl: null, uploading: false },
+    ]);
     setNextId((n) => n + 1);
   };
 
@@ -126,6 +147,7 @@ export function DeckForm({
           question: c.term.trim(),
           answer: c.definition.trim(),
           imageUrl: c.imageUrl,
+          alternativeAnswers: parseAlternatives(c.alternatives),
         })),
         trimmedCategory ? [trimmedCategory] : [],
       );
@@ -241,6 +263,17 @@ export function DeckForm({
                 aria-invalid={definitionError}
               />
               {definitionError && <span className="field-error">Enter a definition</span>}
+            </label>
+            <label>
+              Other accepted answers (optional)
+              <textarea
+                value={card.alternatives}
+                rows={2}
+                disabled={readOnly}
+                placeholder={'One per line\ne.g. NYC'}
+                onChange={(e) => updateCard(card.id, { alternatives: e.target.value })}
+              />
+              <span className="field-hint">Also marked correct in Test mode. One per line.</span>
             </label>
           </fieldset>
         );

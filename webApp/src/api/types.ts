@@ -12,6 +12,9 @@ export interface FlashcardDto {
   question: string;
   answer: string;
   imageUrl?: string | null;
+  // Extra answers accepted alongside `answer` when grading free-text Test mode (FLA-109).
+  // Omitted/absent on older payloads → treated as none.
+  alternativeAnswers?: string[];
 }
 
 export interface FlashcardDeckDto {

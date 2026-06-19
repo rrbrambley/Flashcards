@@ -35,7 +35,11 @@ export function TestMode({ card, onResult }: PracticeModeProps) {
       </div>
 
       {!graded ? (
-        <TextAnswerInput onSubmit={(input) => setGraded({ input, correct: gradeTextAnswer(input, card.answer).correct })} />
+        <TextAnswerInput
+          onSubmit={(input) =>
+            setGraded({ input, correct: gradeTextAnswer(input, card.answer, card.alternativeAnswers ?? []).correct })
+          }
+        />
       ) : (
         <>
           {/* Keep the typed answer where the input was, with the verdict beside it. */}

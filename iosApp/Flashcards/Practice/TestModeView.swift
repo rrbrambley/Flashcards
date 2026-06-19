@@ -42,7 +42,12 @@ struct TestModeView: View {
     }
 
     private func submit() {
-        let correct = TextAnswerGradingKt.gradeTextAnswer(input: input, answer: card.answer).correct
+        // Kotlin default args don't bridge to Swift, so pass alternativeAnswers explicitly (FLA-109).
+        let correct = TextAnswerGradingKt.gradeTextAnswer(
+            input: input,
+            answer: card.answer,
+            alternativeAnswers: card.alternativeAnswers
+        ).correct
         graded = Graded(input: input, correct: correct)
     }
 
