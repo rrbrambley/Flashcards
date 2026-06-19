@@ -5,6 +5,7 @@ import com.rrbrambley.flashcards.backend.error.ForbiddenException
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.error.PayloadTooLargeException
 import com.rrbrambley.flashcards.backend.error.ServiceUnavailableException
+import com.rrbrambley.flashcards.backend.error.TooManyRequestsException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
 import com.rrbrambley.flashcards.backend.error.UnsupportedMediaTypeException
 import com.rrbrambley.flashcards.shared.api.ErrorResponse
@@ -40,6 +41,9 @@ fun Application.configureStatusPages() {
         }
         exception<UnsupportedMediaTypeException> { call, cause ->
             call.respond(HttpStatusCode.UnsupportedMediaType, ErrorResponse("unsupported_media_type", cause.message))
+        }
+        exception<TooManyRequestsException> { call, cause ->
+            call.respond(HttpStatusCode.TooManyRequests, ErrorResponse("rate_limited", cause.message))
         }
         exception<BadRequestException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("bad_request", cause.message))

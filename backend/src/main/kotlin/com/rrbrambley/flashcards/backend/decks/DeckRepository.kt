@@ -265,6 +265,8 @@ object DeckRepository {
             flashcards = cards,
             editable = false,
             tags = DeckTags.decode(this[Decks.tags]),
+            // Catalog decks are global, so discussions are available whenever the flag is on (FLA-115).
+            discussionsEnabled = this[Decks.discussionEnabled],
         )
     }
 
@@ -282,6 +284,19 @@ object DeckRepository {
             // The owner may edit; a global (NULL owner) deck is editable by a manage-global-decks admin.
             editable = owner == userId || (owner == null && canManageGlobal),
             tags = DeckTags.decode(this[Decks.tags]),
+            // Discussions are only available on a global (ownerless) deck with the flag on (FLA-115).
+            discussionsEnabled = owner == null && this[Decks.discussionEnabled],
         )
+    }
+
+    /**
+     * Toggles per-card discussions on a **global** (ownerless) deck (FLA-115). The route gates this on
+     * manage-discussions. A non-global or missing deck yields 404 (discussions are global-only).
+     */
+    suspend fun setDiscussionEnabled(deckId: Long, enabled: Boolean): FlashcardDeckDto = dbQuery {
+        val row = Decks.selectAll().where { (Decks.id eq deckId) and Decks.ownerUserId.isNull() }.firstOrNull()
+            ?: throw NotFoundException("Deck $deckId not found")
+        Decks.update({ Decks.id eq deckId }) { it[discussionEnabled] = enabled }
+        row.toCatalogDeckDto().copy(discussionsEnabled = enabled)
     }
 }

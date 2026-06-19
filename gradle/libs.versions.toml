@@ -33,6 +33,7 @@ junitJupiter = "5.11.4"
 datastore = "1.2.1"
 awsSdk = "1.6.84"
 googleApiClient = "2.9.0"
+profanityFilter = "1.0.1"
 androidxCredentials = "1.6.0"
 googleid = "1.2.0"
 
@@ -110,6 +111,9 @@ logback-classic = { group = "ch.qos.logback", name = "logback-classic", version.
 bcrypt = { group = "at.favre.lib", name = "bcrypt", version.ref = "bcrypt" }
 google-api-client = { group = "com.google.api-client", name = "google-api-client", version.ref = "googleApiClient" }
 aws-s3 = { group = "aws.sdk.kotlin", name = "s3", version.ref = "awsSdk" }
+
+# Content moderation: dictionary-based profanity filter (Apache-2.0) for discussion messages (FLA-115).
+profanity-filter = { group = "com.modernmt.text", name = "profanity-filter", version.ref = "profanityFilter" }
 
 # Test
 testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainers" }

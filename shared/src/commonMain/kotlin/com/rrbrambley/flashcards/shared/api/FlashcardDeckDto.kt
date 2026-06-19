@@ -16,4 +16,7 @@ data class FlashcardDeckDto(
     /** User-facing tags / categories for grouping, sorting, and search. Defaults to empty so an
      *  older payload that omits the field degrades to "untagged". */
     val tags: List<String> = emptyList(),
+    /** Whether per-card discussions are available on this deck (FLA-115) — true only for a global
+     *  (ownerless) deck with discussions enabled. Defaulted so older payloads degrade to "off". */
+    val discussionsEnabled: Boolean = false,
 )

@@ -15,10 +15,14 @@ object Validation {
     const val MAX_TAGS = 10
     const val MAX_TAG_LENGTH = 40
     const val MAX_DISPLAY_NAME_LENGTH = 80
+    const val MAX_DISCUSSION_TEXT_LENGTH = 500
 
     /** Coarse cap on request bodies, enforced from Content-Length before parsing. Above the 5 MB
      *  image-upload limit so multipart uploads still pass and hit their own check. */
     const val MAX_REQUEST_BODY_BYTES = 6L * 1024 * 1024
+
+    // Blocks off-platform links in discussions: an explicit scheme, a "www." host, or a markdown link.
+    private val LINK_REGEX = Regex("""https?://|www\.|]\(""", RegexOption.IGNORE_CASE)
 
     // Pragmatic email shape: non-space local part @ non-space domain with a dot. Not full RFC 5322,
     // but rejects the obvious junk ("a", "a@b") the old contains("@") check let through.
@@ -44,6 +48,22 @@ object Validation {
             require(card.question.length <= MAX_CARD_TEXT_LENGTH) { "card text is too long" }
             require(card.answer.length <= MAX_CARD_TEXT_LENGTH) { "card text is too long" }
         }
+    }
+
+    /**
+     * Validates + normalizes a discussion message (FLA-115): trims; rejects blank, over-long, any
+     * link, or profanity. Plaintext only — there's no markup, so links/images can't render. Throws
+     * [IllegalArgumentException] (→ 400) on rejection.
+     */
+    fun normalizeDiscussionMessage(content: String): String {
+        val trimmed = content.trim()
+        require(trimmed.isNotEmpty()) { "message must not be blank" }
+        require(trimmed.length <= MAX_DISCUSSION_TEXT_LENGTH) {
+            "message must be at most $MAX_DISCUSSION_TEXT_LENGTH characters"
+        }
+        require(!LINK_REGEX.containsMatchIn(trimmed)) { "links aren't allowed in discussions" }
+        require(!Profanity.isProfane(trimmed)) { "please keep discussions respectful" }
+        return trimmed
     }
 
     /**
