@@ -15,6 +15,9 @@ export interface FlashcardDto {
   // Extra answers accepted alongside `answer` when grading free-text Test mode (FLA-109).
   // Omitted/absent on older payloads → treated as none.
   alternativeAnswers?: string[];
+  // Stable per-card id assigned by the backend, preserved across edits (FLA-113). Blank/absent for a
+  // not-yet-saved card; the edit form round-trips it so ids aren't regenerated.
+  cardUid?: string;
 }
 
 export interface FlashcardDeckDto {

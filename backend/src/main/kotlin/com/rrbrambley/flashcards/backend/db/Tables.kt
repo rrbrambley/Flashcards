@@ -63,6 +63,12 @@ object Flashcards : LongIdTable("flashcards") {
     // createMissingTablesAndColumns adds it to an existing DB without a manual migration (null = none).
     val alternativeAnswers = text("alternative_answers").nullable()
 
+    // Stable per-card id that survives deck edits (FLA-113) — minted on insert, preserved on update,
+    // so per-card features (card discussions) stay attached to the right card. Nullable so the column
+    // is auto-added to an existing DB; DatabaseFactory backfills NULLs on boot, and inserts never leave
+    // it null. uniqueIndex tolerates multiple NULLs (Postgres) during that window.
+    val cardUid = varchar("card_uid", 36).nullable().uniqueIndex()
+
     init {
         index(false, deckId)
     }

@@ -26,4 +26,6 @@ data class FlashcardEntity(
     val imageUrl: String? = null,
     /** JSON-encoded List<String> of extra accepted answers (FLA-109); "[]" when none. */
     val alternativeAnswers: String = "[]",
+    /** Stable per-card id (FLA-113), cached so mobile edits round-trip it; "" when not yet assigned. */
+    val cardUid: String = "",
 )

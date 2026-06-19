@@ -10,6 +10,8 @@ interface CardDraft {
   // Raw textarea text, one alternative answer per line; parsed on submit (FLA-109).
   alternatives: string;
   imageUrl: string | null;
+  // Stable backend card id, carried through the edit (no UI) so it's preserved on save (FLA-113).
+  cardUid?: string;
   uploading: boolean;
   uploadError?: string | null;
 }
@@ -39,6 +41,7 @@ interface InitialCard {
   definition: string;
   imageUrl?: string | null;
   alternativeAnswers?: string[];
+  cardUid?: string;
 }
 
 interface DeckFormProps {
@@ -73,6 +76,7 @@ export function DeckForm({
     definition: card.definition,
     alternatives: (card.alternativeAnswers ?? []).join('\n'),
     imageUrl: card.imageUrl ?? null,
+    cardUid: card.cardUid,
     uploading: false,
   }));
 
@@ -148,6 +152,8 @@ export function DeckForm({
           answer: c.definition.trim(),
           imageUrl: c.imageUrl,
           alternativeAnswers: parseAlternatives(c.alternatives),
+          // Preserve the card's stable id on edit; omitted (undefined) for a new card (FLA-113).
+          cardUid: c.cardUid,
         })),
         trimmedCategory ? [trimmedCategory] : [],
       );

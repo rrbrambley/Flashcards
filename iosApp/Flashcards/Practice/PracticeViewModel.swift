@@ -205,7 +205,8 @@ final class PracticeViewModel: ObservableObject {
                 question: $0.question,
                 answer: $0.answer,
                 imageUrl: $0.imageUrl,
-                alternativeAnswers: $0.alternativeAnswers
+                alternativeAnswers: $0.alternativeAnswers,
+                cardUid: $0.cardUid
             )
         }
         guard !cards.isEmpty else { state = .failed; return }

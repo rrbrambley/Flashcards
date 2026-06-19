@@ -184,6 +184,8 @@ class EditDeckViewModel @Inject constructor(
                                 imageUrl = card.imageUrl,
                                 // Preserve any web-authored alternatives through an edit (FLA-109).
                                 alternativeAnswers = card.alternativeAnswers,
+                                // Preserve the stable card id so the backend updates in place (FLA-113).
+                                cardUid = card.cardUid,
                             )
                         },
                         tags = currentState.category.toCategoryTags(),
@@ -255,6 +257,7 @@ class EditDeckViewModel @Inject constructor(
             definition = flashcard.answer,
             imageUrl = flashcard.imageUrl,
             alternativeAnswers = flashcard.alternativeAnswers,
+            cardUid = flashcard.cardUid,
         )
     }.ifEmpty {
         listOf(DeckFlashcardDraft(id = 1L))

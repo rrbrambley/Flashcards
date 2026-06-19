@@ -518,8 +518,10 @@ class ApplicationFlowTest {
                 ),
             )
         }.decode<FlashcardDeckDto>()
-        // The created response echoes what was sent.
-        assertEquals(listOf("New York City", "  ", "NYC"), created.flashcards.first().alternativeAnswers)
+        // The created response reflects stored state (FLA-113 re-reads after write): normalized
+        // alternatives (trimmed, blanks dropped) and a minted cardUid per card.
+        assertEquals(listOf("New York City", "NYC"), created.flashcards.first().alternativeAnswers)
+        assertTrue(created.flashcards.all { it.cardUid.isNotBlank() })
 
         // Re-fetching reads them back from storage, normalized (trimmed, blanks dropped); the second
         // card persists an empty list.
@@ -528,6 +530,63 @@ class ApplicationFlowTest {
         val plainCard = fetched.flashcards.first { it.question == "Plain" }
         assertEquals(listOf("New York City", "NYC"), nyCard.alternativeAnswers)
         assertEquals(emptyList<String>(), plainCard.alternativeAnswers)
+    }
+
+    @Test
+    fun editing_a_deck_preserves_card_uids() = runApp { client ->
+        val auth = client.register("uidedit", "password1")
+        val created = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest(
+                        "Capitals",
+                        listOf(
+                            FlashcardDto("France", "Paris"),
+                            FlashcardDto("Spain", "Madrid"),
+                            FlashcardDto("Italy", "Rome"),
+                        ),
+                    ),
+                ),
+            )
+        }.decode<FlashcardDeckDto>()
+        // Every created card got a unique cardUid.
+        assertTrue(created.flashcards.all { it.cardUid.isNotBlank() })
+        assertEquals(3, created.flashcards.map { it.cardUid }.toSet().size)
+        val franceUid = created.flashcards.first { it.question == "France" }.cardUid
+        val italyUid = created.flashcards.first { it.question == "Italy" }.cardUid
+
+        // Edit: reorder (Italy first), keep France with a new answer (by uid), drop Spain, add a new card.
+        val updated = client.put("/decks/${created.id}") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest(
+                        "Capitals",
+                        listOf(
+                            FlashcardDto("Italy", "Roma", cardUid = italyUid),
+                            FlashcardDto("France", "Paris, France", cardUid = franceUid),
+                            FlashcardDto("Germany", "Berlin"),
+                        ),
+                    ),
+                ),
+            )
+        }.decode<FlashcardDeckDto>()
+
+        val byQuestion = updated.flashcards.associateBy { it.question }
+        // Order follows the request; Spain was dropped.
+        assertEquals(listOf("Italy", "France", "Germany"), updated.flashcards.map { it.question })
+        // Unchanged cards kept their uids (updated in place, not regenerated).
+        assertEquals(italyUid, byQuestion.getValue("Italy").cardUid)
+        assertEquals("Roma", byQuestion.getValue("Italy").answer)
+        assertEquals(franceUid, byQuestion.getValue("France").cardUid)
+        // The new card got a fresh uid distinct from the surviving ones.
+        val germanyUid = byQuestion.getValue("Germany").cardUid
+        assertTrue(germanyUid.isNotBlank())
+        assertNotEquals(franceUid, germanyUid)
+        assertNotEquals(italyUid, germanyUid)
     }
 
     @Test

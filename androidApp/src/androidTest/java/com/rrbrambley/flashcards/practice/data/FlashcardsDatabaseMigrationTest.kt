@@ -149,4 +149,27 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals("[]", cursor.getString(1))
         }
     }
+
+    @Test
+    fun migrate8To9_preservesRowsAndAddsCardUidColumn() {
+        // Seed a v8 database with a deck + a flashcard (no cardUid column yet).
+        helper.createDatabase(testDb, 8).apply {
+            execSQL("INSERT INTO flashcard_decks (id, title, editable, tags) VALUES (1, 'Spanish basics', 1, '[]')")
+            execSQL(
+                "INSERT INTO flashcards (id, deckId, question, answer, imageUrl, alternativeAnswers) " +
+                    "VALUES (5, 1, 'Hola', 'Hello', NULL, '[]')",
+            )
+            close()
+        }
+
+        // Run MIGRATION_8_9 and validate against the exported v9 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 9, true, MIGRATION_8_9)
+
+        // The card survived and got the default (empty) cardUid.
+        db.query("SELECT answer, cardUid FROM flashcards WHERE id = 5").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Hello", cursor.getString(0))
+            assertEquals("", cursor.getString(1))
+        }
+    }
 }

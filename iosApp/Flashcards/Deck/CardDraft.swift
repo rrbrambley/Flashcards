@@ -14,6 +14,8 @@ struct CardDraft: Identifiable, Equatable {
     /// Extra accepted answers for Test mode (FLA-109). No authoring UI on iOS yet — carried through
     /// edits so they're preserved on save (web is the authoring surface for now).
     var alternativeAnswers: [String]
+    /// Stable backend card id (FLA-113), carried through edits so it's preserved on save; "" when new.
+    var cardUid: String
     var uploading: Bool
     var uploadError: String?
 
@@ -23,6 +25,7 @@ struct CardDraft: Identifiable, Equatable {
         definition: String = "",
         imageUrl: String? = nil,
         alternativeAnswers: [String] = [],
+        cardUid: String = "",
         uploading: Bool = false,
         uploadError: String? = nil
     ) {
@@ -31,6 +34,7 @@ struct CardDraft: Identifiable, Equatable {
         self.definition = definition
         self.imageUrl = imageUrl
         self.alternativeAnswers = alternativeAnswers
+        self.cardUid = cardUid
         self.uploading = uploading
         self.uploadError = uploadError
     }
@@ -42,7 +46,8 @@ struct CardDraft: Identifiable, Equatable {
 
     static func == (lhs: CardDraft, rhs: CardDraft) -> Bool {
         lhs.id == rhs.id && lhs.term == rhs.term && lhs.definition == rhs.definition &&
-            lhs.imageUrl == rhs.imageUrl && lhs.alternativeAnswers == rhs.alternativeAnswers
+            lhs.imageUrl == rhs.imageUrl && lhs.alternativeAnswers == rhs.alternativeAnswers &&
+            lhs.cardUid == rhs.cardUid
     }
 }
 

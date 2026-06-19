@@ -25,6 +25,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
+import java.util.UUID
 
 object DeckRepository {
 
@@ -136,7 +137,7 @@ object DeckRepository {
             it[Decks.tags] = DeckTags.encode(tags)
         }.value
         insertFlashcards(deckId, request.flashcards)
-        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards, tags = tags)
+        FlashcardDeckDto(id = deckId, title = request.title, flashcards = readDeckCards(deckId), tags = tags)
     }
 
     /** Creates an ownerless (global) catalog deck. The route gates this on manage-global-decks. */
@@ -149,7 +150,7 @@ object DeckRepository {
             it[Decks.tags] = DeckTags.encode(tags)
         }.value
         insertFlashcards(deckId, request.flashcards)
-        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards, tags = tags)
+        FlashcardDeckDto(id = deckId, title = request.title, flashcards = readDeckCards(deckId), tags = tags)
     }
 
     /**
@@ -169,9 +170,8 @@ object DeckRepository {
             it[title] = request.title
             it[Decks.tags] = DeckTags.encode(tags)
         }
-        Flashcards.deleteWhere { Flashcards.deckId eq deckId }
-        insertFlashcards(deckId, request.flashcards)
-        FlashcardDeckDto(id = deckId, title = request.title, flashcards = request.flashcards, tags = tags)
+        upsertFlashcards(deckId, request.flashcards)
+        FlashcardDeckDto(id = deckId, title = request.title, flashcards = readDeckCards(deckId), tags = tags)
     }
 
     /**
@@ -195,18 +195,62 @@ object DeckRepository {
 
     private fun insertFlashcards(deckId: Long, cards: List<FlashcardDto>) {
         cards.forEachIndexed { index, card ->
-            // Normalize alternatives defensively (trim, drop blanks) so junk isn't persisted (FLA-109).
-            val alternatives = card.alternativeAnswers.map { it.trim() }.filter { it.isNotEmpty() }
-            Flashcards.insert {
-                it[Flashcards.deckId] = deckId
-                it[question] = card.question
-                it[answer] = card.answer
-                it[imageUrl] = card.imageUrl
-                it[position] = index
-                it[alternativeAnswers] = AlternativeAnswers.encode(alternatives)
-            }
+            insertFlashcard(deckId, card, index)
         }
     }
+
+    /** Inserts one card, minting a fresh [Flashcards.cardUid] unless the caller supplied one (FLA-113). */
+    private fun insertFlashcard(deckId: Long, card: FlashcardDto, index: Int) {
+        // Normalize alternatives defensively (trim, drop blanks) so junk isn't persisted (FLA-109).
+        val alternatives = card.alternativeAnswers.map { it.trim() }.filter { it.isNotEmpty() }
+        Flashcards.insert {
+            it[Flashcards.deckId] = deckId
+            it[cardUid] = card.cardUid.ifBlank { UUID.randomUUID().toString() }
+            it[question] = card.question
+            it[answer] = card.answer
+            it[imageUrl] = card.imageUrl
+            it[position] = index
+            it[alternativeAnswers] = AlternativeAnswers.encode(alternatives)
+        }
+    }
+
+    /**
+     * Reconciles a deck's cards on edit by [Flashcards.cardUid] instead of delete-all + reinsert
+     * (FLA-113), so a card's stable id (and anything attached to it, e.g. discussions) survives edits.
+     * Incoming cards with a known uid are updated in place; new cards (blank uid) are inserted with a
+     * fresh uid; cards no longer present are deleted.
+     */
+    private fun upsertFlashcards(deckId: Long, cards: List<FlashcardDto>) {
+        val existing = Flashcards.selectAll()
+            .where { Flashcards.deckId eq deckId }
+            .associate { it[Flashcards.cardUid] to it[Flashcards.id].value }
+        val keptIds = mutableSetOf<Long>()
+        cards.forEachIndexed { index, card ->
+            val existingId = card.cardUid.ifBlank { null }?.let { existing[it] }
+            if (existingId == null) {
+                insertFlashcard(deckId, card, index)
+            } else {
+                keptIds += existingId
+                val alternatives = card.alternativeAnswers.map { it.trim() }.filter { it.isNotEmpty() }
+                Flashcards.update({ Flashcards.id eq existingId }) {
+                    it[question] = card.question
+                    it[answer] = card.answer
+                    it[imageUrl] = card.imageUrl
+                    it[position] = index
+                    it[alternativeAnswers] = AlternativeAnswers.encode(alternatives)
+                }
+            }
+        }
+        existing.values.filter { it !in keptIds }.forEach { removedId ->
+            Flashcards.deleteWhere { Flashcards.id eq removedId }
+        }
+    }
+
+    /** A deck's cards as DTOs (carrying their minted [Flashcards.cardUid]), ordered by position. */
+    private fun readDeckCards(deckId: Long): List<FlashcardDto> = Flashcards.selectAll()
+        .where { Flashcards.deckId eq deckId }
+        .orderBy(Flashcards.position to SortOrder.ASC)
+        .map { it.toFlashcardDto() }
 
     /** A read-only DTO (cards included, `editable = false`) for the public catalog. */
     private fun ResultRow.toCatalogDeckDto(): FlashcardDeckDto {

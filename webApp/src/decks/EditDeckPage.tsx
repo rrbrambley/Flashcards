@@ -70,6 +70,7 @@ export function EditDeckPage() {
                 definition: f.answer,
                 imageUrl: f.imageUrl,
                 alternativeAnswers: f.alternativeAnswers,
+                cardUid: f.cardUid,
               }))}
               onSubmit={async (title, flashcards, tags) => {
                 try {
