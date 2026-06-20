@@ -816,3 +816,88 @@ button.danger:hover:not(:disabled) {
   justify-content: space-between;
   margin-top: 1rem;
 }
+
+/* Card discussions (FLA-116) */
+.discuss-btn {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+.discussion-panel {
+  max-width: 32rem;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+}
+.discussion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.discussion-header h2 {
+  margin: 0;
+}
+.discussion-header-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+.discussion-body {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0.75rem 0;
+}
+.discussion-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.discussion-replies {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding-left: 1rem;
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.discussion-message-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.8rem;
+}
+.discussion-author {
+  font-weight: 600;
+}
+.discussion-content {
+  margin: 0.15rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.discussion-reply-btn {
+  font-size: 0.8rem;
+}
+.discussion-replying {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+.discussion-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.discussion-form textarea {
+  width: 100%;
+  resize: vertical;
+}
+.discussion-locked {
+  text-align: center;
+  margin: 0.5rem 0 0;
+}

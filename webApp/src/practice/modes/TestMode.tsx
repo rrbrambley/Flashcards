@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TextAnswerInput } from '../components/TextAnswerInput';
+import { DiscussButton } from '../components/DiscussButton';
 import { gradeTextAnswer } from '../grading/textAnswer';
 import type { PracticeModeProps } from './types';
 
@@ -9,7 +10,7 @@ import type { PracticeModeProps } from './types';
  * user proceeds (Next / Enter), which reports the outcome. The runner remounts this per card, so the
  * two-phase state resets on its own.
  */
-export function TestMode({ card, onResult }: PracticeModeProps) {
+export function TestMode({ card, onResult, onDiscuss }: PracticeModeProps) {
   const [graded, setGraded] = useState<{ input: string; correct: boolean } | null>(null);
 
   // Once revealed, Enter advances (mirrors the submit-with-Enter flow).
@@ -59,6 +60,7 @@ export function TestMode({ card, onResult }: PracticeModeProps) {
               Next
             </button>
           </div>
+          {onDiscuss && <DiscussButton onClick={onDiscuss} />}
         </>
       )}
     </div>

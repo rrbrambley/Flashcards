@@ -12,10 +12,13 @@ export function DeckLibrary({
   fetchPage,
   actions,
   emptyMessage,
+  renderDeckControls,
 }: {
   fetchPage: (cursor?: string) => Promise<Page<FlashcardDeckDto>>;
   actions: ReactNode;
   emptyMessage: string;
+  /** Optional extra control per deck row (e.g. the admin discussions toggle on the global list). */
+  renderDeckControls?: (deck: FlashcardDeckDto) => ReactNode;
 }) {
   const navigate = useNavigate();
   // Remember which list we're on so Edit can send the user back here (personal vs. global).
@@ -152,6 +155,7 @@ export function DeckLibrary({
                   Practice
                 </button>
               )}
+              {renderDeckControls?.(deck)}
             </li>
           ))}
         </ul>

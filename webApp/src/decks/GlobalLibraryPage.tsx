@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/auth-context';
+import type { FlashcardDeckDto } from '../api/types';
 import { DeckLibrary } from './DeckLibrary';
 
 /**
@@ -34,7 +36,38 @@ export function GlobalLibraryPage() {
         fetchPage={(cursor) => api.getGlobalDecks(cursor ? { cursor } : {})}
         emptyMessage="No global decks yet — create the first one."
         actions={<button onClick={() => navigate('/create?global=1')}>+ New global deck</button>}
+        renderDeckControls={can('manage_discussions') ? (deck) => <DiscussionToggle deck={deck} /> : undefined}
       />
     </div>
+  );
+}
+
+/** Admin per-deck toggle for card discussions (FLA-116); manages its own optimistic state. */
+function DiscussionToggle({ deck }: { deck: FlashcardDeckDto }) {
+  const [enabled, setEnabled] = useState(deck.discussionsEnabled ?? false);
+  const [saving, setSaving] = useState(false);
+
+  const toggle = async () => {
+    setSaving(true);
+    try {
+      const updated = await api.setDeckDiscussionsEnabled(deck.id, !enabled);
+      setEnabled(updated.discussionsEnabled ?? false);
+    } catch {
+      // leave the toggle as-is; the admin can retry
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className="secondary deck-discussions-toggle"
+      onClick={toggle}
+      disabled={saving}
+      aria-pressed={enabled}
+    >
+      {`Discussions: ${enabled ? 'On' : 'Off'}`}
+    </button>
   );
 }

@@ -9,6 +9,7 @@ import { DEFAULT_MODE, findMode, PRACTICE_MODES } from './modes';
 import type { PracticeMode } from './modes/types';
 import { ShareButton } from './ShareButton';
 import { SavePrompt } from './SavePrompt';
+import { DiscussionPanel } from './DiscussionPanel';
 import { initPractice, practiceReducer } from './practiceReducer';
 
 // Resolves the practice mode from the `?mode=` query param. When the deck has only one registered
@@ -32,13 +33,15 @@ interface LoadedPractice {
   deckTitle: string;
   cards: FlashcardDto[];
   progress: Progress;
+  // Whether per-card discussions are available on this deck (FLA-116) — global deck + enabled.
+  discussionsEnabled: boolean;
 }
 
 const ZERO_PROGRESS: Progress = { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 };
 
 function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode }) {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, can } = useAuth();
   const isGuest = !token;
   const [reloadToken, setReloadToken] = useState(0);
   const [data, setData] = useState<LoadedPractice | null>(null);
@@ -79,6 +82,7 @@ function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode 
             deckTitle: deck.title,
             cards: deck.flashcards,
             progress: session ?? ZERO_PROGRESS,
+            discussionsEnabled: deck.discussionsEnabled ?? false,
           });
         }
         setLoadedToken(reloadToken);
@@ -147,6 +151,9 @@ function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode 
             cards={data.cards}
             progress={data.progress}
             mode={mode}
+            discussionsEnabled={data.discussionsEnabled}
+            isGuest={isGuest}
+            canModerate={can('manage_discussions')}
             onProgress={onProgress}
             onAgain={() => setReloadToken((t) => t + 1)}
             onExit={() => navigate(leaveTo)}
@@ -172,6 +179,9 @@ interface PracticeRunnerProps {
   cards: FlashcardDto[];
   progress: Progress;
   mode: PracticeMode;
+  discussionsEnabled: boolean;
+  isGuest: boolean;
+  canModerate: boolean;
   onProgress: (progress: Progress, status: 'practicing' | 'completed') => void;
   onAgain: () => void;
   onExit: () => void;
@@ -179,10 +189,23 @@ interface PracticeRunnerProps {
 
 // Mode-agnostic session loop: owns progress/score (reducer), best-effort persistence (signed-in
 // only), and the completion summary. The current mode renders the card and reports each outcome.
-function PracticeRunner({ sessionId, cards, progress, mode, onProgress, onAgain, onExit }: PracticeRunnerProps) {
+function PracticeRunner({
+  sessionId,
+  cards,
+  progress,
+  mode,
+  discussionsEnabled,
+  isGuest,
+  canModerate,
+  onProgress,
+  onAgain,
+  onExit,
+}: PracticeRunnerProps) {
   const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, progress));
   // Overall streak after this completion (FLA-106); null until loaded / for guests (no session).
   const [streak, setStreak] = useState<number | null>(null);
+  // The card whose discussion panel is open (FLA-116), or null when closed.
+  const [discussCardUid, setDiscussCardUid] = useState<string | null>(null);
 
   // Mirror progress up so the parent's leave-guard can read it (and persist on guest save).
   useEffect(() => {
@@ -244,6 +267,9 @@ function PracticeRunner({ sessionId, cards, progress, mode, onProgress, onAgain,
   }
 
   const ModeComponent = mode.Component;
+  const currentCard = state.cards[state.index];
+  // Discussions need a stable cardUid (FLA-113) and the deck opted in (FLA-116).
+  const canDiscuss = discussionsEnabled && !!currentCard.cardUid;
   return (
     <div className="practice">
       <div className="score-row">
@@ -259,7 +285,22 @@ function PracticeRunner({ sessionId, cards, progress, mode, onProgress, onAgain,
       </div>
 
       {/* Keyed by index so each card gets a fresh mode instance (flip/input/selection reset). */}
-      <ModeComponent key={state.index} card={state.cards[state.index]} cards={state.cards} onResult={mark} />
+      <ModeComponent
+        key={state.index}
+        card={currentCard}
+        cards={state.cards}
+        onResult={mark}
+        onDiscuss={canDiscuss ? () => setDiscussCardUid(currentCard.cardUid ?? null) : undefined}
+      />
+
+      {discussCardUid && (
+        <DiscussionPanel
+          cardUid={discussCardUid}
+          isGuest={isGuest}
+          canModerate={canModerate}
+          onClose={() => setDiscussCardUid(null)}
+        />
+      )}
     </div>
   );
 }

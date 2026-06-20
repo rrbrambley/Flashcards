@@ -14,6 +14,11 @@ export interface PracticeModeProps {
   cards: FlashcardDto[];
   /** Report the outcome for this card; advances the session. Call exactly once per card. */
   onResult: (correct: boolean) => void;
+  /**
+   * Opens the card's discussion thread (FLA-116). Provided only when the deck has discussions
+   * enabled; a mode renders a 💬 control once the answer is revealed. Absent → no discussion UI.
+   */
+  onDiscuss?: () => void;
 }
 
 /** A selectable practice mode: its persisted key, display copy, and the component that runs it. */

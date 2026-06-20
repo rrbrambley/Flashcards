@@ -126,6 +126,22 @@ export interface StreaksResponse {
   decks: DeckStreakDto[];
 }
 
+// Card discussions (FLA-116), mirroring the backend⇄web contract in backend/.../discussions.
+export interface DiscussionThread {
+  cardUid: string;
+  isLocked: boolean;
+  messageCount: number;
+}
+
+export interface DiscussionMessage {
+  id: number;
+  authorDisplayName: string;
+  content: string;
+  // Present on a reply (one level deep); null/absent on a top-level message.
+  parentMessageId?: number | null;
+  createdAtMillis: number;
+}
+
 // Home feed (GET /home). The action is a discriminated union mirroring the backend's
 // sealed HomeButtonActionDto (kotlinx default class discriminator: "type").
 export type HomeButtonAction =
