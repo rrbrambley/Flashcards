@@ -1,14 +1,22 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GlobalLibraryPage } from './GlobalLibraryPage';
 import { api } from '../api/client';
 
-const authState = vi.hoisted(() => ({ canManageGlobal: false }));
+const authState = vi.hoisted(() => ({ canManageGlobal: false, canManageDiscussions: false }));
 
-vi.mock('../api/client', () => ({ api: { getGlobalDecks: vi.fn(), getAllSessions: vi.fn() } }));
+vi.mock('../api/client', () => ({
+  api: { getGlobalDecks: vi.fn(), getAllSessions: vi.fn(), setDeckDiscussionsEnabled: vi.fn() },
+}));
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ signOut: vi.fn(), can: (p: string) => p === 'manage_global_decks' && authState.canManageGlobal }),
+  useAuth: () => ({
+    signOut: vi.fn(),
+    can: (p: string) =>
+      (p === 'manage_global_decks' && authState.canManageGlobal) ||
+      (p === 'manage_discussions' && authState.canManageDiscussions),
+  }),
 }));
 
 function renderPage() {
@@ -26,6 +34,7 @@ describe('GlobalLibraryPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authState.canManageGlobal = false;
+    authState.canManageDiscussions = false;
   });
 
   it('redirects non-admins to the personal library', () => {
@@ -53,5 +62,41 @@ describe('GlobalLibraryPage', () => {
     vi.mocked(api.getGlobalDecks).mockResolvedValue({ items: [], nextCursor: null });
     renderPage();
     expect(await screen.findByText(/No global decks yet/)).toBeInTheDocument();
+  });
+
+  it('an admin toggles discussions on a deck via the switch (FLA-116)', async () => {
+    authState.canManageGlobal = true;
+    authState.canManageDiscussions = true;
+    vi.mocked(api.getGlobalDecks).mockResolvedValue({
+      items: [{ id: 1, title: 'Flags', flashcards: [], editable: true, discussionsEnabled: false }],
+      nextCursor: null,
+    });
+    vi.mocked(api.setDeckDiscussionsEnabled).mockResolvedValue({
+      id: 1,
+      title: 'Flags',
+      flashcards: [],
+      editable: true,
+      discussionsEnabled: true,
+    });
+    renderPage();
+
+    const toggle = await screen.findByRole('switch', { name: /Discussions for Flags/ });
+    expect(toggle).not.toBeChecked();
+    await userEvent.click(toggle);
+
+    await waitFor(() => expect(api.setDeckDiscussionsEnabled).toHaveBeenCalledWith(1, true));
+    expect(toggle).toBeChecked();
+  });
+
+  it('hides the discussions switch from an admin without manage_discussions', async () => {
+    authState.canManageGlobal = true;
+    authState.canManageDiscussions = false;
+    vi.mocked(api.getGlobalDecks).mockResolvedValue({
+      items: [{ id: 1, title: 'Flags', flashcards: [], editable: true }],
+      nextCursor: null,
+    });
+    renderPage();
+    await screen.findByText('Flags');
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
   });
 });

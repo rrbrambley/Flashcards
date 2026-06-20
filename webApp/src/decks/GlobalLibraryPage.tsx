@@ -42,32 +42,38 @@ export function GlobalLibraryPage() {
   );
 }
 
-/** Admin per-deck toggle for card discussions (FLA-116); manages its own optimistic state. */
+/** Admin per-deck switch for card discussions (FLA-116); manages its own optimistic state. */
 function DiscussionToggle({ deck }: { deck: FlashcardDeckDto }) {
   const [enabled, setEnabled] = useState(deck.discussionsEnabled ?? false);
   const [saving, setSaving] = useState(false);
 
   const toggle = async () => {
+    const next = !enabled;
     setSaving(true);
     try {
-      const updated = await api.setDeckDiscussionsEnabled(deck.id, !enabled);
-      setEnabled(updated.discussionsEnabled ?? false);
+      const updated = await api.setDeckDiscussionsEnabled(deck.id, next);
+      setEnabled(updated.discussionsEnabled ?? next);
     } catch {
-      // leave the toggle as-is; the admin can retry
+      // leave the switch as-is; the admin can retry
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <button
-      type="button"
-      className="secondary deck-discussions-toggle"
-      onClick={toggle}
-      disabled={saving}
-      aria-pressed={enabled}
-    >
-      {`Discussions: ${enabled ? 'On' : 'Off'}`}
-    </button>
+    <label className="deck-discussions-toggle">
+      <span className="switch">
+        <input
+          type="checkbox"
+          role="switch"
+          checked={enabled}
+          disabled={saving}
+          onChange={toggle}
+          aria-label={`Discussions for ${deck.title}`}
+        />
+        <span className="switch-track" aria-hidden="true" />
+      </span>
+      <span className="switch-label">Discussions</span>
+    </label>
   );
 }
