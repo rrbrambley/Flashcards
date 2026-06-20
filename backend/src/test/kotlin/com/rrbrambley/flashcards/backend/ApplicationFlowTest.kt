@@ -16,11 +16,17 @@ import com.rrbrambley.flashcards.backend.cli.UserCreateCommand
 import com.rrbrambley.flashcards.backend.cli.UserDeleteCommand
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.db.DiscussionThreads
 import com.rrbrambley.flashcards.backend.db.PracticeSessions
 import com.rrbrambley.flashcards.backend.db.Roles
 import com.rrbrambley.flashcards.backend.db.UserRoles
 import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
+import com.rrbrambley.flashcards.backend.discussions.CreateMessageRequest
+import com.rrbrambley.flashcards.backend.discussions.DiscussionMessageDto
+import com.rrbrambley.flashcards.backend.discussions.DiscussionThreadDto
+import com.rrbrambley.flashcards.backend.discussions.LockThreadRequest
+import com.rrbrambley.flashcards.backend.discussions.ToggleDiscussionRequest
 import com.rrbrambley.flashcards.backend.plugins.BEARER_AUTH
 import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.storage.Storage
@@ -297,7 +303,7 @@ class ApplicationFlowTest {
             Users.selectAll().where { Users.email eq DatabaseFactory.DEMO_EMAIL }.first()[Users.id].value
         }
         assertEquals(
-            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key),
+            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key, Permission.MANAGE_DISCUSSIONS.key),
             PermissionRepository.effectivePermissions(demoUserId),
         )
 
@@ -374,7 +380,7 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(LoginRequest("cli-made@example.com", "password1")))
         }.decode<AuthResponse>().userId
         assertEquals(
-            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key),
+            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key, Permission.MANAGE_DISCUSSIONS.key),
             PermissionRepository.effectivePermissions(userId),
         )
     }
@@ -435,7 +441,7 @@ class ApplicationFlowTest {
 
         RoleGrantCommand.run(AdminArgs(listOf("--email", "cli-role@example.com", "--role", "admin")), StringBuilder())
         assertEquals(
-            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key),
+            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key, Permission.MANAGE_DISCUSSIONS.key),
             PermissionRepository.effectivePermissions(auth.userId),
         )
 
@@ -1429,6 +1435,189 @@ class ApplicationFlowTest {
         )
     }
 
+    // --- Card discussions (FLA-115) ---
+
+    /** Admin-creates a global deck and enables discussions; returns (deckId, first card's cardUid). */
+    private suspend fun HttpClient.discussionDeck(adminToken: String): Pair<Long, String> {
+        val deck = post("/decks/global") {
+            bearerAuth(adminToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    CreateDeckRequest(
+                        "Geo",
+                        listOf(FlashcardDto("Capital of France?", "Paris"), FlashcardDto("Q2", "A2")),
+                    ),
+                ),
+            )
+        }.decode<FlashcardDeckDto>()
+        val enabled = patch("/decks/${deck.id}/discussion") {
+            bearerAuth(adminToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(ToggleDiscussionRequest(enabled = true)))
+        }.decode<FlashcardDeckDto>()
+        assertTrue(enabled.discussionsEnabled)
+        return deck.id to deck.flashcards.first().cardUid
+    }
+
+    private suspend fun HttpClient.postMessage(
+        token: String,
+        cardUid: String,
+        content: String,
+        parentMessageId: Long? = null,
+    ): HttpResponse = post("/discussions/$cardUid/messages") {
+        bearerAuth(token)
+        contentType(ContentType.Application.Json)
+        setBody(json.encodeToString(CreateMessageRequest(content, parentMessageId)))
+    }
+
+    @Test
+    fun discussion_post_read_and_reply_attributes_by_display_name() = runApp { client ->
+        val admin = client.register("discadmin", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+
+        val poster = client.register("poster", "password1")
+        client.patch("/auth/me") {
+            bearerAuth(poster.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(UpdateProfileRequest("Quiz Whiz")))
+        }
+        val top = client.postMessage(poster.accessToken, cardUid, "Why is it Paris?").decode<DiscussionMessageDto>()
+        assertEquals("Quiz Whiz", top.authorDisplayName) // display name, never the email
+        assertNull(top.parentMessageId)
+
+        // A reply (one level deep) by another user, who has no display name → email local-part.
+        val replier = client.register("replier", "password1")
+        val reply = client.postMessage(replier.accessToken, cardUid, "Because it's the capital.", top.id)
+            .decode<DiscussionMessageDto>()
+        assertEquals("replier", reply.authorDisplayName)
+        assertEquals(top.id, reply.parentMessageId)
+
+        // Public read (no auth) returns both, oldest first.
+        val page = client.get("/discussions/$cardUid/messages").decode<Page<DiscussionMessageDto>>()
+        assertEquals(listOf("Why is it Paris?", "Because it's the capital."), page.items.map { it.content })
+
+        // A reply to a reply is rejected (one level only).
+        assertEquals(
+            HttpStatusCode.BadRequest,
+            client.postMessage(replier.accessToken, cardUid, "nested", reply.id).status,
+        )
+    }
+
+    @Test
+    fun discussion_requires_a_global_discussion_enabled_card() = runApp { client ->
+        val admin = client.register("discadmin2", "password1")
+        grantAdmin(admin.userId)
+
+        // Unknown cardUid → 404.
+        assertEquals(HttpStatusCode.NotFound, client.postMessage(admin.accessToken, "nope-uid", "hi").status)
+
+        // A card on a global deck with discussions DISABLED → 404 (hidden) until enabled.
+        val deck = client.post("/decks/global") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Geo", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        val cardUid = deck.flashcards.first().cardUid
+        assertEquals(HttpStatusCode.NotFound, client.postMessage(admin.accessToken, cardUid, "hi").status)
+
+        // A card on a USER-OWNED deck is never discussable, even with text that would otherwise pass.
+        val owned = client.post("/decks") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Mine", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.postMessage(admin.accessToken, owned.flashcards.first().cardUid, "hi").status,
+        )
+    }
+
+    @Test
+    fun discussion_moderation_rejects_links_and_profanity() = runApp { client ->
+        val admin = client.register("discadmin3", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+
+        assertEquals(
+            HttpStatusCode.BadRequest,
+            client.postMessage(admin.accessToken, cardUid, "see http://x.com").status,
+        )
+        assertEquals(
+            HttpStatusCode.BadRequest,
+            client.postMessage(admin.accessToken, cardUid, "visit www.spam.io").status,
+        )
+        assertEquals(
+            HttpStatusCode.BadRequest,
+            client.postMessage(admin.accessToken, cardUid, "[click](http://x)").status,
+        )
+        assertEquals(HttpStatusCode.BadRequest, client.postMessage(admin.accessToken, cardUid, "   ").status)
+        assertEquals(HttpStatusCode.BadRequest, client.postMessage(admin.accessToken, cardUid, "x".repeat(501)).status)
+        // A clean message still posts.
+        assertEquals(HttpStatusCode.OK, client.postMessage(admin.accessToken, cardUid, "Great question!").status)
+    }
+
+    @Test
+    fun discussion_rate_limit_returns_429_after_two_messages_in_a_minute() = runApp { client ->
+        val admin = client.register("discadmin4", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+        val user = client.register("chatty", "password1")
+
+        assertEquals(HttpStatusCode.OK, client.postMessage(user.accessToken, cardUid, "one").status)
+        assertEquals(HttpStatusCode.OK, client.postMessage(user.accessToken, cardUid, "two").status)
+        // The 3rd within the minute is rate-limited.
+        assertEquals(HttpStatusCode.TooManyRequests, client.postMessage(user.accessToken, cardUid, "three").status)
+    }
+
+    @Test
+    fun discussion_admin_lock_blocks_posting_and_is_gated() = runApp { client ->
+        val admin = client.register("discadmin5", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+        val user = client.register("locktest", "password1")
+        client.postMessage(user.accessToken, cardUid, "hello")
+
+        // A non-admin can't lock (403).
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.patch("/discussions/$cardUid/lock") {
+                bearerAuth(user.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(LockThreadRequest(locked = true)))
+            }.status,
+        )
+
+        // The admin locks it; further posting is 403; reading still works.
+        val locked = client.patch("/discussions/$cardUid/lock") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(LockThreadRequest(locked = true)))
+        }.decode<DiscussionThreadDto>()
+        assertTrue(locked.isLocked)
+        assertEquals(HttpStatusCode.Forbidden, client.postMessage(user.accessToken, cardUid, "more").status)
+        assertEquals(HttpStatusCode.OK, client.get("/discussions/$cardUid/messages").status)
+    }
+
+    @Test
+    fun discussion_thread_auto_locks_at_the_threshold() = runApp { client ->
+        val admin = client.register("discadmin6", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+        val user = client.register("autolock", "password1")
+
+        // First post creates the thread; bump its count to one below the threshold, then post once more.
+        client.postMessage(user.accessToken, cardUid, "first")
+        transaction {
+            DiscussionThreads.update({ DiscussionThreads.cardUid eq cardUid }) { it[messageCount] = 499 }
+        }
+        client.postMessage(user.accessToken, cardUid, "second")
+
+        val meta = client.get("/discussions/$cardUid").decode<DiscussionThreadDto>()
+        assertTrue(meta.isLocked)
+    }
+
     @Test
     fun global_deck_list_endpoint_is_admin_only_and_returns_only_global_decks() = runApp { client ->
         val admin = client.register("globallist", "password1")
@@ -1477,14 +1666,14 @@ class ApplicationFlowTest {
         grantAdmin(user.userId)
         val me1 = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(listOf("admin"), me1.roles)
-        assertEquals(setOf("manage_global_decks", "manage_roles"), me1.permissions.toSet())
+        assertEquals(setOf("manage_global_decks", "manage_roles", "manage_discussions"), me1.permissions.toSet())
 
         // ...and a fresh login carries the permissions too.
         val login = client.post("/auth/login") {
             contentType(ContentType.Application.Json)
             setBody(json.encodeToString(LoginRequest("meuser@example.com", "password1")))
         }.decode<AuthResponse>()
-        assertEquals(setOf("manage_global_decks", "manage_roles"), login.permissions.toSet())
+        assertEquals(setOf("manage_global_decks", "manage_roles", "manage_discussions"), login.permissions.toSet())
     }
 
     @Test
@@ -1549,7 +1738,7 @@ class ApplicationFlowTest {
 
         val roles = client.get("/admin/roles") { bearerAuth(admin.accessToken) }.decode<List<RoleDto>>()
         val adminRole = roles.single { it.key == "admin" }
-        assertEquals(setOf("manage_global_decks", "manage_roles"), adminRole.permissions.toSet())
+        assertEquals(setOf("manage_global_decks", "manage_roles", "manage_discussions"), adminRole.permissions.toSet())
         assertTrue(roles.any { it.key == "user" && it.permissions.isEmpty() })
     }
 

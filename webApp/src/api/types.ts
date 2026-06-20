@@ -30,6 +30,9 @@ export interface FlashcardDeckDto {
   // Category tags. The backend stores a list; the UI surfaces only the first as the "Category".
   // Omitted on older payloads → treated as untagged.
   tags?: string[];
+  // Whether per-card discussions are available (FLA-115) — true only for a global deck with
+  // discussions enabled. Omitted/absent → treated as off.
+  discussionsEnabled?: boolean;
 }
 
 export interface CreateDeckRequest {

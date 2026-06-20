@@ -68,6 +68,8 @@ object DatabaseFactory {
                 Permissions,
                 RolePermissions,
                 UserRoles,
+                DiscussionThreads,
+                DiscussionMessages,
             )
             backfillCardUids()
             seed()

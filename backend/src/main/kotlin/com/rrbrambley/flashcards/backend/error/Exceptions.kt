@@ -20,3 +20,6 @@ class PayloadTooLargeException(message: String) : RuntimeException(message)
 
 /** Mapped to 415 by StatusPages (unsupported image content type). */
 class UnsupportedMediaTypeException(message: String) : RuntimeException(message)
+
+/** Mapped to 429 by StatusPages (per-user rate limit exceeded, e.g. posting discussion messages). */
+class TooManyRequestsException(message: String) : RuntimeException(message)

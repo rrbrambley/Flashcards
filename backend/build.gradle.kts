@@ -42,6 +42,9 @@ dependencies {
     // Storage (S3 / CloudFront)
     implementation(libs.aws.s3)
 
+    // Content moderation for discussion messages (FLA-115)
+    implementation(libs.profanity.filter)
+
     // Logging
     implementation(libs.logback.classic)
 

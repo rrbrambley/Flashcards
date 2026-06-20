@@ -29,3 +29,7 @@ suspend fun ApplicationCall.hasPermission(permission: Permission): Boolean =
 /** Reads a required Long path parameter, throwing 400 on a missing/invalid value. */
 fun ApplicationCall.pathLong(name: String): Long = parameters[name]?.toLongOrNull()
     ?: throw IllegalArgumentException("Invalid '$name' path parameter")
+
+/** Reads a required non-blank String path parameter, throwing 400 on a missing/blank value. */
+fun ApplicationCall.pathString(name: String): String = parameters[name]?.takeIf { it.isNotBlank() }
+    ?: throw IllegalArgumentException("Invalid '$name' path parameter")

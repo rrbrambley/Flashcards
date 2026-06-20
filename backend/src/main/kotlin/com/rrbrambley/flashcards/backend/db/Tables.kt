@@ -51,6 +51,10 @@ object Decks : LongIdTable("decks") {
     // Nullable so createMissingTablesAndColumns adds it to an existing DB without a manual migration.
     val tags = text("tags").nullable()
 
+    // Whether per-card discussions are enabled (FLA-115). Only meaningful on global (ownerless) decks;
+    // admin-toggled. Default false; auto-added by createMissingTablesAndColumns.
+    val discussionEnabled = bool("discussion_enabled").default(false)
+
     init {
         index(false, ownerUserId)
     }
@@ -140,5 +144,37 @@ object PracticeSessions : LongIdTable("practice_sessions") {
         index(false, userId, isCompleted)
         // Completed-session-by-day-and-user, for the streak read (FLA-106).
         index(false, userId, completedAtMillis)
+    }
+}
+
+/**
+ * A per-card discussion thread (FLA-115), keyed by the card's stable [cardUid] (FLA-113). Created
+ * lazily on the first post (or first admin lock). [deckId] scopes it to a deck for cascade-on-delete;
+ * [messageCount] drives the auto-lock at a threshold.
+ */
+object DiscussionThreads : LongIdTable("discussion_threads") {
+    val cardUid = varchar("card_uid", 36).uniqueIndex()
+    val deckId = reference("deck_id", Decks, onDelete = ReferenceOption.CASCADE)
+    val isLocked = bool("is_locked").default(false)
+    val messageCount = integer("message_count").default(0)
+    val createdAtMillis = long("created_at_millis")
+}
+
+/**
+ * A single message in a [DiscussionThreads] thread (FLA-115). [parentMessageId] is a soft reference to
+ * another message in the same thread for a single level of replies (top-level messages have null).
+ */
+object DiscussionMessages : LongIdTable("discussion_messages") {
+    val threadId = reference("thread_id", DiscussionThreads, onDelete = ReferenceOption.CASCADE)
+    val authorUserId = reference("author_user_id", Users, onDelete = ReferenceOption.CASCADE)
+    val parentMessageId = long("parent_message_id").nullable()
+    val content = text("content")
+    val createdAtMillis = long("created_at_millis")
+
+    init {
+        // Chronological message read for a thread.
+        index(false, threadId, createdAtMillis)
+        // Per-(author, thread) windowed count for rate limiting.
+        index(false, authorUserId, threadId, createdAtMillis)
     }
 }
