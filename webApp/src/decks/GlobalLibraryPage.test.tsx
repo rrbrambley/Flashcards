@@ -64,17 +64,17 @@ describe('GlobalLibraryPage', () => {
     expect(await screen.findByText(/No global decks yet/)).toBeInTheDocument();
   });
 
-  it('an admin toggles discussions on a deck via the switch (FLA-116)', async () => {
+  it('an admin toggles discussions on a deck via the switch, and the management view hides Practice (FLA-116)', async () => {
     authState.canManageGlobal = true;
     authState.canManageDiscussions = true;
     vi.mocked(api.getGlobalDecks).mockResolvedValue({
-      items: [{ id: 1, title: 'Flags', flashcards: [], editable: true, discussionsEnabled: false }],
+      items: [{ id: 1, title: 'Flags', flashcards: [{ question: 'Q', answer: 'A' }], editable: true, discussionsEnabled: false }],
       nextCursor: null,
     });
     vi.mocked(api.setDeckDiscussionsEnabled).mockResolvedValue({
       id: 1,
       title: 'Flags',
-      flashcards: [],
+      flashcards: [{ question: 'Q', answer: 'A' }],
       editable: true,
       discussionsEnabled: true,
     });
@@ -82,8 +82,10 @@ describe('GlobalLibraryPage', () => {
 
     const toggle = await screen.findByRole('switch', { name: /Discussions for Flags/ });
     expect(toggle).not.toBeChecked();
-    await userEvent.click(toggle);
+    // Practice is not offered on the management screen, even for a deck with cards.
+    expect(screen.queryByRole('button', { name: 'Practice' })).not.toBeInTheDocument();
 
+    await userEvent.click(toggle);
     await waitFor(() => expect(api.setDeckDiscussionsEnabled).toHaveBeenCalledWith(1, true));
     expect(toggle).toBeChecked();
   });

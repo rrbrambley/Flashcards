@@ -36,6 +36,7 @@ export function GlobalLibraryPage() {
         fetchPage={(cursor) => api.getGlobalDecks(cursor ? { cursor } : {})}
         emptyMessage="No global decks yet — create the first one."
         actions={<button onClick={() => navigate('/create?global=1')}>+ New global deck</button>}
+        showPractice={false}
         renderDeckControls={can('manage_discussions') ? (deck) => <DiscussionToggle deck={deck} /> : undefined}
       />
     </div>

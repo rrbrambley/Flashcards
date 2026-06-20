@@ -13,12 +13,15 @@ export function DeckLibrary({
   actions,
   emptyMessage,
   renderDeckControls,
+  showPractice = true,
 }: {
   fetchPage: (cursor?: string) => Promise<Page<FlashcardDeckDto>>;
   actions: ReactNode;
   emptyMessage: string;
   /** Optional extra control per deck row (e.g. the admin discussions toggle on the global list). */
   renderDeckControls?: (deck: FlashcardDeckDto) => ReactNode;
+  /** Whether to show the per-deck Practice shortcut. False on the admin management view. */
+  showPractice?: boolean;
 }) {
   const navigate = useNavigate();
   // Remember which list we're on so Edit can send the user back here (personal vs. global).
@@ -150,7 +153,7 @@ export function DeckLibrary({
                   {deck.flashcards.length} card{deck.flashcards.length === 1 ? '' : 's'}
                 </span>
               </button>
-              {deck.flashcards.length > 0 && (
+              {showPractice && deck.flashcards.length > 0 && (
                 <button className="secondary deck-practice" onClick={() => navigate(`/decks/${deck.id}/practice`)}>
                   Practice
                 </button>
