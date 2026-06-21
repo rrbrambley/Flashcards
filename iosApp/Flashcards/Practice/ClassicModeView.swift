@@ -10,15 +10,24 @@ struct ClassicModeView: View {
     let onResult: (Bool) -> Void
     let onPrevious: () -> Void
     let onNext: () -> Void
+    var discussionsEnabled = false
+    var onDiscuss: () -> Void = {}
+
+    @State private var flipped = false
 
     var body: some View {
         VStack(spacing: Spacing.lg) {
             FlashcardCardView(
                 card: card,
+                flipped: $flipped,
                 onSwipeRight: { onResult(true) },
                 onSwipeLeft: { onResult(false) }
             )
             .frame(maxHeight: .infinity)
+            // The discussion affordance appears once the answer is revealed (flipped), mirroring web.
+            if discussionsEnabled, flipped {
+                DiscussButton(action: onDiscuss)
+            }
             NavRow(canGoBack: canGoBack, onPrevious: onPrevious, onNext: onNext)
         }
     }
@@ -28,10 +37,10 @@ struct ClassicModeView: View {
 /// definition` on the back; an optional front-of-card image renders above the term.
 private struct FlashcardCardView: View {
     let card: Flashcard
+    @Binding var flipped: Bool
     let onSwipeRight: () -> Void
     let onSwipeLeft: () -> Void
 
-    @State private var flipped = false
     @State private var drag: CGSize = .zero
 
     private let threshold: CGFloat = 120

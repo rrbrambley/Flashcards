@@ -11,14 +11,23 @@ func makeDeck(
     _ title: String,
     cards: [Flashcard] = [],
     editable: Bool = true,
-    tags: [String] = []
+    tags: [String] = [],
+    discussionsEnabled: Bool = false
 ) -> FlashcardDeck {
-    // Kotlin default args don't bridge, so `tags` must be passed explicitly.
-    FlashcardDeck(id: id, title: title, flashcards: cards, isEditable: editable, tags: tags)
+    // Kotlin default args don't bridge, so pass them all explicitly.
+    FlashcardDeck(
+        id: id,
+        title: title,
+        flashcards: cards,
+        isEditable: editable,
+        tags: tags,
+        discussionsEnabled: discussionsEnabled
+    )
 }
 
 func makeCard(_ question: String, _ answer: String, imageUrl: String? = nil) -> Flashcard {
-    Flashcard(question: question, answer: answer, imageUrl: imageUrl)
+    // Kotlin default args don't bridge, so pass them all explicitly.
+    Flashcard(question: question, answer: answer, imageUrl: imageUrl, alternativeAnswers: [], cardUid: "")
 }
 
 func makeSession(
@@ -28,7 +37,7 @@ func makeSession(
     PracticeSession(
         id: id, deckId: deckId, deckTitle: "Deck", currentCardIndex: index,
         numCorrect: correct, numIncorrect: incorrect, isCompleted: completed, mode: mode,
-        createdAtMillis: 0, updatedAtMillis: 0
+        createdAtMillis: 0, updatedAtMillis: 0, pendingSync: false
     )
 }
 

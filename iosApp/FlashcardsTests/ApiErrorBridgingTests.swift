@@ -20,9 +20,10 @@ final class ApiErrorBridgingTests: XCTestCase {
         let repo = unreachableSdk().flashcardRepository
         let deck = FlashcardDeck(
             id: 0, title: "x",
-            flashcards: [Flashcard(question: "a", answer: "b", imageUrl: nil)],
+            flashcards: [Flashcard(question: "a", answer: "b", imageUrl: nil, alternativeAnswers: [], cardUid: "")],
             isEditable: true,
-            tags: []
+            tags: [],
+            discussionsEnabled: false
         )
         do {
             try await repo.saveFlashcardDeck(deck: deck)

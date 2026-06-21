@@ -11,7 +11,8 @@ enum PracticeState {
         numIncorrect: Int,
         canGoBack: Bool,
         mode: String,
-        deck: [Flashcard]
+        deck: [Flashcard],
+        discussionsEnabled: Bool
     )
     case completed(numCorrect: Int, numIncorrect: Int)
     case failed
@@ -60,6 +61,7 @@ final class PracticeViewModel: ObservableObject {
     private var numCorrect = 0
     private var numIncorrect = 0
     private var mode = "flashcards"
+    private var discussionsEnabled = false
 
     init(
         flashcardRepository: FlashcardRepository,
@@ -77,6 +79,9 @@ final class PracticeViewModel: ObservableObject {
 
     /// The deck being practiced (id + title), for the Share action; nil until loaded.
     var shareDeckId: Int64? { deckId }
+
+    /// Whether this run is a signed-out guest (gates the discussion post → sign-in conversion).
+    var isGuestMode: Bool { isGuest }
 
     /// Whether leaving now should prompt a guest to save: guest, mid-session, with some progress.
     var shouldPromptSave: Bool {
@@ -186,6 +191,8 @@ final class PracticeViewModel: ObservableObject {
         for await deck in asyncStream(BridgingKt.flashcardDeckAdapter(flashcardRepository, deckId: deckId)) {
             guard let deck else { continue }
             cards = (deck.flashcards as? [Flashcard]) ?? []
+            // The discussions flag travels with the cached deck (FLA-123), so it works offline too.
+            discussionsEnabled = deck.discussionsEnabled
             break
         }
         guard !cards.isEmpty else { state = .failed; return }
@@ -200,6 +207,7 @@ final class PracticeViewModel: ObservableObject {
             return
         }
         deckTitle = deck.title
+        discussionsEnabled = deck.discussionsEnabled
         cards = ((deck.flashcards as? [FlashcardDto]) ?? []).map {
             Flashcard(
                 question: $0.question,
@@ -223,7 +231,8 @@ final class PracticeViewModel: ObservableObject {
             numIncorrect: numIncorrect,
             canGoBack: index > 0,
             mode: mode,
-            deck: cards
+            deck: cards,
+            discussionsEnabled: discussionsEnabled
         )
     }
 

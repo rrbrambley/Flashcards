@@ -103,7 +103,9 @@ final class EditDeckViewModel: ObservableObject {
             },
             isEditable: true,
             // The optional category as a single tag (empty when blank).
-            tags: category.toCategoryTags()
+            tags: category.toCategoryTags(),
+            // Not edited here — discussions are admin-toggled and not part of the deck-edit write.
+            discussionsEnabled: false
         )
         do {
             try await repository.updateFlashcardDeck(deck: deck)
