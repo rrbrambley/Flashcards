@@ -314,6 +314,38 @@ button.danger:hover:not(:disabled) {
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
+/* Stacks the Admin panel above the regular library controls (FLA-127). */
+.library-actions-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+/* Admin controls grouped + set apart from the regular user controls (FLA-127). */
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.admin-panel-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.admin-panel-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.admin-panel-buttons button {
+  white-space: nowrap;
+}
 
 .library-controls {
   display: flex;
