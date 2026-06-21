@@ -32,13 +32,20 @@ final class DiscussionViewModel: ObservableObject {
     @Published private(set) var authSubmitting = false
     /// Increments on each successful post so the composing field can clear itself.
     @Published private(set) var postedTick = 0
+    /// Ids of messages reported this session — drives the "Reported" state (FLA-129).
+    @Published private(set) var reportedIds: Set<Int64> = []
 
     let cardUid: String
     private let apiClient: FlashcardApiClient
     private let authService: AuthenticationService?
     private var nextCursor: String?
-    private var pendingContent: String?
-    private var pendingParentId: Int64?
+    private var pendingAuth: PendingAuth?
+
+    /// An action captured when a guest tries to post/report, replayed after the conversion succeeds.
+    private enum PendingAuth {
+        case post(content: String, parentId: Int64?)
+        case report(messageId: Int64, reason: String?)
+    }
 
     init(cardUid: String, isGuest: Bool, apiClient: FlashcardApiClient, authService: AuthenticationService?) {
         self.cardUid = cardUid
@@ -82,8 +89,7 @@ final class DiscussionViewModel: ObservableObject {
         let text = content.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, !posting else { return }
         if isGuest {
-            pendingContent = text
-            pendingParentId = replyTo?.id
+            pendingAuth = .post(content: text, parentId: replyTo?.id)
             authError = nil
             showAuthPrompt = true
             return
@@ -96,9 +102,24 @@ final class DiscussionViewModel: ObservableObject {
         }
     }
 
-    /// Guest conversion: register or log in, then post the captured message before signing in.
+    /// Reports a message (FLA-129; an optional `reason`). A guest is intercepted: the report is
+    /// captured and the sign-in prompt is shown instead. Idempotent server-side.
+    func report(messageId: Int64, reason: String?) {
+        let cleaned = reason?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let nonEmpty = (cleaned?.isEmpty ?? true) ? nil : cleaned
+        if isGuest {
+            pendingAuth = .report(messageId: messageId, reason: nonEmpty)
+            authError = nil
+            showAuthPrompt = true
+            return
+        }
+        Task { await sendReport(messageId, reason: nonEmpty) }
+    }
+
+    /// Guest conversion: register or log in, then replay the captured action (post or report) before
+    /// flipping to the signed-in state.
     func authenticateAndPost(register: Bool, email: String, password: String) {
-        guard let authService, let text = pendingContent else { return }
+        guard let authService, let pending = pendingAuth else { return }
         let trimmed = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !password.isEmpty else {
             authError = "Enter your email and password."
@@ -122,10 +143,14 @@ final class DiscussionViewModel: ObservableObject {
                 authSubmitting = false
                 return
             }
-            // Signed in — post the captured message, then flip to the signed-in state.
-            await send(text, parentId: pendingParentId)
-            pendingContent = nil
-            pendingParentId = nil
+            // Signed in — replay the captured action, then flip to the signed-in state.
+            switch pending {
+            case let .post(content, parentId):
+                await send(content, parentId: parentId)
+            case let .report(messageId, reason):
+                await sendReport(messageId, reason: reason)
+            }
+            pendingAuth = nil
             isGuest = false
             authSubmitting = false
             showAuthPrompt = false
@@ -147,6 +172,15 @@ final class DiscussionViewModel: ObservableObject {
             postError = "Couldn't post your message. Check your connection and try again."
         }
     }
+
+    private func sendReport(_ messageId: Int64, reason: String?) async {
+        do {
+            try await apiClient.reportMessage(messageId: messageId, reason: reason)
+            reportedIds.insert(messageId)
+        } catch {
+            postError = "Couldn't report this message. Please try again."
+        }
+    }
 }
 
 /// The per-card discussion thread as a sheet (FLA-123): paginated messages with one level of
@@ -156,6 +190,8 @@ struct DiscussionView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var input = ""
     @State private var replyTo: DiscussionMessageDto?
+    @State private var reportingId: Int64?
+    @State private var reportReason = ""
 
     init(cardUid: String, isGuest: Bool, apiClient: FlashcardApiClient, authService: AuthService?) {
         _viewModel = StateObject(
@@ -174,6 +210,11 @@ struct DiscussionView: View {
 
     private func replies(for id: Int64) -> [DiscussionMessageDto] {
         viewModel.messages.filter { $0.parentMessageId?.int64Value == id }
+    }
+
+    private func startReport(_ message: DiscussionMessageDto) {
+        reportReason = ""
+        reportingId = message.id
     }
 
     var body: some View {
@@ -211,6 +252,23 @@ struct DiscussionView: View {
             .sheet(isPresented: $viewModel.showAuthPrompt) {
                 DiscussionAuthPrompt(viewModel: viewModel)
             }
+            .alert(
+                "Report message",
+                isPresented: Binding(get: { reportingId != nil }, set: { if !$0 { reportingId = nil } })
+            ) {
+                TextField("Reason (optional)", text: $reportReason)
+                Button("Report") {
+                    if let id = reportingId { viewModel.report(messageId: id, reason: reportReason) }
+                    reportingId = nil
+                    reportReason = ""
+                }
+                Button("Cancel", role: .cancel) {
+                    reportingId = nil
+                    reportReason = ""
+                }
+            } message: {
+                Text("Why are you reporting this? (optional)")
+            }
         }
     }
 
@@ -225,14 +283,22 @@ struct DiscussionView: View {
             List {
                 ForEach(topLevel, id: \.id) { message in
                     VStack(alignment: .leading, spacing: Spacing.sm) {
-                        MessageRow(message: message)
-                        if !viewModel.isLocked {
+                        MessageRow(
+                            message: message,
+                            reported: viewModel.reportedIds.contains(message.id),
+                            onReport: { startReport(message) }
+                        )
+                        if !viewModel.isLocked, !message.deleted {
                             Button("Reply") { replyTo = message }
                                 .font(.caption)
                         }
                         ForEach(replies(for: message.id), id: \.id) { reply in
-                            MessageRow(message: reply)
-                                .padding(.leading, Spacing.lg)
+                            MessageRow(
+                                message: reply,
+                                reported: viewModel.reportedIds.contains(reply.id),
+                                onReport: { startReport(reply) }
+                            )
+                            .padding(.leading, Spacing.lg)
                         }
                     }
                     .padding(.vertical, Spacing.xs)
@@ -294,9 +360,12 @@ struct DiscussionView: View {
     }
 }
 
-/// One message: author + relative time, then the body.
+/// One message: author + relative time, then the body. A moderator-removed message renders a
+/// tombstone (FLA-129); otherwise a "Report" action (or a "Reported" label once reported).
 private struct MessageRow: View {
     let message: DiscussionMessageDto
+    var reported = false
+    var onReport: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -308,8 +377,23 @@ private struct MessageRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Text(message.content)
-                .font(.body)
+            if message.deleted {
+                Text("[removed by a moderator]")
+                    .font(.body)
+                    .italic()
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(message.content)
+                    .font(.body)
+                if reported {
+                    Text("Reported")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Button("Report", action: onReport)
+                        .font(.caption)
+                }
+            }
         }
     }
 }
