@@ -33,4 +33,6 @@ data class DiscussionUiState(
     val authSubmitting: Boolean = false,
     val authError: String? = null,
     val postedTick: Int = 0,
+    /** Ids of messages this user has reported this session — drives the "Reported" state (FLA-128). */
+    val reportedIds: Set<Long> = emptySet(),
 )

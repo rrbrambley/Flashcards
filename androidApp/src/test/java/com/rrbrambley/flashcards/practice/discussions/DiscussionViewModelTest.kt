@@ -142,6 +142,48 @@ class DiscussionViewModelTest {
         assertTrue(viewModel.uiState.value.messages.isEmpty())
     }
 
+    @Test
+    fun report_marksTheMessageReported_whenSignedIn() = runTest(testDispatcher) {
+        val repo = FakeDiscussionRepository(firstPage = page(listOf(message(1, "Hi"))))
+        val viewModel = DiscussionViewModel(repo, authService())
+        viewModel.load(CARD_UID, isGuest = false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.report(1, "spam")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(1L to "spam"), repo.reported)
+        assertTrue(1L in viewModel.uiState.value.reportedIds)
+    }
+
+    @Test
+    fun guestReport_opensTheAuthPrompt_withoutReporting() = runTest(testDispatcher) {
+        val repo = FakeDiscussionRepository(firstPage = page(listOf(message(1, "Hi"))))
+        val viewModel = DiscussionViewModel(repo, authService())
+        viewModel.load(CARD_UID, isGuest = true)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.report(1, "spam")
+
+        assertTrue(viewModel.uiState.value.authPrompt)
+        assertTrue(repo.reported.isEmpty())
+    }
+
+    @Test
+    fun guestConversion_replaysAPendingReport() = runTest(testDispatcher) {
+        val repo = FakeDiscussionRepository(firstPage = page(listOf(message(1, "Hi"))))
+        val viewModel = DiscussionViewModel(repo, authService(registerOk = true))
+        viewModel.load(CARD_UID, isGuest = true)
+        viewModel.uiState.first { !it.loading }
+        viewModel.report(1, "spam")
+
+        viewModel.authenticateAndPost(register = true, email = "new@user.com", password = "password1")
+
+        val state = viewModel.uiState.first { !it.authPrompt && it.reportedIds.isNotEmpty() }
+        assertFalse(state.isGuest)
+        assertEquals(listOf(1L to "spam"), repo.reported)
+    }
+
     // --- Helpers ---
 
     private fun authService(registerOk: Boolean = true): AuthService {
@@ -170,6 +212,7 @@ class DiscussionViewModelTest {
         private val postError: ApiError? = null,
     ) : DiscussionRepository {
         val posted = mutableListOf<Pair<String, Long?>>()
+        val reported = mutableListOf<Pair<Long, String?>>()
 
         override suspend fun thread(cardUid: String): DiscussionThreadDto = thread
 
@@ -180,6 +223,10 @@ class DiscussionViewModelTest {
             postError?.let { throw it }
             posted += content to parentMessageId
             return DiscussionMessageDto(1000L + posted.size, "Quiz Whiz", content, parentMessageId, createdAtMillis = 0)
+        }
+
+        override suspend fun report(messageId: Long, reason: String?) {
+            reported += messageId to reason
         }
     }
 

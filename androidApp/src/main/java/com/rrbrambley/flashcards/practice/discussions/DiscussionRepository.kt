@@ -14,6 +14,7 @@ interface DiscussionRepository {
     suspend fun thread(cardUid: String): DiscussionThreadDto
     suspend fun messages(cardUid: String, cursor: String?): Page<DiscussionMessageDto>
     suspend fun post(cardUid: String, content: String, parentMessageId: Long?): DiscussionMessageDto
+    suspend fun report(messageId: Long, reason: String?)
 }
 
 class DiscussionRepositoryImpl(private val apiClient: FlashcardApiClient) : DiscussionRepository {
@@ -25,4 +26,7 @@ class DiscussionRepositoryImpl(private val apiClient: FlashcardApiClient) : Disc
 
     override suspend fun post(cardUid: String, content: String, parentMessageId: Long?): DiscussionMessageDto =
         apiClient.postDiscussionMessage(cardUid, content, parentMessageId)
+
+    override suspend fun report(messageId: Long, reason: String?) =
+        apiClient.reportMessage(messageId, reason)
 }

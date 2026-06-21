@@ -172,6 +172,13 @@
     <string name="discussion_auth_login_submit">Log in &amp; post</string>
     <string name="discussion_auth_switch_to_login">Have an account? Log in</string>
     <string name="discussion_auth_switch_to_register">Need an account? Register</string>
+    <!-- Moderation: report a message (FLA-128) -->
+    <string name="discussion_report">Report</string>
+    <string name="discussion_reported">Reported</string>
+    <string name="discussion_removed">[removed by a moderator]</string>
+    <string name="discussion_report_title">Report message</string>
+    <string name="discussion_report_hint">Why are you reporting this? (optional)</string>
+    <string name="discussion_report_submit">Report</string>
 
     <!-- Main scaffolding / bottom navigation -->
     <string name="nav_home">Home</string>
