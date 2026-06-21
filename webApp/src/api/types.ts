@@ -143,6 +143,25 @@ export interface DiscussionMessage {
   // Present on a reply (one level deep); null/absent on a top-level message.
   parentMessageId?: number | null;
   createdAtMillis: number;
+  // Whether a moderator removed this message (FLA-118). When true, `content` is blank and the UI
+  // renders a tombstone. Omitted/absent → not deleted.
+  deleted?: boolean;
+}
+
+// GET /admin/discussions/reports — one open report in the moderation queue (FLA-118). Backend⇄web
+// admin contract (mirrors backend ReportedMessageDto), not part of the cross-platform SDK.
+export interface ReportedMessage {
+  reportId: number;
+  reason?: string | null;
+  status: string;
+  reportedAtMillis: number;
+  reporterDisplayName: string;
+  messageId: number;
+  cardUid: string;
+  authorDisplayName: string;
+  content: string;
+  deleted: boolean;
+  messageCreatedAtMillis: number;
 }
 
 // Home feed (GET /home). The action is a discriminated union mirroring the backend's

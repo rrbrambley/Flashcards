@@ -13,9 +13,15 @@ interface DiscussionPanelProps {
   onClose: () => void;
 }
 
+/** A pending action captured while a guest completes the sign-in/up conversion (post or report). */
+type PendingAuth =
+  | { kind: 'post'; content: string; parentMessageId?: number }
+  | { kind: 'report'; messageId: number; reason?: string };
+
 /**
  * The per-card discussion thread (FLA-116): paginated messages with one level of replies, a post box
- * (guests are prompted to sign in), and an admin lock toggle. Reads are public; posting needs auth.
+ * (guests are prompted to sign in), an admin lock toggle, plus per-message report + moderator delete
+ * (FLA-118). Reads are public; posting/reporting need auth.
  */
 export function DiscussionPanel({ cardUid, isGuest, canModerate, onClose }: DiscussionPanelProps) {
   const [thread, setThread] = useState<DiscussionThread | null>(null);
@@ -28,8 +34,14 @@ export function DiscussionPanel({ cardUid, isGuest, canModerate, onClose }: Disc
   const [replyTo, setReplyTo] = useState<DiscussionMessage | null>(null);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
-  // Holds the pending text while a guest completes the sign-in/up conversion.
-  const [authPrompt, setAuthPrompt] = useState<{ content: string; parentMessageId?: number } | null>(null);
+  // Holds the pending action while a guest completes the sign-in/up conversion.
+  const [authPrompt, setAuthPrompt] = useState<PendingAuth | null>(null);
+  // Moderation (FLA-118): which message has its report reason form open, the reason text, the set of
+  // messages already reported this session, and per-message in-flight delete ids.
+  const [reportingId, setReportingId] = useState<number | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportedIds, setReportedIds] = useState<Set<number>>(new Set());
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -68,7 +80,7 @@ export function DiscussionPanel({ cardUid, isGuest, canModerate, onClose }: Disc
     if (!text) return;
     if (isGuest) {
       // Conversion: capture the pending message and ask the guest to sign in / register.
-      setAuthPrompt({ content: text, parentMessageId: replyTo?.id });
+      setAuthPrompt({ kind: 'post', content: text, parentMessageId: replyTo?.id });
       return;
     }
     setPosting(true);
@@ -95,9 +107,67 @@ export function DiscussionPanel({ cardUid, isGuest, canModerate, onClose }: Disc
     }
   };
 
+  // Report a message (FLA-118). Guests are routed through the sign-in conversion first; signed-in
+  // users submit directly. A 409 (already reported) is treated as success.
+  const submitReport = async (messageId: number, reason: string) => {
+    const trimmed = reason.trim();
+    if (isGuest) {
+      setAuthPrompt({ kind: 'report', messageId, reason: trimmed || undefined });
+      setReportingId(null);
+      setReportReason('');
+      return;
+    }
+    try {
+      await api.reportMessage(messageId, trimmed || undefined);
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 409)) {
+        setReportingId(null);
+        return;
+      }
+    }
+    setReportedIds((s) => new Set(s).add(messageId));
+    setReportingId(null);
+    setReportReason('');
+  };
+
+  // Moderator soft-delete (FLA-118): replace the message in place with the returned tombstone.
+  const deleteMessage = async (messageId: number) => {
+    setDeletingIds((s) => new Set(s).add(messageId));
+    try {
+      const tombstone = await api.deleteDiscussionMessage(messageId);
+      setMessages((m) => m.map((msg) => (msg.id === messageId ? tombstone : msg)));
+    } catch {
+      // leave the message as-is; the admin can retry
+    } finally {
+      setDeletingIds((s) => {
+        const next = new Set(s);
+        next.delete(messageId);
+        return next;
+      });
+    }
+  };
+
   const locked = thread?.isLocked ?? false;
   const topLevel = messages.filter((m) => m.parentMessageId == null);
   const repliesByParent = groupReplies(messages);
+
+  // Shared moderation props for a message row (top-level or reply).
+  const itemProps = (message: DiscussionMessage) => ({
+    message,
+    canModerate,
+    deleting: deletingIds.has(message.id),
+    reported: reportedIds.has(message.id),
+    reporting: reportingId === message.id,
+    reportReason,
+    onReportReasonChange: setReportReason,
+    onStartReport: () => {
+      setReportingId(message.id);
+      setReportReason('');
+    },
+    onCancelReport: () => setReportingId(null),
+    onSubmitReport: () => submitReport(message.id, reportReason),
+    onDelete: () => deleteMessage(message.id),
+  });
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Card discussion">
@@ -127,8 +197,8 @@ export function DiscussionPanel({ cardUid, isGuest, canModerate, onClose }: Disc
             <ul className="discussion-list">
               {topLevel.map((message) => (
                 <li key={message.id}>
-                  <DiscussionMessageView message={message} />
-                  {!locked && (
+                  <MessageItem {...itemProps(message)} />
+                  {!locked && !message.deleted && (
                     <button type="button" className="link-btn discussion-reply-btn" onClick={() => setReplyTo(message)}>
                       Reply
                     </button>
@@ -137,7 +207,7 @@ export function DiscussionPanel({ cardUid, isGuest, canModerate, onClose }: Disc
                     <ul className="discussion-replies">
                       {repliesByParent.get(message.id)!.map((reply) => (
                         <li key={reply.id}>
-                          <DiscussionMessageView message={reply} />
+                          <MessageItem {...itemProps(reply)} />
                         </li>
                       ))}
                     </ul>
@@ -187,42 +257,112 @@ export function DiscussionPanel({ cardUid, isGuest, canModerate, onClose }: Disc
       </div>
 
       {authPrompt && (
-        <DiscussionAuthPrompt
-          cardUid={cardUid}
-          content={authPrompt.content}
-          parentMessageId={authPrompt.parentMessageId}
-          onCancel={() => setAuthPrompt(null)}
-        />
+        <DiscussionAuthPrompt cardUid={cardUid} pending={authPrompt} onCancel={() => setAuthPrompt(null)} />
       )}
     </div>
   );
 }
 
-function DiscussionMessageView({ message }: { message: DiscussionMessage }) {
+interface MessageItemProps {
+  message: DiscussionMessage;
+  canModerate: boolean;
+  deleting: boolean;
+  reported: boolean;
+  reporting: boolean;
+  reportReason: string;
+  onReportReasonChange: (value: string) => void;
+  onStartReport: () => void;
+  onCancelReport: () => void;
+  onSubmitReport: () => void;
+  onDelete: () => void;
+}
+
+function MessageItem({
+  message,
+  canModerate,
+  deleting,
+  reported,
+  reporting,
+  reportReason,
+  onReportReasonChange,
+  onStartReport,
+  onCancelReport,
+  onSubmitReport,
+  onDelete,
+}: MessageItemProps) {
+  const meta = (
+    <div className="discussion-message-meta">
+      <span className="discussion-author">{message.authorDisplayName}</span>
+      <span className="muted discussion-time">{relativeTime(message.createdAtMillis)}</span>
+    </div>
+  );
+
+  // A moderator-removed message renders a tombstone with no actions (FLA-118).
+  if (message.deleted) {
+    return (
+      <div className="discussion-message">
+        {meta}
+        <p className="discussion-content muted discussion-removed">[removed by a moderator]</p>
+      </div>
+    );
+  }
+
   return (
     <div className="discussion-message">
-      <div className="discussion-message-meta">
-        <span className="discussion-author">{message.authorDisplayName}</span>
-        <span className="muted discussion-time">{relativeTime(message.createdAtMillis)}</span>
-      </div>
+      {meta}
       <p className="discussion-content">{message.content}</p>
+      <div className="discussion-message-actions">
+        {reported ? (
+          <span className="muted discussion-reported">Reported</span>
+        ) : (
+          !reporting && (
+            <button type="button" className="link-btn" onClick={onStartReport}>
+              Report
+            </button>
+          )
+        )}
+        {canModerate && (
+          <button type="button" className="link-btn" onClick={onDelete} disabled={deleting}>
+            {deleting ? 'Deleting…' : 'Delete'}
+          </button>
+        )}
+      </div>
+      {reporting && (
+        <div className="discussion-report-form">
+          <textarea
+            value={reportReason}
+            rows={2}
+            maxLength={500}
+            placeholder="Why are you reporting this? (optional)"
+            aria-label="Report reason"
+            onChange={(e) => onReportReasonChange(e.target.value)}
+          />
+          <div className="discussion-report-actions">
+            <button type="button" onClick={onSubmitReport}>
+              Submit report
+            </button>
+            <button type="button" className="link-btn" onClick={onCancelReport}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /**
- * Guest conversion (FLA-116): create an account or log in, then post the pending message before
- * flipping auth state (mirrors SavePrompt) so the message is saved as the new user.
+ * Guest conversion (FLA-116/FLA-118): create an account or log in, then perform the pending action
+ * (post a message or report one) before flipping auth state (mirrors SavePrompt) so it's done as the
+ * new user.
  */
 function DiscussionAuthPrompt({
   cardUid,
-  content,
-  parentMessageId,
+  pending,
   onCancel,
 }: {
   cardUid: string;
-  content: string;
-  parentMessageId?: number;
+  pending: PendingAuth;
   onCancel: () => void;
 }) {
   const { applyAuth } = useAuth();
@@ -231,6 +371,8 @@ function DiscussionAuthPrompt({
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const verb = pending.kind === 'report' ? 'report' : 'post';
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -242,9 +384,13 @@ function DiscussionAuthPrompt({
     setError(null);
     try {
       const auth = mode === 'register' ? await api.register(email.trim(), password) : await api.login(email.trim(), password);
-      setTokens(auth.accessToken, auth.refreshToken); // the post below needs the bearer
-      await api.postDiscussionMessage(cardUid, content, parentMessageId);
-      applyAuth(auth); // flip auth state last (swaps the route tree); the message is already saved
+      setTokens(auth.accessToken, auth.refreshToken); // the action below needs the bearer
+      if (pending.kind === 'post') {
+        await api.postDiscussionMessage(cardUid, pending.content, pending.parentMessageId);
+      } else {
+        await api.reportMessage(pending.messageId, pending.reason);
+      }
+      applyAuth(auth); // flip auth state last (swaps the route tree); the action is already done
     } catch (err) {
       setSubmitting(false);
       setError(messageForAuthError(err, mode));
@@ -252,11 +398,12 @@ function DiscussionAuthPrompt({
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Sign in to post">
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={`Sign in to ${verb}`}>
       <div className="modal-card">
         <h2>Join the discussion</h2>
         <p className="muted">
-          {mode === 'register' ? 'Create an account' : 'Log in'} to post your message and help others learn.
+          {mode === 'register' ? 'Create an account' : 'Log in'} to {verb}
+          {pending.kind === 'report' ? ' this message' : ' your message'} and help others learn.
         </p>
         <form onSubmit={submit} className="auth-form">
           <label>
@@ -285,7 +432,7 @@ function DiscussionAuthPrompt({
           </label>
           {error && <p className="error">{error}</p>}
           <button type="submit" disabled={submitting}>
-            {submitting ? '…' : mode === 'register' ? 'Create account & post' : 'Log in & post'}
+            {submitting ? '…' : `${mode === 'register' ? 'Create account' : 'Log in'} & ${verb}`}
           </button>
         </form>
         <div className="modal-actions">
