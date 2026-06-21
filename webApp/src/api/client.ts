@@ -205,6 +205,9 @@ export const api = {
   updateDeck: (id: number, deck: CreateDeckRequest) =>
     request<FlashcardDeckDto>(`/decks/${id}`, { method: 'PUT', body: deck, auth: true }),
   deleteDeck: (id: number) => request<void>(`/decks/${id}`, { method: 'DELETE', auth: true }),
+  // Admin (manage_global_decks): toggle whether a deck is a global (catalog) deck (FLA-119).
+  setDeckGlobal: (deckId: number, global: boolean) =>
+    request<FlashcardDeckDto>(`/decks/${deckId}/global`, { method: 'PATCH', body: { global }, auth: true }),
 
   // Practice sessions
   createSession: (deckId: number, mode = 'flashcards') =>

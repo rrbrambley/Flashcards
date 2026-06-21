@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { api } from '../api/client';
 import type { FlashcardDto } from '../api/types';
 import { isComplete, isStarted } from './cardValidation';
@@ -52,6 +52,8 @@ interface DeckFormProps {
   readOnly?: boolean;
   /** The deck's category (its first tag); the form surfaces a single optional category. */
   initialCategory?: string;
+  /** Extra content rendered after the title + category, before the cards (e.g. admin deck settings). */
+  settingsSlot?: ReactNode;
   /**
    * Receives validated values (term -> question, definition -> answer) plus the category as a tag
    * list (empty when blank). Throw to surface an error.
@@ -65,6 +67,7 @@ export function DeckForm({
   initialCategory = '',
   initialCards,
   readOnly = false,
+  settingsSlot,
   onSubmit,
 }: DeckFormProps) {
   const seededCards: CardDraft[] = (initialCards && initialCards.length > 0
@@ -194,6 +197,8 @@ export function DeckForm({
           }}
         />
       </label>
+
+      {settingsSlot}
 
       {cards.map((card, index) => {
         const started = isStarted(card);

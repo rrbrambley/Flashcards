@@ -2,13 +2,18 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ApiError, api } from '../api/client';
 import type { FlashcardDeckDto } from '../api/types';
+import { useAuth } from '../auth/auth-context';
 import { BackHeader } from './BackHeader';
 import { DeckForm } from './DeckForm';
+import { DeckSettings } from './DeckSettings';
 
 export function EditDeckPage() {
   const { id } = useParams();
   const deckId = Number(id);
   const navigate = useNavigate();
+  const { can } = useAuth();
+  const canManageGlobal = can('manage_global_decks');
+  const canManageDiscussions = can('manage_discussions');
   // Return to whichever list we came from — the admin global catalog if that's the origin,
   // otherwise the personal library (also the default for deep links / a missing referrer).
   const fromGlobal = (useLocation().state as { from?: string } | null)?.from === '/library/global';
@@ -65,6 +70,15 @@ export function EditDeckPage() {
               initialTitle={deck.title}
               initialCategory={deck.tags?.[0] ?? ''}
               readOnly={deck.editable === false}
+              settingsSlot={
+                canManageGlobal || canManageDiscussions ? (
+                  <DeckSettings
+                    deck={deck}
+                    canManageGlobal={canManageGlobal}
+                    canManageDiscussions={canManageDiscussions}
+                  />
+                ) : undefined
+              }
               initialCards={deck.flashcards.map((f) => ({
                 term: f.question,
                 definition: f.answer,

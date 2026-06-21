@@ -8,8 +8,23 @@ import type { FlashcardDeckDto } from '../api/types';
 
 vi.mock('../api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../api/client')>();
-  return { ...actual, api: { getDeck: vi.fn(), updateDeck: vi.fn(), deleteDeck: vi.fn() } };
+  return {
+    ...actual,
+    api: {
+      getDeck: vi.fn(),
+      updateDeck: vi.fn(),
+      deleteDeck: vi.fn(),
+      setDeckGlobal: vi.fn(),
+      setDeckDiscussionsEnabled: vi.fn(),
+    },
+  };
 });
+
+// The admin "Deck settings" section is gated on permissions; default to a non-admin so the
+// existing edit tests see no settings section. Per-test overrides grant specific permissions.
+const NO_PERMISSIONS: string[] = [];
+const can = vi.fn((permission: string) => NO_PERMISSIONS.includes(permission));
+vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ can }) }));
 
 function renderPage(from?: string) {
   render(
@@ -32,7 +47,10 @@ const deck = (over: Partial<FlashcardDeckDto> = {}): FlashcardDeckDto => ({
 });
 
 describe('EditDeckPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    can.mockImplementation((permission: string) => NO_PERMISSIONS.includes(permission)); // default: non-admin
+  });
 
   it('loads the deck into an editable form', async () => {
     vi.mocked(api.getDeck).mockResolvedValue(deck());
@@ -48,6 +66,23 @@ describe('EditDeckPage', () => {
 
     expect(await screen.findByText("This deck is read-only and can't be edited.")).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Save changes' })).toBeNull();
+  });
+
+  it('hides the admin Deck settings section for a non-admin', async () => {
+    vi.mocked(api.getDeck).mockResolvedValue(deck());
+    renderPage();
+
+    expect(await screen.findByRole('button', { name: 'Save changes' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Deck settings' })).toBeNull();
+  });
+
+  it('shows the Deck settings section to a global-decks admin', async () => {
+    can.mockImplementation((p: string) => p === 'manage_global_decks');
+    vi.mocked(api.getDeck).mockResolvedValue(deck());
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Deck settings' })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Global deck' })).toBeInTheDocument();
   });
 
   it('maps a 404 on save to a friendly message', async () => {
