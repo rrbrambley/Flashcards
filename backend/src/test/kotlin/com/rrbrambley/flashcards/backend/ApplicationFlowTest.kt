@@ -1619,6 +1619,44 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun global_flag_controls_visibility_independent_of_owner() = runApp { client ->
+        val admin = client.register("gowner", "password1")
+        grantAdmin(admin.userId)
+        val user = client.register("gviewer", "password1")
+
+        // A global deck is now owned by the creating admin AND flagged global.
+        val global = client.post("/decks/global") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Capitals", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        assertTrue(global.isGlobal)
+        assertTrue(global.editable) // the admin owner can edit
+
+        // Visible to a guest (public catalog) and in another user's library; not editable by that user.
+        val catalog = client.get("/catalog?limit=100").decode<Page<FlashcardDeckDto>>().items
+        assertTrue(catalog.any { it.id == global.id })
+        val asUser = client.get("/decks/${global.id}") { bearerAuth(user.accessToken) }.decode<FlashcardDeckDto>()
+        assertTrue(asUser.isGlobal)
+        assertFalse(asUser.editable)
+
+        // A personal (non-global) deck stays private to its owner — not in the catalog, 404 for others.
+        val personal = client.post("/decks") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Private", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        assertFalse(personal.isGlobal)
+        assertFalse(
+            client.get("/catalog?limit=100").decode<Page<FlashcardDeckDto>>().items.any { it.id == personal.id },
+        )
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.get("/decks/${personal.id}") { bearerAuth(user.accessToken) }.status,
+        )
+    }
+
+    @Test
     fun global_deck_list_endpoint_is_admin_only_and_returns_only_global_decks() = runApp { client ->
         val admin = client.register("globallist", "password1")
         grantAdmin(admin.userId)

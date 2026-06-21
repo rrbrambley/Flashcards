@@ -59,10 +59,10 @@ object HomeService {
             )
         }
 
-        // Featured global deck = the first ownerless catalog deck (could be any number; the DB is
+        // Featured global deck = the first global catalog deck (could be any number; the DB is
         // the source of truth for its name + id).
         val practiceItem = Decks.selectAll()
-            .where { Decks.ownerUserId eq null }
+            .where { Decks.isGlobal eq true }
             .orderBy(Decks.id to SortOrder.ASC)
             .firstOrNull()
             ?.let { row ->

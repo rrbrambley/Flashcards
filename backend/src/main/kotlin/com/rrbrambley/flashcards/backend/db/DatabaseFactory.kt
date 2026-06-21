@@ -117,28 +117,42 @@ object DatabaseFactory {
             RefreshTokens.update({ RefreshTokens.token eq DEMO_TOKEN }) { it[rotatedAtMillis] = null }
         }
 
-        // Drop the legacy minimal test deck if it lingers from an older seed, then build the global
-        // catalog decks. Idempotent across restarts; rebuilt on a reset + reseed. (Deck deletes
-        // cascade to their flashcards + practice sessions — see Tables.kt.) Flags is seeded first so
-        // it stays the lowest-id global deck, which the home feed features.
+        // Drop the legacy minimal test deck if it lingers from an older seed (still ownerless), then
+        // build the global catalog decks. Idempotent across restarts. (Deck deletes cascade to their
+        // flashcards + practice sessions — see Tables.kt.) Flags is seeded first so it stays the
+        // lowest-id global deck, which the home feed features.
         Decks.deleteWhere { (Decks.ownerUserId eq null) and (Decks.title eq LEGACY_FLAGS_TITLE) }
+
+        // FLA-120: decouple "global" from ownership. Any legacy ownerless deck (pre-FLA-120 catalog)
+        // becomes owned by the demo admin + flagged global, so visibility now keys on `isGlobal`.
+        Decks.update({ Decks.ownerUserId eq null }) {
+            it[ownerUserId] = demoUserId
+            it[isGlobal] = true
+        }
 
         // The geography catalog decks carry a starter "Geography" category so the tag UI has
         // something to group/filter on out of the box.
-        seedGlobalDeck(now, FLAGS_TITLE, flagSeedCards(), tags = listOf(GEOGRAPHY_TAG))
+        seedGlobalDeck(demoUserId, now, FLAGS_TITLE, flagSeedCards(), tags = listOf(GEOGRAPHY_TAG))
         seedGlobalDeck(
+            demoUserId,
             now,
             NATIONAL_CAPITALS_TITLE,
             textSeedCards("/seed/national-capitals.json", "country", "capital"),
             tags = listOf(GEOGRAPHY_TAG),
         )
         seedGlobalDeck(
+            demoUserId,
             now,
             US_STATE_CAPITALS_TITLE,
             textSeedCards("/seed/us-state-capitals.json", "state", "capital"),
             tags = listOf(GEOGRAPHY_TAG),
         )
-        seedGlobalDeck(now, WORLD_CURRENCIES_TITLE, textSeedCards("/seed/world-currencies.json", "country", "currency"))
+        seedGlobalDeck(
+            demoUserId,
+            now,
+            WORLD_CURRENCIES_TITLE,
+            textSeedCards("/seed/world-currencies.json", "country", "currency"),
+        )
 
         seedRbac(demoUserId)
     }
@@ -207,25 +221,34 @@ object DatabaseFactory {
     }
 
     /**
-     * Inserts a global (ownerless) catalog deck with [cards] under [title], unless a global deck with
-     * that title already exists. Guarded so restarts don't duplicate it; rebuilt on a reset + reseed.
+     * Inserts a global catalog deck with [cards] under [title], owned by [ownerId] (the demo admin) and
+     * flagged global (FLA-120), unless a global deck with that title already exists. Guarded so restarts
+     * don't duplicate it; rebuilt on a reset + reseed.
      */
-    private fun seedGlobalDeck(now: Long, title: String, cards: List<SeedCard>, tags: List<String> = emptyList()) {
+    private fun seedGlobalDeck(
+        ownerId: Long,
+        now: Long,
+        title: String,
+        cards: List<SeedCard>,
+        tags: List<String> = emptyList(),
+    ) {
         val exists = Decks
             .selectAll()
-            .where { (Decks.ownerUserId eq null) and (Decks.title eq title) }
+            .where { (Decks.isGlobal eq true) and (Decks.title eq title) }
             .any()
         if (exists) return
 
         val deckId = Decks.insertAndGetId {
             it[Decks.title] = title
-            it[ownerUserId] = null
+            it[ownerUserId] = ownerId
+            it[isGlobal] = true
             it[createdAtMillis] = now
             it[Decks.tags] = DeckTags.encode(tags)
         }.value
         cards.forEachIndexed { index, card ->
             Flashcards.insert {
                 it[Flashcards.deckId] = deckId
+                it[cardUid] = java.util.UUID.randomUUID().toString()
                 it[question] = card.question
                 it[answer] = card.answer
                 it[imageUrl] = card.imageUrl

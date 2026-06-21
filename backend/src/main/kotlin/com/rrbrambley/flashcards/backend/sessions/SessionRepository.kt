@@ -159,7 +159,7 @@ object SessionRepository {
 
     private fun visibleDeckTitle(userId: Long, deckId: Long): String? = Decks.selectAll()
         .where {
-            (Decks.id eq deckId) and ((Decks.ownerUserId eq userId) or Decks.ownerUserId.isNull())
+            (Decks.id eq deckId) and ((Decks.ownerUserId eq userId) or (Decks.isGlobal eq true))
         }
         .firstOrNull()
         ?.get(Decks.title)

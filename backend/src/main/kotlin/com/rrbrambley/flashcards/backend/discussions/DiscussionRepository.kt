@@ -132,11 +132,11 @@ object DiscussionRepository {
     /** Resolves [cardUid] to its deck id, requiring the deck to be global + discussion-enabled (else 404). */
     private fun requireDiscussionCard(cardUid: String): Long {
         val row = (Flashcards innerJoin Decks)
-            .select(Flashcards.deckId, Decks.ownerUserId, Decks.discussionEnabled)
+            .select(Flashcards.deckId, Decks.isGlobal, Decks.discussionEnabled)
             .where { Flashcards.cardUid eq cardUid }
             .firstOrNull()
             ?: throw NotFoundException("Discussion not found")
-        val available = row[Decks.ownerUserId] == null && row[Decks.discussionEnabled]
+        val available = row[Decks.isGlobal] && row[Decks.discussionEnabled]
         if (!available) throw NotFoundException("Discussion not found")
         return row[Flashcards.deckId].value
     }

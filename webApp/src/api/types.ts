@@ -33,6 +33,9 @@ export interface FlashcardDeckDto {
   // Whether per-card discussions are available (FLA-115) — true only for a global deck with
   // discussions enabled. Omitted/absent → treated as off.
   discussionsEnabled?: boolean;
+  // Whether this is a global (catalog) deck (FLA-120) — independent of owner; admin-toggled.
+  // Omitted/absent → treated as not global.
+  isGlobal?: boolean;
 }
 
 export interface CreateDeckRequest {
