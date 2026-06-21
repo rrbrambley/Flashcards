@@ -12,4 +12,6 @@ data class FlashcardDeckEntity(
     val editable: Boolean = true,
     /** Cached tags as a JSON-encoded `List<String>` (see DeckTags). `"[]"` = untagged. */
     val tags: String = "[]",
+    /** Cached from the backend: whether per-card discussions are available on this deck (FLA-122). */
+    val discussionEnabled: Boolean = false,
 )

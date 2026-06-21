@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.practice.discussions.DiscussionSheet
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 
 /**
@@ -84,6 +85,8 @@ fun FlashcardsScreen(
     val context = LocalContext.current
     var showHelpDialog by remember { mutableStateOf(false) }
     var showSavePrompt by remember { mutableStateOf(false) }
+    // The card whose discussion sheet is open (its cardUid), or null when closed (FLA-122).
+    var discussionCardUid by remember { mutableStateOf<String?>(null) }
 
     // The help copy explains flip/swipe, so it's only offered in Classic mode.
     val isClassic = (flashcardsState as? FlashcardsUiState.ShowFlashcard)?.mode?.let {
@@ -114,6 +117,13 @@ fun FlashcardsScreen(
             onSave = { email, password -> flashcardsViewModel.saveProgressByCreatingAccount(email, password) },
             onLeave = onBack,
             onCancel = { showSavePrompt = false },
+        )
+    }
+    discussionCardUid?.let { cardUid ->
+        DiscussionSheet(
+            cardUid = cardUid,
+            isGuest = isGuest,
+            onDismiss = { discussionCardUid = null },
         )
     }
 
@@ -162,24 +172,36 @@ fun FlashcardsScreen(
                                 .padding(horizontal = 28.dp, vertical = 20.dp),
                         )
 
-                    is FlashcardsUiState.ShowFlashcard -> when (state.mode) {
-                        PracticeMode.TEST.key ->
-                            TestMode(flashcard = state.flashcard, onResult = flashcardsViewModel::onResult)
+                    is FlashcardsUiState.ShowFlashcard -> {
+                        val onDiscuss = { discussionCardUid = state.flashcard.cardUid }
+                        when (state.mode) {
+                            PracticeMode.TEST.key ->
+                                TestMode(
+                                    flashcard = state.flashcard,
+                                    onResult = flashcardsViewModel::onResult,
+                                    discussionsEnabled = state.discussionsEnabled,
+                                    onDiscuss = onDiscuss,
+                                )
 
-                        PracticeMode.MULTIPLE_CHOICE.key ->
-                            MultipleChoiceMode(
+                            PracticeMode.MULTIPLE_CHOICE.key ->
+                                MultipleChoiceMode(
+                                    flashcard = state.flashcard,
+                                    deck = state.deck,
+                                    onResult = flashcardsViewModel::onResult,
+                                    discussionsEnabled = state.discussionsEnabled,
+                                    onDiscuss = onDiscuss,
+                                )
+
+                            else -> ClassicMode(
                                 flashcard = state.flashcard,
-                                deck = state.deck,
+                                canGoBack = state.canGoBack,
                                 onResult = flashcardsViewModel::onResult,
+                                onPrevious = flashcardsViewModel::goBack,
+                                onNext = flashcardsViewModel::goForward,
+                                discussionsEnabled = state.discussionsEnabled,
+                                onDiscuss = onDiscuss,
                             )
-
-                        else -> ClassicMode(
-                            flashcard = state.flashcard,
-                            canGoBack = state.canGoBack,
-                            onResult = flashcardsViewModel::onResult,
-                            onPrevious = flashcardsViewModel::goBack,
-                            onNext = flashcardsViewModel::goForward,
-                        )
+                        }
                     }
                 }
             }

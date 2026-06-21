@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.practice.grading.buildChoices
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 
@@ -38,6 +39,8 @@ fun MultipleChoiceMode(
     deck: List<Flashcard>,
     onResult: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    discussionsEnabled: Boolean = false,
+    onDiscuss: () -> Unit = {},
 ) {
     val choices = remember(flashcard) { buildChoices(flashcard, deck) }
     val correctIndex = remember(flashcard) { choices.indexOf(flashcard.answer.trim()) }
@@ -67,6 +70,10 @@ fun MultipleChoiceMode(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.practice_next))
+            }
+            // Discussion opens once an option is picked (the answer is revealed), mirroring web.
+            if (discussionsEnabled) {
+                DiscussButton(onClick = onDiscuss)
             }
         }
     }

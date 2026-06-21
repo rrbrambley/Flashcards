@@ -8,4 +8,6 @@ data class FlashcardDeck(
     val isEditable: Boolean = true,
     /** User-facing tags / categories (for future grouping, sorting, and search). */
     val tags: List<String> = emptyList(),
+    /** Whether per-card discussions are available on this deck (FLA-122); gates the 💬 affordance. */
+    val discussionsEnabled: Boolean = false,
 )

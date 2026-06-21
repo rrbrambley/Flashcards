@@ -3,6 +3,8 @@ package com.rrbrambley.flashcards.di
 import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardDao
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
+import com.rrbrambley.flashcards.practice.discussions.DiscussionRepository
+import com.rrbrambley.flashcards.practice.discussions.DiscussionRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
 import com.rrbrambley.flashcards.practice.data.PracticeSessionDao
 import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
@@ -44,6 +46,11 @@ object RepositoryModule {
         apiClient: FlashcardApiClient,
         flashcardDao: FlashcardDao,
     ): FlashcardRepository = FlashcardRepositoryImpl(apiClient, flashcardDao)
+
+    // Card discussions are online-only (not cached in Room), so this just wraps the shared client.
+    @Provides
+    fun provideDiscussionRepository(apiClient: FlashcardApiClient): DiscussionRepository =
+        DiscussionRepositoryImpl(apiClient)
 
     // One impl instance backs both the repository and the offline-session syncer (FLA-91), so the
     // sync loop and the UI share the same Room writes (and the single-flight mutex).

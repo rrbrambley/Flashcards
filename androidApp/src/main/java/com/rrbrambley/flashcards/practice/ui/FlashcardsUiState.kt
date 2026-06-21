@@ -15,6 +15,8 @@ sealed interface FlashcardsUiState {
         val mode: String,
         /** False on the first card, so the UI can disable "Previous". */
         val canGoBack: Boolean = false,
+        /** Whether this deck has card discussions enabled — gates the 💬 affordance (FLA-122). */
+        val discussionsEnabled: Boolean = false,
     ) : FlashcardsUiState
     data class SessionCompleted(
         val numIncorrect: Int,

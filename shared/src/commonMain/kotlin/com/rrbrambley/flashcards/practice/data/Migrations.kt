@@ -61,6 +61,21 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
     }
 }
 
+/** v9 → v10: add the `discussionEnabled` flag to flashcard_decks (FLA-122; default off). */
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `flashcard_decks` ADD COLUMN `discussionEnabled` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
-    arrayOf(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+    arrayOf(
+        MIGRATION_3_4,
+        MIGRATION_4_5,
+        MIGRATION_5_6,
+        MIGRATION_6_7,
+        MIGRATION_7_8,
+        MIGRATION_8_9,
+        MIGRATION_9_10,
+    )

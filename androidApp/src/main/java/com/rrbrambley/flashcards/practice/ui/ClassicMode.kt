@@ -39,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.ui.SwipeCard
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
@@ -56,15 +57,17 @@ fun ClassicMode(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
+    discussionsEnabled: Boolean = false,
+    onDiscuss: () -> Unit = {},
 ) {
+    var isShowingAnswer by remember(flashcard) { mutableStateOf(false) }
+    LaunchedEffect(flashcard) { isShowingAnswer = false }
+
     Column(modifier = modifier.fillMaxSize()) {
         Row(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            var isShowingAnswer by remember(flashcard) { mutableStateOf(false) }
-            LaunchedEffect(flashcard) { isShowingAnswer = false }
-
             SwipeCard(
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 20.dp),
                 onSwipedLeft = { onResult(false) },
@@ -76,6 +79,10 @@ fun ClassicMode(
                     onClick = { isShowingAnswer = !isShowingAnswer },
                 )
             }
+        }
+        // The discussion affordance appears once the answer is revealed (flipped), mirroring web.
+        if (discussionsEnabled && isShowingAnswer) {
+            DiscussButton(onClick = onDiscuss, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
         NavRow(canGoBack = canGoBack, onPrevious = onPrevious, onNext = onNext)
     }
