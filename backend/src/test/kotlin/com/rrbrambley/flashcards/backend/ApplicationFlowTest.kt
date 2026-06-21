@@ -22,6 +22,8 @@ import com.rrbrambley.flashcards.backend.db.Roles
 import com.rrbrambley.flashcards.backend.db.UserRoles
 import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
+import com.rrbrambley.flashcards.backend.discussions.ReportedMessageDto
+import com.rrbrambley.flashcards.backend.discussions.UpdateReportRequest
 import com.rrbrambley.flashcards.backend.plugins.BEARER_AUTH
 import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.storage.Storage
@@ -47,6 +49,7 @@ import com.rrbrambley.flashcards.shared.api.Page
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
+import com.rrbrambley.flashcards.shared.api.ReportMessageRequest
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
 import com.rrbrambley.flashcards.shared.api.ToggleDiscussionRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProfileRequest
@@ -1469,6 +1472,81 @@ class ApplicationFlowTest {
         bearerAuth(token)
         contentType(ContentType.Application.Json)
         setBody(json.encodeToString(CreateMessageRequest(content, parentMessageId)))
+    }
+
+    private suspend fun HttpClient.reportMessage(token: String, messageId: Long, reason: String?): HttpResponse =
+        post("/discussions/messages/$messageId/report") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(ReportMessageRequest(reason)))
+        }
+
+    @Test
+    fun moderation_report_delete_queue_and_dismiss() = runApp { client ->
+        val admin = client.register("modadmin", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+
+        val poster = client.register("modposter", "password1")
+        val top = client.postMessage(poster.accessToken, cardUid, "original message").decode<DiscussionMessageDto>()
+        val reply = client.postMessage(poster.accessToken, cardUid, "a reply", top.id).decode<DiscussionMessageDto>()
+
+        // A signed-in user reports the message; a second report by the same user is a no-op (idempotent).
+        val reporter = client.register("modreporter", "password1")
+        assertEquals(HttpStatusCode.NoContent, client.reportMessage(reporter.accessToken, top.id, "spam").status)
+        assertEquals(HttpStatusCode.NoContent, client.reportMessage(reporter.accessToken, top.id, "again").status)
+
+        // The queue is admin-gated.
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.get("/admin/discussions/reports") { bearerAuth(poster.accessToken) }.status,
+        )
+
+        // Admin sees exactly one open report for the message, with the reported content + reason.
+        val queue = client.get("/admin/discussions/reports") { bearerAuth(admin.accessToken) }
+            .decode<Page<ReportedMessageDto>>()
+        assertEquals(1, queue.items.count { it.messageId == top.id })
+        val report = queue.items.single { it.messageId == top.id }
+        assertEquals("spam", report.reason)
+        assertEquals("original message", report.content)
+
+        // Moderator deletes the message → tombstoned (content blanked), the reply is preserved.
+        val deleted = client.delete("/discussions/messages/${top.id}") { bearerAuth(admin.accessToken) }
+            .decode<DiscussionMessageDto>()
+        assertTrue(deleted.deleted)
+        assertEquals("", deleted.content)
+
+        val messages = client.get("/discussions/$cardUid/messages").decode<Page<DiscussionMessageDto>>().items
+        val tombstoned = messages.single { it.id == top.id }
+        assertTrue(tombstoned.deleted)
+        assertEquals("", tombstoned.content)
+        assertTrue(messages.any { it.id == reply.id && !it.deleted })
+
+        // Deleting resolved the report → the queue no longer lists it.
+        assertFalse(
+            client.get("/admin/discussions/reports") { bearerAuth(admin.accessToken) }
+                .decode<Page<ReportedMessageDto>>().items.any { it.messageId == top.id },
+        )
+
+        // Dismiss path: report the reply, then dismiss it (no deletion).
+        client.reportMessage(reporter.accessToken, reply.id, null)
+        val replyReport = client.get("/admin/discussions/reports") { bearerAuth(admin.accessToken) }
+            .decode<Page<ReportedMessageDto>>().items.single { it.messageId == reply.id }
+        assertEquals(
+            HttpStatusCode.NoContent,
+            client.patch("/admin/discussions/reports/${replyReport.reportId}") {
+                bearerAuth(admin.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(UpdateReportRequest("dismissed")))
+            }.status,
+        )
+        assertFalse(
+            client.get("/admin/discussions/reports") { bearerAuth(admin.accessToken) }
+                .decode<Page<ReportedMessageDto>>().items.any { it.reportId == replyReport.reportId },
+        )
+
+        // Reporting a non-existent/unavailable message is a 404.
+        assertEquals(HttpStatusCode.NotFound, client.reportMessage(reporter.accessToken, 999999, null).status)
     }
 
     @Test

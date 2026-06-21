@@ -19,6 +19,9 @@ data class DiscussionMessageDto(
     val content: String,
     val parentMessageId: Long? = null,
     val createdAtMillis: Long,
+    /** Whether a moderator removed this message (FLA-118). When true, [content] is blank (the
+     *  original text is never returned); clients render a tombstone. Defaulted for older payloads. */
+    val deleted: Boolean = false,
 )
 
 /** Body for POST /discussions/{cardUid}/messages. [parentMessageId] replies to a top-level message. */
@@ -32,3 +35,7 @@ data class LockThreadRequest(val locked: Boolean)
 /** Body for PATCH /decks/{deckId}/discussion (admin) — enable/disable discussions on a global deck. */
 @Serializable
 data class ToggleDiscussionRequest(val enabled: Boolean)
+
+/** Body for POST /discussions/messages/{messageId}/report (FLA-118) — an optional short reason. */
+@Serializable
+data class ReportMessageRequest(val reason: String? = null)
