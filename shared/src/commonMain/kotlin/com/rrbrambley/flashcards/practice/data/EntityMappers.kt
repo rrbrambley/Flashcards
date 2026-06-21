@@ -10,8 +10,13 @@ import com.rrbrambley.flashcards.shared.domain.PracticeSession
 
 // --- Backend DTO -> Room entity (keyed by backend ids) ---
 
-fun FlashcardDeckDto.toDeckEntity(): FlashcardDeckEntity =
-    FlashcardDeckEntity(id = id, title = title, editable = editable, tags = DeckTags.encode(tags))
+fun FlashcardDeckDto.toDeckEntity(): FlashcardDeckEntity = FlashcardDeckEntity(
+    id = id,
+    title = title,
+    editable = editable,
+    tags = DeckTags.encode(tags),
+    discussionEnabled = discussionsEnabled,
+)
 
 fun FlashcardDeckDto.toFlashcardEntities(): List<FlashcardEntity> = flashcards.map {
     FlashcardEntity(
@@ -51,6 +56,7 @@ fun FlashcardDeckWithCards.toDomain(): FlashcardDeck = FlashcardDeck(
     },
     isEditable = deck.editable,
     tags = DeckTags.decode(deck.tags),
+    discussionsEnabled = deck.discussionEnabled,
 )
 
 fun PracticeSessionWithDeck.toDomain(): PracticeSession = PracticeSession(

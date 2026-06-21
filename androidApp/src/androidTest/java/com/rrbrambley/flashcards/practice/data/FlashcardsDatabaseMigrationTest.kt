@@ -172,4 +172,23 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals("", cursor.getString(1))
         }
     }
+
+    @Test
+    fun migrate9To10_preservesRowsAndAddsDiscussionEnabledColumn() {
+        // Seed a v9 database with a deck (no discussionEnabled column yet).
+        helper.createDatabase(testDb, 9).apply {
+            execSQL("INSERT INTO flashcard_decks (id, title, editable, tags) VALUES (1, 'Spanish basics', 1, '[]')")
+            close()
+        }
+
+        // Run MIGRATION_9_10 and validate against the exported v10 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 10, true, MIGRATION_9_10)
+
+        // The deck survived and got the default (off) discussions flag.
+        db.query("SELECT title, discussionEnabled FROM flashcard_decks WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Spanish basics", cursor.getString(0))
+            assertEquals(0, cursor.getInt(1))
+        }
+    }
 }
