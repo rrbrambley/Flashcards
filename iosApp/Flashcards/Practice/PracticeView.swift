@@ -11,6 +11,12 @@ struct PracticeView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showHelp = false
     @State private var showSavePrompt = false
+    /// The card whose discussion sheet is open (its cardUid), or nil when closed (FLA-123).
+    @State private var discussionTarget: DiscussionTarget?
+
+    // Kept so the discussion sheet can post over the shared client (and convert a guest to sign in).
+    private let apiClient: FlashcardApiClient?
+    private let authService: AuthService?
 
     init(
         flashcardRepository: FlashcardRepository,
@@ -19,6 +25,8 @@ struct PracticeView: View {
         apiClient: FlashcardApiClient? = nil,
         authService: AuthService? = nil
     ) {
+        self.apiClient = apiClient
+        self.authService = authService
         _viewModel = StateObject(
             wrappedValue: PracticeViewModel(
                 flashcardRepository: flashcardRepository,
@@ -32,7 +40,7 @@ struct PracticeView: View {
 
     /// The help copy explains flip/swipe, so it's only offered in Classic mode.
     private var isClassic: Bool {
-        if case let .showCard(_, _, _, _, _, mode, _) = viewModel.state {
+        if case let .showCard(_, _, _, _, _, mode, _, _) = viewModel.state {
             return (PracticeMode(rawValue: mode) ?? .classic) == .classic
         }
         return true
@@ -64,6 +72,16 @@ struct PracticeView: View {
                 .sheet(isPresented: $showSavePrompt) {
                     GuestSavePromptView(viewModel: viewModel, onLeave: { dismiss() }, onCancel: { showSavePrompt = false })
                 }
+                .sheet(item: $discussionTarget) { target in
+                    if let apiClient {
+                        DiscussionView(
+                            cardUid: target.id,
+                            isGuest: viewModel.isGuestMode,
+                            apiClient: apiClient,
+                            authService: authService
+                        )
+                    }
+                }
                 .onChange(of: viewModel.saveState) { _, newValue in
                     // A successful save signs the user in; leave the practice screen so RootView swaps
                     // to the main tabs (the saved session shows under "Continue studying").
@@ -86,13 +104,19 @@ struct PracticeView: View {
         switch viewModel.state {
         case .loading:
             LoadingView()
-        case let .showCard(card, position, numCorrect, numIncorrect, canGoBack, mode, deck):
+        case let .showCard(card, position, numCorrect, numIncorrect, canGoBack, mode, deck, discussionsEnabled):
             VStack(spacing: Spacing.lg) {
                 ScoreRow(numIncorrect: numIncorrect, numCorrect: numCorrect)
-                modeView(mode: mode, card: card, deck: deck, canGoBack: canGoBack)
-                    // Re-init the per-card view (flip / two-phase Test+MC state) on advance.
-                    .id(position)
-                    .frame(maxHeight: .infinity)
+                modeView(
+                    mode: mode,
+                    card: card,
+                    deck: deck,
+                    canGoBack: canGoBack,
+                    discussionsEnabled: discussionsEnabled
+                )
+                // Re-init the per-card view (flip / two-phase Test+MC state) on advance.
+                .id(position)
+                .frame(maxHeight: .infinity)
             }
             .padding(Spacing.lg)
         case let .completed(numCorrect, numIncorrect):
@@ -109,7 +133,15 @@ struct PracticeView: View {
     }
 
     @ViewBuilder
-    private func modeView(mode: String, card: Flashcard, deck: [Flashcard], canGoBack: Bool) -> some View {
+    private func modeView(
+        mode: String,
+        card: Flashcard,
+        deck: [Flashcard],
+        canGoBack: Bool,
+        discussionsEnabled: Bool
+    ) -> some View {
+        // Opens the discussion sheet for the current card once its answer is revealed.
+        let onDiscuss = { discussionTarget = DiscussionTarget(id: card.cardUid) }
         switch PracticeMode(rawValue: mode) ?? .classic {
         case .classic:
             ClassicModeView(
@@ -117,14 +149,32 @@ struct PracticeView: View {
                 canGoBack: canGoBack,
                 onResult: viewModel.onResult,
                 onPrevious: viewModel.goBack,
-                onNext: viewModel.goForward
+                onNext: viewModel.goForward,
+                discussionsEnabled: discussionsEnabled,
+                onDiscuss: onDiscuss
             )
         case .test:
-            TestModeView(card: card, onResult: viewModel.onResult)
+            TestModeView(
+                card: card,
+                onResult: viewModel.onResult,
+                discussionsEnabled: discussionsEnabled,
+                onDiscuss: onDiscuss
+            )
         case .multipleChoice:
-            MultipleChoiceModeView(card: card, deck: deck, onResult: viewModel.onResult)
+            MultipleChoiceModeView(
+                card: card,
+                deck: deck,
+                onResult: viewModel.onResult,
+                discussionsEnabled: discussionsEnabled,
+                onDiscuss: onDiscuss
+            )
         }
     }
+}
+
+/// Identifies the card whose discussion sheet is open (its `cardUid`), for `.sheet(item:)` (FLA-123).
+private struct DiscussionTarget: Identifiable {
+    let id: String
 }
 
 /// Running score: needs-practice (red) on the left, correct (green) on the right.

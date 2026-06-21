@@ -83,7 +83,9 @@ final class CreateDeckViewModel: ObservableObject {
             isEditable: true,
             // The optional category as a single tag (empty when blank). Kotlin default args don't
             // bridge, so pass it explicitly.
-            tags: category.toCategoryTags()
+            tags: category.toCategoryTags(),
+            // Discussions are admin-toggled on global decks; a newly created deck never has them.
+            discussionsEnabled: false
         )
         do {
             try await repository.saveFlashcardDeck(deck: deck)

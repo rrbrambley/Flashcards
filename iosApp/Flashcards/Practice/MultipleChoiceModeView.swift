@@ -8,14 +8,24 @@ import SwiftUI
 struct MultipleChoiceModeView: View {
     let card: Flashcard
     let onResult: (Bool) -> Void
+    let discussionsEnabled: Bool
+    let onDiscuss: () -> Void
 
     @State private var choices: [String]
     private let correctIndex: Int
     @State private var selected: Int?
 
-    init(card: Flashcard, deck: [Flashcard], onResult: @escaping (Bool) -> Void) {
+    init(
+        card: Flashcard,
+        deck: [Flashcard],
+        onResult: @escaping (Bool) -> Void,
+        discussionsEnabled: Bool = false,
+        onDiscuss: @escaping () -> Void = {}
+    ) {
         self.card = card
         self.onResult = onResult
+        self.discussionsEnabled = discussionsEnabled
+        self.onDiscuss = onDiscuss
         let built = IosPracticeGradingKt.buildChoicesForSwift(card: card, deck: deck)
         _choices = State(initialValue: built)
         correctIndex = built.firstIndex(of: card.answer.trimmingCharacters(in: .whitespacesAndNewlines)) ?? -1
@@ -35,6 +45,10 @@ struct MultipleChoiceModeView: View {
                     Button("Next") { onResult(selected == correctIndex) }
                         .buttonStyle(.primary)
                         .padding(.top, Spacing.sm)
+                    // Discussion opens once an option is picked (the answer is revealed), mirroring web.
+                    if discussionsEnabled {
+                        DiscussButton(action: onDiscuss)
+                    }
                 }
             }
             .frame(maxWidth: .infinity)

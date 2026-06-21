@@ -8,6 +8,8 @@ import SwiftUI
 struct TestModeView: View {
     let card: Flashcard
     let onResult: (Bool) -> Void
+    var discussionsEnabled = false
+    var onDiscuss: () -> Void = {}
 
     @State private var input = ""
     @State private var graded: Graded?
@@ -26,6 +28,10 @@ struct TestModeView: View {
                     verdict(graded)
                     Button("Next") { onResult(graded.correct) }
                         .buttonStyle(.primary)
+                    // Discussion opens once the answer is revealed (after grading), mirroring web.
+                    if discussionsEnabled {
+                        DiscussButton(action: onDiscuss)
+                    }
                 } else {
                     TextField("Type the answer", text: $input)
                         .textFieldStyle(.roundedBorder)
