@@ -18,6 +18,8 @@ vi.mock('../api/client', () => ({
     getDiscussionMessages: vi.fn(),
     postDiscussionMessage: vi.fn(),
     lockDiscussionThread: vi.fn(),
+    reportMessage: vi.fn(),
+    deleteDiscussionMessage: vi.fn(),
     register: vi.fn(),
     login: vi.fn(),
   },
@@ -131,5 +133,47 @@ describe('DiscussionPanel', () => {
     await waitFor(() => expect(api.register).toHaveBeenCalledWith('new@user.com', 'password1'));
     expect(api.postDiscussionMessage).toHaveBeenCalledWith('c1', 'My thoughts', undefined);
     expect(applyAuth).toHaveBeenCalled();
+  });
+
+  it('reports a message as a signed-in user (with a reason) and shows Reported', async () => {
+    setup();
+    await screen.findByText('Why is it Paris?');
+    vi.mocked(api.reportMessage).mockResolvedValue(undefined);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    await userEvent.type(screen.getByLabelText('Report reason'), 'spam');
+    await userEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+
+    await waitFor(() => expect(api.reportMessage).toHaveBeenCalledWith(1, 'spam'));
+    expect(await screen.findByText('Reported')).toBeInTheDocument();
+  });
+
+  it('a guest reporting is routed through the sign-in conversion', async () => {
+    setup({ isGuest: true });
+    await screen.findByText('Why is it Paris?');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Report' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Submit report' }));
+
+    expect(await screen.findByText('Join the discussion')).toBeInTheDocument();
+    expect(api.reportMessage).not.toHaveBeenCalled();
+  });
+
+  it('renders a moderator-removed message as a tombstone and hides Reply', async () => {
+    setup({ messages: [message({ content: '', deleted: true })] });
+    await screen.findByText('[removed by a moderator]');
+    expect(screen.queryByRole('button', { name: 'Reply' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Report' })).not.toBeInTheDocument();
+  });
+
+  it('lets a moderator delete a message, replacing it with the tombstone', async () => {
+    setup({ canModerate: true });
+    await screen.findByText('Why is it Paris?');
+    vi.mocked(api.deleteDiscussionMessage).mockResolvedValue(message({ content: '', deleted: true }));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+    await waitFor(() => expect(api.deleteDiscussionMessage).toHaveBeenCalledWith(1));
+    expect(await screen.findByText('[removed by a moderator]')).toBeInTheDocument();
   });
 });

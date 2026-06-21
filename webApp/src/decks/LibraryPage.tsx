@@ -37,6 +37,11 @@ export function LibraryPage() {
                 Manage users
               </button>
             )}
+            {can('manage_discussions') && (
+              <button className="secondary" onClick={() => navigate('/admin/discussions')}>
+                Discussion reports
+              </button>
+            )}
           </>
         }
       />

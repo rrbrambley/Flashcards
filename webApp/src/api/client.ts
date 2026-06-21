@@ -12,6 +12,7 @@ import type {
   MeResponse,
   Page,
   PracticeSessionDto,
+  ReportedMessage,
   RoleDto,
   StreaksResponse,
   UpdateProgressRequest,
@@ -244,6 +245,20 @@ export const api = {
     }),
   setDeckDiscussionsEnabled: (deckId: number, enabled: boolean) =>
     request<FlashcardDeckDto>(`/decks/${deckId}/discussion`, { method: 'PATCH', body: { enabled }, auth: true }),
+
+  // Moderation (FLA-118). Reporting is any signed-in user; delete + the queue are manage_discussions.
+  reportMessage: (messageId: number, reason?: string) =>
+    request<void>(`/discussions/messages/${messageId}/report`, { method: 'POST', body: { reason }, auth: true }),
+  deleteDiscussionMessage: (messageId: number) =>
+    request<DiscussionMessage>(`/discussions/messages/${messageId}`, { method: 'DELETE', auth: true }),
+  getDiscussionReports: (params: { limit?: number; cursor?: string } = {}) =>
+    request<Page<ReportedMessage>>(`/admin/discussions/reports${buildQuery(params)}`, { auth: true }),
+  dismissDiscussionReport: (reportId: number) =>
+    request<void>(`/admin/discussions/reports/${reportId}`, {
+      method: 'PATCH',
+      body: { status: 'dismissed' },
+      auth: true,
+    }),
 
   uploadImage: (file: File) => uploadImage(file),
 
