@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useAuth } from '../auth/auth-context';
 import type { FlashcardDeckDto } from '../api/types';
 import { DeckLibrary } from './DeckLibrary';
+import { ToggleSwitch } from './ToggleSwitch';
 
 /**
  * The admin "manage global decks" view: the same deck-library UI as the personal Library, but
@@ -62,19 +63,12 @@ function DiscussionToggle({ deck }: { deck: FlashcardDeckDto }) {
   };
 
   return (
-    <label className="deck-discussions-toggle">
-      <span className="toggle-switch">
-        <input
-          type="checkbox"
-          role="switch"
-          checked={enabled}
-          disabled={saving}
-          onChange={toggle}
-          aria-label={`Discussions for ${deck.title}`}
-        />
-        <span className="toggle-switch-track" aria-hidden="true" />
-      </span>
-      <span className="toggle-switch-label">Discussions</span>
-    </label>
+    <ToggleSwitch
+      label="Discussions"
+      ariaLabel={`Discussions for ${deck.title}`}
+      checked={enabled}
+      disabled={saving}
+      onChange={toggle}
+    />
   );
 }

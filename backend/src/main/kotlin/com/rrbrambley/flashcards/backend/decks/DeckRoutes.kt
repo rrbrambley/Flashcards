@@ -16,9 +16,15 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
+import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
 import io.ktor.server.routing.put
 import io.ktor.server.routing.route
+import kotlinx.serialization.Serializable
+
+/** Body for PATCH /decks/{id}/global (admin) — toggle whether a deck is a global catalog deck (FLA-119). */
+@Serializable
+data class SetGlobalRequest(val global: Boolean)
 
 fun Route.deckRoutes() {
     route("/decks") {
@@ -57,6 +63,12 @@ fun Route.deckRoutes() {
             Validation.validateDeck(request)
             val canManageGlobal = call.hasPermission(Permission.MANAGE_GLOBAL_DECKS)
             call.respond(DeckRepository.updateDeck(call.userId(), call.pathLong("id"), request, canManageGlobal))
+        }
+        // Admin: toggle whether a deck is a global (catalog) deck (FLA-119/FLA-120).
+        patch("/{id}/global") {
+            call.requirePermission(Permission.MANAGE_GLOBAL_DECKS)
+            val request = call.receive<SetGlobalRequest>()
+            call.respond(DeckRepository.setGlobal(call.userId(), call.pathLong("id"), request.global))
         }
         delete("/{id}") {
             val canManageGlobal = call.hasPermission(Permission.MANAGE_GLOBAL_DECKS)

@@ -424,6 +424,57 @@ button.danger:hover:not(:disabled) {
   transform: translateX(16px);
 }
 
+/* Admin "Deck settings" section on the edit page (FLA-119). */
+.deck-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface, #fafafa);
+}
+.deck-settings-title {
+  margin: 0;
+  font-size: 1rem;
+}
+.deck-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.deck-settings-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.deck-settings-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.deck-settings-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+/* The "Global deck settings" subsection — grayed out (via fieldset[disabled]) until the deck is global. */
+.deck-settings-subsection {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: opacity 0.15s ease;
+}
+.deck-settings-subsection legend {
+  padding: 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.deck-settings-subsection:disabled {
+  opacity: 0.5;
+}
+
 /* Admin users list (RBAC) */
 .user-list {
   list-style: none;

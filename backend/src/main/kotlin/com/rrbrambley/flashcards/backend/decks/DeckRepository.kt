@@ -312,4 +312,16 @@ object DeckRepository {
         Decks.update({ Decks.id eq deckId }) { it[discussionEnabled] = enabled }
         row.toCatalogDeckDto().copy(discussionsEnabled = enabled)
     }
+
+    /**
+     * Sets the global (catalog) flag on any existing deck (FLA-119/FLA-120). The route gates this on
+     * manage-global-decks, so the returned DTO is computed as an admin (`canManageGlobal = true`).
+     * Turning global off leaves the discussion flag untouched but inert — `discussionsEnabled` is
+     * `global && discussionEnabled`, so it reads as off until the deck is global again.
+     */
+    suspend fun setGlobal(userId: Long, deckId: Long, global: Boolean): FlashcardDeckDto = dbQuery {
+        val updated = Decks.update({ Decks.id eq deckId }) { it[isGlobal] = global }
+        if (updated == 0) throw NotFoundException("Deck $deckId not found")
+        Decks.selectAll().where { Decks.id eq deckId }.first().toDeckDtoWithCards(userId, canManageGlobal = true)
+    }
 }

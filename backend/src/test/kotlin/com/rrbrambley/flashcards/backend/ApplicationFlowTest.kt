@@ -1657,6 +1657,65 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun patch_global_toggle_flips_the_flag_and_is_admin_gated() = runApp { client ->
+        val admin = client.register("gtoggleadmin", "password1")
+        grantAdmin(admin.userId)
+        val user = client.register("gtoggleuser", "password1")
+
+        // A personal deck starts non-global (hidden from the catalog).
+        val deck = client.post("/decks") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Toggle Me", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        assertFalse(deck.isGlobal)
+
+        // A non-admin can't toggle the flag.
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.patch("/decks/${deck.id}/global") {
+                bearerAuth(user.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody("""{"global":true}""")
+            }.status,
+        )
+
+        // The admin flips it global → reflected in the response and now in the public catalog.
+        val madeGlobal = client.patch("/decks/${deck.id}/global") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody("""{"global":true}""")
+        }.decode<FlashcardDeckDto>()
+        assertTrue(madeGlobal.isGlobal)
+        assertTrue(client.get("/catalog?limit=100").decode<Page<FlashcardDeckDto>>().items.any { it.id == deck.id })
+
+        // Enabling discussions, then flipping global off makes discussions inert again.
+        client.patch("/decks/${deck.id}/discussion") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody("""{"enabled":true}""")
+        }
+        val madeprivate = client.patch("/decks/${deck.id}/global") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody("""{"global":false}""")
+        }.decode<FlashcardDeckDto>()
+        assertFalse(madeprivate.isGlobal)
+        assertFalse(madeprivate.discussionsEnabled)
+        assertFalse(client.get("/catalog?limit=100").decode<Page<FlashcardDeckDto>>().items.any { it.id == deck.id })
+
+        // A missing deck yields 404.
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.patch("/decks/999999/global") {
+                bearerAuth(admin.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody("""{"global":true}""")
+            }.status,
+        )
+    }
+
+    @Test
     fun global_deck_list_endpoint_is_admin_only_and_returns_only_global_decks() = runApp { client ->
         val admin = client.register("globallist", "password1")
         grantAdmin(admin.userId)
