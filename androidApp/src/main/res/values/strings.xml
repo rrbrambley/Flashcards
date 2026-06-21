@@ -102,6 +102,8 @@
     <string name="create_deck_term_error">Add a term or an image</string>
     <string name="create_deck_definition_label">Definition</string>
     <string name="create_deck_definition_error">Enter a definition</string>
+    <string name="create_deck_alternatives_label">Other accepted answers (optional)</string>
+    <string name="create_deck_alternatives_hint">One per line. Also accepted in Test mode.</string>
 
     <!-- Edit deck -->
     <string name="edit_deck_title">Edit Flashcards</string>

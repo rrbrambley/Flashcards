@@ -112,6 +112,25 @@ class CreateDeckViewModelTest {
     }
 
     @Test
+    fun finishDeckCreation_savesAuthoredAlternativeAnswers_trimmedAndDeduped() = runTest(testDispatcher) {
+        val repository = FakeFlashcardRepository()
+        val viewModel = CreateDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.onDeckTitleChange("Greetings")
+        viewModel.onTermChange(1L, "Hello (informal)")
+        viewModel.onDefinitionChange(1L, "Hola")
+        // One per line, with a blank line, surrounding whitespace, and a duplicate.
+        viewModel.onAlternativesChange(1L, " Hi \n\n hey \n Hi ")
+
+        viewModel.finishDeckCreation()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(
+            listOf("Hi", "hey"),
+            repository.savedDeck?.flashcards?.single()?.alternativeAnswers,
+        )
+    }
+
+    @Test
     fun finishDeckCreation_withBlankCategory_savesNoTags() = runTest(testDispatcher) {
         val repository = FakeFlashcardRepository()
         val viewModel = CreateDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
