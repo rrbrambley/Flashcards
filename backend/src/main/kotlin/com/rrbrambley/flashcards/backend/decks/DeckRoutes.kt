@@ -45,12 +45,12 @@ fun Route.deckRoutes() {
             call.requirePermission(Permission.MANAGE_GLOBAL_DECKS)
             call.respond(DeckRepository.listGlobalDecks(call.userId(), call.pageLimit(), call.pageCursor()))
         }
-        // Create a global (ownerless) catalog deck — admins only.
+        // Create a global catalog deck (owned by the creating admin, flagged global) — admins only.
         post("/global") {
             call.requirePermission(Permission.MANAGE_GLOBAL_DECKS)
             val request = call.receive<CreateDeckRequest>().let { it.copy(title = it.title.trim()) }
             Validation.validateDeck(request)
-            call.respond(HttpStatusCode.Created, DeckRepository.createGlobalDeck(request))
+            call.respond(HttpStatusCode.Created, DeckRepository.createGlobalDeck(call.userId(), request))
         }
         put("/{id}") {
             val request = call.receive<CreateDeckRequest>().let { it.copy(title = it.title.trim()) }

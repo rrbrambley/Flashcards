@@ -44,7 +44,7 @@ object DeckRepository {
             Cursor.decode(it).toLongOrNull() ?: throw IllegalArgumentException("Invalid pagination cursor")
         }
         val query = Decks.selectAll()
-            .where { (Decks.ownerUserId eq userId) or Decks.ownerUserId.isNull() }
+            .where { (Decks.ownerUserId eq userId) or (Decks.isGlobal eq true) }
         if (afterId != null) {
             query.andWhere { Decks.id less afterId }
         }
@@ -67,7 +67,7 @@ object DeckRepository {
         val afterId = cursor?.let {
             Cursor.decode(it).toLongOrNull() ?: throw IllegalArgumentException("Invalid pagination cursor")
         }
-        val query = Decks.selectAll().where { Decks.ownerUserId.isNull() }
+        val query = Decks.selectAll().where { Decks.isGlobal eq true }
         if (afterId != null) {
             query.andWhere { Decks.id less afterId }
         }
@@ -89,7 +89,7 @@ object DeckRepository {
     suspend fun getDeck(userId: Long, canManageGlobal: Boolean, deckId: Long): FlashcardDeckDto? = dbQuery {
         Decks.selectAll()
             .where {
-                (Decks.id eq deckId) and ((Decks.ownerUserId eq userId) or Decks.ownerUserId.isNull())
+                (Decks.id eq deckId) and ((Decks.ownerUserId eq userId) or (Decks.isGlobal eq true))
             }
             .firstOrNull()
             ?.toDeckDtoWithCards(userId, canManageGlobal)
@@ -103,7 +103,7 @@ object DeckRepository {
         val afterId = cursor?.let {
             Cursor.decode(it).toLongOrNull() ?: throw IllegalArgumentException("Invalid pagination cursor")
         }
-        val query = Decks.selectAll().where { Decks.ownerUserId.isNull() }
+        val query = Decks.selectAll().where { Decks.isGlobal eq true }
         if (afterId != null) {
             query.andWhere { Decks.id less afterId }
         }
@@ -123,7 +123,7 @@ object DeckRepository {
      */
     suspend fun getCatalogDeck(deckId: Long): FlashcardDeckDto? = dbQuery {
         Decks.selectAll()
-            .where { (Decks.id eq deckId) and Decks.ownerUserId.isNull() }
+            .where { (Decks.id eq deckId) and (Decks.isGlobal eq true) }
             .firstOrNull()
             ?.toCatalogDeckDto()
     }
@@ -140,17 +140,27 @@ object DeckRepository {
         FlashcardDeckDto(id = deckId, title = request.title, flashcards = readDeckCards(deckId), tags = tags)
     }
 
-    /** Creates an ownerless (global) catalog deck. The route gates this on manage-global-decks. */
-    suspend fun createGlobalDeck(request: CreateDeckRequest): FlashcardDeckDto = dbQuery {
+    /**
+     * Creates a global catalog deck owned by [userId] (the admin who created it) and flagged global
+     * (FLA-120). The route gates this on manage-global-decks.
+     */
+    suspend fun createGlobalDeck(userId: Long, request: CreateDeckRequest): FlashcardDeckDto = dbQuery {
         val tags = Validation.normalizeTags(request.tags)
         val deckId = Decks.insertAndGetId {
             it[title] = request.title
-            it[ownerUserId] = null
+            it[ownerUserId] = userId
+            it[isGlobal] = true
             it[createdAtMillis] = System.currentTimeMillis()
             it[Decks.tags] = DeckTags.encode(tags)
         }.value
         insertFlashcards(deckId, request.flashcards)
-        FlashcardDeckDto(id = deckId, title = request.title, flashcards = readDeckCards(deckId), tags = tags)
+        FlashcardDeckDto(
+            id = deckId,
+            title = request.title,
+            flashcards = readDeckCards(deckId),
+            tags = tags,
+            isGlobal = true,
+        )
     }
 
     /**
@@ -190,7 +200,7 @@ object DeckRepository {
         .firstOrNull()
         ?.let { row ->
             val owner = row[Decks.ownerUserId]?.value
-            owner == userId || (owner == null && canManageGlobal)
+            owner == userId || (row[Decks.isGlobal] && canManageGlobal)
         } ?: false
 
     private fun insertFlashcards(deckId: Long, cards: List<FlashcardDto>) {
@@ -265,8 +275,9 @@ object DeckRepository {
             flashcards = cards,
             editable = false,
             tags = DeckTags.decode(this[Decks.tags]),
-            // Catalog decks are global, so discussions are available whenever the flag is on (FLA-115).
-            discussionsEnabled = this[Decks.discussionEnabled],
+            // Catalog decks are global by definition; discussions available whenever the flag is on.
+            discussionsEnabled = this[Decks.isGlobal] && this[Decks.discussionEnabled],
+            isGlobal = this[Decks.isGlobal],
         )
     }
 
@@ -277,24 +288,26 @@ object DeckRepository {
             .orderBy(Flashcards.position to SortOrder.ASC)
             .map { it.toFlashcardDto() }
         val owner = this[Decks.ownerUserId]?.value
+        val global = this[Decks.isGlobal]
         return FlashcardDeckDto(
             id = deckId,
             title = this[Decks.title],
             flashcards = cards,
-            // The owner may edit; a global (NULL owner) deck is editable by a manage-global-decks admin.
-            editable = owner == userId || (owner == null && canManageGlobal),
+            // The owner may edit; a global deck is also editable by a manage-global-decks admin (FLA-120).
+            editable = owner == userId || (global && canManageGlobal),
             tags = DeckTags.decode(this[Decks.tags]),
-            // Discussions are only available on a global (ownerless) deck with the flag on (FLA-115).
-            discussionsEnabled = owner == null && this[Decks.discussionEnabled],
+            // Discussions are only available on a global deck with the flag on (FLA-115/FLA-120).
+            discussionsEnabled = global && this[Decks.discussionEnabled],
+            isGlobal = global,
         )
     }
 
     /**
-     * Toggles per-card discussions on a **global** (ownerless) deck (FLA-115). The route gates this on
+     * Toggles per-card discussions on a **global** deck (FLA-115). The route gates this on
      * manage-discussions. A non-global or missing deck yields 404 (discussions are global-only).
      */
     suspend fun setDiscussionEnabled(deckId: Long, enabled: Boolean): FlashcardDeckDto = dbQuery {
-        val row = Decks.selectAll().where { (Decks.id eq deckId) and Decks.ownerUserId.isNull() }.firstOrNull()
+        val row = Decks.selectAll().where { (Decks.id eq deckId) and (Decks.isGlobal eq true) }.firstOrNull()
             ?: throw NotFoundException("Deck $deckId not found")
         Decks.update({ Decks.id eq deckId }) { it[discussionEnabled] = enabled }
         row.toCatalogDeckDto().copy(discussionsEnabled = enabled)

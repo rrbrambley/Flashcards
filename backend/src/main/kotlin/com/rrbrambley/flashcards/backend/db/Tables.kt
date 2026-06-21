@@ -43,7 +43,9 @@ object RefreshTokens : LongIdTable("refresh_tokens") {
 object Decks : LongIdTable("decks") {
     val title = varchar("title", 255)
 
-    // NULL owner = global catalog deck, visible to every user.
+    // The deck's creator. Decoupled from "global" (FLA-120): a deck always has an owner. Kept nullable
+    // at the column level for migration safety, but never written null — DatabaseFactory backfills any
+    // legacy ownerless (pre-FLA-120) rows to the demo admin on boot.
     val ownerUserId = reference("owner_user_id", Users, onDelete = ReferenceOption.CASCADE).nullable()
     val createdAtMillis = long("created_at_millis")
 
@@ -51,12 +53,17 @@ object Decks : LongIdTable("decks") {
     // Nullable so createMissingTablesAndColumns adds it to an existing DB without a manual migration.
     val tags = text("tags").nullable()
 
-    // Whether per-card discussions are enabled (FLA-115). Only meaningful on global (ownerless) decks;
-    // admin-toggled. Default false; auto-added by createMissingTablesAndColumns.
+    // Whether per-card discussions are enabled (FLA-115). Only meaningful on a global deck; admin-toggled.
     val discussionEnabled = bool("discussion_enabled").default(false)
+
+    // Whether this is a global (catalog) deck — visible to every user + guests, independent of owner
+    // (FLA-120). Admin-toggled. Default false; auto-added by createMissingTablesAndColumns.
+    val isGlobal = bool("is_global").default(false)
 
     init {
         index(false, ownerUserId)
+        // Catalog / global-deck listing filters on this.
+        index(false, isGlobal)
     }
 }
 
