@@ -16,14 +16,17 @@ vi.mock('../api/client', () => ({
     completeSession: vi.fn(),
     getStreaks: vi.fn(),
     register: vi.fn(),
+    getDiscussionThread: vi.fn(),
+    getDiscussionMessages: vi.fn(),
   },
 }));
 
 // Default: signed in. Guest tests set mockToken = null. applyAuth/token come from the auth context.
 let mockToken: string | null = 'test-token';
 const applyAuth = vi.fn();
+let mockCan = false;
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ token: mockToken, applyAuth }),
+  useAuth: () => ({ token: mockToken, applyAuth, can: () => mockCan }),
 }));
 vi.mock('../auth/token', () => ({ setTokens: vi.fn() }));
 
@@ -67,6 +70,7 @@ describe('PracticePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockToken = 'test-token';
+    mockCan = false;
   });
 
   it('starts a session in the default (classic) mode and shows the (resumed) current card', async () => {
@@ -188,6 +192,40 @@ describe('PracticePage', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('offline')).toBeInTheDocument();
+  });
+
+  it('reveals the discuss control after flipping and opens the discussion panel (FLA-116)', async () => {
+    vi.mocked(api.createSession).mockResolvedValue(session());
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Spanish',
+      editable: true,
+      discussionsEnabled: true,
+      flashcards: [{ question: 'Q1', answer: 'A1', cardUid: 'uid-1' }],
+    });
+    vi.mocked(api.updateProgress).mockResolvedValue(session());
+    vi.mocked(api.getDiscussionThread).mockResolvedValue({ cardUid: 'uid-1', isLocked: false, messageCount: 1 });
+    vi.mocked(api.getDiscussionMessages).mockResolvedValue({
+      items: [{ id: 1, authorDisplayName: 'Alice', content: 'Nice card', parentMessageId: null, createdAtMillis: Date.now() }],
+      nextCursor: null,
+    });
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // The control only appears once the answer is revealed.
+    await screen.findByText('Q1');
+    expect(screen.queryByRole('button', { name: /Discuss this card/ })).toBeNull();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+    await userEvent.click(screen.getByRole('button', { name: /Discuss this card/ }));
+
+    expect(await screen.findByText('Nice card')).toBeInTheDocument();
+    expect(api.getDiscussionThread).toHaveBeenCalledWith('uid-1');
   });
 
   describe('guest mode (no account)', () => {

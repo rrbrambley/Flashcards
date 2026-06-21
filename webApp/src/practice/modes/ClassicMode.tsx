@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PracticeCard } from '../PracticeCard';
+import { DiscussButton } from '../components/DiscussButton';
 import type { PracticeModeProps } from './types';
 
 /**
@@ -7,7 +8,7 @@ import type { PracticeModeProps } from './types';
  * classic keyboard shortcuts (← / → mark, space/enter flip); the runner remounts it per card, so
  * the flip resets on its own. Self-reported correctness via swipe or the buttons.
  */
-export function ClassicMode({ card, onResult }: PracticeModeProps) {
+export function ClassicMode({ card, onResult, onDiscuss }: PracticeModeProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
@@ -43,6 +44,9 @@ export function ClassicMode({ card, onResult }: PracticeModeProps) {
           ✓ Got it
         </button>
       </div>
+
+      {/* Discussion is offered once the answer has been seen (FLA-116). */}
+      {isFlipped && onDiscuss && <DiscussButton onClick={onDiscuss} />}
     </>
   );
 }

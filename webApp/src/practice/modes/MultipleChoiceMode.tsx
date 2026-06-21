@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MultipleChoice } from '../components/MultipleChoice';
+import { DiscussButton } from '../components/DiscussButton';
 import { buildChoices } from '../grading/multipleChoice';
 import type { PracticeModeProps } from './types';
 
@@ -9,7 +10,7 @@ import type { PracticeModeProps } from './types';
  * The runner remounts this per card, so the choices + selection reset on their own — and choices are
  * built once per mount so they don't reshuffle on re-render.
  */
-export function MultipleChoiceMode({ card, cards, onResult }: PracticeModeProps) {
+export function MultipleChoiceMode({ card, cards, onResult, onDiscuss }: PracticeModeProps) {
   const [choices] = useState(() => buildChoices(card, cards));
   const correctIndex = choices.indexOf(card.answer.trim());
   const [selected, setSelected] = useState<number | null>(null);
@@ -49,11 +50,14 @@ export function MultipleChoiceMode({ card, cards, onResult }: PracticeModeProps)
       />
 
       {selected !== null && (
-        <div className="practice-actions">
-          <button className="mark-correct" onClick={proceed}>
-            Next
-          </button>
-        </div>
+        <>
+          <div className="practice-actions">
+            <button className="mark-correct" onClick={proceed}>
+              Next
+            </button>
+          </div>
+          {onDiscuss && <DiscussButton onClick={onDiscuss} />}
+        </>
       )}
     </div>
   );

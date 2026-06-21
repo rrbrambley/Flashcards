@@ -3,6 +3,8 @@ import type {
   AdminUserDto,
   AuthResponse,
   CreateDeckRequest,
+  DiscussionMessage,
+  DiscussionThread,
   ErrorResponse,
   FlashcardDeckDto,
   HomeData,
@@ -218,6 +220,27 @@ export const api = {
 
   // Practice streak (FLA-106). `tz` (IANA) anchors "today" to the caller's local day.
   getStreaks: (tz?: string) => request<StreaksResponse>(`/streaks${buildQuery({ tz })}`, { auth: true }),
+
+  // Card discussions (FLA-116). Reads are public (guests can read); posting/locking need auth.
+  getDiscussionThread: (cardUid: string) =>
+    request<DiscussionThread>(`/discussions/${encodeURIComponent(cardUid)}`),
+  getDiscussionMessages: (cardUid: string, params: { limit?: number; cursor?: string } = {}) =>
+    request<Page<DiscussionMessage>>(`/discussions/${encodeURIComponent(cardUid)}/messages${buildQuery(params)}`),
+  postDiscussionMessage: (cardUid: string, content: string, parentMessageId?: number) =>
+    request<DiscussionMessage>(`/discussions/${encodeURIComponent(cardUid)}/messages`, {
+      method: 'POST',
+      body: { content, parentMessageId },
+      auth: true,
+    }),
+  // Admin (manage_discussions): lock/unlock a thread, and enable/disable discussions on a global deck.
+  lockDiscussionThread: (cardUid: string, locked: boolean) =>
+    request<DiscussionThread>(`/discussions/${encodeURIComponent(cardUid)}/lock`, {
+      method: 'PATCH',
+      body: { locked },
+      auth: true,
+    }),
+  setDeckDiscussionsEnabled: (deckId: number, enabled: boolean) =>
+    request<FlashcardDeckDto>(`/decks/${deckId}/discussion`, { method: 'PATCH', body: { enabled }, auth: true }),
 
   uploadImage: (file: File) => uploadImage(file),
 
