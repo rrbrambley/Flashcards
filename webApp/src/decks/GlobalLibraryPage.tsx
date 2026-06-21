@@ -63,7 +63,7 @@ function DiscussionToggle({ deck }: { deck: FlashcardDeckDto }) {
 
   return (
     <label className="deck-discussions-toggle">
-      <span className="switch">
+      <span className="toggle-switch">
         <input
           type="checkbox"
           role="switch"
@@ -72,9 +72,9 @@ function DiscussionToggle({ deck }: { deck: FlashcardDeckDto }) {
           onChange={toggle}
           aria-label={`Discussions for ${deck.title}`}
         />
-        <span className="switch-track" aria-hidden="true" />
+        <span className="toggle-switch-track" aria-hidden="true" />
       </span>
-      <span className="switch-label">Discussions</span>
+      <span className="toggle-switch-label">Discussions</span>
     </label>
   );
 }

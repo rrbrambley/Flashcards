@@ -374,17 +374,18 @@ button.danger:hover:not(:disabled) {
   white-space: nowrap;
   cursor: pointer;
 }
-.switch-label {
+.toggle-switch-label {
   line-height: 1;
 }
-.switch {
+/* Distinct from the auth ".switch" link class, which carries a margin-top that would shove this down. */
+.toggle-switch {
   position: relative;
   display: inline-block;
   width: 36px;
   height: 20px;
   flex: 0 0 auto;
 }
-.switch input {
+.toggle-switch input {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -394,10 +395,10 @@ button.danger:hover:not(:disabled) {
   opacity: 0;
   cursor: pointer;
 }
-.switch input:disabled {
+.toggle-switch input:disabled {
   cursor: default;
 }
-.switch-track {
+.toggle-switch-track {
   position: absolute;
   inset: 0;
   background: var(--border);
@@ -405,7 +406,7 @@ button.danger:hover:not(:disabled) {
   transition: background 0.15s ease;
   pointer-events: none;
 }
-.switch-track::after {
+.toggle-switch-track::after {
   content: '';
   position: absolute;
   top: 2px;
@@ -416,10 +417,10 @@ button.danger:hover:not(:disabled) {
   background: #fff;
   transition: transform 0.15s ease;
 }
-.switch input:checked + .switch-track {
+.toggle-switch input:checked + .toggle-switch-track {
   background: var(--primary);
 }
-.switch input:checked + .switch-track::after {
+.toggle-switch input:checked + .toggle-switch-track::after {
   transform: translateX(16px);
 }
 
