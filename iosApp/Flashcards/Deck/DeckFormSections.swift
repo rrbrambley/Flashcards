@@ -36,6 +36,18 @@ struct DeckFormSections: View {
                     .disabled(!isEditable)
                 TextField("Definition", text: $cards[index].definition)
                     .disabled(!isEditable)
+                VStack(alignment: .leading, spacing: 2) {
+                    TextField(
+                        "Other accepted answers (optional)",
+                        text: $cards[index].alternatives,
+                        axis: .vertical
+                    )
+                    .lineLimit(2 ... 4)
+                    .disabled(!isEditable)
+                    Text("One per line. Also accepted in Test mode.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 CardImageRow(
                     card: card,
                     isEditable: isEditable,
