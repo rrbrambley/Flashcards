@@ -171,6 +171,48 @@ class FlashcardApiClient(
         tz?.let { parameter("tz", it) }
     }.body()
 
+    // --- Card discussions (FLA-115/FLA-121) ---
+    /**
+     * A card's discussion thread metadata (lock state + message count). Public read (guest mode):
+     * sends no bearer. A card with no thread yet reports unlocked / zero.
+     */
+    suspend fun getDiscussionThread(cardUid: String): DiscussionThreadDto =
+        client.get(url("/discussions/$cardUid")).body()
+
+    /**
+     * One cursor-paginated page of a card's discussion messages, oldest first. Public read (guest
+     * mode): sends no bearer. Empty when the card has no thread yet.
+     */
+    suspend fun getDiscussionMessages(
+        cardUid: String,
+        limit: Int? = null,
+        cursor: String? = null,
+    ): Page<DiscussionMessageDto> = client.get(url("/discussions/$cardUid/messages")) {
+        limit?.let { parameter("limit", it) }
+        cursor?.let { parameter("cursor", it) }
+    }.body()
+
+    /** Posts a message (or a one-level reply) to a card's thread. Authenticated. */
+    suspend fun postDiscussionMessage(
+        cardUid: String,
+        content: String,
+        parentMessageId: Long? = null,
+    ): DiscussionMessageDto = client.post(url("/discussions/$cardUid/messages")) {
+        jsonBody(CreateMessageRequest(content, parentMessageId))
+    }.body()
+
+    /** Locks or unlocks a card's thread (admin: manage-discussions). */
+    suspend fun lockThread(cardUid: String, locked: Boolean): DiscussionThreadDto =
+        client.patch(url("/discussions/$cardUid/lock")) {
+            jsonBody(LockThreadRequest(locked))
+        }.body()
+
+    /** Enables or disables per-card discussions on a global deck (admin: manage-discussions). */
+    suspend fun setDeckDiscussionsEnabled(deckId: Long, enabled: Boolean): FlashcardDeckDto =
+        client.patch(url("/decks/$deckId/discussion")) {
+            jsonBody(ToggleDiscussionRequest(enabled))
+        }.body()
+
     /** Walks a cursor-paginated endpoint to the end, accumulating every page's items. */
     private suspend fun <T> fetchAllPages(fetchPage: suspend (cursor: String?) -> Page<T>): List<T> {
         val all = mutableListOf<T>()

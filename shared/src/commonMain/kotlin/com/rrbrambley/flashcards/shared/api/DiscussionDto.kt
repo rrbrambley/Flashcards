@@ -1,10 +1,10 @@
-package com.rrbrambley.flashcards.backend.discussions
+package com.rrbrambley.flashcards.shared.api
 
 import kotlinx.serialization.Serializable
 
 /**
- * Card-discussion DTOs (FLA-115). These are a backend⇄web contract (like the admin RBAC DTOs), not
- * part of the shared KMP client — the web hand-mirrors them in TypeScript; mobile is deferred.
+ * Card-discussion DTOs (FLA-115). Promoted into the shared client (FLA-121) so Android + iOS reuse
+ * the same typed contract as the backend; the web keeps its own TypeScript mirrors.
  */
 
 /** A thread's metadata for a card: whether it's locked and how many messages it holds. */
