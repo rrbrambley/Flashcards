@@ -53,6 +53,7 @@ export function LibraryPage() {
                 </div>
               </section>
             )}
+            {isAdmin && <hr className="admin-divider" />}
             <button onClick={() => navigate('/create')}>+ Create deck</button>
           </div>
         }

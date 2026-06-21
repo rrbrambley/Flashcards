@@ -314,12 +314,20 @@ button.danger:hover:not(:disabled) {
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
-/* Stacks the Admin panel above the regular library controls (FLA-127). */
+/* Stacks the Admin panel above the regular library controls, left-aligned with the list/search
+ * below it; a rule separates the admin controls from the rest (FLA-127). */
 .library-actions-group {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 0.75rem;
+  width: 100%;
+}
+.admin-divider {
+  width: 100%;
+  margin: 0;
+  border: none;
+  border-top: 1px solid var(--border);
 }
 /* Admin controls grouped + set apart from the regular user controls (FLA-127). */
 .admin-panel {
