@@ -178,10 +178,39 @@ object DiscussionMessages : LongIdTable("discussion_messages") {
     val content = text("content")
     val createdAtMillis = long("created_at_millis")
 
+    // Soft delete (FLA-118): null = live; non-null = removed by a moderator. The original content is
+    // kept for the audit trail but never returned to clients once removed. [deletedByUserId] is a
+    // soft reference (audit only), like [parentMessageId].
+    val deletedAtMillis = long("deleted_at_millis").nullable()
+    val deletedByUserId = long("deleted_by_user_id").nullable()
+
     init {
         // Chronological message read for a thread.
         index(false, threadId, createdAtMillis)
         // Per-(author, thread) windowed count for rate limiting.
         index(false, authorUserId, threadId, createdAtMillis)
+    }
+}
+
+/**
+ * A user-submitted report/flag of a [DiscussionMessages] message (FLA-118), feeding the moderation
+ * queue. One report per (message, reporter) — the unique index makes re-reporting a no-op. [status]
+ * is open/resolved/dismissed; deleting the message resolves its open reports, and a moderator can
+ * dismiss a report on an acceptable message.
+ */
+object DiscussionReports : LongIdTable("discussion_reports") {
+    val messageId = reference("message_id", DiscussionMessages, onDelete = ReferenceOption.CASCADE)
+    val reporterUserId = reference("reporter_user_id", Users, onDelete = ReferenceOption.CASCADE)
+    val reason = varchar("reason", 500).nullable()
+    val status = varchar("status", 16).default("open")
+    val createdAtMillis = long("created_at_millis")
+    val resolvedByUserId = long("resolved_by_user_id").nullable()
+    val resolvedAtMillis = long("resolved_at_millis").nullable()
+
+    init {
+        // One report per user per message; a duplicate submit is ignored.
+        uniqueIndex(messageId, reporterUserId)
+        // Moderation queue: open reports, newest first.
+        index(false, status, createdAtMillis)
     }
 }

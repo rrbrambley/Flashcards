@@ -70,6 +70,7 @@ object DatabaseFactory {
                 UserRoles,
                 DiscussionThreads,
                 DiscussionMessages,
+                DiscussionReports,
             )
             backfillCardUids()
             seed()

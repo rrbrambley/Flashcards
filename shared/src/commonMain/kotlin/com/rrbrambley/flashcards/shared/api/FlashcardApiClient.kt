@@ -213,6 +213,17 @@ class FlashcardApiClient(
             jsonBody(ToggleDiscussionRequest(enabled))
         }.body()
 
+    /** Reports/flags a message for moderation (FLA-118; any signed-in user). Idempotent per user. */
+    suspend fun reportMessage(messageId: Long, reason: String? = null) {
+        client.post(url("/discussions/messages/$messageId/report")) {
+            jsonBody(ReportMessageRequest(reason))
+        }
+    }
+
+    /** Soft-deletes a message (admin: manage-discussions); returns the tombstoned message (FLA-118). */
+    suspend fun deleteDiscussionMessage(messageId: Long): DiscussionMessageDto =
+        client.delete(url("/discussions/messages/$messageId")) { auth() }.body()
+
     /** Walks a cursor-paginated endpoint to the end, accumulating every page's items. */
     private suspend fun <T> fetchAllPages(fetchPage: suspend (cursor: String?) -> Page<T>): List<T> {
         val all = mutableListOf<T>()

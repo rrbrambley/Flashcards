@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.backend.discussions
 import com.rrbrambley.flashcards.backend.auth.AuthService
 import com.rrbrambley.flashcards.backend.db.Decks
 import com.rrbrambley.flashcards.backend.db.DiscussionMessages
+import com.rrbrambley.flashcards.backend.db.DiscussionReports
 import com.rrbrambley.flashcards.backend.db.DiscussionThreads
 import com.rrbrambley.flashcards.backend.db.Flashcards
 import com.rrbrambley.flashcards.backend.db.Users
@@ -15,13 +16,17 @@ import com.rrbrambley.flashcards.backend.validation.Validation
 import com.rrbrambley.flashcards.shared.api.DiscussionMessageDto
 import com.rrbrambley.flashcards.shared.api.DiscussionThreadDto
 import com.rrbrambley.flashcards.shared.api.Page
+import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.greater
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
+import org.jetbrains.exposed.sql.alias
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.count
+import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -36,6 +41,12 @@ import org.jetbrains.exposed.sql.update
 object DiscussionRepository {
 
     private const val AUTO_LOCK_AT = 500
+
+    // Moderation report statuses (FLA-118).
+    private const val STATUS_OPEN = "open"
+    private const val STATUS_RESOLVED = "resolved"
+    private const val STATUS_DISMISSED = "dismissed"
+    private const val MAX_REASON_LENGTH = 500
 
     private const val MINUTE_MILLIS = 60_000L
     private const val HOUR_MILLIS = 60 * MINUTE_MILLIS
@@ -131,6 +142,142 @@ object DiscussionRepository {
         DiscussionThreadDto(cardUid, isLocked = locked, messageCount = thread.messageCount)
     }
 
+    /**
+     * Reports/flags a message for moderation (FLA-118; any signed-in user). Idempotent per
+     * (message, reporter) — a second report by the same user is a no-op. 404 if the message isn't in
+     * an available (global, discussion-enabled) thread.
+     */
+    suspend fun reportMessage(userId: Long, messageId: Long, reason: String?) = dbQuery {
+        requireReportableMessage(messageId)
+        val alreadyReported = DiscussionReports.selectAll().where {
+            (DiscussionReports.messageId eq messageId) and (DiscussionReports.reporterUserId eq userId)
+        }.any()
+        if (!alreadyReported) {
+            DiscussionReports.insert {
+                it[DiscussionReports.messageId] = messageId
+                it[reporterUserId] = userId
+                it[DiscussionReports.reason] = reason?.takeIf { r -> r.isNotBlank() }?.take(MAX_REASON_LENGTH)
+                it[createdAtMillis] = System.currentTimeMillis()
+            }
+        }
+    }
+
+    /**
+     * Soft-deletes a message (admin) — sets the tombstone + audit fields and resolves the message's
+     * open reports. Idempotent: re-deleting returns the same tombstoned message. 404 if missing.
+     */
+    suspend fun deleteMessage(adminUserId: Long, messageId: Long): DiscussionMessageDto = dbQuery {
+        val now = System.currentTimeMillis()
+        DiscussionMessages.update({
+            (DiscussionMessages.id eq messageId) and DiscussionMessages.deletedAtMillis.isNull()
+        }) {
+            it[deletedAtMillis] = now
+            it[deletedByUserId] = adminUserId
+        }
+        DiscussionReports.update({
+            (DiscussionReports.messageId eq messageId) and (DiscussionReports.status eq STATUS_OPEN)
+        }) {
+            it[status] = STATUS_RESOLVED
+            it[resolvedByUserId] = adminUserId
+            it[resolvedAtMillis] = now
+        }
+        (DiscussionMessages innerJoin Users).selectAll()
+            .where { DiscussionMessages.id eq messageId }
+            .firstOrNull()
+            ?.toMessageDto()
+            ?: throw NotFoundException("Message not found")
+    }
+
+    /** One page of the open-report moderation queue (admin), newest first. */
+    suspend fun listOpenReports(limit: Int, cursor: String?): Page<ReportedMessageDto> = dbQuery {
+        val reporter = Users.alias("reporter")
+        val author = Users.alias("author")
+        val query = DiscussionReports
+            .join(DiscussionMessages, JoinType.INNER, DiscussionReports.messageId, DiscussionMessages.id)
+            .join(DiscussionThreads, JoinType.INNER, DiscussionMessages.threadId, DiscussionThreads.id)
+            .join(author, JoinType.INNER, DiscussionMessages.authorUserId, author[Users.id])
+            .join(reporter, JoinType.INNER, DiscussionReports.reporterUserId, reporter[Users.id])
+            .selectAll()
+            .where { DiscussionReports.status eq STATUS_OPEN }
+
+        val after = cursor?.let { decodeReportCursor(it) }
+        if (after != null) {
+            val (millis, id) = after
+            query.andWhere {
+                (DiscussionReports.createdAtMillis less millis) or
+                    ((DiscussionReports.createdAtMillis eq millis) and (DiscussionReports.id less id))
+            }
+        }
+        val rows = query
+            .orderBy(DiscussionReports.createdAtMillis to SortOrder.DESC, DiscussionReports.id to SortOrder.DESC)
+            .limit(limit + 1)
+            .toList()
+
+        val pageRows = rows.take(limit)
+        val nextCursor = if (rows.size > limit) {
+            val last = pageRows.last()
+            Cursor.encode("${last[DiscussionReports.createdAtMillis]}:${last[DiscussionReports.id].value}")
+        } else {
+            null
+        }
+        Page(
+            items = pageRows.map { row ->
+                ReportedMessageDto(
+                    reportId = row[DiscussionReports.id].value,
+                    reason = row[DiscussionReports.reason],
+                    status = row[DiscussionReports.status],
+                    reportedAtMillis = row[DiscussionReports.createdAtMillis],
+                    reporterDisplayName = AuthService.displayNameOrDefault(
+                        row[reporter[Users.displayName]],
+                        row[reporter[Users.email]],
+                    ),
+                    messageId = row[DiscussionMessages.id].value,
+                    cardUid = row[DiscussionThreads.cardUid],
+                    authorDisplayName = AuthService.displayNameOrDefault(
+                        row[author[Users.displayName]],
+                        row[author[Users.email]],
+                    ),
+                    // Admins see the reported text (even if later removed) to triage; this is admin-only.
+                    content = row[DiscussionMessages.content],
+                    deleted = row[DiscussionMessages.deletedAtMillis] != null,
+                    messageCreatedAtMillis = row[DiscussionMessages.createdAtMillis],
+                )
+            },
+            nextCursor = nextCursor,
+        )
+    }
+
+    /** Updates a report's status (admin) — e.g. "dismissed" for an acceptable message. 404 if missing. */
+    suspend fun updateReportStatus(adminUserId: Long, reportId: Long, status: String) = dbQuery {
+        require(status == STATUS_DISMISSED || status == STATUS_RESOLVED) { "Invalid report status: $status" }
+        val updated = DiscussionReports.update({ DiscussionReports.id eq reportId }) {
+            it[DiscussionReports.status] = status
+            it[resolvedByUserId] = adminUserId
+            it[resolvedAtMillis] = System.currentTimeMillis()
+        }
+        if (updated == 0) throw NotFoundException("Report not found")
+    }
+
+    /** Resolves [messageId] to nothing (throws) unless it's a real message in an available discussion. */
+    private fun requireReportableMessage(messageId: Long) {
+        (DiscussionMessages innerJoin DiscussionThreads innerJoin Decks)
+            .select(DiscussionMessages.id)
+            .where {
+                (DiscussionMessages.id eq messageId) and
+                    (Decks.isGlobal eq true) and
+                    (Decks.discussionEnabled eq true)
+            }
+            .firstOrNull() ?: throw NotFoundException("Message not found")
+    }
+
+    private fun decodeReportCursor(token: String): Pair<Long, Long> {
+        val parts = Cursor.decode(token).split(":")
+        val millis = parts.getOrNull(0)?.toLongOrNull()
+        val id = parts.getOrNull(1)?.toLongOrNull()
+        require(parts.size == 2 && millis != null && id != null) { "Invalid pagination cursor" }
+        return millis to id
+    }
+
     /** Resolves [cardUid] to its deck id, requiring the deck to be global + discussion-enabled (else 404). */
     private fun requireDiscussionCard(cardUid: String): Long {
         val row = (Flashcards innerJoin Decks)
@@ -196,12 +343,17 @@ object DiscussionRepository {
         messageCount = this[DiscussionThreads.messageCount],
     )
 
-    /** Maps a DiscussionMessages⨝Users row to a DTO (author shown by display name, never email). */
-    private fun ResultRow.toMessageDto() = DiscussionMessageDto(
-        id = this[DiscussionMessages.id].value,
-        authorDisplayName = AuthService.displayNameOrDefault(this[Users.displayName], this[Users.email]),
-        content = this[DiscussionMessages.content],
-        parentMessageId = this[DiscussionMessages.parentMessageId],
-        createdAtMillis = this[DiscussionMessages.createdAtMillis],
-    )
+    /** Maps a DiscussionMessages⨝Users row to a DTO (author shown by display name, never email). A
+     *  moderator-removed message reports `deleted = true` with blank content (FLA-118). */
+    private fun ResultRow.toMessageDto(): DiscussionMessageDto {
+        val deleted = this[DiscussionMessages.deletedAtMillis] != null
+        return DiscussionMessageDto(
+            id = this[DiscussionMessages.id].value,
+            authorDisplayName = AuthService.displayNameOrDefault(this[Users.displayName], this[Users.email]),
+            content = if (deleted) "" else this[DiscussionMessages.content],
+            parentMessageId = this[DiscussionMessages.parentMessageId],
+            createdAtMillis = this[DiscussionMessages.createdAtMillis],
+            deleted = deleted,
+        )
+    }
 }

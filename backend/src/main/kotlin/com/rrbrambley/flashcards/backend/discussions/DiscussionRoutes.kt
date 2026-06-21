@@ -10,10 +10,13 @@ import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.routes.userId
 import com.rrbrambley.flashcards.shared.api.CreateMessageRequest
 import com.rrbrambley.flashcards.shared.api.LockThreadRequest
+import com.rrbrambley.flashcards.shared.api.ReportMessageRequest
 import com.rrbrambley.flashcards.shared.api.ToggleDiscussionRequest
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
@@ -54,11 +57,35 @@ fun Route.discussionAuthedRoutes() {
             val request = call.receive<LockThreadRequest>()
             call.respond(DiscussionRepository.setLocked(call.pathString("cardUid"), request.locked))
         }
+        // Report a message for moderation (FLA-118; any signed-in user).
+        post("/messages/{messageId}/report") {
+            val request = call.receive<ReportMessageRequest>()
+            DiscussionRepository.reportMessage(call.userId(), call.pathLong("messageId"), request.reason)
+            call.respond(HttpStatusCode.NoContent)
+        }
+        // Moderator: soft-delete a single message (distinct from locking the whole thread).
+        delete("/messages/{messageId}") {
+            call.requirePermission(Permission.MANAGE_DISCUSSIONS)
+            call.respond(DiscussionRepository.deleteMessage(call.userId(), call.pathLong("messageId")))
+        }
     }
     // Admin: enable/disable discussions on a global deck.
     patch("/decks/{deckId}/discussion") {
         call.requirePermission(Permission.MANAGE_DISCUSSIONS)
         val request = call.receive<ToggleDiscussionRequest>()
         call.respond(DeckRepository.setDiscussionEnabled(call.pathLong("deckId"), request.enabled))
+    }
+    // Admin: the moderation queue of open reports (FLA-118).
+    route("/admin/discussions") {
+        get("/reports") {
+            call.requirePermission(Permission.MANAGE_DISCUSSIONS)
+            call.respond(DiscussionRepository.listOpenReports(call.pageLimit(), call.pageCursor()))
+        }
+        patch("/reports/{reportId}") {
+            call.requirePermission(Permission.MANAGE_DISCUSSIONS)
+            val request = call.receive<UpdateReportRequest>()
+            DiscussionRepository.updateReportStatus(call.userId(), call.pathLong("reportId"), request.status)
+            call.respond(HttpStatusCode.NoContent)
+        }
     }
 }
