@@ -8,6 +8,9 @@ import com.rrbrambley.flashcards.backend.routes.pathLong
 import com.rrbrambley.flashcards.backend.routes.pathString
 import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.routes.userId
+import com.rrbrambley.flashcards.shared.api.CreateMessageRequest
+import com.rrbrambley.flashcards.shared.api.LockThreadRequest
+import com.rrbrambley.flashcards.shared.api.ToggleDiscussionRequest
 import io.ktor.server.request.receive
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route

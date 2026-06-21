@@ -223,6 +223,79 @@ class FlashcardApiClientTest {
         assertEquals("Deck 7 not found", notFound.message)
     }
 
+    @Test
+    fun getDiscussionThread_getsThreadWithoutABearer() = runTest {
+        // Public read: guests can read even when a token is available.
+        val engine = jsonEngine("""{"cardUid":"c1","isLocked":false,"messageCount":3}""")
+        val thread = apiClient(engine, token = "tok").getDiscussionThread("c1")
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Get, request.method)
+        assertEquals("/discussions/c1", request.url.encodedPath)
+        assertNull(request.headers[HttpHeaders.Authorization])
+        assertEquals(3, thread.messageCount)
+    }
+
+    @Test
+    fun getDiscussionMessages_getsMessagesPageWithoutABearer() = runTest {
+        val engine = jsonEngine(
+            """{"items":[{"id":1,"authorDisplayName":"Quiz Whiz","content":"Why Paris?","createdAtMillis":5}],""" +
+                """"nextCursor":null}""",
+        )
+        val page = apiClient(engine, token = "tok").getDiscussionMessages("c1", limit = 20)
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Get, request.method)
+        assertEquals("/discussions/c1/messages", request.url.encodedPath)
+        assertEquals("20", request.url.parameters["limit"])
+        assertNull(request.headers[HttpHeaders.Authorization])
+        assertEquals("Quiz Whiz", page.items.single().authorDisplayName)
+    }
+
+    @Test
+    fun postDiscussionMessage_postsContentAndParentWithBearer() = runTest {
+        val engine = jsonEngine(
+            """{"id":2,"authorDisplayName":"Me","content":"A reply","parentMessageId":1,"createdAtMillis":9}""",
+        )
+        apiClient(engine, token = "tok-7").postDiscussionMessage("c1", "A reply", parentMessageId = 1L)
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Post, request.method)
+        assertEquals("/discussions/c1/messages", request.url.encodedPath)
+        assertEquals("Bearer tok-7", request.headers[HttpHeaders.Authorization])
+        val body = (request.body as TextContent).text
+        assertTrue(body.contains("A reply"))
+        assertTrue(body.contains("\"parentMessageId\":1"))
+    }
+
+    @Test
+    fun lockThread_patchesLockWithBearer() = runTest {
+        val engine = jsonEngine("""{"cardUid":"c1","isLocked":true,"messageCount":3}""")
+        val thread = apiClient(engine, token = "admin-tok").lockThread("c1", locked = true)
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Patch, request.method)
+        assertEquals("/discussions/c1/lock", request.url.encodedPath)
+        assertEquals("Bearer admin-tok", request.headers[HttpHeaders.Authorization])
+        assertTrue((request.body as TextContent).text.contains("\"locked\":true"))
+        assertTrue(thread.isLocked)
+    }
+
+    @Test
+    fun setDeckDiscussionsEnabled_patchesTheDeckDiscussionToggleWithBearer() = runTest {
+        val engine = jsonEngine(
+            """{"id":5,"title":"Capitals","flashcards":[],"isGlobal":true,"discussionsEnabled":true}""",
+        )
+        val deck = apiClient(engine, token = "admin-tok").setDeckDiscussionsEnabled(5L, enabled = true)
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Patch, request.method)
+        assertEquals("/decks/5/discussion", request.url.encodedPath)
+        assertEquals("Bearer admin-tok", request.headers[HttpHeaders.Authorization])
+        assertTrue((request.body as TextContent).text.contains("\"enabled\":true"))
+        assertTrue(deck.discussionsEnabled)
+    }
+
     // --- Helpers ---
 
     private fun apiClient(engine: MockEngine, token: String? = "tok") = FlashcardApiClient(

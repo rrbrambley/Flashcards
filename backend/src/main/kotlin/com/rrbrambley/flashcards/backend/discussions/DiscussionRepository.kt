@@ -12,6 +12,8 @@ import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.error.TooManyRequestsException
 import com.rrbrambley.flashcards.backend.routes.Cursor
 import com.rrbrambley.flashcards.backend.validation.Validation
+import com.rrbrambley.flashcards.shared.api.DiscussionMessageDto
+import com.rrbrambley.flashcards.shared.api.DiscussionThreadDto
 import com.rrbrambley.flashcards.shared.api.Page
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SortOrder

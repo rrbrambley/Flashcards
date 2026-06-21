@@ -22,11 +22,6 @@ import com.rrbrambley.flashcards.backend.db.Roles
 import com.rrbrambley.flashcards.backend.db.UserRoles
 import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
-import com.rrbrambley.flashcards.backend.discussions.CreateMessageRequest
-import com.rrbrambley.flashcards.backend.discussions.DiscussionMessageDto
-import com.rrbrambley.flashcards.backend.discussions.DiscussionThreadDto
-import com.rrbrambley.flashcards.backend.discussions.LockThreadRequest
-import com.rrbrambley.flashcards.backend.discussions.ToggleDiscussionRequest
 import com.rrbrambley.flashcards.backend.plugins.BEARER_AUTH
 import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.storage.Storage
@@ -34,13 +29,17 @@ import com.rrbrambley.flashcards.backend.storage.StorageService
 import com.rrbrambley.flashcards.shared.api.AuthResponse
 import com.rrbrambley.flashcards.shared.api.CompleteSessionRequest
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
+import com.rrbrambley.flashcards.shared.api.CreateMessageRequest
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
+import com.rrbrambley.flashcards.shared.api.DiscussionMessageDto
+import com.rrbrambley.flashcards.shared.api.DiscussionThreadDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
 import com.rrbrambley.flashcards.shared.api.GoogleAuthRequest
 import com.rrbrambley.flashcards.shared.api.HomeButtonActionDto
 import com.rrbrambley.flashcards.shared.api.HomeDataDto
 import com.rrbrambley.flashcards.shared.api.ImageUploadResponse
+import com.rrbrambley.flashcards.shared.api.LockThreadRequest
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.LogoutRequest
 import com.rrbrambley.flashcards.shared.api.MeResponse
@@ -49,6 +48,7 @@ import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
+import com.rrbrambley.flashcards.shared.api.ToggleDiscussionRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProfileRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import com.typesafe.config.ConfigFactory
