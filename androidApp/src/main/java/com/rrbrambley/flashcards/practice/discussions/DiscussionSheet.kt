@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -60,6 +61,8 @@ fun DiscussionSheet(
 
     var input by remember(cardUid) { mutableStateOf("") }
     var replyTo by remember(cardUid) { mutableStateOf<DiscussionMessageDto?>(null) }
+    // The message whose report-reason dialog is open (FLA-128), or null when closed.
+    var reportingId by remember(cardUid) { mutableStateOf<Long?>(null) }
 
     // Clear the composing field once a post lands (direct or after the guest conversion).
     LaunchedEffect(state.postedTick) {
@@ -92,6 +95,7 @@ fun DiscussionSheet(
                     state = state,
                     locked = state.isLocked,
                     onReply = { replyTo = it },
+                    onStartReport = { reportingId = it.id },
                     onLoadMore = viewModel::loadMore,
                 )
             }
@@ -130,6 +134,16 @@ fun DiscussionSheet(
             onDismiss = viewModel::dismissAuthPrompt,
         )
     }
+
+    reportingId?.let { messageId ->
+        ReportDialog(
+            onSubmit = { reason ->
+                viewModel.report(messageId, reason)
+                reportingId = null
+            },
+            onDismiss = { reportingId = null },
+        )
+    }
 }
 
 @Composable
@@ -137,6 +151,7 @@ private fun MessageList(
     state: DiscussionUiState,
     locked: Boolean,
     onReply: (DiscussionMessageDto) -> Unit,
+    onStartReport: (DiscussionMessageDto) -> Unit,
     onLoadMore: () -> Unit,
 ) {
     if (state.messages.isEmpty()) {
@@ -159,8 +174,12 @@ private fun MessageList(
     ) {
         items(topLevel, key = { it.id }) { message ->
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                MessageItem(message)
-                if (!locked) {
+                MessageItem(
+                    message = message,
+                    reported = message.id in state.reportedIds,
+                    onReport = { onStartReport(message) },
+                )
+                if (!locked && !message.deleted) {
                     TextButton(
                         onClick = { onReply(message) },
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -169,7 +188,12 @@ private fun MessageList(
                     }
                 }
                 repliesByParent[message.id]?.forEach { reply ->
-                    MessageItem(reply, modifier = Modifier.padding(start = 20.dp))
+                    MessageItem(
+                        message = reply,
+                        reported = reply.id in state.reportedIds,
+                        onReport = { onStartReport(reply) },
+                        modifier = Modifier.padding(start = 20.dp),
+                    )
                 }
             }
         }
@@ -184,7 +208,12 @@ private fun MessageList(
 }
 
 @Composable
-private fun MessageItem(message: DiscussionMessageDto, modifier: Modifier = Modifier) {
+private fun MessageItem(
+    message: DiscussionMessageDto,
+    reported: Boolean,
+    onReport: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -201,8 +230,61 @@ private fun MessageItem(message: DiscussionMessageDto, modifier: Modifier = Modi
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+        if (message.deleted) {
+            // A moderator-removed message renders a tombstone with no actions (FLA-128).
+            Text(
+                text = stringResource(R.string.discussion_removed),
+                style = MaterialTheme.typography.bodyMedium,
+                fontStyle = FontStyle.Italic,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            Text(text = message.content, style = MaterialTheme.typography.bodyMedium)
+            if (reported) {
+                Text(
+                    text = stringResource(R.string.discussion_reported),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                TextButton(
+                    onClick = onReport,
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                ) {
+                    Text(stringResource(R.string.discussion_report))
+                }
+            }
+        }
     }
+}
+
+/** Report-reason dialog (FLA-128): an optional reason, then submit. */
+@Composable
+private fun ReportDialog(onSubmit: (String) -> Unit, onDismiss: () -> Unit) {
+    var reason by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.discussion_report_title)) },
+        text = {
+            OutlinedTextField(
+                value = reason,
+                onValueChange = { reason = it },
+                modifier = Modifier.fillMaxWidth(),
+                maxLines = 3,
+                placeholder = { Text(stringResource(R.string.discussion_report_hint)) },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onSubmit(reason) }) {
+                Text(stringResource(R.string.discussion_report_submit))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.discussion_cancel))
+            }
+        },
+    )
 }
 
 @Composable
