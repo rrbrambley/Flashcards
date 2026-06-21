@@ -50,6 +50,7 @@ class FlashcardsViewModel @Inject constructor(
     private var currentFlashcardIndex = 0
     private var flashcards: List<Flashcard> = emptyList()
     private var mode: String = PracticeMode.CLASSIC.key
+    private var discussionsEnabled: Boolean = false
     private var loadJob: Job? = null
     private var loadedKey: LoadKey? = null
 
@@ -145,6 +146,7 @@ class FlashcardsViewModel @Inject constructor(
         }
         this.deckId = deckId
         this.deckTitle = deck.title
+        this.discussionsEnabled = deck.discussionsEnabled
         sessionId = null
         flashcards = cards
         this.mode = mode
@@ -172,10 +174,28 @@ class FlashcardsViewModel @Inject constructor(
         deckTitle = session.deckTitle
         flashcards = deckFlashcards
         mode = session.mode
+        discussionsEnabled = false
         currentFlashcardIndex = session.currentCardIndex.coerceIn(0, flashcards.lastIndex)
         numCorrect = session.numCorrect
         numIncorrect = session.numIncorrect
         updateUiState()
+        // Card shows immediately from cache; the discussions flag is online-only, so fetch it in the
+        // background and fold it into the visible state (offline → stays off, which is correct since
+        // the thread can't load offline anyway).
+        refreshDiscussionsEnabled(session.deckId)
+    }
+
+    /** Best-effort background fetch of the deck's discussions flag (FLA-122); never blocks the card. */
+    private fun refreshDiscussionsEnabled(deckId: Long) {
+        viewModelScope.launch {
+            val enabled = runCatching { apiClient.getDeck(deckId).discussionsEnabled }.getOrDefault(false)
+            if (enabled != discussionsEnabled) {
+                discussionsEnabled = enabled
+                _uiState.update { state ->
+                    if (state is FlashcardsUiState.ShowFlashcard) state.copy(discussionsEnabled = enabled) else state
+                }
+            }
+        }
     }
 
     private fun updateUiState() {
@@ -192,6 +212,7 @@ class FlashcardsViewModel @Inject constructor(
                 deck = flashcards,
                 mode = mode,
                 canGoBack = currentFlashcardIndex > 0,
+                discussionsEnabled = discussionsEnabled,
             )
         }
     }

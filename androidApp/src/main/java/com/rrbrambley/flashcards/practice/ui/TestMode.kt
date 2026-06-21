@@ -27,6 +27,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.practice.grading.gradeTextAnswer
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 
@@ -43,6 +44,8 @@ fun TestMode(
     flashcard: Flashcard,
     onResult: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    discussionsEnabled: Boolean = false,
+    onDiscuss: () -> Unit = {},
 ) {
     var input by remember(flashcard) { mutableStateOf("") }
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
@@ -82,6 +85,10 @@ fun TestMode(
             TestVerdict(grade = currentGrade, answer = flashcard.answer)
             Button(onClick = { onResult(currentGrade.correct) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.practice_next))
+            }
+            // Discussion opens once the answer is revealed (after grading), mirroring web.
+            if (discussionsEnabled) {
+                DiscussButton(onClick = onDiscuss)
             }
         }
     }

@@ -141,6 +141,38 @@
     <string name="practice_test_answer_label">Answer: %1$s</string>
     <string name="practice_test_blank">(blank)</string>
 
+    <!-- Card discussions (FLA-122) -->
+    <string name="discuss_button">💬 Discuss this card</string>
+    <string name="discussion_title">Discussion</string>
+    <string name="discussion_close">Close</string>
+    <string name="discussion_empty">No messages yet. Start the conversation!</string>
+    <string name="discussion_load_error">Could not load the discussion.</string>
+    <string name="discussion_load_more">Load more</string>
+    <string name="discussion_reply">Reply</string>
+    <string name="discussion_replying_to">Replying to %1$s</string>
+    <string name="discussion_cancel">Cancel</string>
+    <string name="discussion_locked">🔒 This discussion is locked.</string>
+    <string name="discussion_input_hint">Add a message…</string>
+    <string name="discussion_input_hint_guest">Sign in to join the discussion…</string>
+    <string name="discussion_post">Post</string>
+    <string name="discussion_post_guest">Sign in to post</string>
+    <string name="discussion_posting">Posting…</string>
+    <string name="discussion_post_error_rate">You\'re posting too quickly. Please wait a bit.</string>
+    <string name="discussion_post_error_locked">This discussion is locked.</string>
+    <string name="discussion_post_error_rejected">Your message was rejected.</string>
+    <string name="discussion_post_error_generic">Could not post your message. Check your connection and try again.</string>
+    <string name="discussion_time_just_now">just now</string>
+    <string name="discussion_time_minutes">%1$dm</string>
+    <string name="discussion_time_hours">%1$dh</string>
+    <string name="discussion_time_days">%1$dd</string>
+    <string name="discussion_auth_title">Join the discussion</string>
+    <string name="discussion_auth_message_register">Create an account to post your message and help others learn.</string>
+    <string name="discussion_auth_message_login">Log in to post your message and help others learn.</string>
+    <string name="discussion_auth_register_submit">Create account &amp; post</string>
+    <string name="discussion_auth_login_submit">Log in &amp; post</string>
+    <string name="discussion_auth_switch_to_login">Have an account? Log in</string>
+    <string name="discussion_auth_switch_to_register">Need an account? Register</string>
+
     <!-- Main scaffolding / bottom navigation -->
     <string name="nav_home">Home</string>
     <string name="nav_new">New</string>
