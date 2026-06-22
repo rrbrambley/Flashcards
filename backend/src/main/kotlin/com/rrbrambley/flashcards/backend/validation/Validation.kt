@@ -16,6 +16,7 @@ object Validation {
     const val MAX_TAG_LENGTH = 40
     const val MAX_DISPLAY_NAME_LENGTH = 80
     const val MAX_DISCUSSION_TEXT_LENGTH = 500
+    const val MAX_SUGGESTION_LENGTH = 500
 
     /** Coarse cap on request bodies, enforced from Content-Length before parsing. Above the 5 MB
      *  image-upload limit so multipart uploads still pass and hit their own check. */
@@ -63,6 +64,19 @@ object Validation {
         }
         require(!LINK_REGEX.containsMatchIn(trimmed)) { "links aren't allowed in discussions" }
         require(!Profanity.isProfane(trimmed)) { "please keep discussions respectful" }
+        return trimmed
+    }
+
+    /**
+     * Validates + normalizes a suggested alternative answer (FLA-130): trims; rejects blank or
+     * over-long. Throws [IllegalArgumentException] (→ 400) on rejection.
+     */
+    fun normalizeAnswerSuggestion(answer: String): String {
+        val trimmed = answer.trim()
+        require(trimmed.isNotEmpty()) { "a suggested answer must not be blank" }
+        require(trimmed.length <= MAX_SUGGESTION_LENGTH) {
+            "a suggested answer must be at most $MAX_SUGGESTION_LENGTH characters"
+        }
         return trimmed
     }
 

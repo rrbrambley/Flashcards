@@ -224,6 +224,17 @@ class FlashcardApiClient(
     suspend fun deleteDiscussionMessage(messageId: Long): DiscussionMessageDto =
         client.delete(url("/discussions/messages/$messageId")) { auth() }.body()
 
+    // --- Answer suggestions (FLA-130) ---
+    /**
+     * Suggests an alternative answer for a card ("this should be correct"); any signed-in user, on a
+     * global deck's card. Idempotent per (card, user, answer). Admins review/accept it elsewhere.
+     */
+    suspend fun suggestAnswer(cardUid: String, suggestedAnswer: String) {
+        client.post(url("/cards/$cardUid/answer-suggestions")) {
+            jsonBody(SuggestAnswerRequest(suggestedAnswer))
+        }
+    }
+
     /** Walks a cursor-paginated endpoint to the end, accumulating every page's items. */
     private suspend fun <T> fetchAllPages(fetchPage: suspend (cursor: String?) -> Page<T>): List<T> {
         val all = mutableListOf<T>()

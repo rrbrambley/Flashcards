@@ -28,6 +28,7 @@ import com.rrbrambley.flashcards.backend.plugins.BEARER_AUTH
 import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.storage.Storage
 import com.rrbrambley.flashcards.backend.storage.StorageService
+import com.rrbrambley.flashcards.backend.suggestions.AnswerSuggestionDto
 import com.rrbrambley.flashcards.shared.api.AuthResponse
 import com.rrbrambley.flashcards.shared.api.CompleteSessionRequest
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
@@ -51,6 +52,7 @@ import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import com.rrbrambley.flashcards.shared.api.ReportMessageRequest
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
+import com.rrbrambley.flashcards.shared.api.SuggestAnswerRequest
 import com.rrbrambley.flashcards.shared.api.ToggleDiscussionRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProfileRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
@@ -306,7 +308,12 @@ class ApplicationFlowTest {
             Users.selectAll().where { Users.email eq DatabaseFactory.DEMO_EMAIL }.first()[Users.id].value
         }
         assertEquals(
-            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key, Permission.MANAGE_DISCUSSIONS.key),
+            setOf(
+                Permission.MANAGE_GLOBAL_DECKS.key,
+                Permission.MANAGE_ROLES.key,
+                Permission.MANAGE_DISCUSSIONS.key,
+                Permission.MANAGE_SUGGESTIONS.key,
+            ),
             PermissionRepository.effectivePermissions(demoUserId),
         )
 
@@ -383,7 +390,12 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(LoginRequest("cli-made@example.com", "password1")))
         }.decode<AuthResponse>().userId
         assertEquals(
-            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key, Permission.MANAGE_DISCUSSIONS.key),
+            setOf(
+                Permission.MANAGE_GLOBAL_DECKS.key,
+                Permission.MANAGE_ROLES.key,
+                Permission.MANAGE_DISCUSSIONS.key,
+                Permission.MANAGE_SUGGESTIONS.key,
+            ),
             PermissionRepository.effectivePermissions(userId),
         )
     }
@@ -444,7 +456,12 @@ class ApplicationFlowTest {
 
         RoleGrantCommand.run(AdminArgs(listOf("--email", "cli-role@example.com", "--role", "admin")), StringBuilder())
         assertEquals(
-            setOf(Permission.MANAGE_GLOBAL_DECKS.key, Permission.MANAGE_ROLES.key, Permission.MANAGE_DISCUSSIONS.key),
+            setOf(
+                Permission.MANAGE_GLOBAL_DECKS.key,
+                Permission.MANAGE_ROLES.key,
+                Permission.MANAGE_DISCUSSIONS.key,
+                Permission.MANAGE_SUGGESTIONS.key,
+            ),
             PermissionRepository.effectivePermissions(auth.userId),
         )
 
@@ -1481,6 +1498,76 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(ReportMessageRequest(reason)))
         }
 
+    private suspend fun HttpClient.suggestAnswer(token: String, cardUid: String, answer: String): HttpResponse =
+        post("/cards/$cardUid/answer-suggestions") {
+            bearerAuth(token)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(SuggestAnswerRequest(answer)))
+        }
+
+    @Test
+    fun answer_suggestion_submit_queue_accept_and_dismiss() = runApp { client ->
+        val admin = client.register("sugadmin", "password1")
+        grantAdmin(admin.userId)
+        val (deckId, cardUid) = client.discussionDeck(admin.accessToken) // a global deck
+
+        // A signed-in user suggests an answer; a duplicate submit is a no-op.
+        val user = client.register("suggester", "password1")
+        assertEquals(HttpStatusCode.NoContent, client.suggestAnswer(user.accessToken, cardUid, "Paris, France").status)
+        assertEquals(HttpStatusCode.NoContent, client.suggestAnswer(user.accessToken, cardUid, "Paris, France").status)
+
+        // The queue is admin-gated.
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.get("/admin/answer-suggestions") { bearerAuth(user.accessToken) }.status,
+        )
+
+        // Admin sees exactly one open suggestion, with the card context.
+        val queue = client.get("/admin/answer-suggestions") { bearerAuth(admin.accessToken) }
+            .decode<Page<AnswerSuggestionDto>>()
+        assertEquals(1, queue.items.count { it.cardUid == cardUid })
+        val suggestion = queue.items.single { it.cardUid == cardUid }
+        assertEquals("Paris, France", suggestion.suggestedAnswer)
+        assertEquals("Paris", suggestion.currentAnswer)
+
+        // Accepting appends the suggestion to the card's alternative answers + resolves it.
+        assertEquals(
+            HttpStatusCode.NoContent,
+            client.post("/admin/answer-suggestions/${suggestion.id}/accept") { bearerAuth(admin.accessToken) }.status,
+        )
+        val card = client.get("/catalog/$deckId").decode<FlashcardDeckDto>()
+            .flashcards.single { it.cardUid == cardUid }
+        assertTrue("Paris, France" in card.alternativeAnswers)
+        assertFalse(
+            client.get("/admin/answer-suggestions") { bearerAuth(admin.accessToken) }
+                .decode<Page<AnswerSuggestionDto>>().items.any { it.id == suggestion.id },
+        )
+
+        // Dismiss path: a second suggestion, then dismiss it (no card change).
+        client.suggestAnswer(user.accessToken, cardUid, "Capital of France: Paris")
+        val toDismiss = client.get("/admin/answer-suggestions") { bearerAuth(admin.accessToken) }
+            .decode<Page<AnswerSuggestionDto>>().items.single { it.cardUid == cardUid }
+        assertEquals(
+            HttpStatusCode.NoContent,
+            client.post("/admin/answer-suggestions/${toDismiss.id}/dismiss") { bearerAuth(admin.accessToken) }.status,
+        )
+        assertTrue(
+            client.get("/admin/answer-suggestions") { bearerAuth(admin.accessToken) }
+                .decode<Page<AnswerSuggestionDto>>().items.isEmpty(),
+        )
+
+        // Suggesting on a non-global (personal) card is a 404.
+        val personal = client.post("/decks") {
+            bearerAuth(user.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Mine", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.suggestAnswer(user.accessToken, personal.flashcards.first().cardUid, "whatever").status,
+        )
+    }
+
     @Test
     fun moderation_report_delete_queue_and_dismiss() = runApp { client ->
         val admin = client.register("modadmin", "password1")
@@ -1841,14 +1928,20 @@ class ApplicationFlowTest {
         grantAdmin(user.userId)
         val me1 = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(listOf("admin"), me1.roles)
-        assertEquals(setOf("manage_global_decks", "manage_roles", "manage_discussions"), me1.permissions.toSet())
+        assertEquals(
+            setOf("manage_global_decks", "manage_roles", "manage_discussions", "manage_suggestions"),
+            me1.permissions.toSet(),
+        )
 
         // ...and a fresh login carries the permissions too.
         val login = client.post("/auth/login") {
             contentType(ContentType.Application.Json)
             setBody(json.encodeToString(LoginRequest("meuser@example.com", "password1")))
         }.decode<AuthResponse>()
-        assertEquals(setOf("manage_global_decks", "manage_roles", "manage_discussions"), login.permissions.toSet())
+        assertEquals(
+            setOf("manage_global_decks", "manage_roles", "manage_discussions", "manage_suggestions"),
+            login.permissions.toSet(),
+        )
     }
 
     @Test
@@ -1913,7 +2006,10 @@ class ApplicationFlowTest {
 
         val roles = client.get("/admin/roles") { bearerAuth(admin.accessToken) }.decode<List<RoleDto>>()
         val adminRole = roles.single { it.key == "admin" }
-        assertEquals(setOf("manage_global_decks", "manage_roles", "manage_discussions"), adminRole.permissions.toSet())
+        assertEquals(
+            setOf("manage_global_decks", "manage_roles", "manage_discussions", "manage_suggestions"),
+            adminRole.permissions.toSet(),
+        )
         assertTrue(roles.any { it.key == "user" && it.permissions.isEmpty() })
     }
 

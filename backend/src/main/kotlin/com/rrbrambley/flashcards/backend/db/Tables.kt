@@ -214,3 +214,25 @@ object DiscussionReports : LongIdTable("discussion_reports") {
         index(false, status, createdAtMillis)
     }
 }
+
+/**
+ * A user's "this should be correct" suggestion for a card's free-text answer (FLA-130), keyed by the
+ * card's stable [cardUid] (FLA-113). An admin reviewing the queue can accept it — appending
+ * [suggestedAnswer] to the card's alternative answers — or dismiss it. Scoped to global decks.
+ */
+object AnswerSuggestions : LongIdTable("answer_suggestions") {
+    val cardUid = varchar("card_uid", 36)
+    val suggestedAnswer = varchar("suggested_answer", 500)
+    val suggesterUserId = reference("suggester_user_id", Users, onDelete = ReferenceOption.CASCADE)
+    val status = varchar("status", 16).default("open")
+    val createdAtMillis = long("created_at_millis")
+    val resolvedByUserId = long("resolved_by_user_id").nullable()
+    val resolvedAtMillis = long("resolved_at_millis").nullable()
+
+    init {
+        // One suggestion per user per card per answer; a duplicate submit is ignored.
+        uniqueIndex(cardUid, suggesterUserId, suggestedAnswer)
+        // Review queue: open suggestions, newest first.
+        index(false, status, createdAtMillis)
+    }
+}
