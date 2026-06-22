@@ -40,7 +40,7 @@ struct PracticeView: View {
 
     /// The help copy explains flip/swipe, so it's only offered in Classic mode.
     private var isClassic: Bool {
-        if case let .showCard(_, _, _, _, _, mode, _, _) = viewModel.state {
+        if case let .showCard(_, _, _, _, _, mode, _, _, _) = viewModel.state {
             return (PracticeMode(rawValue: mode) ?? .classic) == .classic
         }
         return true
@@ -104,7 +104,7 @@ struct PracticeView: View {
         switch viewModel.state {
         case .loading:
             LoadingView()
-        case let .showCard(card, position, numCorrect, numIncorrect, canGoBack, mode, deck, discussionsEnabled):
+        case let .showCard(card, position, numCorrect, numIncorrect, canGoBack, mode, deck, discussionsEnabled, isGlobal):
             VStack(spacing: Spacing.lg) {
                 ScoreRow(numIncorrect: numIncorrect, numCorrect: numCorrect)
                 modeView(
@@ -112,7 +112,8 @@ struct PracticeView: View {
                     card: card,
                     deck: deck,
                     canGoBack: canGoBack,
-                    discussionsEnabled: discussionsEnabled
+                    discussionsEnabled: discussionsEnabled,
+                    isGlobal: isGlobal
                 )
                 // Re-init the per-card view (flip / two-phase Test+MC state) on advance.
                 .id(position)
@@ -138,7 +139,8 @@ struct PracticeView: View {
         card: Flashcard,
         deck: [Flashcard],
         canGoBack: Bool,
-        discussionsEnabled: Bool
+        discussionsEnabled: Bool,
+        isGlobal: Bool
     ) -> some View {
         // Opens the discussion sheet for the current card once its answer is revealed.
         let onDiscuss = { discussionTarget = DiscussionTarget(id: card.cardUid) }
@@ -158,7 +160,11 @@ struct PracticeView: View {
                 card: card,
                 onResult: viewModel.onResult,
                 discussionsEnabled: discussionsEnabled,
-                onDiscuss: onDiscuss
+                onDiscuss: onDiscuss,
+                canSuggest: isGlobal,
+                isGuest: viewModel.isGuestMode,
+                apiClient: apiClient,
+                authService: authService
             )
         case .multipleChoice:
             MultipleChoiceModeView(

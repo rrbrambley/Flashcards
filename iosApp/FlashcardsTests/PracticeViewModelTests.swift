@@ -14,7 +14,7 @@ final class PracticeViewModelTests: XCTestCase {
         _ state: PracticeState, position: Int, correct: Int, incorrect: Int, canGoBack: Bool,
         _ file: StaticString = #file, _ line: UInt = #line
     ) -> Flashcard? {
-        guard case let .showCard(card, pos, numCorrect, numIncorrect, back, _, _, _) = state else {
+        guard case let .showCard(card, pos, numCorrect, numIncorrect, back, _, _, _, _) = state else {
             XCTFail("expected .showCard, got \(state)", file: file, line: line)
             return nil
         }
@@ -117,7 +117,7 @@ final class PracticeViewModelTests: XCTestCase {
 
         await vm.start()
 
-        guard case let .showCard(_, _, _, _, _, mode, deck, _) = vm.state else {
+        guard case let .showCard(_, _, _, _, _, mode, deck, _, _) = vm.state else {
             return XCTFail("expected .showCard, got \(vm.state)")
         }
         XCTAssertEqual(mode, "multiple_choice")

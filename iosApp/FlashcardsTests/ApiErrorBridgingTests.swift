@@ -23,7 +23,8 @@ final class ApiErrorBridgingTests: XCTestCase {
             flashcards: [Flashcard(question: "a", answer: "b", imageUrl: nil, alternativeAnswers: [], cardUid: "")],
             isEditable: true,
             tags: [],
-            discussionsEnabled: false
+            discussionsEnabled: false,
+            isGlobal: false
         )
         do {
             try await repo.saveFlashcardDeck(deck: deck)
