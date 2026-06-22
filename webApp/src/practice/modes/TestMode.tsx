@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TextAnswerInput } from '../components/TextAnswerInput';
 import { DiscussButton } from '../components/DiscussButton';
+import { SuggestAnswerButton } from '../SuggestAnswerButton';
 import { gradeTextAnswer } from '../grading/textAnswer';
 import type { PracticeModeProps } from './types';
 
@@ -10,7 +11,7 @@ import type { PracticeModeProps } from './types';
  * user proceeds (Next / Enter), which reports the outcome. The runner remounts this per card, so the
  * two-phase state resets on its own.
  */
-export function TestMode({ card, onResult, onDiscuss }: PracticeModeProps) {
+export function TestMode({ card, onResult, onDiscuss, canSuggest, isGuest }: PracticeModeProps) {
   const [graded, setGraded] = useState<{ input: string; correct: boolean } | null>(null);
 
   // Once revealed, Enter advances (mirrors the submit-with-Enter flow).
@@ -54,6 +55,10 @@ export function TestMode({ card, onResult, onDiscuss }: PracticeModeProps) {
             <p className="test-answer">
               Answer: <strong>{card.answer}</strong>
             </p>
+          )}
+          {/* "This should be correct" — propose the typed answer as an alternative (FLA-130). */}
+          {!graded.correct && canSuggest && card.cardUid && (
+            <SuggestAnswerButton cardUid={card.cardUid} answer={graded.input} isGuest={!!isGuest} />
           )}
           <div className="practice-actions">
             <button className="mark-correct" onClick={() => onResult(graded.correct)}>

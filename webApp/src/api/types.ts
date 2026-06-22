@@ -148,6 +148,20 @@ export interface DiscussionMessage {
   deleted?: boolean;
 }
 
+// GET /admin/answer-suggestions — one open answer suggestion in the review queue (FLA-130).
+// Backend⇄web admin contract (mirrors backend AnswerSuggestionDto), not part of the shared SDK.
+export interface AnswerSuggestion {
+  id: number;
+  cardUid: string;
+  suggestedAnswer: string;
+  deckId: number;
+  deckTitle: string;
+  question: string;
+  currentAnswer: string;
+  suggesterDisplayName: string;
+  createdAtMillis: number;
+}
+
 // GET /admin/discussions/reports — one open report in the moderation queue (FLA-118). Backend⇄web
 // admin contract (mirrors backend ReportedMessageDto), not part of the cross-platform SDK.
 export interface ReportedMessage {

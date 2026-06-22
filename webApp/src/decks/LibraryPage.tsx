@@ -9,7 +9,8 @@ export function LibraryPage() {
   const canManageGlobal = can('manage_global_decks');
   const canManageRoles = can('manage_roles');
   const canManageDiscussions = can('manage_discussions');
-  const isAdmin = canManageGlobal || canManageRoles || canManageDiscussions;
+  const canManageSuggestions = can('manage_suggestions');
+  const isAdmin = canManageGlobal || canManageRoles || canManageDiscussions || canManageSuggestions;
 
   return (
     <div className="app">
@@ -48,6 +49,11 @@ export function LibraryPage() {
                   {canManageDiscussions && (
                     <button className="secondary" onClick={() => navigate('/admin/discussions')}>
                       Discussion reports
+                    </button>
+                  )}
+                  {canManageSuggestions && (
+                    <button className="secondary" onClick={() => navigate('/admin/suggestions')}>
+                      Answer suggestions
                     </button>
                   )}
                 </div>

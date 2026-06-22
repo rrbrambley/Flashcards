@@ -19,6 +19,13 @@ export interface PracticeModeProps {
    * enabled; a mode renders a 💬 control once the answer is revealed. Absent → no discussion UI.
    */
   onDiscuss?: () => void;
+  /**
+   * Whether the user may suggest an alternative answer for this card (FLA-130) — true on a global
+   * deck's card. Test mode shows a "This should be correct" action on the incorrect verdict.
+   */
+  canSuggest?: boolean;
+  /** Whether the current user is a signed-out guest (gates the sign-in conversion for suggestions). */
+  isGuest?: boolean;
 }
 
 /** A selectable practice mode: its persisted key, display copy, and the component that runs it. */

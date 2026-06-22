@@ -35,6 +35,8 @@ interface LoadedPractice {
   progress: Progress;
   // Whether per-card discussions are available on this deck (FLA-116) — global deck + enabled.
   discussionsEnabled: boolean;
+  // Whether this is a global (catalog) deck (FLA-120) — gates Test-mode answer suggestions (FLA-130).
+  isGlobal: boolean;
 }
 
 const ZERO_PROGRESS: Progress = { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 };
@@ -83,6 +85,7 @@ function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode 
             cards: deck.flashcards,
             progress: session ?? ZERO_PROGRESS,
             discussionsEnabled: deck.discussionsEnabled ?? false,
+            isGlobal: deck.isGlobal ?? false,
           });
         }
         setLoadedToken(reloadToken);
@@ -152,6 +155,7 @@ function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode 
             progress={data.progress}
             mode={mode}
             discussionsEnabled={data.discussionsEnabled}
+            isGlobal={data.isGlobal}
             isGuest={isGuest}
             canModerate={can('manage_discussions')}
             onProgress={onProgress}
@@ -180,6 +184,7 @@ interface PracticeRunnerProps {
   progress: Progress;
   mode: PracticeMode;
   discussionsEnabled: boolean;
+  isGlobal: boolean;
   isGuest: boolean;
   canModerate: boolean;
   onProgress: (progress: Progress, status: 'practicing' | 'completed') => void;
@@ -195,6 +200,7 @@ function PracticeRunner({
   progress,
   mode,
   discussionsEnabled,
+  isGlobal,
   isGuest,
   canModerate,
   onProgress,
@@ -291,6 +297,8 @@ function PracticeRunner({
         cards={state.cards}
         onResult={mark}
         onDiscuss={canDiscuss ? () => setDiscussCardUid(currentCard.cardUid ?? null) : undefined}
+        canSuggest={isGlobal && !!currentCard.cardUid}
+        isGuest={isGuest}
       />
 
       {discussCardUid && (
