@@ -1,6 +1,7 @@
 import { clearToken, getRefreshToken, getToken, setTokens } from '../auth/token';
 import type {
   AdminUserDto,
+  AnswerSuggestion,
   AuthResponse,
   CreateDeckRequest,
   DiscussionMessage,
@@ -259,6 +260,21 @@ export const api = {
       body: { status: 'dismissed' },
       auth: true,
     }),
+
+  // Answer suggestions (FLA-130). Suggesting is any signed-in user; the queue + accept/dismiss are
+  // gated on manage_suggestions.
+  suggestAnswer: (cardUid: string, suggestedAnswer: string) =>
+    request<void>(`/cards/${encodeURIComponent(cardUid)}/answer-suggestions`, {
+      method: 'POST',
+      body: { suggestedAnswer },
+      auth: true,
+    }),
+  getAnswerSuggestions: (params: { limit?: number; cursor?: string } = {}) =>
+    request<Page<AnswerSuggestion>>(`/admin/answer-suggestions${buildQuery(params)}`, { auth: true }),
+  acceptAnswerSuggestion: (id: number) =>
+    request<void>(`/admin/answer-suggestions/${id}/accept`, { method: 'POST', auth: true }),
+  dismissAnswerSuggestion: (id: number) =>
+    request<void>(`/admin/answer-suggestions/${id}/dismiss`, { method: 'POST', auth: true }),
 
   uploadImage: (file: File) => uploadImage(file),
 
