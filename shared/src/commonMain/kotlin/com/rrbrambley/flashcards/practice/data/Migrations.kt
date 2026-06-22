@@ -68,6 +68,13 @@ val MIGRATION_9_10 = object : Migration(9, 10) {
     }
 }
 
+/** v10 → v11: add the `isGlobal` flag to flashcard_decks (FLA-134; default off). */
+val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `flashcard_decks` ADD COLUMN `isGlobal` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
     arrayOf(
@@ -78,4 +85,5 @@ val ALL_MIGRATIONS =
         MIGRATION_7_8,
         MIGRATION_8_9,
         MIGRATION_9_10,
+        MIGRATION_10_11,
     )

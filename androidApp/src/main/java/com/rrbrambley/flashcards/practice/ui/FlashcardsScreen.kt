@@ -181,6 +181,8 @@ fun FlashcardsScreen(
                                     onResult = flashcardsViewModel::onResult,
                                     discussionsEnabled = state.discussionsEnabled,
                                     onDiscuss = onDiscuss,
+                                    canSuggest = state.isGlobal,
+                                    isGuest = isGuest,
                                 )
 
                             PracticeMode.MULTIPLE_CHOICE.key ->

@@ -182,6 +182,19 @@
     <string name="discussion_report_hint">Why are you reporting this? (optional)</string>
     <string name="discussion_report_submit">Report</string>
 
+    <!-- Test-mode "this should be correct" answer suggestion (FLA-134) -->
+    <string name="suggest_action">This should be correct</string>
+    <string name="suggest_submitting">Sending…</string>
+    <string name="suggest_submitted">Thanks — we\'ll review your suggestion.</string>
+    <string name="suggest_error_rate">You\'re suggesting too quickly. Please wait a bit.</string>
+    <string name="suggest_error_rejected">That suggestion couldn\'t be accepted.</string>
+    <string name="suggest_error_generic">Could not send your suggestion. Check your connection and try again.</string>
+    <string name="suggest_auth_title">Suggest an answer</string>
+    <string name="suggest_auth_message_register">Create an account to suggest this answer and help improve the deck.</string>
+    <string name="suggest_auth_message_login">Log in to suggest this answer and help improve the deck.</string>
+    <string name="suggest_auth_register_submit">Create account &amp; suggest</string>
+    <string name="suggest_auth_login_submit">Log in &amp; suggest</string>
+
     <!-- Main scaffolding / bottom navigation -->
     <string name="nav_home">Home</string>
     <string name="nav_new">New</string>

@@ -51,6 +51,7 @@ class FlashcardsViewModel @Inject constructor(
     private var flashcards: List<Flashcard> = emptyList()
     private var mode: String = PracticeMode.CLASSIC.key
     private var discussionsEnabled: Boolean = false
+    private var isGlobal: Boolean = false
     private var loadJob: Job? = null
     private var loadedKey: LoadKey? = null
 
@@ -147,6 +148,7 @@ class FlashcardsViewModel @Inject constructor(
         this.deckId = deckId
         this.deckTitle = deck.title
         this.discussionsEnabled = deck.discussionsEnabled
+        this.isGlobal = deck.isGlobal
         sessionId = null
         flashcards = cards
         this.mode = mode
@@ -174,8 +176,9 @@ class FlashcardsViewModel @Inject constructor(
         deckTitle = session.deckTitle
         flashcards = deckFlashcards
         mode = session.mode
-        // The discussions flag travels with the cached deck (FLA-122), so it's available offline too.
+        // The discussions + global flags travel with the cached deck (FLA-122/134), so they're available offline too.
         discussionsEnabled = deck?.discussionsEnabled ?: false
+        isGlobal = deck?.isGlobal ?: false
         currentFlashcardIndex = session.currentCardIndex.coerceIn(0, flashcards.lastIndex)
         numCorrect = session.numCorrect
         numIncorrect = session.numIncorrect
@@ -197,6 +200,7 @@ class FlashcardsViewModel @Inject constructor(
                 mode = mode,
                 canGoBack = currentFlashcardIndex > 0,
                 discussionsEnabled = discussionsEnabled,
+                isGlobal = isGlobal,
             )
         }
     }

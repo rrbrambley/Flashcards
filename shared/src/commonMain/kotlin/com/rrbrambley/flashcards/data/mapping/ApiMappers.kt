@@ -27,6 +27,7 @@ fun FlashcardDeckDto.toDomain(): FlashcardDeck = FlashcardDeck(
     isEditable = editable,
     tags = tags,
     discussionsEnabled = discussionsEnabled,
+    isGlobal = isGlobal,
 )
 
 fun FlashcardDeck.toCreateRequest(): CreateDeckRequest =

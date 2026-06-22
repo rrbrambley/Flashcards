@@ -14,4 +14,6 @@ data class FlashcardDeckEntity(
     val tags: String = "[]",
     /** Cached from the backend: whether per-card discussions are available on this deck (FLA-122). */
     val discussionEnabled: Boolean = false,
+    /** Cached from the backend: whether this is a global (catalog) deck (FLA-134). */
+    val isGlobal: Boolean = false,
 )

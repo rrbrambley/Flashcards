@@ -17,6 +17,8 @@ sealed interface FlashcardsUiState {
         val canGoBack: Boolean = false,
         /** Whether this deck has card discussions enabled — gates the 💬 affordance (FLA-122). */
         val discussionsEnabled: Boolean = false,
+        /** Whether this is a global (catalog) deck — gates the Test-mode "suggest answer" action (FLA-134). */
+        val isGlobal: Boolean = false,
     ) : FlashcardsUiState
     data class SessionCompleted(
         val numIncorrect: Int,

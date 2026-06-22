@@ -16,6 +16,7 @@ fun FlashcardDeckDto.toDeckEntity(): FlashcardDeckEntity = FlashcardDeckEntity(
     editable = editable,
     tags = DeckTags.encode(tags),
     discussionEnabled = discussionsEnabled,
+    isGlobal = isGlobal,
 )
 
 fun FlashcardDeckDto.toFlashcardEntities(): List<FlashcardEntity> = flashcards.map {
@@ -57,6 +58,7 @@ fun FlashcardDeckWithCards.toDomain(): FlashcardDeck = FlashcardDeck(
     isEditable = deck.editable,
     tags = DeckTags.decode(deck.tags),
     discussionsEnabled = deck.discussionEnabled,
+    isGlobal = deck.isGlobal,
 )
 
 fun PracticeSessionWithDeck.toDomain(): PracticeSession = PracticeSession(

@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.practice.grading.gradeTextAnswer
+import com.rrbrambley.flashcards.practice.suggestions.SuggestAnswerAction
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 
 private data class TestGrade(val input: String, val correct: Boolean)
@@ -46,6 +47,8 @@ fun TestMode(
     modifier: Modifier = Modifier,
     discussionsEnabled: Boolean = false,
     onDiscuss: () -> Unit = {},
+    canSuggest: Boolean = false,
+    isGuest: Boolean = false,
 ) {
     var input by remember(flashcard) { mutableStateOf("") }
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
@@ -83,6 +86,14 @@ fun TestMode(
             }
         } else {
             TestVerdict(grade = currentGrade, answer = flashcard.answer)
+            // On a global-deck card graded wrong, offer to suggest the typed answer as acceptable (FLA-134).
+            if (canSuggest && !currentGrade.correct && flashcard.cardUid.isNotBlank()) {
+                SuggestAnswerAction(
+                    cardUid = flashcard.cardUid,
+                    suggestedAnswer = currentGrade.input,
+                    isGuest = isGuest,
+                )
+            }
             Button(onClick = { onResult(currentGrade.correct) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.practice_next))
             }
