@@ -55,6 +55,10 @@ class CreateDeckViewModel @Inject constructor(
         updateCard(cardId) { card -> card.copy(definition = definition) }
     }
 
+    fun onAlternativesChange(cardId: Long, alternatives: String) {
+        updateCard(cardId) { card -> card.copy(alternatives = alternatives) }
+    }
+
     fun onImagePicked(cardId: Long, uri: Uri) {
         updateCard(cardId) { it.copy(uploading = true, uploadError = null) }
         viewModelScope.launch {
@@ -116,6 +120,7 @@ class CreateDeckViewModel @Inject constructor(
                                 question = card.term.trim(),
                                 answer = card.definition.trim(),
                                 imageUrl = card.imageUrl,
+                                alternativeAnswers = parseAlternatives(card.alternatives),
                             )
                         },
                         tags = currentState.category.toCategoryTags(),

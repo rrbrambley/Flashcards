@@ -29,6 +29,7 @@ fun EditDeckScreen(
         onCategoryChange = editDeckViewModel::onCategoryChange,
         onTermChange = editDeckViewModel::onTermChange,
         onDefinitionChange = editDeckViewModel::onDefinitionChange,
+        onAlternativesChange = editDeckViewModel::onAlternativesChange,
         onImageSelected = editDeckViewModel::onImagePicked,
         onRemoveImage = editDeckViewModel::onRemoveImage,
         onRemoveCard = editDeckViewModel::removeCard,

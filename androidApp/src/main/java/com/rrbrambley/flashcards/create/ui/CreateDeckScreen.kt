@@ -57,15 +57,25 @@ data class DeckFlashcardDraft(
     val term: String = "",
     val definition: String = "",
     val imageUrl: String? = null,
-    /** Extra accepted answers for Test mode (FLA-109). No authoring UI on Android yet — carried
-     *  through edits so they're preserved on save (web is the authoring surface for now). */
-    val alternativeAnswers: List<String> = emptyList(),
+    /** Raw editable text for extra Test-mode accepted answers (FLA-109/FLA-110), one per line; parsed
+     *  to a `List<String>` on save. Seeded from the saved alternatives when editing. */
+    val alternatives: String = "",
     /** Stable backend card id (FLA-113), carried through edits so it's preserved on save; "" when new. */
     val cardUid: String = "",
     val uploading: Boolean = false,
     /** Transient: set when the last image upload for this card failed, so the UI can show it. */
     val uploadError: String? = null,
 )
+
+/** Parses the alternatives field: one per line, trimmed, blanks dropped, de-duplicated (FLA-110). */
+fun parseAlternatives(raw: String): List<String> {
+    val seen = LinkedHashSet<String>()
+    for (line in raw.split('\n')) {
+        val trimmed = line.trim()
+        if (trimmed.isNotEmpty()) seen.add(trimmed)
+    }
+    return seen.toList()
+}
 
 /** A card needs a definition plus either a term or an image (image-only cards are allowed). */
 fun DeckFlashcardDraft.isComplete(): Boolean =
@@ -101,6 +111,7 @@ fun CreateDeckScreen(
             onCategoryChange = createDeckViewModel::onCategoryChange,
             onTermChange = createDeckViewModel::onTermChange,
             onDefinitionChange = createDeckViewModel::onDefinitionChange,
+            onAlternativesChange = createDeckViewModel::onAlternativesChange,
             onImageSelected = createDeckViewModel::onImagePicked,
             onRemoveImage = createDeckViewModel::onRemoveImage,
             onRemoveCard = createDeckViewModel::removeCard,
@@ -123,6 +134,7 @@ fun CreateDeckContent(
     onCategoryChange: (String) -> Unit = {},
     onTermChange: (Long, String) -> Unit,
     onDefinitionChange: (Long, String) -> Unit,
+    onAlternativesChange: (Long, String) -> Unit = { _, _ -> },
     onImageSelected: (Long, Uri) -> Unit,
     onRemoveImage: (Long) -> Unit,
     onRemoveCard: (Long) -> Unit = {},
@@ -231,6 +243,7 @@ fun CreateDeckContent(
                 canRemove = editable && cards.size > 1,
                 onTermChange = onTermChange,
                 onDefinitionChange = onDefinitionChange,
+                onAlternativesChange = onAlternativesChange,
                 onImageSelected = onImageSelected,
                 onRemoveImage = onRemoveImage,
                 onRemoveCard = onRemoveCard,
@@ -252,6 +265,7 @@ private fun FlashcardDraftCard(
     modifier: Modifier = Modifier,
     editable: Boolean = true,
     canRemove: Boolean = false,
+    onAlternativesChange: (Long, String) -> Unit = { _, _ -> },
 ) {
     val started = card.isStarted()
     // Term is only required when there's no image.
@@ -381,6 +395,15 @@ private fun FlashcardDraftCard(
                         Text(stringResource(R.string.create_deck_definition_error))
                     }
                 },
+                minLines = 2,
+            )
+            OutlinedTextField(
+                value = card.alternatives,
+                onValueChange = { onAlternativesChange(card.id, it) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.create_deck_alternatives_label)) },
+                enabled = editable,
+                supportingText = { Text(stringResource(R.string.create_deck_alternatives_hint)) },
                 minLines = 2,
             )
         }

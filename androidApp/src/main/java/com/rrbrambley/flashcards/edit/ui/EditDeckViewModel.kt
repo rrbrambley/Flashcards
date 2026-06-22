@@ -8,6 +8,7 @@ import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.create.ui.isComplete
 import com.rrbrambley.flashcards.create.ui.isStarted
+import com.rrbrambley.flashcards.create.ui.parseAlternatives
 import com.rrbrambley.flashcards.create.ui.toCategoryTags
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.shared.domain.Flashcard
@@ -110,6 +111,10 @@ class EditDeckViewModel @Inject constructor(
         updateCard(cardId) { card -> card.copy(definition = definition) }
     }
 
+    fun onAlternativesChange(cardId: Long, alternatives: String) {
+        updateCard(cardId) { card -> card.copy(alternatives = alternatives) }
+    }
+
     fun onImagePicked(cardId: Long, uri: Uri) {
         updateCard(cardId) { it.copy(uploading = true, uploadError = null) }
         viewModelScope.launch {
@@ -182,8 +187,8 @@ class EditDeckViewModel @Inject constructor(
                                 question = card.term.trim(),
                                 answer = card.definition.trim(),
                                 imageUrl = card.imageUrl,
-                                // Preserve any web-authored alternatives through an edit (FLA-109).
-                                alternativeAnswers = card.alternativeAnswers,
+                                // Authored/edited alternatives (FLA-110), parsed from the raw field.
+                                alternativeAnswers = parseAlternatives(card.alternatives),
                                 // Preserve the stable card id so the backend updates in place (FLA-113).
                                 cardUid = card.cardUid,
                             )
@@ -256,7 +261,7 @@ class EditDeckViewModel @Inject constructor(
             term = flashcard.question,
             definition = flashcard.answer,
             imageUrl = flashcard.imageUrl,
-            alternativeAnswers = flashcard.alternativeAnswers,
+            alternatives = flashcard.alternativeAnswers.joinToString("\n"),
             cardUid = flashcard.cardUid,
         )
     }.ifEmpty {

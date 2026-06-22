@@ -239,6 +239,35 @@ class EditDeckViewModelTest {
         assertFalse(viewModel.uiState.value.isSaving)
     }
 
+    @Test
+    fun alternativeAnswers_areSeededForEditingAndSavedParsed() = runTest(testDispatcher) {
+        val deck = FlashcardDeck(
+            id = 42L,
+            title = "Greetings",
+            flashcards = listOf(
+                Flashcard(question = "Hello", answer = "Hola", alternativeAnswers = listOf("Buenos dias")),
+            ),
+        )
+        val repository = FakeFlashcardRepository(deck)
+        val viewModel = EditDeckViewModel(repository, NoOpImageUploader, FakeStringProvider())
+        viewModel.loadDeck(42L)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The saved alternative is seeded into the editable (one-per-line) field.
+        val cardId = viewModel.uiState.value.cards.single().id
+        assertEquals("Buenos dias", viewModel.uiState.value.cards.single().alternatives)
+
+        // Append another (plus a trailing blank line); saving parses to a trimmed, deduped list.
+        viewModel.onAlternativesChange(cardId, "Buenos dias\nHey\n")
+        viewModel.finishDeckEditing()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(
+            listOf("Buenos dias", "Hey"),
+            repository.updatedDeck?.flashcards?.single()?.alternativeAnswers,
+        )
+    }
+
     private fun testDeck(editable: Boolean = true, tags: List<String> = emptyList()): FlashcardDeck = FlashcardDeck(
         id = 42L,
         title = "Spanish basics",
