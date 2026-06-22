@@ -11,9 +11,9 @@ struct CardDraft: Identifiable, Equatable {
     var term: String
     var definition: String
     var imageUrl: String?
-    /// Extra accepted answers for Test mode (FLA-109). No authoring UI on iOS yet — carried through
-    /// edits so they're preserved on save (web is the authoring surface for now).
-    var alternativeAnswers: [String]
+    /// Raw editable text for extra Test-mode accepted answers (FLA-109/FLA-111), one per line; parsed
+    /// to `[String]` on save (see `parseAlternatives`). Seeded from the saved alternatives when editing.
+    var alternatives: String
     /// Stable backend card id (FLA-113), carried through edits so it's preserved on save; "" when new.
     var cardUid: String
     var uploading: Bool
@@ -24,7 +24,7 @@ struct CardDraft: Identifiable, Equatable {
         term: String = "",
         definition: String = "",
         imageUrl: String? = nil,
-        alternativeAnswers: [String] = [],
+        alternatives: String = "",
         cardUid: String = "",
         uploading: Bool = false,
         uploadError: String? = nil
@@ -33,7 +33,7 @@ struct CardDraft: Identifiable, Equatable {
         self.term = term
         self.definition = definition
         self.imageUrl = imageUrl
-        self.alternativeAnswers = alternativeAnswers
+        self.alternatives = alternatives
         self.cardUid = cardUid
         self.uploading = uploading
         self.uploadError = uploadError
@@ -46,9 +46,22 @@ struct CardDraft: Identifiable, Equatable {
 
     static func == (lhs: CardDraft, rhs: CardDraft) -> Bool {
         lhs.id == rhs.id && lhs.term == rhs.term && lhs.definition == rhs.definition &&
-            lhs.imageUrl == rhs.imageUrl && lhs.alternativeAnswers == rhs.alternativeAnswers &&
+            lhs.imageUrl == rhs.imageUrl && lhs.alternatives == rhs.alternatives &&
             lhs.cardUid == rhs.cardUid
     }
+}
+
+/// Parses the alternatives field: one per line, trimmed, blanks dropped, de-duplicated (FLA-111).
+func parseAlternatives(_ raw: String) -> [String] {
+    var seen = Set<String>()
+    var result: [String] = []
+    for line in raw.split(separator: "\n", omittingEmptySubsequences: false) {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty, seen.insert(trimmed).inserted {
+            result.append(trimmed)
+        }
+    }
+    return result
 }
 
 extension Array where Element == CardDraft {

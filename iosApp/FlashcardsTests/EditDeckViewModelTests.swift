@@ -60,6 +60,24 @@ final class EditDeckViewModelTests: XCTestCase {
         XCTAssertTrue(vm.didSave)
     }
 
+    func test_alternativeAnswers_seededForEditingAndSavedParsed() async {
+        let repo = FakeFlashcardRepository()
+        repo.deck = makeDeck(id: 1, "Greetings", cards: [
+            Flashcard(question: "Hello", answer: "Hola", imageUrl: nil, alternativeAnswers: ["Buenos dias"], cardUid: ""),
+        ])
+        let vm = makeVM(repo)
+        await vm.load()
+
+        // The saved alternative is seeded into the editable (one-per-line) field.
+        XCTAssertEqual(vm.cards.first?.alternatives, "Buenos dias")
+
+        // Append another (plus a trailing blank line); saving parses to a trimmed, deduped list.
+        vm.cards[0].alternatives = "Buenos dias\nHey\n"
+        await vm.save()
+
+        XCTAssertEqual(repo.updatedDeck?.flashcards.first?.alternativeAnswers, ["Buenos dias", "Hey"])
+    }
+
     func test_save_invalidWhenAllCardsRemoved() async {
         let repo = FakeFlashcardRepository()
         repo.deck = makeDeck(id: 1, "French", cards: [makeCard("Bonjour", "Hello")])

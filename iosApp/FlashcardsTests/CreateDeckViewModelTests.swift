@@ -62,6 +62,18 @@ final class CreateDeckViewModelTests: XCTestCase {
         XCTAssertEqual(repo.savedDeck?.tags as? [String], ["Geography"])
     }
 
+    func test_save_authoredAlternativeAnswers_parsedTrimmedAndDeduped() async {
+        let repo = FakeFlashcardRepository()
+        let vm = makeVM(repo)
+        vm.deckTitle = "Greetings"
+        // One per line, with a blank line, surrounding whitespace, and a duplicate.
+        vm.cards = [CardDraft(term: "Hello", definition: "Hola", alternatives: " Hi \n\n hey \n Hi ")]
+
+        await vm.save()
+
+        XCTAssertEqual(repo.savedDeck?.flashcards.first?.alternativeAnswers, ["Hi", "hey"])
+    }
+
     func test_save_withBlankCategory_setsNoTags() async {
         let repo = FakeFlashcardRepository()
         let vm = makeVM(repo)
