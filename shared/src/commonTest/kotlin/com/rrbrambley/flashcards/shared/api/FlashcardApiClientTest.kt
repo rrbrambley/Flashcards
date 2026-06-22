@@ -323,6 +323,18 @@ class FlashcardApiClientTest {
         assertEquals("", message.content)
     }
 
+    @Test
+    fun suggestAnswer_postsTheSuggestionWithBearer() = runTest {
+        val engine = MockEngine { respond("", HttpStatusCode.NoContent) }
+        apiClient(engine, token = "tok-8").suggestAnswer("card-1", "Buenos dias")
+
+        val request = engine.requestHistory.last()
+        assertEquals(HttpMethod.Post, request.method)
+        assertEquals("/cards/card-1/answer-suggestions", request.url.encodedPath)
+        assertEquals("Bearer tok-8", request.headers[HttpHeaders.Authorization])
+        assertTrue((request.body as TextContent).text.contains("Buenos dias"))
+    }
+
     // --- Helpers ---
 
     private fun apiClient(engine: MockEngine, token: String? = "tok") = FlashcardApiClient(

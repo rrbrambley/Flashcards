@@ -12,6 +12,7 @@ import com.rrbrambley.flashcards.backend.home.homeRoutes
 import com.rrbrambley.flashcards.backend.images.imageRoutes
 import com.rrbrambley.flashcards.backend.sessions.sessionRoutes
 import com.rrbrambley.flashcards.backend.streaks.streakRoutes
+import com.rrbrambley.flashcards.backend.suggestions.suggestionRoutes
 import io.ktor.server.application.Application
 import io.ktor.server.auth.authenticate
 import io.ktor.server.plugins.ratelimit.rateLimit
@@ -38,6 +39,7 @@ fun Application.configureRouting() {
             imageRoutes()
             adminRoutes()
             discussionAuthedRoutes()
+            suggestionRoutes()
         }
     }
 }
