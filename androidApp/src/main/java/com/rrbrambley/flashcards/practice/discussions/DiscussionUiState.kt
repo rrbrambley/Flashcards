@@ -35,4 +35,8 @@ data class DiscussionUiState(
     val postedTick: Int = 0,
     /** Ids of messages this user has reported this session — drives the "Reported" state (FLA-128). */
     val reportedIds: Set<Long> = emptySet(),
+    /** Whether the caller can moderate (manage_discussions) — gates the lock/unlock control (FLA-124). */
+    val canModerate: Boolean = false,
+    /** Whether a lock/unlock toggle is in flight, so the control can disable itself. */
+    val togglingLock: Boolean = false,
 )

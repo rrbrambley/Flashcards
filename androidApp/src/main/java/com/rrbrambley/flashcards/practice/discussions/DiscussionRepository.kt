@@ -15,6 +15,7 @@ interface DiscussionRepository {
     suspend fun messages(cardUid: String, cursor: String?): Page<DiscussionMessageDto>
     suspend fun post(cardUid: String, content: String, parentMessageId: Long?): DiscussionMessageDto
     suspend fun report(messageId: Long, reason: String?)
+    suspend fun setLocked(cardUid: String, locked: Boolean): DiscussionThreadDto
 }
 
 class DiscussionRepositoryImpl(private val apiClient: FlashcardApiClient) : DiscussionRepository {
@@ -29,4 +30,7 @@ class DiscussionRepositoryImpl(private val apiClient: FlashcardApiClient) : Disc
 
     override suspend fun report(messageId: Long, reason: String?) =
         apiClient.reportMessage(messageId, reason)
+
+    override suspend fun setLocked(cardUid: String, locked: Boolean): DiscussionThreadDto =
+        apiClient.lockThread(cardUid, locked)
 }

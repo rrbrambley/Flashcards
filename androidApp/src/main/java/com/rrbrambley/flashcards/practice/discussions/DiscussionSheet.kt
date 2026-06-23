@@ -80,10 +80,26 @@ fun DiscussionSheet(
                 .padding(bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.discussion_title),
-                style = MaterialTheme.typography.titleLarge,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.discussion_title),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                // Moderators get a lock/unlock toggle (FLA-124); hidden for everyone else.
+                if (state.canModerate && !state.loading && !state.loadFailed) {
+                    TextButton(onClick = viewModel::toggleLock, enabled = !state.togglingLock) {
+                        Text(
+                            stringResource(
+                                if (state.isLocked) R.string.discussion_unlock else R.string.discussion_lock,
+                            ),
+                        )
+                    }
+                }
+            }
 
             when {
                 state.loading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
