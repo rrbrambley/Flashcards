@@ -9,15 +9,18 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.coroutines.CancellationException
 
 /**
  * Installs bearer auth with transparent token refresh: the access token is attached to every
  * request, and on a `401` (with the server's `WWW-Authenticate: Bearer` challenge) Ktor calls
  * `refreshTokens` to mint a new access token from the stored refresh token (posting to
  * `$baseUrl/auth/refresh`), then retries the original request — so callers never see the expiry.
- * Ktor coalesces concurrent refreshes into a single flight. If the refresh token is missing or
- * rejected, the tokens are cleared so the app gates back to sign-in (the auth UI observes the
- * cleared access token via [TokenStore.tokenFlow]).
+ * Ktor coalesces concurrent refreshes into a single flight. The tokens are cleared — so the app
+ * gates back to sign-in (the auth UI observes the cleared access token via [TokenStore.tokenFlow]) —
+ * only when the refresh token is missing or genuinely *rejected* (401/invalid_grant). A transient
+ * failure (5xx, timeout, connection blip) leaves the stored tokens intact so a later request can
+ * refresh again; only the in-flight request fails (FLA-138).
  *
  * Lives in `shared` (commonMain) so Android and iOS install the exact same flow through the
  * client factory's `configure` hook — each platform supplies only its native [TokenStore].
@@ -46,8 +49,20 @@ fun HttpClientConfig<*>.installTokenRefreshAuth(tokenStore: TokenStore, baseUrl:
                     }.body()
                     tokenStore.setTokens(response.accessToken, response.refreshToken)
                     BearerTokens(response.accessToken, response.refreshToken)
-                } catch (e: Exception) {
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: ApiError.Unauthorized) {
+                    // The refresh token was genuinely rejected (expired / revoked / reuse-detected):
+                    // end the session so the app gates back to sign-in.
                     tokenStore.clearToken()
+                    null
+                } catch (e: ApiError.Validation) {
+                    // 400 invalid_grant — also a definitive rejection of the refresh token.
+                    tokenStore.clearToken()
+                    null
+                } catch (e: Exception) {
+                    // Transient failure (5xx, timeout, connection blip): keep the tokens so a later
+                    // request can refresh again — only the in-flight request fails (FLA-138).
                     null
                 }
             }
