@@ -44,4 +44,29 @@ describe('TestMode', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
     expect(onResult).toHaveBeenCalledWith(false);
   });
+
+  it('reveals "Also acceptable" alternatives after answering', async () => {
+    render(
+      <TestMode
+        card={{ question: 'Capital of France?', answer: 'Paris', alternativeAnswers: ['Lutetia', 'City of Light'] }}
+        cards={[]}
+        onResult={vi.fn()}
+      />,
+    );
+
+    await userEvent.type(screen.getByLabelText('Your answer'), 'paris');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+
+    expect(screen.getByText(/Also acceptable/)).toBeInTheDocument();
+    expect(screen.getByText('Lutetia, City of Light')).toBeInTheDocument();
+  });
+
+  it('omits "Also acceptable" when the card has no alternatives', async () => {
+    render(<TestMode card={card} cards={[card]} onResult={vi.fn()} />);
+
+    await userEvent.type(screen.getByLabelText('Your answer'), 'Berlin');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+
+    expect(screen.queryByText(/Also acceptable/)).not.toBeInTheDocument();
+  });
 });

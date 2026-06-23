@@ -882,6 +882,12 @@ button.danger:hover:not(:disabled) {
   color: var(--muted);
 }
 
+.test-alternatives {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 /* Multiple choice mode */
 .mc-mode {
   display: flex;

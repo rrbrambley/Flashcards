@@ -141,6 +141,7 @@
     <string name="practice_test_correct">Correct</string>
     <string name="practice_test_incorrect">Incorrect</string>
     <string name="practice_test_answer_label">Answer: %1$s</string>
+    <string name="practice_test_also_acceptable">Also acceptable: %1$s</string>
     <string name="practice_test_blank">(blank)</string>
 
     <!-- Card discussions (FLA-122) -->
