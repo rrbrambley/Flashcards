@@ -191,4 +191,26 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals(0, cursor.getInt(1))
         }
     }
+
+    @Test
+    fun migrate10To11_preservesRowsAndAddsIsGlobalColumn() {
+        // Seed a v10 database with a deck (no isGlobal column yet).
+        helper.createDatabase(testDb, 10).apply {
+            execSQL(
+                "INSERT INTO flashcard_decks (id, title, editable, tags, discussionEnabled) " +
+                    "VALUES (1, 'Spanish basics', 1, '[]', 0)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_10_11 and validate against the exported v11 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 11, true, MIGRATION_10_11)
+
+        // The deck survived and got the default (not-global) flag.
+        db.query("SELECT title, isGlobal FROM flashcard_decks WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Spanish basics", cursor.getString(0))
+            assertEquals(0, cursor.getInt(1))
+        }
+    }
 }
