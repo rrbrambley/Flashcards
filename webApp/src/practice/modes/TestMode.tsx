@@ -56,6 +56,12 @@ export function TestMode({ card, onResult, onDiscuss, canSuggest, isGuest }: Pra
               Answer: <strong>{card.answer}</strong>
             </p>
           )}
+          {/* Teach the full set of valid responses (FLA-131); shown on either verdict. */}
+          {(card.alternativeAnswers?.length ?? 0) > 0 && (
+            <p className="test-alternatives">
+              Also acceptable: <strong>{card.alternativeAnswers!.join(', ')}</strong>
+            </p>
+          )}
           {/* "This should be correct" — propose the typed answer as an alternative (FLA-130). */}
           {!graded.correct && canSuggest && card.cardUid && (
             <SuggestAnswerButton cardUid={card.cardUid} answer={graded.input} isGuest={!!isGuest} />

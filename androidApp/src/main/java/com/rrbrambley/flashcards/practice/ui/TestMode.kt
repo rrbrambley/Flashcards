@@ -86,6 +86,19 @@ fun TestMode(
             }
         } else {
             TestVerdict(grade = currentGrade, answer = flashcard.answer)
+            // Teach the full set of valid responses (FLA-131); shown on either verdict.
+            if (flashcard.alternativeAnswers.isNotEmpty()) {
+                Text(
+                    text = stringResource(
+                        R.string.practice_test_also_acceptable,
+                        flashcard.alternativeAnswers.joinToString(", "),
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             // On a global-deck card graded wrong, offer to suggest the typed answer as acceptable (FLA-134).
             if (canSuggest && !currentGrade.correct && flashcard.cardUid.isNotBlank()) {
                 SuggestAnswerAction(

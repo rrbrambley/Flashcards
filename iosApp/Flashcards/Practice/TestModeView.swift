@@ -31,6 +31,14 @@ struct TestModeView: View {
 
                 if let graded {
                     verdict(graded)
+                    // Teach the full set of valid responses (FLA-131); shown on either verdict.
+                    if !card.alternativeAnswers.isEmpty {
+                        Text("Also acceptable: \(card.alternativeAnswers.joined(separator: ", "))")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                    }
                     // On a global-deck card graded wrong, offer to suggest the typed answer (FLA-135).
                     if canSuggest, !graded.correct, !card.cardUid.isEmpty, let apiClient {
                         SuggestAnswerView(
