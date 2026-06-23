@@ -98,6 +98,51 @@ class TokenRefreshAuthTest {
     }
 
     @Test
+    fun keepsTokensWhenRefreshFailsWithA5xx() = runTest {
+        val store = FakeTokenStore()
+        store.setTokens("expired-access", "valid-refresh")
+
+        // The access token is expired (401 challenge), but /auth/refresh is transiently down (503).
+        val engine = MockEngine { request ->
+            when (request.url.encodedPath) {
+                "/auth/refresh" ->
+                    respond("""{"error":"unavailable"}""", HttpStatusCode.ServiceUnavailable, jsonHeaders)
+                else -> respond("""{"error":"unauthorized"}""", HttpStatusCode.Unauthorized, unauthorizedHeaders)
+            }
+        }
+        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, baseUrl) }
+
+        // The in-flight request still fails...
+        val thrown = runCatching { client.get("http://localhost/decks") }.exceptionOrNull()
+        assertTrue(thrown is ApiError)
+        // ...but a transient refresh failure must NOT end the session (FLA-138): tokens survive so a
+        // later request can refresh again.
+        assertEquals("expired-access", store.currentToken())
+        assertEquals("valid-refresh", store.currentRefreshToken())
+    }
+
+    @Test
+    fun keepsTokensWhenRefreshFailsWithAConnectionError() = runTest {
+        val store = FakeTokenStore()
+        store.setTokens("expired-access", "valid-refresh")
+
+        // /auth/refresh can't be reached at all (e.g. a network blip) — the engine throws.
+        val engine = MockEngine { request ->
+            if (request.url.encodedPath == "/auth/refresh") {
+                throw RuntimeException("connection reset")
+            } else {
+                respond("""{"error":"unauthorized"}""", HttpStatusCode.Unauthorized, unauthorizedHeaders)
+            }
+        }
+        val client = createFlashcardHttpClient(engine) { installTokenRefreshAuth(store, baseUrl) }
+
+        runCatching { client.get("http://localhost/decks") }
+        // A connection error during refresh is transient — keep the session intact.
+        assertEquals("expired-access", store.currentToken())
+        assertEquals("valid-refresh", store.currentRefreshToken())
+    }
+
+    @Test
     fun concurrentUnauthorizedRequestsRefreshOnlyOnce() = runTest {
         val store = FakeTokenStore()
         store.setTokens("expired-access", "old-refresh")
