@@ -181,6 +181,9 @@
     <string name="discussion_report_title">Report message</string>
     <string name="discussion_report_hint">Why are you reporting this? (optional)</string>
     <string name="discussion_report_submit">Report</string>
+    <!-- Moderator lock/unlock control (FLA-124) -->
+    <string name="discussion_lock">Lock</string>
+    <string name="discussion_unlock">Unlock</string>
 
     <!-- Test-mode "this should be correct" answer suggestion (FLA-134) -->
     <string name="suggest_action">This should be correct</string>

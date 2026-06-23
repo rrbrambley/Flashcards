@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.practice.discussions
 
+import com.rrbrambley.flashcards.auth.Permissions
+import com.rrbrambley.flashcards.auth.PermissionsRepository
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.ApiError
 import com.rrbrambley.flashcards.shared.api.DiscussionMessageDto
@@ -43,7 +45,7 @@ class DiscussionViewModelTest {
     @Test
     fun load_showsThreadAndFirstPage() = runTest(testDispatcher) {
         val repo = FakeDiscussionRepository(firstPage = page(listOf(message(1, "Hi"))))
-        val viewModel = DiscussionViewModel(repo, authService())
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
 
         viewModel.load(CARD_UID, isGuest = false)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -56,7 +58,7 @@ class DiscussionViewModelTest {
     @Test
     fun lockedThread_isReflectedInState() = runTest(testDispatcher) {
         val repo = FakeDiscussionRepository(thread = DiscussionThreadDto(CARD_UID, isLocked = true, messageCount = 0))
-        val viewModel = DiscussionViewModel(repo, authService())
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
 
         viewModel.load(CARD_UID, isGuest = false)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -67,7 +69,7 @@ class DiscussionViewModelTest {
     @Test
     fun post_appendsTheMessage_whenSignedIn() = runTest(testDispatcher) {
         val repo = FakeDiscussionRepository(firstPage = page(emptyList()))
-        val viewModel = DiscussionViewModel(repo, authService())
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
         viewModel.load(CARD_UID, isGuest = false)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -81,7 +83,7 @@ class DiscussionViewModelTest {
     @Test
     fun guestPost_opensTheAuthPrompt_withoutPosting() = runTest(testDispatcher) {
         val repo = FakeDiscussionRepository(firstPage = page(emptyList()))
-        val viewModel = DiscussionViewModel(repo, authService())
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
         viewModel.load(CARD_UID, isGuest = true)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -94,7 +96,7 @@ class DiscussionViewModelTest {
     @Test
     fun guestConversion_registersThenPostsAndSignsIn() = runTest(testDispatcher) {
         val repo = FakeDiscussionRepository(firstPage = page(emptyList()))
-        val viewModel = DiscussionViewModel(repo, authService(registerOk = true))
+        val viewModel = DiscussionViewModel(repo, authService(registerOk = true), FakePermissionsRepository())
         viewModel.load(CARD_UID, isGuest = true)
         viewModel.uiState.first { !it.loading }
         viewModel.post("Joining in", parentMessageId = null)
@@ -113,7 +115,7 @@ class DiscussionViewModelTest {
             firstPage = page(listOf(message(1, "First")), nextCursor = "c1"),
             secondPage = page(listOf(message(2, "Second"))),
         )
-        val viewModel = DiscussionViewModel(repo, authService())
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
         viewModel.load(CARD_UID, isGuest = false)
         testDispatcher.scheduler.advanceUntilIdle()
         assertTrue(viewModel.uiState.value.hasMore)
@@ -131,7 +133,7 @@ class DiscussionViewModelTest {
             firstPage = page(emptyList()),
             postError = ApiError.Client(429, "slow down"),
         )
-        val viewModel = DiscussionViewModel(repo, authService())
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
         viewModel.load(CARD_UID, isGuest = false)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -145,7 +147,7 @@ class DiscussionViewModelTest {
     @Test
     fun report_marksTheMessageReported_whenSignedIn() = runTest(testDispatcher) {
         val repo = FakeDiscussionRepository(firstPage = page(listOf(message(1, "Hi"))))
-        val viewModel = DiscussionViewModel(repo, authService())
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
         viewModel.load(CARD_UID, isGuest = false)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -159,7 +161,7 @@ class DiscussionViewModelTest {
     @Test
     fun guestReport_opensTheAuthPrompt_withoutReporting() = runTest(testDispatcher) {
         val repo = FakeDiscussionRepository(firstPage = page(listOf(message(1, "Hi"))))
-        val viewModel = DiscussionViewModel(repo, authService())
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
         viewModel.load(CARD_UID, isGuest = true)
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -172,7 +174,7 @@ class DiscussionViewModelTest {
     @Test
     fun guestConversion_replaysAPendingReport() = runTest(testDispatcher) {
         val repo = FakeDiscussionRepository(firstPage = page(listOf(message(1, "Hi"))))
-        val viewModel = DiscussionViewModel(repo, authService(registerOk = true))
+        val viewModel = DiscussionViewModel(repo, authService(registerOk = true), FakePermissionsRepository())
         viewModel.load(CARD_UID, isGuest = true)
         viewModel.uiState.first { !it.loading }
         viewModel.report(1, "spam")
@@ -182,6 +184,76 @@ class DiscussionViewModelTest {
         val state = viewModel.uiState.first { !it.authPrompt && it.reportedIds.isNotEmpty() }
         assertFalse(state.isGuest)
         assertEquals(listOf(1L to "spam"), repo.reported)
+    }
+
+    @Test
+    fun moderator_seesLockControl_andTogglingLocksThread() = runTest(testDispatcher) {
+        val repo = FakeDiscussionRepository(firstPage = page(emptyList()))
+        val viewModel = DiscussionViewModel(
+            repo,
+            authService(),
+            FakePermissionsRepository(setOf(Permissions.MANAGE_DISCUSSIONS)),
+        )
+        viewModel.load(CARD_UID, isGuest = false)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.canModerate)
+
+        viewModel.toggleLock()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(true), repo.lockCalls)
+        assertTrue(viewModel.uiState.value.isLocked)
+    }
+
+    @Test
+    fun nonModerator_doesNotSeeLockControl_andToggleIsANoOp() = runTest(testDispatcher) {
+        val repo = FakeDiscussionRepository(firstPage = page(emptyList()))
+        val viewModel = DiscussionViewModel(repo, authService(), FakePermissionsRepository())
+        viewModel.load(CARD_UID, isGuest = false)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.canModerate)
+
+        viewModel.toggleLock()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(repo.lockCalls.isEmpty())
+    }
+
+    @Test
+    fun guest_neverSeesLockControl_evenWithThePermission() = runTest(testDispatcher) {
+        // Guests aren't asked for permissions (no /auth/me), so the control stays hidden.
+        val repo = FakeDiscussionRepository(firstPage = page(emptyList()))
+        val viewModel = DiscussionViewModel(
+            repo,
+            authService(),
+            FakePermissionsRepository(setOf(Permissions.MANAGE_DISCUSSIONS)),
+        )
+        viewModel.load(CARD_UID, isGuest = true)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.canModerate)
+    }
+
+    @Test
+    fun toggleLock_unlocksAnAlreadyLockedThread() = runTest(testDispatcher) {
+        val repo = FakeDiscussionRepository(
+            thread = DiscussionThreadDto(CARD_UID, isLocked = true, messageCount = 0),
+            firstPage = page(emptyList()),
+        )
+        val viewModel = DiscussionViewModel(
+            repo,
+            authService(),
+            FakePermissionsRepository(setOf(Permissions.MANAGE_DISCUSSIONS)),
+        )
+        viewModel.load(CARD_UID, isGuest = false)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isLocked)
+
+        viewModel.toggleLock()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(false), repo.lockCalls)
+        assertFalse(viewModel.uiState.value.isLocked)
     }
 
     // --- Helpers ---
@@ -228,6 +300,17 @@ class DiscussionViewModelTest {
         override suspend fun report(messageId: Long, reason: String?) {
             reported += messageId to reason
         }
+
+        override suspend fun setLocked(cardUid: String, locked: Boolean): DiscussionThreadDto {
+            lockCalls += locked
+            return DiscussionThreadDto(cardUid, isLocked = locked, messageCount = 0)
+        }
+
+        val lockCalls = mutableListOf<Boolean>()
+    }
+
+    private class FakePermissionsRepository(private val granted: Set<String> = emptySet()) : PermissionsRepository {
+        override suspend fun permissions(): Set<String> = granted
     }
 
     private class FakeTokenStore : TokenStore {

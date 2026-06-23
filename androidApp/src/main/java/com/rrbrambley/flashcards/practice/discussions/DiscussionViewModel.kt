@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.practice.discussions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rrbrambley.flashcards.auth.Permissions
+import com.rrbrambley.flashcards.auth.PermissionsRepository
 import com.rrbrambley.flashcards.shared.AuthResult
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.ApiError
@@ -30,6 +32,7 @@ private sealed interface PendingAuth {
 class DiscussionViewModel @Inject constructor(
     private val repository: DiscussionRepository,
     private val authService: AuthService,
+    private val permissionsRepository: PermissionsRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DiscussionUiState())
     val uiState: StateFlow<DiscussionUiState> = _uiState.asStateFlow()
@@ -67,6 +70,33 @@ class DiscussionViewModel @Inject constructor(
                 }
             } catch (e: ApiError) {
                 _uiState.update { it.copy(loading = false, loadFailed = true) }
+                return@launch
+            }
+            // Reveal the lock/unlock control only to moderators (manage_discussions). Signed-in only,
+            // fetched after the thread shows so it never blocks reading; best-effort (off on failure).
+            if (!isGuest) {
+                val canModerate =
+                    runCatching { permissionsRepository.has(Permissions.MANAGE_DISCUSSIONS) }.getOrDefault(false)
+                if (canModerate) _uiState.update { it.copy(canModerate = true) }
+            }
+        }
+    }
+
+    /**
+     * Moderator lock/unlock (FLA-124; manage_discussions): flips the thread's lock and reflects the
+     * server's new state, which makes the post box read-only (locked) or available (unlocked).
+     */
+    fun toggleLock() {
+        val state = _uiState.value
+        if (!state.canModerate || state.togglingLock) return
+        val target = !state.isLocked
+        _uiState.update { it.copy(togglingLock = true) }
+        viewModelScope.launch {
+            try {
+                val thread = repository.setLocked(cardUid, target)
+                _uiState.update { it.copy(isLocked = thread.isLocked, togglingLock = false) }
+            } catch (e: ApiError) {
+                _uiState.update { it.copy(togglingLock = false, postError = postErrorFor(e)) }
             }
         }
     }

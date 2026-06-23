@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.di
 
 import com.rrbrambley.flashcards.auth.AuthRepository
 import com.rrbrambley.flashcards.auth.DefaultAuthRepository
+import com.rrbrambley.flashcards.auth.DefaultPermissionsRepository
+import com.rrbrambley.flashcards.auth.PermissionsRepository
 import com.rrbrambley.flashcards.core.AndroidStringProvider
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.data.auth.DataStoreTokenStore
@@ -30,6 +32,9 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindAuthRepository(repository: DefaultAuthRepository): AuthRepository
+
+    @Binds
+    abstract fun bindPermissionsRepository(repository: DefaultPermissionsRepository): PermissionsRepository
 
     @Binds
     abstract fun bindStringProvider(provider: AndroidStringProvider): StringProvider

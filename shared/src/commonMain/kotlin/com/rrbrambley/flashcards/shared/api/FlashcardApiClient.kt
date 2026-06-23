@@ -56,6 +56,12 @@ class FlashcardApiClient(
         client.post(url("/auth/logout")) { jsonBody(LogoutRequest(refreshToken)) }
     }
 
+    /**
+     * The signed-in caller's identity, roles, and effective permissions (`GET /auth/me`).
+     * Authenticated — used by mobile to gate admin affordances (e.g. discussion lock, FLA-124).
+     */
+    suspend fun getMe(): MeResponse = client.get(url("/auth/me")) { auth() }.body()
+
     // --- Images ---
     /** Uploads an image and returns its public (CDN) URL to store as a flashcard's imageUrl. */
     suspend fun uploadImage(bytes: ByteArray, filename: String, contentType: String): ImageUploadResponse =
