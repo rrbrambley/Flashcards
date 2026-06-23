@@ -12,7 +12,8 @@ enum PracticeState {
         canGoBack: Bool,
         mode: String,
         deck: [Flashcard],
-        discussionsEnabled: Bool
+        discussionsEnabled: Bool,
+        isGlobal: Bool
     )
     case completed(numCorrect: Int, numIncorrect: Int)
     case failed
@@ -62,6 +63,7 @@ final class PracticeViewModel: ObservableObject {
     private var numIncorrect = 0
     private var mode = "flashcards"
     private var discussionsEnabled = false
+    private var isGlobal = false
 
     init(
         flashcardRepository: FlashcardRepository,
@@ -191,8 +193,9 @@ final class PracticeViewModel: ObservableObject {
         for await deck in asyncStream(BridgingKt.flashcardDeckAdapter(flashcardRepository, deckId: deckId)) {
             guard let deck else { continue }
             cards = (deck.flashcards as? [Flashcard]) ?? []
-            // The discussions flag travels with the cached deck (FLA-123), so it works offline too.
+            // The discussions + global flags travel with the cached deck (FLA-123/135), so they work offline too.
             discussionsEnabled = deck.discussionsEnabled
+            isGlobal = deck.isGlobal
             break
         }
         guard !cards.isEmpty else { state = .failed; return }
@@ -208,6 +211,7 @@ final class PracticeViewModel: ObservableObject {
         }
         deckTitle = deck.title
         discussionsEnabled = deck.discussionsEnabled
+        isGlobal = deck.isGlobal
         cards = ((deck.flashcards as? [FlashcardDto]) ?? []).map {
             Flashcard(
                 question: $0.question,
@@ -232,7 +236,8 @@ final class PracticeViewModel: ObservableObject {
             canGoBack: index > 0,
             mode: mode,
             deck: cards,
-            discussionsEnabled: discussionsEnabled
+            discussionsEnabled: discussionsEnabled,
+            isGlobal: isGlobal
         )
     }
 

@@ -12,7 +12,8 @@ func makeDeck(
     cards: [Flashcard] = [],
     editable: Bool = true,
     tags: [String] = [],
-    discussionsEnabled: Bool = false
+    discussionsEnabled: Bool = false,
+    isGlobal: Bool = false
 ) -> FlashcardDeck {
     // Kotlin default args don't bridge, so pass them all explicitly.
     FlashcardDeck(
@@ -21,7 +22,8 @@ func makeDeck(
         flashcards: cards,
         isEditable: editable,
         tags: tags,
-        discussionsEnabled: discussionsEnabled
+        discussionsEnabled: discussionsEnabled,
+        isGlobal: isGlobal
     )
 }
 

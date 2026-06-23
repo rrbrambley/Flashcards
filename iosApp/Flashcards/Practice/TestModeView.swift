@@ -10,6 +10,11 @@ struct TestModeView: View {
     let onResult: (Bool) -> Void
     var discussionsEnabled = false
     var onDiscuss: () -> Void = {}
+    /// Whether this is a global (catalog) deck — gates the "this should be correct" action (FLA-135).
+    var canSuggest = false
+    var isGuest = false
+    var apiClient: FlashcardApiClient?
+    var authService: AuthService?
 
     @State private var input = ""
     @State private var graded: Graded?
@@ -26,6 +31,16 @@ struct TestModeView: View {
 
                 if let graded {
                     verdict(graded)
+                    // On a global-deck card graded wrong, offer to suggest the typed answer (FLA-135).
+                    if canSuggest, !graded.correct, !card.cardUid.isEmpty, let apiClient {
+                        SuggestAnswerView(
+                            cardUid: card.cardUid,
+                            suggestedAnswer: graded.input,
+                            isGuest: isGuest,
+                            apiClient: apiClient,
+                            authService: authService
+                        )
+                    }
                     Button("Next") { onResult(graded.correct) }
                         .buttonStyle(.primary)
                     // Discussion opens once the answer is revealed (after grading), mirroring web.

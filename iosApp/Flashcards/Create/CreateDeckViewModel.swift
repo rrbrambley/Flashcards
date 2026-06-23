@@ -84,7 +84,9 @@ final class CreateDeckViewModel: ObservableObject {
             // bridge, so pass it explicitly.
             tags: category.toCategoryTags(),
             // Discussions are admin-toggled on global decks; a newly created deck never has them.
-            discussionsEnabled: false
+            discussionsEnabled: false,
+            // A user-created deck is never a global (catalog) deck.
+            isGlobal: false
         )
         do {
             try await repository.saveFlashcardDeck(deck: deck)

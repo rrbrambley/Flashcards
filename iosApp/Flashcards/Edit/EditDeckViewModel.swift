@@ -105,7 +105,9 @@ final class EditDeckViewModel: ObservableObject {
             // The optional category as a single tag (empty when blank).
             tags: category.toCategoryTags(),
             // Not edited here — discussions are admin-toggled and not part of the deck-edit write.
-            discussionsEnabled: false
+            discussionsEnabled: false,
+            // A user-edited deck is never a global (catalog) deck.
+            isGlobal: false
         )
         do {
             try await repository.updateFlashcardDeck(deck: deck)
