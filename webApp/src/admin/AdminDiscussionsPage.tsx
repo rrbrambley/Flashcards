@@ -10,7 +10,7 @@ import { useAuth } from '../auth/auth-context';
  * report. Gated on `manage_discussions` — non-admins are bounced; the API enforces the same gate.
  */
 export function AdminDiscussionsPage() {
-  const { signOut, can } = useAuth();
+  const { signOut, can, permissionsReady } = useAuth();
   const [reports, setReports] = useState<ReportedMessage[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,6 +37,8 @@ export function AdminDiscussionsPage() {
     loadPage(undefined, true).finally(() => setLoading(false));
   }, [loadPage]);
 
+  // Wait for permissions to hydrate on a cold load before deciding to redirect (FLA-136).
+  if (!permissionsReady) return <div className="app"><p className="muted">Loading…</p></div>;
   const isAdmin = can('manage_discussions');
   if (!isAdmin) return <Navigate to="/library" replace />;
 

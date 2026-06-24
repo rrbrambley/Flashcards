@@ -6,13 +6,17 @@ import { AdminSuggestionsPage } from './AdminSuggestionsPage';
 import { api } from '../api/client';
 import type { AnswerSuggestion } from '../api/types';
 
-const authState = vi.hoisted(() => ({ canManageSuggestions: false }));
+const authState = vi.hoisted(() => ({ canManageSuggestions: false, permissionsReady: true }));
 
 vi.mock('../api/client', () => ({
   api: { getAnswerSuggestions: vi.fn(), acceptAnswerSuggestion: vi.fn(), dismissAnswerSuggestion: vi.fn() },
 }));
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ signOut: vi.fn(), can: (p: string) => p === 'manage_suggestions' && authState.canManageSuggestions }),
+  useAuth: () => ({
+    signOut: vi.fn(),
+    can: (p: string) => p === 'manage_suggestions' && authState.canManageSuggestions,
+    permissionsReady: authState.permissionsReady,
+  }),
 }));
 
 const suggestion = (over: Partial<AnswerSuggestion> = {}): AnswerSuggestion => ({
@@ -43,11 +47,19 @@ describe('AdminSuggestionsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authState.canManageSuggestions = false;
+    authState.permissionsReady = true;
   });
 
   it('redirects non-admins to the library', () => {
     renderPage();
     expect(screen.getByText('Personal library')).toBeInTheDocument();
+  });
+
+  it('shows a loading state (not a redirect) while permissions are still hydrating', () => {
+    authState.permissionsReady = false; // cold load: /auth/me not resolved yet
+    renderPage();
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.queryByText('Personal library')).not.toBeInTheDocument();
   });
 
   it('lists open suggestions with the card context', async () => {

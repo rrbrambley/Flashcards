@@ -5,6 +5,12 @@ export interface AuthContextValue {
   token: string | null;
   /** The user's effective feature permissions (empty until loaded / for a signed-out user). */
   permissions: string[];
+  /**
+   * False only while the initial `GET /auth/me` permission hydration is in flight on a cold load
+   * with a stored token; true otherwise (signed-out, or once permissions are known). Route guards
+   * wait on this so an admin isn't redirected before their permissions arrive (FLA-136).
+   */
+  permissionsReady: boolean;
   /** Whether the user holds a given permission (e.g. `can('manage_global_decks')`). */
   can: (permission: string) => boolean;
   login: (email: string, password: string) => Promise<void>;

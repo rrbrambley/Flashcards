@@ -7,12 +7,16 @@ import type { AuthResponse } from '../api/types';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(getToken());
   const [permissions, setPermissions] = useState<string[]>([]);
+  // Only a cold load with a stored token needs async hydration; otherwise permissions are known
+  // immediately (signed-out, or seeded inline by login/register/google). (FLA-136)
+  const [permissionsReady, setPermissionsReady] = useState<boolean>(() => getToken() === null);
 
   // login/register/google return the permissions inline, so we set them without a round-trip.
   const persist = (auth: AuthResponse) => {
     setTokens(auth.accessToken, auth.refreshToken);
     setTokenState(auth.accessToken);
     setPermissions(auth.permissions ?? []);
+    setPermissionsReady(true);
   };
 
   // A terminal 401 (refresh failed/absent) clears auth state so route guards send the user to login.
@@ -21,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearToken();
       setTokenState(null);
       setPermissions([]);
+      setPermissionsReady(true); // signed out — nothing left to hydrate
     });
     return () => setUnauthorizedHandler(null);
   }, []);
@@ -36,6 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         /* ignore — a 401 is handled by the unauthorized handler; otherwise stay un-permissioned */
+      })
+      .finally(() => {
+        if (active) setPermissionsReady(true);
       });
     return () => {
       active = false;
@@ -45,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextValue = {
     token,
     permissions,
+    permissionsReady,
     can: (permission) => permissions.includes(permission),
     login: async (email, password) => persist(await api.login(email, password)),
     register: async (email, password) => persist(await api.register(email, password)),
@@ -58,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearToken();
       setTokenState(null);
       setPermissions([]);
+      setPermissionsReady(true); // signed out — nothing left to hydrate
     },
   };
 

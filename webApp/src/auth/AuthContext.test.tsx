@@ -18,11 +18,12 @@ vi.mock('../api/client', () => ({
 }));
 
 function Consumer() {
-  const { token, login, signOut, can } = useAuth();
+  const { token, login, signOut, can, permissionsReady } = useAuth();
   return (
     <div>
       <span data-testid="token">{token ?? 'none'}</span>
       <span data-testid="admin">{can('manage_global_decks') ? 'admin' : 'no'}</span>
+      <span data-testid="ready">{permissionsReady ? 'ready' : 'pending'}</span>
       <button onClick={() => login('a@b.com', 'pw')}>login</button>
       <button onClick={signOut}>signout</button>
     </div>
@@ -114,6 +115,38 @@ describe('AuthProvider / useAuth', () => {
 
     expect(await screen.findByTestId('admin')).toHaveTextContent('admin');
     expect(api.getMe).toHaveBeenCalled();
+  });
+
+  it('permissions are ready immediately when logged out', () => {
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>,
+    );
+    expect(screen.getByTestId('ready')).toHaveTextContent('ready');
+  });
+
+  it('keeps permissions not-ready on a cold load until /me resolves (FLA-136)', async () => {
+    setTokens('stored-tok', 'stored-r');
+    let resolveMe: (value: { userId: number; email: string; roles: string[]; permissions: string[] }) => void = () => {};
+    vi.mocked(api.getMe).mockReturnValue(
+      new Promise((resolve) => {
+        resolveMe = resolve;
+      }),
+    );
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>,
+    );
+
+    // A stored token but permissions not yet hydrated — guards must wait, not redirect.
+    expect(screen.getByTestId('ready')).toHaveTextContent('pending');
+
+    resolveMe({ userId: 1, email: 'a@b.com', roles: ['admin'], permissions: ['manage_global_decks'] });
+
+    expect(await screen.findByTestId('ready')).toHaveTextContent('ready');
+    expect(screen.getByTestId('admin')).toHaveTextContent('admin');
   });
 
   it('useAuth throws when used outside a provider', () => {

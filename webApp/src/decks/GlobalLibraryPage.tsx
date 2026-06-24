@@ -12,9 +12,17 @@ import { ToggleSwitch } from './ToggleSwitch';
  * Gated on `manage_global_decks` — non-admins are bounced to their own library.
  */
 export function GlobalLibraryPage() {
-  const { signOut, can } = useAuth();
+  const { signOut, can, permissionsReady } = useAuth();
   const navigate = useNavigate();
 
+  // Wait for permissions to hydrate on a cold load before deciding to redirect (FLA-136).
+  if (!permissionsReady) {
+    return (
+      <div className="app">
+        <p className="muted">Loading…</p>
+      </div>
+    );
+  }
   if (!can('manage_global_decks')) {
     return <Navigate to="/library" replace />;
   }

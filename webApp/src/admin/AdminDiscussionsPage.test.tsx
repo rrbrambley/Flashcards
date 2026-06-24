@@ -6,13 +6,17 @@ import { AdminDiscussionsPage } from './AdminDiscussionsPage';
 import { api } from '../api/client';
 import type { ReportedMessage } from '../api/types';
 
-const authState = vi.hoisted(() => ({ canManageDiscussions: false }));
+const authState = vi.hoisted(() => ({ canManageDiscussions: false, permissionsReady: true }));
 
 vi.mock('../api/client', () => ({
   api: { getDiscussionReports: vi.fn(), deleteDiscussionMessage: vi.fn(), dismissDiscussionReport: vi.fn() },
 }));
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ signOut: vi.fn(), can: (p: string) => p === 'manage_discussions' && authState.canManageDiscussions }),
+  useAuth: () => ({
+    signOut: vi.fn(),
+    can: (p: string) => p === 'manage_discussions' && authState.canManageDiscussions,
+    permissionsReady: authState.permissionsReady,
+  }),
 }));
 
 const report = (over: Partial<ReportedMessage> = {}): ReportedMessage => ({
@@ -45,11 +49,19 @@ describe('AdminDiscussionsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authState.canManageDiscussions = false;
+    authState.permissionsReady = true;
   });
 
   it('redirects non-admins to the library', () => {
     renderPage();
     expect(screen.getByText('Personal library')).toBeInTheDocument();
+  });
+
+  it('shows a loading state (not a redirect) while permissions are still hydrating', () => {
+    authState.permissionsReady = false; // cold load: /auth/me not resolved yet
+    renderPage();
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.queryByText('Personal library')).not.toBeInTheDocument();
   });
 
   it('lists open reports with the reported message and reason', async () => {
