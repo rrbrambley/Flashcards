@@ -11,7 +11,7 @@ import { useAuth } from '../auth/auth-context';
  * the same gate.
  */
 export function AdminSuggestionsPage() {
-  const { signOut, can } = useAuth();
+  const { signOut, can, permissionsReady } = useAuth();
   const [suggestions, setSuggestions] = useState<AnswerSuggestion[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +35,8 @@ export function AdminSuggestionsPage() {
     loadPage(undefined, true).finally(() => setLoading(false));
   }, [loadPage]);
 
+  // Wait for permissions to hydrate on a cold load before deciding to redirect (FLA-136).
+  if (!permissionsReady) return <div className="app"><p className="muted">Loading…</p></div>;
   const isAdmin = can('manage_suggestions');
   if (!isAdmin) return <Navigate to="/library" replace />;
 

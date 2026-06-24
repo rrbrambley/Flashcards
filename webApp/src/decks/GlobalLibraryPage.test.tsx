@@ -5,7 +5,11 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { GlobalLibraryPage } from './GlobalLibraryPage';
 import { api } from '../api/client';
 
-const authState = vi.hoisted(() => ({ canManageGlobal: false, canManageDiscussions: false }));
+const authState = vi.hoisted(() => ({
+  canManageGlobal: false,
+  canManageDiscussions: false,
+  permissionsReady: true,
+}));
 
 vi.mock('../api/client', () => ({
   api: { getGlobalDecks: vi.fn(), getAllSessions: vi.fn(), setDeckDiscussionsEnabled: vi.fn() },
@@ -16,6 +20,7 @@ vi.mock('../auth/auth-context', () => ({
     can: (p: string) =>
       (p === 'manage_global_decks' && authState.canManageGlobal) ||
       (p === 'manage_discussions' && authState.canManageDiscussions),
+    permissionsReady: authState.permissionsReady,
   }),
 }));
 
@@ -35,11 +40,20 @@ describe('GlobalLibraryPage', () => {
     vi.clearAllMocks();
     authState.canManageGlobal = false;
     authState.canManageDiscussions = false;
+    authState.permissionsReady = true;
   });
 
   it('redirects non-admins to the personal library', () => {
     renderPage();
     expect(screen.getByText('Personal library')).toBeInTheDocument();
+    expect(api.getGlobalDecks).not.toHaveBeenCalled();
+  });
+
+  it('shows a loading state (not a redirect) while permissions are still hydrating', () => {
+    authState.permissionsReady = false; // cold load: /auth/me not resolved yet
+    renderPage();
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.queryByText('Personal library')).not.toBeInTheDocument();
     expect(api.getGlobalDecks).not.toHaveBeenCalled();
   });
 

@@ -6,13 +6,17 @@ import { AdminUsersPage } from './AdminUsersPage';
 import { api } from '../api/client';
 import type { AdminUserDto } from '../api/types';
 
-const authState = vi.hoisted(() => ({ canManageRoles: false }));
+const authState = vi.hoisted(() => ({ canManageRoles: false, permissionsReady: true }));
 
 vi.mock('../api/client', () => ({
   api: { getAdminUsers: vi.fn(), getRoles: vi.fn(), grantRole: vi.fn(), revokeRole: vi.fn() },
 }));
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ signOut: vi.fn(), can: (p: string) => p === 'manage_roles' && authState.canManageRoles }),
+  useAuth: () => ({
+    signOut: vi.fn(),
+    can: (p: string) => p === 'manage_roles' && authState.canManageRoles,
+    permissionsReady: authState.permissionsReady,
+  }),
 }));
 
 const ROLES = [
@@ -39,12 +43,21 @@ describe('AdminUsersPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authState.canManageRoles = false;
+    authState.permissionsReady = true;
     vi.mocked(api.getRoles).mockResolvedValue(ROLES);
   });
 
   it('redirects non-admins to the library', () => {
     renderPage();
     expect(screen.getByText('Personal library')).toBeInTheDocument();
+    expect(api.getAdminUsers).not.toHaveBeenCalled();
+  });
+
+  it('shows a loading state (not a redirect) while permissions are still hydrating', () => {
+    authState.permissionsReady = false; // cold load: /auth/me not resolved yet
+    renderPage();
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.queryByText('Personal library')).not.toBeInTheDocument();
     expect(api.getAdminUsers).not.toHaveBeenCalled();
   });
 

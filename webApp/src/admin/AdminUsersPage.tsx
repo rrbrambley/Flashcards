@@ -10,7 +10,7 @@ import { useAuth } from '../auth/auth-context';
  * to their library; the API enforces the same gate server-side.
  */
 export function AdminUsersPage() {
-  const { signOut, can } = useAuth();
+  const { signOut, can, permissionsReady } = useAuth();
   const [users, setUsers] = useState<AdminUserDto[]>([]);
   const [roles, setRoles] = useState<RoleDto[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
@@ -56,6 +56,14 @@ export function AdminUsersPage() {
     loadPage(query, undefined, true).finally(() => setLoading(false));
   }, [isAdmin, query, loadPage]);
 
+  // Wait for permissions to hydrate on a cold load before deciding to redirect (FLA-136).
+  if (!permissionsReady) {
+    return (
+      <div className="app">
+        <p className="muted">Loading…</p>
+      </div>
+    );
+  }
   if (!isAdmin) {
     return <Navigate to="/library" replace />;
   }
