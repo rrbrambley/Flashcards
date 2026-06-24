@@ -106,6 +106,12 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          # Publish a Build Scan per Gradle invocation to scans.gradle.com for easier CI triage
+          # (FLA-139). Publishing to the public service requires agreeing to Gradle's terms of use.
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/help/legal-terms-of-use"
+          build-scan-terms-of-use-agree: "yes"
 
       - name: ktlintCheck
         run: ./gradlew ktlintCheck --stacktrace
@@ -140,6 +146,12 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          # Publish a Build Scan per Gradle invocation to scans.gradle.com for easier CI triage
+          # (FLA-139). Publishing to the public service requires agreeing to Gradle's terms of use.
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/help/legal-terms-of-use"
+          build-scan-terms-of-use-agree: "yes"
 
       # Pre-pull the Postgres image so Testcontainers' timed container start doesn't race on
       # the image download (a cause of startup-timeout flakes).
@@ -262,6 +274,12 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          # Publish a Build Scan per Gradle invocation to scans.gradle.com for easier CI triage
+          # (FLA-139). Publishing to the public service requires agreeing to Gradle's terms of use.
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/help/legal-terms-of-use"
+          build-scan-terms-of-use-agree: "yes"
 
       # The Android emulator needs KVM hardware acceleration; ubuntu-latest provides it once the
       # device node is made accessible to the runner user.
@@ -342,6 +360,12 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          # Publish a Build Scan per Gradle invocation to scans.gradle.com for easier CI triage
+          # (FLA-139). Publishing to the public service requires agreeing to Gradle's terms of use.
+          build-scan-publish: true
+          build-scan-terms-of-use-url: "https://gradle.com/help/legal-terms-of-use"
+          build-scan-terms-of-use-agree: "yes"
 
       # Cache the Kotlin/Native compiler + dependencies (~1 GB) keyed on the version catalog,
       # so most runs skip the konan download.
