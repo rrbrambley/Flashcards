@@ -162,17 +162,27 @@ jobs:
           build-scan-terms-of-use-agree: "yes"
 
       # Pre-pull the Postgres image so Testcontainers' timed container start doesn't race on
-      # the image download (a cause of startup-timeout flakes).
+      # the image download (a cause of startup-timeout flakes). Only the PR run needs it.
       - name: Pre-pull Postgres image
+        if: ${{ github.event_name == 'pull_request' }}
         run: docker pull postgres:16-alpine
 
-      # Docker is preinstalled on ubuntu-latest, so the backend's Testcontainers
-      # (Postgres) work with no extra setup or secrets. Each report task runs its tests.
+      # On a PR: run the full suite (Testcontainers-backed backend tests + coverage). Docker is
+      # preinstalled on ubuntu-latest, so the backend's Testcontainers (Postgres) work with no setup.
       - name: Tests + coverage reports
+        if: ${{ github.event_name == 'pull_request' }}
         run: ./gradlew :backend:jacocoTestReport :androidApp:jacocoTestReport :shared:jvmTest --stacktrace
 
+      # On push to main: the PR already validated this exact content, so don't re-run the (slow)
+      # Testcontainers suite. Compile main + test sources instead — enough to populate the Gradle
+      # dependency + build cache that PR jobs restore (the cache is keyed per job id, so this `jvm`
+      # job must run on main to keep PR `jvm` runs warm), without the test execution (FLA-145).
+      - name: Warm cache (compile only)
+        if: ${{ github.event_name != 'pull_request' }}
+        run: ./gradlew :backend:compileTestKotlin :androidApp:compileDebugUnitTestKotlin :shared:compileTestKotlinJvm --stacktrace
+
       - name: Upload coverage reports
-        if: ${{ !cancelled() }}
+        if: ${{ github.event_name == 'pull_request' && !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
@@ -183,7 +193,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test results
-        if: ${{ !cancelled() }}
+        if: ${{ github.event_name == 'pull_request' && !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: test-results
@@ -211,7 +221,9 @@ jobs:
   web:
     name: Web (build + lint + tests)
     needs: changes
-    if: ${{ needs.changes.outputs.web == 'true' }}
+    # PR-only: the PR already validated this content; don't re-run the full web build+test on every
+    # merge. (npm install is fast even cold, so losing main's npm-cache warming is negligible — FLA-145.)
+    if: ${{ github.event_name == 'pull_request' && needs.changes.outputs.web == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
