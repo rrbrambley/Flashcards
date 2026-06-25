@@ -64,6 +64,7 @@ object DatabaseFactory {
                 Decks,
                 Flashcards,
                 PracticeSessions,
+                PracticeAnswers,
                 Roles,
                 Permissions,
                 RolePermissions,

@@ -6,6 +6,7 @@ import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
 import com.rrbrambley.flashcards.practice.discussions.DiscussionRepository
 import com.rrbrambley.flashcards.practice.discussions.DiscussionRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
+import com.rrbrambley.flashcards.practice.data.PracticeAnswerDao
 import com.rrbrambley.flashcards.practice.data.PracticeSessionDao
 import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.RoomLocalDataStore
@@ -60,7 +61,9 @@ object RepositoryModule {
         apiClient: FlashcardApiClient,
         practiceSessionDao: PracticeSessionDao,
         flashcardDao: FlashcardDao,
-    ): PracticeSessionRepositoryImpl = PracticeSessionRepositoryImpl(apiClient, practiceSessionDao, flashcardDao)
+        practiceAnswerDao: PracticeAnswerDao,
+    ): PracticeSessionRepositoryImpl =
+        PracticeSessionRepositoryImpl(apiClient, practiceSessionDao, flashcardDao, practiceAnswerDao)
 
     @Provides
     fun providePracticeSessionRepository(impl: PracticeSessionRepositoryImpl): PracticeSessionRepository = impl

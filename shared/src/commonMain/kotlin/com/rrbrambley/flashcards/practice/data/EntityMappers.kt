@@ -3,9 +3,11 @@ package com.rrbrambley.flashcards.practice.data
 import com.rrbrambley.flashcards.data.mapping.AlternativeAnswers
 import com.rrbrambley.flashcards.data.mapping.DeckTags
 import com.rrbrambley.flashcards.shared.api.FlashcardDeckDto
+import com.rrbrambley.flashcards.shared.api.PracticeAnswerDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.PracticeAnswer
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 
 // --- Backend DTO -> Room entity (keyed by backend ids) ---
@@ -74,3 +76,36 @@ fun PracticeSessionWithDeck.toDomain(): PracticeSession = PracticeSession(
     updatedAtMillis = session.updatedAtMillis,
     pendingSync = session.pendingSync,
 )
+
+// --- Practice answers (FLA-99) ---
+
+fun PracticeAnswerEntity.toDomain(): PracticeAnswer = PracticeAnswer(
+    answerUid = answerUid,
+    cardUid = cardUid,
+    correct = correct,
+    sequence = sequence,
+    answeredAtMillis = answeredAtMillis,
+    submittedText = submittedText,
+)
+
+fun PracticeAnswerEntity.toDto(): PracticeAnswerDto = PracticeAnswerDto(
+    answerUid = answerUid,
+    cardUid = cardUid,
+    correct = correct,
+    sequence = sequence,
+    answeredAtMillis = answeredAtMillis,
+    submittedText = submittedText,
+)
+
+/** Caches a server answer under its session; [pendingSync] stays false (it's already on the server). */
+fun PracticeAnswerDto.toEntity(sessionId: Long, pendingSync: Boolean = false): PracticeAnswerEntity =
+    PracticeAnswerEntity(
+        sessionId = sessionId,
+        answerUid = answerUid,
+        cardUid = cardUid,
+        correct = correct,
+        sequence = sequence,
+        answeredAtMillis = answeredAtMillis,
+        submittedText = submittedText,
+        pendingSync = pendingSync,
+    )

@@ -155,6 +155,31 @@ object PracticeSessions : LongIdTable("practice_sessions") {
 }
 
 /**
+ * The append-only answer log for a practice session (FLA-99): one immutable row per answer, in play
+ * order. The session's `num_correct`/`num_incorrect` are kept as a derived projection of this log,
+ * and the in-session "answer streak" + an end-of-session review derive from it too.
+ *
+ * [answerUid] is minted client-side so offline-first re-syncs are idempotent (unique per session);
+ * [sequence] is the 0-based play order; [cardUid] is the stable per-card id (FLA-113) for review.
+ */
+object PracticeAnswers : LongIdTable("practice_answers") {
+    val sessionId = reference("session_id", PracticeSessions, onDelete = ReferenceOption.CASCADE)
+    val answerUid = varchar("answer_uid", 36)
+    val cardUid = varchar("card_uid", 36)
+    val correct = bool("correct")
+    val sequence = integer("sequence")
+    val answeredAtMillis = long("answered_at_millis")
+    val submittedText = varchar("submitted_text", 1000).nullable()
+
+    init {
+        // Idempotent recording: re-sending an answer (flaky connection) can't double-insert.
+        uniqueIndex(sessionId, answerUid)
+        // Ordered retrieval for review + streak derivation, and the count/cascade lookups.
+        index(false, sessionId, sequence)
+    }
+}
+
+/**
  * A per-card discussion thread (FLA-115), keyed by the card's stable [cardUid] (FLA-113). Created
  * lazily on the first post (or first admin lock). [deckId] scopes it to a deck for cascade-on-delete;
  * [messageCount] drives the auto-lock at a threshold.

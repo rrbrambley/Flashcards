@@ -309,6 +309,95 @@ class PracticeSessionRepositoryTest {
         assertTrue(sessionDao.observeActiveSessions().first().isEmpty())
     }
 
+    // --- Answer log (FLA-99) ---
+
+    @Test
+    fun recordAnswer_offlinePersistsLocallyWithIncrementingSequenceAndPending() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        sessionDao.upsertSession(sessionEntity(id = -1, deckId = 5, pendingSync = true))
+        val answerDao = FakePracticeAnswerDao()
+        // An offline-minted session (id < 0) never hits the network on record.
+        val repository =
+            repository(
+                flashcardDao,
+                sessionDao,
+                offlineEngine(HttpMethod.Post to "/sessions/-1/answers"),
+                answerDao = answerDao,
+            )
+
+        repository.recordAnswer(sessionId = -1, cardUid = "card-1", correct = true)
+        repository.recordAnswer(sessionId = -1, cardUid = "card-2", correct = false)
+
+        val stored = answerDao.getAnswers(-1)
+        assertEquals(listOf(0, 1), stored.map { it.sequence })
+        assertEquals(listOf("card-1", "card-2"), stored.map { it.cardUid })
+        assertTrue(stored.all { it.pendingSync })
+    }
+
+    @Test
+    fun recordAnswer_onlinePostsAndClearsPending() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        sessionDao.upsertSession(sessionEntity(id = 7, deckId = 5))
+        val answerDao = FakePracticeAnswerDao()
+        val repository = repository(
+            flashcardDao,
+            sessionDao,
+            mockEngine(HttpMethod.Post to "/sessions/7/answers" to sessionJson(id = 7, deckId = 5, numCorrect = 1)),
+            answerDao = answerDao,
+        )
+
+        repository.recordAnswer(sessionId = 7, cardUid = "card-1", correct = true)
+
+        val stored = answerDao.getAnswers(7)
+        assertEquals(1, stored.size)
+        assertTrue(!stored.first().pendingSync)
+    }
+
+    @Test
+    fun syncPendingSessions_reassignsAnswersToServerIdAndFlushesThem() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        sessionDao.upsertSession(
+            sessionEntity(id = -1, deckId = 5, currentCardIndex = 1, numCorrect = 1, pendingSync = true),
+        )
+        val answerDao = FakePracticeAnswerDao()
+        answerDao.upsert(
+            PracticeAnswerEntity(
+                sessionId = -1,
+                answerUid = "a-1",
+                cardUid = "card-1",
+                correct = true,
+                sequence = 0,
+                answeredAtMillis = 100,
+                pendingSync = true,
+            ),
+        )
+        val repository = repository(
+            flashcardDao,
+            sessionDao,
+            mockEngine(
+                HttpMethod.Post to "/sessions" to sessionJson(id = 50, deckId = 5, currentCardIndex = 0),
+                HttpMethod.Patch to "/sessions/50" to
+                    sessionJson(id = 50, deckId = 5, currentCardIndex = 1, numCorrect = 1),
+                HttpMethod.Post to "/sessions/50/answers" to sessionJson(id = 50, deckId = 5, numCorrect = 1),
+            ),
+            answerDao = answerDao,
+        )
+
+        repository.syncPendingSessions()
+
+        // The answer was re-pointed off the (deleted) negative session onto the server id and flushed.
+        assertTrue(answerDao.getAnswers(-1).isEmpty())
+        val moved = answerDao.getAnswers(50)
+        assertEquals(1, moved.size)
+        assertTrue(!moved.first().pendingSync)
+    }
+
     // --- Helpers ---
 
     private fun repository(
@@ -316,6 +405,7 @@ class PracticeSessionRepositoryTest {
         sessionDao: PracticeSessionDao,
         engine: MockEngine,
         now: () -> Long = { 1_000L },
+        answerDao: PracticeAnswerDao = FakePracticeAnswerDao(),
     ) = PracticeSessionRepositoryImpl(
         apiClient = FlashcardApiClient(
             client = createFlashcardHttpClient(engine),
@@ -324,6 +414,7 @@ class PracticeSessionRepositoryTest {
         ),
         practiceSessionDao = sessionDao,
         flashcardDao = flashcardDao,
+        practiceAnswerDao = answerDao,
         now = now,
     )
 
@@ -434,5 +525,51 @@ class PracticeSessionRepositoryTest {
         }
 
         private fun PracticeSessionEntity.withDeck() = PracticeSessionWithDeck(this, decks.getValue(deckId))
+    }
+
+    private class FakePracticeAnswerDao : PracticeAnswerDao {
+        val answers = MutableStateFlow<List<PracticeAnswerEntity>>(emptyList())
+
+        override fun observeAnswers(sessionId: Long): Flow<List<PracticeAnswerEntity>> = answers.map { list ->
+            list.filter { it.sessionId == sessionId }.sortedBy { it.sequence }
+        }
+
+        override suspend fun getAnswers(sessionId: Long): List<PracticeAnswerEntity> =
+            answers.value.filter { it.sessionId == sessionId }.sortedBy { it.sequence }
+
+        override suspend fun maxSequence(sessionId: Long): Int? =
+            answers.value.filter { it.sessionId == sessionId }.maxOfOrNull { it.sequence }
+
+        override suspend fun upsert(answer: PracticeAnswerEntity) {
+            answers.value =
+                answers.value.filterNot { it.sessionId == answer.sessionId && it.answerUid == answer.answerUid } +
+                answer
+        }
+
+        override suspend fun upsertAll(answers: List<PracticeAnswerEntity>) {
+            answers.forEach { upsert(it) }
+        }
+
+        override suspend fun getPendingAnswers(): List<PracticeAnswerEntity> = answers.value.filter { it.pendingSync }
+
+        override suspend fun markSynced(sessionId: Long, answerUids: List<String>) {
+            answers.value = answers.value.map {
+                if (it.sessionId == sessionId && it.answerUid in answerUids) it.copy(pendingSync = false) else it
+            }
+        }
+
+        override suspend fun reassignAnswers(oldSessionId: Long, newSessionId: Long) {
+            answers.value = answers.value.map {
+                if (it.sessionId == oldSessionId) it.copy(sessionId = newSessionId) else it
+            }
+        }
+
+        override suspend fun deleteForSession(sessionId: Long) {
+            answers.value = answers.value.filterNot { it.sessionId == sessionId }
+        }
+
+        override suspend fun deleteAll() {
+            answers.value = emptyList()
+        }
     }
 }

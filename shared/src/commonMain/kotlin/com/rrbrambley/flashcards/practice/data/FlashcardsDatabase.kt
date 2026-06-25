@@ -12,14 +12,16 @@ import kotlinx.coroutines.Dispatchers
         FlashcardDeckEntity::class,
         FlashcardEntity::class,
         PracticeSessionEntity::class,
+        PracticeAnswerEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 @ConstructedBy(FlashcardsDatabaseConstructor::class)
 abstract class FlashcardsDatabase : RoomDatabase() {
     abstract fun flashcardDao(): FlashcardDao
     abstract fun practiceSessionDao(): PracticeSessionDao
+    abstract fun practiceAnswerDao(): PracticeAnswerDao
 }
 
 // KSP generates the actual implementation of this constructor for each platform.

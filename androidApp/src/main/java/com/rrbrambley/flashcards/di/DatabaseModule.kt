@@ -4,6 +4,7 @@ import android.content.Context
 import com.rrbrambley.flashcards.BuildConfig
 import com.rrbrambley.flashcards.practice.data.FlashcardDao
 import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
+import com.rrbrambley.flashcards.practice.data.PracticeAnswerDao
 import com.rrbrambley.flashcards.practice.data.PracticeSessionDao
 import com.rrbrambley.flashcards.practice.data.createFlashcardsDatabase
 import com.rrbrambley.flashcards.practice.data.flashcardsDatabaseBuilder
@@ -32,4 +33,7 @@ class DatabaseModule {
 
     @Provides
     fun providePracticeSessionDao(database: FlashcardsDatabase): PracticeSessionDao = database.practiceSessionDao()
+
+    @Provides
+    fun providePracticeAnswerDao(database: FlashcardsDatabase): PracticeAnswerDao = database.practiceAnswerDao()
 }

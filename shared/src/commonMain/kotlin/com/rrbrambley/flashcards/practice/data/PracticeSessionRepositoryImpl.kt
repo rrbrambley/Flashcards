@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.practice.data
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
+import com.rrbrambley.flashcards.shared.domain.PracticeAnswer
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionSyncer
@@ -17,6 +18,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * Offline-first practice sessions (FLA-91). Online, writes hit the backend first and cache the
@@ -31,6 +34,7 @@ class PracticeSessionRepositoryImpl(
     private val apiClient: FlashcardApiClient,
     private val practiceSessionDao: PracticeSessionDao,
     private val flashcardDao: FlashcardDao,
+    private val practiceAnswerDao: PracticeAnswerDao,
     private val now: () -> Long = ::nowMillis,
     private val timeZoneId: () -> String = ::systemTimeZoneId,
 ) : PracticeSessionRepository,
@@ -133,6 +137,50 @@ class PracticeSessionRepositoryImpl(
         }
     }
 
+    @OptIn(ExperimentalUuidApi::class)
+    override suspend fun recordAnswer(sessionId: Long, cardUid: String, correct: Boolean, submittedText: String?) {
+        // Persist locally first (durable, flagged for sync). Sequence = next play-order slot; answerUid
+        // is a UUID so the backend can upsert idempotently across re-syncs.
+        val sequence = (practiceAnswerDao.maxSequence(sessionId) ?: -1) + 1
+        val entity = PracticeAnswerEntity(
+            sessionId = sessionId,
+            answerUid = Uuid.random().toString(),
+            cardUid = cardUid,
+            correct = correct,
+            sequence = sequence,
+            answeredAtMillis = now(),
+            submittedText = submittedText,
+            pendingSync = true,
+        )
+        practiceAnswerDao.upsert(entity)
+        // Best-effort flush for server-owned sessions; offline-minted (negative id) answers ride the
+        // session remap in syncPendingSessions. cache() refreshes the server-recomputed counts.
+        if (sessionId > 0) {
+            runCatching {
+                cache(apiClient.recordAnswers(sessionId, listOf(entity.toDto())))
+                practiceAnswerDao.markSynced(sessionId, listOf(entity.answerUid))
+            }
+        }
+    }
+
+    override fun observeAnswers(sessionId: Long): Flow<List<PracticeAnswer>> = flow {
+        coroutineScope {
+            // Background pull for cross-device review — but never clobber unsynced local writes, so
+            // skip the pull while this session still has pending answers.
+            if (sessionId > 0) {
+                launch {
+                    runCatching {
+                        if (practiceAnswerDao.getAnswers(sessionId).none { it.pendingSync }) {
+                            val server = apiClient.getAnswers(sessionId)
+                            practiceAnswerDao.replaceForSession(sessionId, server.map { it.toEntity(sessionId) })
+                        }
+                    }
+                }
+            }
+            emitAll(practiceAnswerDao.observeAnswers(sessionId).map { rows -> rows.map { it.toDomain() } })
+        }
+    }
+
     /**
      * Flushes every locally-pending session to the backend (FLA-91). Completed sessions first (no
      * live screen holds them). Per row, on any network failure we leave `pendingSync = true` and move
@@ -142,6 +190,22 @@ class PracticeSessionRepositoryImpl(
         for (row in practiceSessionDao.getPendingSessions().sortedByDescending { it.isCompleted }) {
             runCatching {
                 if (row.id < 0) syncMintedSession(row) else pushServerSession(row)
+            }
+        }
+        // Sessions are reconciled first (minted ones remapped + their answers re-pointed to the real
+        // id), so every pending answer now hangs off a server id and can be flushed (FLA-99).
+        syncPendingAnswers()
+    }
+
+    /** Flushes locally-pending answers per session to the backend, marking them synced on success. */
+    private suspend fun syncPendingAnswers() {
+        val pendingBySession = practiceAnswerDao.getPendingAnswers()
+            .filter { it.sessionId > 0 }
+            .groupBy { it.sessionId }
+        for ((sessionId, answers) in pendingBySession) {
+            runCatching {
+                cache(apiClient.recordAnswers(sessionId, answers.map { it.toDto() }))
+                practiceAnswerDao.markSynced(sessionId, answers.map { it.answerUid })
             }
         }
     }
@@ -160,10 +224,13 @@ class PracticeSessionRepositoryImpl(
             )
             if (row.isCompleted) state = apiClient.completeSession(server.id, timeZoneId())
         }
-        // Remap: drop the negative row and cache the server state under its real id (pendingSync=false).
-        // If a server-id row already exists it's updated in place — exactly one row per deck+mode.
-        practiceSessionDao.deleteSessionById(row.id)
+        // Remap: cache the server state under its real id first (so the FK target exists), re-point
+        // this session's answers onto it — otherwise deleting the negative row would CASCADE them away
+        // (FLA-99) — then drop the negative row. If a server-id row already exists it's updated in
+        // place, so there's exactly one row per deck+mode.
         cache(state)
+        practiceAnswerDao.reassignAnswers(row.id, state.id)
+        practiceSessionDao.deleteSessionById(row.id)
     }
 
     /** A server-owned row (id > 0) with offline edits: replay the latest local state, then cache. */

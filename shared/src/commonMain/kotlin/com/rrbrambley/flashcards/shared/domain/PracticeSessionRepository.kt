@@ -19,4 +19,15 @@ interface PracticeSessionRepository {
 
     @Throws(Exception::class)
     suspend fun completeSession(sessionId: Long)
+
+    /**
+     * Appends an answer to the session's log (FLA-99): mints its play-order `sequence` + a UUID,
+     * persists locally (offline-first), and best-effort flushes to the backend. Default no-op so
+     * existing fakes/tests compile unchanged.
+     */
+    @Throws(Exception::class)
+    suspend fun recordAnswer(sessionId: Long, cardUid: String, correct: Boolean, submittedText: String? = null) {}
+
+    /** The session's answer log in play order — drives the in-session streak + end-of-session review. */
+    fun observeAnswers(sessionId: Long): Flow<List<PracticeAnswer>> = flowOf(emptyList())
 }

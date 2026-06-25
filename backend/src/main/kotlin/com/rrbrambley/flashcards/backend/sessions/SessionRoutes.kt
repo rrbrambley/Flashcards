@@ -6,6 +6,7 @@ import com.rrbrambley.flashcards.backend.routes.pathLong
 import com.rrbrambley.flashcards.backend.routes.userId
 import com.rrbrambley.flashcards.shared.api.CompleteSessionRequest
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
+import com.rrbrambley.flashcards.shared.api.RecordAnswersRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveNullable
@@ -40,6 +41,15 @@ fun Route.sessionRoutes() {
             // Optional body carrying the device tz (FLA-105); tolerate older clients that send none.
             val timeZone = runCatching { call.receiveNullable<CompleteSessionRequest>()?.timeZone }.getOrNull()
             call.respond(SessionRepository.complete(call.userId(), call.pathLong("id"), timeZone))
+        }
+        // Append to the session's answer log (FLA-99); returns the session with recomputed counts.
+        post("/{id}/answers") {
+            val request = call.receive<RecordAnswersRequest>()
+            call.respond(SessionRepository.recordAnswers(call.userId(), call.pathLong("id"), request))
+        }
+        // The session's answer log, in play order — for an end-of-session review.
+        get("/{id}/answers") {
+            call.respond(SessionRepository.listAnswers(call.userId(), call.pathLong("id")))
         }
     }
 }
