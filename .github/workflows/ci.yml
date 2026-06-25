@@ -180,6 +180,7 @@ jobs:
             backend/build/reports/jacoco/test/
             androidApp/build/reports/jacoco/jacocoTestReport/
           if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload test results
         if: ${{ !cancelled() }}
@@ -191,6 +192,7 @@ jobs:
             androidApp/build/reports/tests/
             shared/build/reports/tests/
           if-no-files-found: ignore
+          retention-days: 7
 
       - name: Coverage PR comment
         if: ${{ github.event_name == 'pull_request' && !cancelled() }}
@@ -253,6 +255,7 @@ jobs:
           name: web-coverage
           path: webApp/coverage/
           if-no-files-found: warn
+          retention-days: 7
 
   android-instrumented:
     name: Android instrumented tests
@@ -339,6 +342,7 @@ jobs:
           name: instrumented-test-results
           path: androidApp/build/reports/androidTests/
           if-no-files-found: ignore
+          retention-days: 7
 
   ios:
     name: iOS (build + shared iOS tests)
@@ -411,8 +415,10 @@ jobs:
         if: ${{ needs.changes.outputs.ios_kmp == 'true' || github.event_name == 'workflow_dispatch' }}
         run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
 
+      # HOMEBREW_NO_AUTO_UPDATE skips the formula-index refresh (the slow part), saving ~30–60s on
+      # the 10×-billed macOS runner for a tool that rarely changes (FLA-142).
       - name: Install XcodeGen
-        run: brew install xcodegen
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
 
       - name: Generate Xcode project
         working-directory: iosApp
@@ -443,3 +449,4 @@ jobs:
           name: ios-test-results
           path: shared/build/reports/tests/
           if-no-files-found: ignore
+          retention-days: 7
