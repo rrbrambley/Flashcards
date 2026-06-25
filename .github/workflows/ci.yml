@@ -43,6 +43,9 @@ jobs:
       kotlin: ${{ steps.filter.outputs.kotlin }}
       android: ${{ steps.filter.outputs.android }}
       ios: ${{ steps.filter.outputs.ios }}
+      # Whether the Kotlin/Native side changed — gates the (slow, macOS) shared iOS test within the
+      # ios job, so a Swift-only PR skips it (FLA-141).
+      ios_kmp: ${{ steps.filter.outputs.ios_kmp }}
       web: ${{ steps.filter.outputs.web }}
     steps:
       - name: Checkout
@@ -79,6 +82,11 @@ jobs:
               - *gradle
               - 'shared/**'
               - 'iosApp/**'
+            # The Kotlin/Native half of the ios job (the shared iOS test). A Swift-only change
+            # (iosApp/** without shared/gradle) doesn't affect it, so it's skipped there (FLA-141).
+            ios_kmp:
+              - *gradle
+              - 'shared/**'
             web:
               - '.github/workflows/ci.yml'
               - 'webApp/**'
@@ -396,7 +404,11 @@ jobs:
 
       # The shared module's iOS tests compile + run the Kotlin/Native test binary on a
       # simulator: the transparent-refresh + auth + repository tests on the actual iOS target.
+      # Skipped on a Swift-only PR (iosApp/** with no shared/gradle change) — the Kotlin/Native
+      # side is unaffected, so we don't pay for the extra KN compile + sim run (FLA-141). A manual
+      # dispatch always runs it.
       - name: Shared iOS tests
+        if: ${{ needs.changes.outputs.ios_kmp == 'true' || github.event_name == 'workflow_dispatch' }}
         run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
 
       - name: Install XcodeGen
