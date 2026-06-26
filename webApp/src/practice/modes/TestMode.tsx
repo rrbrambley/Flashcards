@@ -20,7 +20,7 @@ export function TestMode({ card, onResult, onDiscuss, canSuggest, isGuest }: Pra
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        onResult(graded.correct);
+        onResult(graded.correct, graded.input);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -67,7 +67,7 @@ export function TestMode({ card, onResult, onDiscuss, canSuggest, isGuest }: Pra
             <SuggestAnswerButton cardUid={card.cardUid} answer={graded.input} isGuest={!!isGuest} />
           )}
           <div className="practice-actions">
-            <button className="mark-correct" onClick={() => onResult(graded.correct)}>
+            <button className="mark-correct" onClick={() => onResult(graded.correct, graded.input)}>
               Next
             </button>
           </div>

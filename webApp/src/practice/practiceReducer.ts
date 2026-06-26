@@ -7,6 +7,9 @@ export interface PracticeState {
   index: number;
   numCorrect: number;
   numIncorrect: number;
+  // Current consecutive-correct run within this session (FLA-99): grows on each correct, resets to
+  // 0 on a miss. In-session only (distinct from the daily practice streak, FLA-106).
+  streak: number;
   status: 'practicing' | 'completed';
 }
 
@@ -23,6 +26,8 @@ export function initPractice(
     index: Math.min(Math.max(session.currentCardIndex, 0), lastIndex),
     numCorrect: session.numCorrect,
     numIncorrect: session.numIncorrect,
+    // The in-session streak is ephemeral per run: a resumed session starts fresh at 0.
+    streak: 0,
     status: 'practicing',
   };
 }
@@ -34,6 +39,7 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
     ...state,
     numCorrect: state.numCorrect + (correct ? 1 : 0),
     numIncorrect: state.numIncorrect + (correct ? 0 : 1),
+    streak: correct ? state.streak + 1 : 0,
   };
   // Marking the last card completes the session; otherwise advance.
   return state.index >= state.cards.length - 1

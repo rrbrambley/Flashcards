@@ -49,4 +49,23 @@ describe('practiceReducer', () => {
     const completed: PracticeState = { ...fresh(), status: 'completed', numCorrect: 3 };
     expect(practiceReducer(completed, { type: 'MARK_CORRECT' })).toBe(completed);
   });
+
+  it('grows the streak on consecutive correct and resets it on a miss (FLA-99)', () => {
+    // A deck large enough that the reset+regrow sequence below doesn't complete the session.
+    const bigDeck: FlashcardDto[] = Array.from({ length: 6 }, (_, i) => ({ question: `Q${i}`, answer: `A${i}` }));
+    let s = initPractice(bigDeck, { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 });
+    expect(s.streak).toBe(0);
+    s = practiceReducer(s, { type: 'MARK_CORRECT' });
+    expect(s.streak).toBe(1);
+    s = practiceReducer(s, { type: 'MARK_CORRECT' });
+    expect(s.streak).toBe(2);
+    s = practiceReducer(s, { type: 'MARK_INCORRECT' });
+    expect(s.streak).toBe(0);
+    s = practiceReducer(s, { type: 'MARK_CORRECT' });
+    expect(s.streak).toBe(1);
+  });
+
+  it('starts a resumed session at streak 0', () => {
+    expect(initPractice(cards, { currentCardIndex: 1, numCorrect: 2, numIncorrect: 1 }).streak).toBe(0);
+  });
 });
