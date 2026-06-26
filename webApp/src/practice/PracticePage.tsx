@@ -219,12 +219,29 @@ function PracticeRunner({
   }, [state, onProgress]);
 
   const mark = useCallback(
-    (correct: boolean) => {
+    (correct: boolean, submittedText?: string) => {
       if (state.status !== 'practicing') return;
       const wasLast = state.index >= state.cards.length - 1;
+      const card = state.cards[state.index];
       dispatch({ type: correct ? 'MARK_CORRECT' : 'MARK_INCORRECT' });
       // Best-effort persistence (signed-in only; guests have no session). Never block the UI.
       if (sessionId == null) return;
+      // Append this answer to the session's log (FLA-99) — backs the in-session streak + an
+      // end-of-session review. sequence = answers recorded so far (0-based play order). Best-effort.
+      if (card.cardUid) {
+        api
+          .recordAnswers(sessionId, [
+            {
+              answerUid: crypto.randomUUID(),
+              cardUid: card.cardUid,
+              correct,
+              sequence: state.numCorrect + state.numIncorrect,
+              answeredAtMillis: Date.now(),
+              submittedText: submittedText ?? null,
+            },
+          ])
+          .catch(() => {});
+      }
       if (wasLast) {
         // Read the streak only after the completion lands, so it reflects the day just earned.
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -289,6 +306,18 @@ function PracticeRunner({
           {state.numCorrect}
         </span>
       </div>
+
+      {/* Live in-session streak (FLA-99): appears at 2+ in a row, with milestone emphasis at 5+. */}
+      {state.streak >= 2 && (
+        <div className="session-streak-row">
+          <span
+            className={`session-streak${state.streak >= 5 ? ' hot' : ''}`}
+            aria-label={`${state.streak} correct in a row`}
+          >
+            🔥 {state.streak} in a row
+          </span>
+        </div>
+      )}
 
       {/* Keyed by index so each card gets a fresh mode instance (flip/input/selection reset). */}
       <ModeComponent

@@ -16,8 +16,8 @@ export function MultipleChoiceMode({ card, cards, onResult, onDiscuss }: Practic
   const [selected, setSelected] = useState<number | null>(null);
 
   const proceed = useCallback(() => {
-    if (selected !== null) onResult(selected === correctIndex);
-  }, [selected, correctIndex, onResult]);
+    if (selected !== null) onResult(selected === correctIndex, choices[selected]);
+  }, [selected, correctIndex, choices, onResult]);
 
   // Once a choice is locked in, Enter advances.
   useEffect(() => {

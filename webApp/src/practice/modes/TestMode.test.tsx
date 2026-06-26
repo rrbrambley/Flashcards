@@ -17,7 +17,7 @@ describe('TestMode', () => {
     expect(onResult).not.toHaveBeenCalled(); // not until the user proceeds
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(onResult).toHaveBeenCalledWith(true);
+    expect(onResult).toHaveBeenCalledWith(true, 'paris');
   });
 
   it('accepts a near-miss within typo tolerance', async () => {
@@ -42,7 +42,7 @@ describe('TestMode', () => {
     expect(screen.getByText('Paris')).toBeInTheDocument(); // the correct answer is revealed
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(onResult).toHaveBeenCalledWith(false);
+    expect(onResult).toHaveBeenCalledWith(false, 'Berlin');
   });
 
   it('reveals "Also acceptable" alternatives after answering', async () => {

@@ -111,6 +111,18 @@ export interface UpdateProgressRequest {
   numIncorrect: number;
 }
 
+// One recorded answer in a session's append-only log (FLA-99): backs the in-session streak + an
+// end-of-session review. `answerUid` is client-minted for idempotency; `sequence` is 0-based play
+// order; `cardUid` (FLA-113) joins back to the card; `submittedText` is the typed/picked answer.
+export interface PracticeAnswer {
+  answerUid: string;
+  cardUid: string;
+  correct: boolean;
+  sequence: number;
+  answeredAtMillis: number;
+  submittedText?: string | null;
+}
+
 // GET /streaks — the user's practice streak (consecutive days with a completed session). `overall`
 // spans all decks; `decks` carries the same per deck (returned for future per-deck UI).
 export interface StreakDto {

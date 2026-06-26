@@ -22,7 +22,7 @@ describe('MultipleChoiceMode', () => {
     expect(onResult).not.toHaveBeenCalled(); // not until proceeding
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(onResult).toHaveBeenCalledWith(true);
+    expect(onResult).toHaveBeenCalledWith(true, 'Paris');
   });
 
   it('a wrong pick highlights the correct option and advances as incorrect', async () => {
@@ -34,7 +34,7 @@ describe('MultipleChoiceMode', () => {
     expect(screen.getByRole('button', { name: /Tokyo/ })).toHaveClass('incorrect');
 
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    expect(onResult).toHaveBeenCalledWith(false);
+    expect(onResult).toHaveBeenCalledWith(false, 'Tokyo');
   });
 
   it('locks the answer after the first pick', async () => {

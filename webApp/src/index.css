@@ -290,6 +290,32 @@ button.danger:hover:not(:disabled) {
   color: #c2410c;
   white-space: nowrap;
 }
+
+/* Live in-session answer streak (FLA-99) — warm like the daily streak but bolder, and it "pops" at
+   the 5+ milestone. Distinct from .streak-badge (the daily streak shown on completion/home). */
+.session-streak-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.6rem;
+}
+.session-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #fff1e6;
+  color: #c2410c;
+  white-space: nowrap;
+}
+.session-streak.hot {
+  background: #ffe3cc;
+  color: #9a3412;
+  font-size: 0.95rem;
+  box-shadow: 0 0 0 2px rgba(194, 65, 12, 0.18);
+}
 .progress {
   height: 8px;
   width: 100%;

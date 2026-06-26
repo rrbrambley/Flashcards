@@ -13,7 +13,7 @@ export interface PracticeModeProps {
   /** The full deck (e.g. so multiple-choice can draw distractors from other cards' answers). */
   cards: FlashcardDto[];
   /** Report the outcome for this card; advances the session. Call exactly once per card. */
-  onResult: (correct: boolean) => void;
+  onResult: (correct: boolean, submittedText?: string) => void;
   /**
    * Opens the card's discussion thread (FLA-116). Provided only when the deck has discussions
    * enabled; a mode renders a 💬 control once the answer is revealed. Absent → no discussion UI.

@@ -14,6 +14,8 @@ vi.mock('../api/client', () => ({
     getCatalogDeck: vi.fn(),
     updateProgress: vi.fn(),
     completeSession: vi.fn(),
+    recordAnswers: vi.fn(),
+    getAnswers: vi.fn(),
     getStreaks: vi.fn(),
     register: vi.fn(),
     getDiscussionThread: vi.fn(),
@@ -49,6 +51,7 @@ function setup(cards: FlashcardDto[], sessionOver: Partial<PracticeSessionDto> =
   vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: cards });
   vi.mocked(api.updateProgress).mockResolvedValue(session());
   vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
+  vi.mocked(api.recordAnswers).mockResolvedValue(session());
   vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 3, longest: 5 }, decks: [] });
   render(
     <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
@@ -94,6 +97,50 @@ describe('PracticePage', () => {
 
     expect(await screen.findByText('Q2')).toBeInTheDocument();
     expect(api.updateProgress).toHaveBeenCalledWith(1, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
+  });
+
+  it('records each answer and shows the in-session streak after 2 in a row (FLA-99)', async () => {
+    setup([
+      { question: 'Q1', answer: 'A1', cardUid: 'c1' },
+      { question: 'Q2', answer: 'A2', cardUid: 'c2' },
+      { question: 'Q3', answer: 'A3', cardUid: 'c3' },
+    ]);
+    await screen.findByText('Q1');
+
+    await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+    // The answer is logged with its cardUid, outcome, and 0-based play order.
+    expect(api.recordAnswers).toHaveBeenCalledWith(1, [
+      expect.objectContaining({ cardUid: 'c1', correct: true, sequence: 0 }),
+    ]);
+    // One correct isn't a streak yet.
+    expect(screen.queryByText(/in a row/)).not.toBeInTheDocument();
+
+    await screen.findByText('Q2');
+    await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+
+    // Two consecutive correct surfaces the streak badge.
+    expect(await screen.findByText(/2 in a row/)).toBeInTheDocument();
+  });
+
+  it('a wrong answer resets the in-session streak', async () => {
+    setup([
+      { question: 'Q1', answer: 'A1', cardUid: 'c1' },
+      { question: 'Q2', answer: 'A2', cardUid: 'c2' },
+      { question: 'Q3', answer: 'A3', cardUid: 'c3' },
+      { question: 'Q4', answer: 'A4', cardUid: 'c4' },
+    ]);
+    await screen.findByText('Q1');
+    await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+    await screen.findByText('Q2');
+    await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+    expect(await screen.findByText(/2 in a row/)).toBeInTheDocument();
+
+    await screen.findByText('Q3');
+    await userEvent.click(screen.getByRole('button', { name: /Still learning/ }));
+
+    // Still practicing (Q4), but the streak badge is gone (reset to 0).
+    expect(await screen.findByText('Q4')).toBeInTheDocument();
+    expect(screen.queryByText(/in a row/)).not.toBeInTheDocument();
   });
 
   it('the right arrow key marks correct', async () => {
