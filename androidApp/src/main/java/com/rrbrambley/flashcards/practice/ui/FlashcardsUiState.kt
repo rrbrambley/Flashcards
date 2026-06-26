@@ -19,6 +19,8 @@ sealed interface FlashcardsUiState {
         val discussionsEnabled: Boolean = false,
         /** Whether this is a global (catalog) deck — gates the Test-mode "suggest answer" action (FLA-134). */
         val isGlobal: Boolean = false,
+        /** Current consecutive-correct run within this session (FLA-99); drives the live streak badge. */
+        val streak: Int = 0,
     ) : FlashcardsUiState
     data class SessionCompleted(
         val numIncorrect: Int,

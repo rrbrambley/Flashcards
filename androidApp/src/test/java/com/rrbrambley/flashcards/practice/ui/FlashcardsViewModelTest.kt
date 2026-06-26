@@ -91,6 +91,7 @@ class FlashcardsViewModelTest {
                 deck = flashcards,
                 mode = "flashcards",
                 canGoBack = true,
+                streak = 1,
             ),
             viewModel.uiState.value,
         )
@@ -151,6 +152,8 @@ class FlashcardsViewModelTest {
                 flashcard = flashcards.first(),
                 deck = flashcards,
                 mode = "flashcards",
+                // A correct answer set the streak to 1; going back doesn't change it.
+                streak = 1,
             ),
             viewModel.uiState.value,
         )
@@ -252,6 +255,36 @@ class FlashcardsViewModelTest {
         val state = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
         assertEquals("multiple_choice", state.mode)
         assertEquals(testFlashcards(), state.deck)
+    }
+
+    @Test
+    fun onResult_recordsEachAnswerAndTracksTheInSessionStreak() = runTest(testDispatcher) {
+        // Cards carry a cardUid so answers are recorded; 4 cards so three marks stay mid-session.
+        val cards = (1..4).map { Flashcard(question = "Q$it", answer = "A$it", cardUid = "card-$it") }
+        val sessions = FakePracticeSessionRepository(session())
+        val viewModel = createViewModel(cards, sessions)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        fun streak() = (viewModel.uiState.value as FlashcardsUiState.ShowFlashcard).streak
+
+        viewModel.onResult(correct = true, submittedText = "A1")
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, streak())
+
+        viewModel.onResult(correct = true)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(2, streak())
+
+        viewModel.onResult(correct = false)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(0, streak()) // a miss resets the streak
+
+        // Each answer was logged with its card + outcome (the first carried the typed text).
+        assertEquals(listOf(true, true, false), sessions.recordedAnswers.map { it.correct })
+        assertEquals(listOf("card-1", "card-2", "card-3"), sessions.recordedAnswers.map { it.cardUid })
+        assertEquals("A1", sessions.recordedAnswers.first().submittedText)
+        assertTrue(sessions.recordedAnswers.all { it.sessionId == SESSION_ID })
     }
 
     // The guest tests use a real FlashcardApiClient over a MockEngine (real dispatcher), so they await
@@ -449,7 +482,21 @@ class FlashcardsViewModelTest {
             if (failWrites) throw RuntimeException("offline")
             completedSessionId = sessionId
         }
+
+        val recordedAnswers = mutableListOf<RecordedAnswer>()
+
+        override suspend fun recordAnswer(sessionId: Long, cardUid: String, correct: Boolean, submittedText: String?) {
+            if (failWrites) throw RuntimeException("offline")
+            recordedAnswers += RecordedAnswer(sessionId, cardUid, correct, submittedText)
+        }
     }
+
+    private data class RecordedAnswer(
+        val sessionId: Long,
+        val cardUid: String,
+        val correct: Boolean,
+        val submittedText: String?,
+    )
 
     private data class PracticeProgress(
         val sessionId: Long,

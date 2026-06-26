@@ -159,6 +159,15 @@ fun FlashcardsScreen(
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             ScoreRow(flashcardsState = flashcardsState)
+            // Live in-session streak (FLA-99): appears at 2+ in a row, with milestone emphasis at 5+.
+            (flashcardsState as? FlashcardsUiState.ShowFlashcard)?.takeIf { it.streak >= 2 }?.let {
+                SessionStreakBadge(
+                    streak = it.streak,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 6.dp),
+                )
+            }
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (val state = flashcardsState) {
                     FlashcardsUiState.Loading, FlashcardsUiState.LoadingFailed ->
@@ -324,6 +333,25 @@ fun ScoreRow(flashcardsState: FlashcardsUiState) {
     ) {
         ScoreChip(label = numIncorrect.toString(), color = Color(0xFFD33D3D))
         ScoreChip(label = numCorrect.toString(), color = Color(0xFF2F9E4A))
+    }
+}
+
+/** Live in-session answer-streak pill (FLA-99) — warm like the daily streak, bolder at the 5+ milestone. */
+@Composable
+private fun SessionStreakBadge(streak: Int, modifier: Modifier = Modifier) {
+    val hot = streak >= 5
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(50),
+        color = if (hot) Color(0xFFFFE3CC) else Color(0xFFFFF1E6),
+    ) {
+        Text(
+            text = stringResource(R.string.practice_streak_in_a_row, streak),
+            color = if (hot) Color(0xFF9A3412) else Color(0xFFC2410C),
+            style = if (hot) MaterialTheme.typography.titleSmall else MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+        )
     }
 }
 

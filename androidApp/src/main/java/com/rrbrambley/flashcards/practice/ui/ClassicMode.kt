@@ -53,7 +53,7 @@ import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 fun ClassicMode(
     flashcard: Flashcard,
     canGoBack: Boolean,
-    onResult: (Boolean) -> Unit,
+    onResult: (Boolean, String?) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
@@ -70,8 +70,8 @@ fun ClassicMode(
         ) {
             SwipeCard(
                 modifier = Modifier.padding(horizontal = 28.dp, vertical = 20.dp),
-                onSwipedLeft = { onResult(false) },
-                onSwipedRight = { onResult(true) },
+                onSwipedLeft = { onResult(false, null) },
+                onSwipedRight = { onResult(true, null) },
             ) {
                 FlashcardPracticeCard(
                     flashcard = flashcard,
@@ -202,7 +202,7 @@ private fun ClassicModePreview() {
         ClassicMode(
             flashcard = Flashcard(question = "What is the capital of Japan?", answer = "Tokyo"),
             canGoBack = true,
-            onResult = {},
+            onResult = { _, _ -> },
             onPrevious = {},
             onNext = {},
         )
