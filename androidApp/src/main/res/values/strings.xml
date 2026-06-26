@@ -142,6 +142,8 @@
     <string name="practice_test_incorrect">Incorrect</string>
     <string name="practice_test_answer_label">Answer: %1$s</string>
     <string name="practice_test_also_acceptable">Also acceptable: %1$s</string>
+    <!-- Live in-session answer streak (FLA-99) -->
+    <string name="practice_streak_in_a_row">🔥 %1$d in a row</string>
     <string name="practice_test_blank">(blank)</string>
 
     <!-- Card discussions (FLA-122) -->

@@ -43,7 +43,7 @@ private data class TestGrade(val input: String, val correct: Boolean)
 @Composable
 fun TestMode(
     flashcard: Flashcard,
-    onResult: (Boolean) -> Unit,
+    onResult: (Boolean, String?) -> Unit,
     modifier: Modifier = Modifier,
     discussionsEnabled: Boolean = false,
     onDiscuss: () -> Unit = {},
@@ -107,7 +107,7 @@ fun TestMode(
                     isGuest = isGuest,
                 )
             }
-            Button(onClick = { onResult(currentGrade.correct) }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = { onResult(currentGrade.correct, currentGrade.input) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.practice_next))
             }
             // Discussion opens once the answer is revealed (after grading), mirroring web.

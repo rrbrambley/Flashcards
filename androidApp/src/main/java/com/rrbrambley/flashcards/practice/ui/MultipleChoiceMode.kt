@@ -37,7 +37,7 @@ import com.rrbrambley.flashcards.shared.domain.Flashcard
 fun MultipleChoiceMode(
     flashcard: Flashcard,
     deck: List<Flashcard>,
-    onResult: (Boolean) -> Unit,
+    onResult: (Boolean, String?) -> Unit,
     modifier: Modifier = Modifier,
     discussionsEnabled: Boolean = false,
     onDiscuss: () -> Unit = {},
@@ -66,7 +66,7 @@ fun MultipleChoiceMode(
 
         if (selected != null) {
             Button(
-                onClick = { onResult(selected == correctIndex) },
+                onClick = { onResult(selected == correctIndex, choices.getOrNull(selected ?: -1)) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.practice_next))

@@ -52,6 +52,8 @@ class FlashcardsViewModel @Inject constructor(
     private var mode: String = PracticeMode.CLASSIC.key
     private var discussionsEnabled: Boolean = false
     private var isGlobal: Boolean = false
+    // Current consecutive-correct run within this session (FLA-99); ephemeral per run (resets on load).
+    private var streak: Int = 0
     private var loadJob: Job? = null
     private var loadedKey: LoadKey? = null
 
@@ -88,11 +90,26 @@ class FlashcardsViewModel @Inject constructor(
 
     /**
      * Records the outcome for the current card and advances. Used by every mode — a Classic swipe, or
-     * Test/Multiple-Choice after the answer is graded.
+     * Test/Multiple-Choice after the answer is graded. [submittedText] is the typed/picked answer
+     * (Test/Multiple-Choice), logged for the answer record + review (FLA-99); null for classic flip.
      */
-    fun onResult(correct: Boolean) {
+    fun onResult(correct: Boolean, submittedText: String? = null) {
         if (correct) numCorrect++ else numIncorrect++
+        // In-session answer streak (FLA-99): grows on each correct, resets to 0 on a miss.
+        streak = if (correct) streak + 1 else 0
+        recordAnswer(correct, submittedText)
         goForward()
+    }
+
+    /** Appends the just-answered card to the session's log (FLA-99); signed-in only, best-effort. */
+    private fun recordAnswer(correct: Boolean, submittedText: String?) {
+        val currentSessionId = sessionId ?: return
+        // Capture the answered card's id now — goForward() advances the index right after.
+        val cardUid = flashcards.getOrNull(currentFlashcardIndex)?.cardUid.orEmpty()
+        if (cardUid.isBlank()) return
+        viewModelScope.launch {
+            runCatching { practiceSessionRepository.recordAnswer(currentSessionId, cardUid, correct, submittedText) }
+        }
     }
 
     fun goBack() {
@@ -155,6 +172,7 @@ class FlashcardsViewModel @Inject constructor(
         currentFlashcardIndex = 0
         numCorrect = 0
         numIncorrect = 0
+        streak = 0
         updateUiState()
     }
 
@@ -182,6 +200,8 @@ class FlashcardsViewModel @Inject constructor(
         currentFlashcardIndex = session.currentCardIndex.coerceIn(0, flashcards.lastIndex)
         numCorrect = session.numCorrect
         numIncorrect = session.numIncorrect
+        // The in-session streak is ephemeral per run: a resumed session starts fresh at 0.
+        streak = 0
         updateUiState()
     }
 
@@ -201,6 +221,7 @@ class FlashcardsViewModel @Inject constructor(
                 canGoBack = currentFlashcardIndex > 0,
                 discussionsEnabled = discussionsEnabled,
                 isGlobal = isGlobal,
+                streak = streak,
             )
         }
     }
