@@ -119,21 +119,30 @@ final class PracticeViewModel: ObservableObject {
         }
     }
 
-    /// Records the outcome for the current card and advances. Used by every mode — a Classic swipe,
-    /// or Test/Multiple-Choice after the answer is graded. `submittedText` is the typed/picked answer
-    /// (Test/Multiple-Choice), logged for the answer record + review (FLA-99); nil for classic flip.
+    /// Grades the current card and advances in one step — the Classic swipe, which both reveals the
+    /// answer and scores it (no separate verdict to dwell on). `submittedText` is nil for the flip.
     func onResult(correct: Bool, submittedText: String? = nil) {
+        applyResult(correct: correct, submittedText: submittedText)
+        goForward()
+    }
+
+    /// Applies a graded outcome for the current card — score, in-session streak, and the answer log
+    /// (FLA-99) — *without* advancing, so the streak badge surfaces on the revealed answer itself.
+    /// The verdict modes (Test/Multiple-Choice) call this when they show the verdict, then advance
+    /// via `goForward()` on Next. `submittedText` is the typed/picked answer, logged for review.
+    func applyResult(correct: Bool, submittedText: String? = nil) {
         if correct { numCorrect += 1 } else { numIncorrect += 1 }
         // In-session answer streak (FLA-99): grows on each correct, resets to 0 on a miss.
         answerStreak = correct ? answerStreak + 1 : 0
         recordAnswer(correct: correct, submittedText: submittedText)
-        goForward()
+        updateState()
+        persist()
     }
 
     /// Appends the just-answered card to the session's log (FLA-99); signed-in only, best-effort.
     private func recordAnswer(correct: Bool, submittedText: String?) {
         guard let sid = sessionId else { return } // guests have no session
-        // Capture the answered card's id now — goForward() advances the index right after.
+        // Read the answered card's id at the current (un-advanced) index.
         let cardUid = cards[index].cardUid
         guard !cardUid.isEmpty else { return }
         Task {

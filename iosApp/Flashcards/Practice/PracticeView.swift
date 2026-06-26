@@ -162,7 +162,8 @@ struct PracticeView: View {
         case .test:
             TestModeView(
                 card: card,
-                onResult: viewModel.onResult,
+                onGraded: viewModel.applyResult,
+                onAdvance: viewModel.goForward,
                 discussionsEnabled: discussionsEnabled,
                 onDiscuss: onDiscuss,
                 canSuggest: isGlobal,
@@ -174,7 +175,8 @@ struct PracticeView: View {
             MultipleChoiceModeView(
                 card: card,
                 deck: deck,
-                onResult: viewModel.onResult,
+                onGraded: viewModel.applyResult,
+                onAdvance: viewModel.goForward,
                 discussionsEnabled: discussionsEnabled,
                 onDiscuss: onDiscuss
             )
@@ -235,7 +237,8 @@ private struct SessionStreakBadge: View {
 
     var body: some View {
         let hot = streak >= 5
-        Text("🔥 \(streak) in a row")
+        // SF Symbol (not the 🔥 emoji) so it always renders + takes the warm tint.
+        Label("\(streak) in a row", systemImage: "flame.fill")
             .font(hot ? .subheadline.bold() : .caption.weight(.semibold))
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, Spacing.sm)

@@ -154,4 +154,31 @@ final class PracticeViewModelTests: XCTestCase {
         XCTAssertEqual(byCard["card-2"]?.correct, false)
         XCTAssertTrue(sessions.recordedAnswers.allSatisfy { $0.sessionId == 9 })
     }
+
+    func test_applyResult_scoresAndStreaksWithoutAdvancing_soTheBadgeShowsOnTheGradedAnswer() async {
+        // Test/Multiple-Choice grade on the verdict via applyResult, then advance on Next via goForward.
+        let cards = (0..<3).map { makeCard("q\($0)", "a\($0)", cardUid: "card-\($0)") }
+        let sessions = FakePracticeSessionRepository()
+        sessions.session = makeSession(id: 9, deckId: 1, mode: "test")
+        let vm = makeVM(deck: makeDeck(id: 1, "Deck", cards: cards), sessions: sessions, entry: .session(9))
+        await vm.start()
+
+        func streak() -> Int {
+            guard case let .showCard(_, _, _, _, _, _, _, _, _, s) = vm.state else { return -1 }
+            return s
+        }
+
+        // Grading scores + streaks but stays on the same card, so the streak badge surfaces here.
+        vm.applyResult(correct: true, submittedText: "a0")
+        assertShowing(vm.state, position: 0, correct: 1, incorrect: 0, canGoBack: false)
+        XCTAssertEqual(streak(), 1)
+
+        // Next advances without re-scoring.
+        vm.goForward()
+        assertShowing(vm.state, position: 1, correct: 1, incorrect: 0, canGoBack: true)
+        XCTAssertEqual(streak(), 1)
+
+        await waitUntil { sessions.recordedAnswers.count == 1 }
+        XCTAssertEqual(sessions.recordedAnswers.first?.cardUid, "card-0")
+    }
 }
