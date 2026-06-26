@@ -7,7 +7,7 @@ import SwiftUI
 /// two-phase state resets per card because the runner re-inits this view via `.id(position)`.
 struct TestModeView: View {
     let card: Flashcard
-    let onResult: (Bool) -> Void
+    let onResult: (Bool, String?) -> Void
     var discussionsEnabled = false
     var onDiscuss: () -> Void = {}
     /// Whether this is a global (catalog) deck — gates the "this should be correct" action (FLA-135).
@@ -49,7 +49,7 @@ struct TestModeView: View {
                             authService: authService
                         )
                     }
-                    Button("Next") { onResult(graded.correct) }
+                    Button("Next") { onResult(graded.correct, graded.input) }
                         .buttonStyle(.primary)
                     // Discussion opens once the answer is revealed (after grading), mirroring web.
                     if discussionsEnabled {

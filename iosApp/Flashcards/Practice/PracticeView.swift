@@ -40,7 +40,7 @@ struct PracticeView: View {
 
     /// The help copy explains flip/swipe, so it's only offered in Classic mode.
     private var isClassic: Bool {
-        if case let .showCard(_, _, _, _, _, mode, _, _, _) = viewModel.state {
+        if case let .showCard(_, _, _, _, _, mode, _, _, _, _) = viewModel.state {
             return (PracticeMode(rawValue: mode) ?? .classic) == .classic
         }
         return true
@@ -104,9 +104,13 @@ struct PracticeView: View {
         switch viewModel.state {
         case .loading:
             LoadingView()
-        case let .showCard(card, position, numCorrect, numIncorrect, canGoBack, mode, deck, discussionsEnabled, isGlobal):
+        case let .showCard(card, position, numCorrect, numIncorrect, canGoBack, mode, deck, discussionsEnabled, isGlobal, streak):
             VStack(spacing: Spacing.lg) {
                 ScoreRow(numIncorrect: numIncorrect, numCorrect: numCorrect)
+                // Live in-session streak (FLA-99): appears at 2+ in a row, milestone emphasis at 5+.
+                if streak >= 2 {
+                    SessionStreakBadge(streak: streak)
+                }
                 modeView(
                     mode: mode,
                     card: card,
@@ -222,6 +226,21 @@ struct CardPrompt: View {
                     .multilineTextAlignment(.center)
             }
         }
+    }
+}
+
+/// Live in-session answer-streak pill (FLA-99) — warm like the daily streak, bolder at the 5+ milestone.
+private struct SessionStreakBadge: View {
+    let streak: Int
+
+    var body: some View {
+        let hot = streak >= 5
+        Text("🔥 \(streak) in a row")
+            .font(hot ? .subheadline.bold() : .caption.weight(.semibold))
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+            .background(Color.orange.opacity(hot ? 0.28 : 0.15), in: Capsule())
+            .foregroundStyle(hot ? Color(red: 0.6, green: 0.21, blue: 0.05) : .orange)
     }
 }
 

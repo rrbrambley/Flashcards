@@ -27,9 +27,9 @@ func makeDeck(
     )
 }
 
-func makeCard(_ question: String, _ answer: String, imageUrl: String? = nil) -> Flashcard {
+func makeCard(_ question: String, _ answer: String, imageUrl: String? = nil, cardUid: String = "") -> Flashcard {
     // Kotlin default args don't bridge, so pass them all explicitly.
-    Flashcard(question: question, answer: answer, imageUrl: imageUrl, alternativeAnswers: [], cardUid: "")
+    Flashcard(question: question, answer: answer, imageUrl: imageUrl, alternativeAnswers: [], cardUid: cardUid)
 }
 
 func makeSession(
@@ -107,6 +107,24 @@ final class FakePracticeSessionRepository: PracticeSessionRepository {
     }
 
     func completeSession(sessionId: Int64) async throws { completedSessionId = sessionId }
+
+    // recordAnswer fires from fire-and-forget Tasks that hop off the main actor, so guard the array
+    // (the real repository is thread-safe; this fake isn't otherwise).
+    private let answersLock = NSLock()
+    private var _recordedAnswers: [(sessionId: Int64, cardUid: String, correct: Bool, submittedText: String?)] = []
+    var recordedAnswers: [(sessionId: Int64, cardUid: String, correct: Bool, submittedText: String?)] {
+        answersLock.lock(); defer { answersLock.unlock() }; return _recordedAnswers
+    }
+
+    func recordAnswer(sessionId: Int64, cardUid: String, correct: Bool, submittedText: String?) async throws {
+        answersLock.lock()
+        _recordedAnswers.append((sessionId, cardUid, correct, submittedText))
+        answersLock.unlock()
+    }
+
+    func observeAnswers(sessionId: Int64) -> any Kotlinx_coroutines_coreFlow {
+        FlowTestSupportKt.oneShotFlow(value: [PracticeAnswer]())
+    }
 }
 
 final class FakeHomeRepository: HomeRepository {

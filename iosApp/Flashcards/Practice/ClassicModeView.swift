@@ -7,7 +7,7 @@ import SwiftUI
 struct ClassicModeView: View {
     let card: Flashcard
     let canGoBack: Bool
-    let onResult: (Bool) -> Void
+    let onResult: (Bool, String?) -> Void
     let onPrevious: () -> Void
     let onNext: () -> Void
     var discussionsEnabled = false
@@ -20,8 +20,8 @@ struct ClassicModeView: View {
             FlashcardCardView(
                 card: card,
                 flipped: $flipped,
-                onSwipeRight: { onResult(true) },
-                onSwipeLeft: { onResult(false) }
+                onSwipeRight: { onResult(true, nil) },
+                onSwipeLeft: { onResult(false, nil) }
             )
             .frame(maxHeight: .infinity)
             // The discussion affordance appears once the answer is revealed (flipped), mirroring web.

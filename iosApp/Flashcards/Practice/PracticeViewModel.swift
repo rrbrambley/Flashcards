@@ -13,7 +13,8 @@ enum PracticeState {
         mode: String,
         deck: [Flashcard],
         discussionsEnabled: Bool,
-        isGlobal: Bool
+        isGlobal: Bool,
+        streak: Int
     )
     case completed(numCorrect: Int, numIncorrect: Int)
     case failed
@@ -64,6 +65,8 @@ final class PracticeViewModel: ObservableObject {
     private var mode = "flashcards"
     private var discussionsEnabled = false
     private var isGlobal = false
+    // Current consecutive-correct run within this session (FLA-99); ephemeral per run.
+    private var answerStreak = 0
 
     init(
         flashcardRepository: FlashcardRepository,
@@ -117,10 +120,27 @@ final class PracticeViewModel: ObservableObject {
     }
 
     /// Records the outcome for the current card and advances. Used by every mode — a Classic swipe,
-    /// or Test/Multiple-Choice after the answer is graded.
-    func onResult(correct: Bool) {
+    /// or Test/Multiple-Choice after the answer is graded. `submittedText` is the typed/picked answer
+    /// (Test/Multiple-Choice), logged for the answer record + review (FLA-99); nil for classic flip.
+    func onResult(correct: Bool, submittedText: String? = nil) {
         if correct { numCorrect += 1 } else { numIncorrect += 1 }
+        // In-session answer streak (FLA-99): grows on each correct, resets to 0 on a miss.
+        answerStreak = correct ? answerStreak + 1 : 0
+        recordAnswer(correct: correct, submittedText: submittedText)
         goForward()
+    }
+
+    /// Appends the just-answered card to the session's log (FLA-99); signed-in only, best-effort.
+    private func recordAnswer(correct: Bool, submittedText: String?) {
+        guard let sid = sessionId else { return } // guests have no session
+        // Capture the answered card's id now — goForward() advances the index right after.
+        let cardUid = cards[index].cardUid
+        guard !cardUid.isEmpty else { return }
+        Task {
+            try? await sessionRepository.recordAnswer(
+                sessionId: sid, cardUid: cardUid, correct: correct, submittedText: submittedText
+            )
+        }
     }
 
     func goBack() {
@@ -181,6 +201,8 @@ final class PracticeViewModel: ObservableObject {
             index = Int(session.currentCardIndex)
             numCorrect = Int(session.numCorrect)
             numIncorrect = Int(session.numIncorrect)
+            // The in-session streak is ephemeral per run: a resumed session starts fresh at 0.
+            answerStreak = 0
             mode = session.mode
             deckId = session.deckId
             deckTitle = session.deckTitle
@@ -212,6 +234,7 @@ final class PracticeViewModel: ObservableObject {
         deckTitle = deck.title
         discussionsEnabled = deck.discussionsEnabled
         isGlobal = deck.isGlobal
+        answerStreak = 0
         cards = ((deck.flashcards as? [FlashcardDto]) ?? []).map {
             Flashcard(
                 question: $0.question,
@@ -237,7 +260,8 @@ final class PracticeViewModel: ObservableObject {
             mode: mode,
             deck: cards,
             discussionsEnabled: discussionsEnabled,
-            isGlobal: isGlobal
+            isGlobal: isGlobal,
+            streak: answerStreak
         )
     }
 

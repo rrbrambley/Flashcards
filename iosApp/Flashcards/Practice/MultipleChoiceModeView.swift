@@ -7,7 +7,7 @@ import SwiftUI
 /// selection resets because the runner re-inits this view via `.id(position)`.
 struct MultipleChoiceModeView: View {
     let card: Flashcard
-    let onResult: (Bool) -> Void
+    let onResult: (Bool, String?) -> Void
     let discussionsEnabled: Bool
     let onDiscuss: () -> Void
 
@@ -18,7 +18,7 @@ struct MultipleChoiceModeView: View {
     init(
         card: Flashcard,
         deck: [Flashcard],
-        onResult: @escaping (Bool) -> Void,
+        onResult: @escaping (Bool, String?) -> Void,
         discussionsEnabled: Bool = false,
         onDiscuss: @escaping () -> Void = {}
     ) {
@@ -42,7 +42,7 @@ struct MultipleChoiceModeView: View {
                 }
 
                 if selected != nil {
-                    Button("Next") { onResult(selected == correctIndex) }
+                    Button("Next") { onResult(selected == correctIndex, selected.map { choices[$0] }) }
                         .buttonStyle(.primary)
                         .padding(.top, Spacing.sm)
                     // Discussion opens once an option is picked (the answer is revealed), mirroring web.
