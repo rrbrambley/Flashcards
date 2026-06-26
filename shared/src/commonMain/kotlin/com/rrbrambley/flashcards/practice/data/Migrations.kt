@@ -75,6 +75,30 @@ val MIGRATION_10_11 = object : Migration(10, 11) {
     }
 }
 
+/** v11 → v12: add the per-session answer log `practice_answers` (FLA-99). New table, no data move. */
+val MIGRATION_11_12 = object : Migration(11, 12) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `practice_answers` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`sessionId` INTEGER NOT NULL, " +
+                "`answerUid` TEXT NOT NULL, " +
+                "`cardUid` TEXT NOT NULL, " +
+                "`correct` INTEGER NOT NULL, " +
+                "`sequence` INTEGER NOT NULL, " +
+                "`answeredAtMillis` INTEGER NOT NULL, " +
+                "`submittedText` TEXT, " +
+                "`pendingSync` INTEGER NOT NULL, " +
+                "FOREIGN KEY(`sessionId`) REFERENCES `practice_sessions`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )",
+        )
+        connection.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_practice_answers_sessionId_sequence` " +
+                "ON `practice_answers` (`sessionId`, `sequence`)",
+        )
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
     arrayOf(
@@ -86,4 +110,5 @@ val ALL_MIGRATIONS =
         MIGRATION_8_9,
         MIGRATION_9_10,
         MIGRATION_10_11,
+        MIGRATION_11_12,
     )

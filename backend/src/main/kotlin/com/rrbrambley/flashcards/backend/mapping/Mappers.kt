@@ -1,9 +1,11 @@
 package com.rrbrambley.flashcards.backend.mapping
 
 import com.rrbrambley.flashcards.backend.db.Flashcards
+import com.rrbrambley.flashcards.backend.db.PracticeAnswers
 import com.rrbrambley.flashcards.backend.db.PracticeSessions
 import com.rrbrambley.flashcards.data.mapping.AlternativeAnswers
 import com.rrbrambley.flashcards.shared.api.FlashcardDto
+import com.rrbrambley.flashcards.shared.api.PracticeAnswerDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
 import org.jetbrains.exposed.sql.ResultRow
 
@@ -26,4 +28,13 @@ fun ResultRow.toPracticeSessionDto(deckTitle: String): PracticeSessionDto = Prac
     mode = this[PracticeSessions.mode],
     createdAtMillis = this[PracticeSessions.createdAtMillis],
     updatedAtMillis = this[PracticeSessions.updatedAtMillis],
+)
+
+fun ResultRow.toPracticeAnswerDto(): PracticeAnswerDto = PracticeAnswerDto(
+    answerUid = this[PracticeAnswers.answerUid],
+    cardUid = this[PracticeAnswers.cardUid],
+    correct = this[PracticeAnswers.correct],
+    sequence = this[PracticeAnswers.sequence],
+    answeredAtMillis = this[PracticeAnswers.answeredAtMillis],
+    submittedText = this[PracticeAnswers.submittedText],
 )

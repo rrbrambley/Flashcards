@@ -51,6 +51,7 @@ fun buildFlashcardSdk(
         apiClient,
         database.practiceSessionDao(),
         database.flashcardDao(),
+        database.practiceAnswerDao(),
     )
     val syncManager = if (connectivityMonitor != null && syncScope != null) {
         PracticeSyncManager(connectivityMonitor, practiceSessionRepository, syncScope).also { it.start() }

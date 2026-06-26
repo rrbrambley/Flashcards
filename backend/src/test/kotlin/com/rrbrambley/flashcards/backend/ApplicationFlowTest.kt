@@ -47,7 +47,9 @@ import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.LogoutRequest
 import com.rrbrambley.flashcards.shared.api.MeResponse
 import com.rrbrambley.flashcards.shared.api.Page
+import com.rrbrambley.flashcards.shared.api.PracticeAnswerDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
+import com.rrbrambley.flashcards.shared.api.RecordAnswersRequest
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import com.rrbrambley.flashcards.shared.api.ReportMessageRequest
@@ -525,6 +527,72 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(CreateDeckRequest("  Spaced  ", listOf(FlashcardDto("Q", "A")))))
         }.decode<FlashcardDeckDto>()
         assertEquals("Spaced", deck.title)
+    }
+
+    @Test
+    fun recording_answers_builds_the_log_idempotently_and_recomputes_counts() = runApp { client ->
+        val auth = client.register("answerer", "password1")
+        val deck = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Deck", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        val session = client.post("/sessions") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateSessionRequest(deck.id, "test")))
+        }.decode<PracticeSessionDto>()
+
+        val answers = listOf(
+            PracticeAnswerDto("a-0", "card-1", correct = true, sequence = 0, answeredAtMillis = 100),
+            PracticeAnswerDto("a-1", "card-2", correct = false, sequence = 1, answeredAtMillis = 200),
+            PracticeAnswerDto(
+                "a-2",
+                "card-1",
+                correct = true,
+                sequence = 2,
+                answeredAtMillis = 300,
+                submittedText = "paris",
+            ),
+        )
+        suspend fun record(batch: List<PracticeAnswerDto>) = client.post("/sessions/${session.id}/answers") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(RecordAnswersRequest(batch)))
+        }.decode<PracticeSessionDto>()
+
+        // Counts are recomputed from the log (2 correct, 1 wrong).
+        val updated = record(answers)
+        assertEquals(2, updated.numCorrect)
+        assertEquals(1, updated.numIncorrect)
+
+        // Idempotent: re-sending the same answerUids doesn't double-count.
+        val again = record(answers)
+        assertEquals(2, again.numCorrect)
+        assertEquals(1, again.numIncorrect)
+
+        // The log reads back in play order, with the submitted text preserved.
+        val log = client.get("/sessions/${session.id}/answers") {
+            bearerAuth(auth.accessToken)
+        }.decode<List<PracticeAnswerDto>>()
+        assertEquals(listOf(0, 1, 2), log.map { it.sequence })
+        assertEquals(listOf("card-1", "card-2", "card-1"), log.map { it.cardUid })
+        assertEquals("paris", log[2].submittedText)
+
+        // Another user can't read or write this session's answers — it's hidden (404).
+        val other = client.register("intruder", "password1")
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.get("/sessions/${session.id}/answers") { bearerAuth(other.accessToken) }.status,
+        )
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.post("/sessions/${session.id}/answers") {
+                bearerAuth(other.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(RecordAnswersRequest(emptyList())))
+            }.status,
+        )
     }
 
     @Test

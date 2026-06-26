@@ -163,6 +163,16 @@ class FlashcardApiClient(
             jsonBody(CompleteSessionRequest(timeZone))
         }.body()
 
+    /** Appends a batch of answers to a session's log (FLA-99); returns the session with fresh counts. */
+    suspend fun recordAnswers(sessionId: Long, answers: List<PracticeAnswerDto>): PracticeSessionDto =
+        client.post(url("/sessions/$sessionId/answers")) {
+            jsonBody(RecordAnswersRequest(answers))
+        }.body()
+
+    /** A session's answer log, oldest first (play order), for an end-of-session review (FLA-99). */
+    suspend fun getAnswers(sessionId: Long): List<PracticeAnswerDto> =
+        client.get(url("/sessions/$sessionId/answers")) { auth() }.body()
+
     // --- Home ---
     suspend fun getHome(): List<HomeDataDto> = client.get(url("/home")) { auth() }.body()
 

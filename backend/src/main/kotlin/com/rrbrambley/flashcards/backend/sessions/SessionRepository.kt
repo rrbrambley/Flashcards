@@ -1,19 +1,24 @@
 package com.rrbrambley.flashcards.backend.sessions
 
 import com.rrbrambley.flashcards.backend.db.Decks
+import com.rrbrambley.flashcards.backend.db.PracticeAnswers
 import com.rrbrambley.flashcards.backend.db.PracticeSessions
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.NotFoundException
+import com.rrbrambley.flashcards.backend.mapping.toPracticeAnswerDto
 import com.rrbrambley.flashcards.backend.mapping.toPracticeSessionDto
 import com.rrbrambley.flashcards.backend.routes.Cursor
 import com.rrbrambley.flashcards.shared.api.Page
+import com.rrbrambley.flashcards.shared.api.PracticeAnswerDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
+import com.rrbrambley.flashcards.shared.api.RecordAnswersRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
+import org.jetbrains.exposed.sql.batchInsert
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -149,6 +154,62 @@ object SessionRepository {
         }
         if (updated == 0) throw NotFoundException("Session $sessionId not found")
         fetchSession(userId, sessionId)!!
+    }
+
+    /**
+     * Appends a batch of answers to a session's log (FLA-99), idempotent per `answerUid` (a re-sync
+     * can't double-count), then recomputes the session's `numCorrect`/`numIncorrect` from the log —
+     * the log is the source of truth, the counters a projection. Returns the refreshed session.
+     */
+    suspend fun recordAnswers(userId: Long, sessionId: Long, request: RecordAnswersRequest): PracticeSessionDto =
+        dbQuery {
+            requireOwnedSession(userId, sessionId)
+
+            val existingUids = PracticeAnswers.selectAll()
+                .where { PracticeAnswers.sessionId eq sessionId }
+                .map { it[PracticeAnswers.answerUid] }
+                .toSet()
+            val toInsert = request.answers.filter { it.answerUid !in existingUids }
+            if (toInsert.isNotEmpty()) {
+                // ignore = true → ON CONFLICT DO NOTHING, so a concurrent insert of the same answerUid
+                // can't fail the batch (the unique index backs it).
+                PracticeAnswers.batchInsert(toInsert, ignore = true) { answer ->
+                    this[PracticeAnswers.sessionId] = sessionId
+                    this[PracticeAnswers.answerUid] = answer.answerUid
+                    this[PracticeAnswers.cardUid] = answer.cardUid
+                    this[PracticeAnswers.correct] = answer.correct
+                    this[PracticeAnswers.sequence] = answer.sequence
+                    this[PracticeAnswers.answeredAtMillis] = answer.answeredAtMillis
+                    this[PracticeAnswers.submittedText] = answer.submittedText
+                }
+            }
+
+            val outcomes = PracticeAnswers.selectAll()
+                .where { PracticeAnswers.sessionId eq sessionId }
+                .map { it[PracticeAnswers.correct] }
+            val correctCount = outcomes.count { it }
+            PracticeSessions.update({ PracticeSessions.id eq sessionId }) {
+                it[numCorrect] = correctCount
+                it[numIncorrect] = outcomes.size - correctCount
+                it[updatedAtMillis] = System.currentTimeMillis()
+            }
+            fetchSession(userId, sessionId)!!
+        }
+
+    /** The session's answer log, oldest first (play order), for an end-of-session review (FLA-99). */
+    suspend fun listAnswers(userId: Long, sessionId: Long): List<PracticeAnswerDto> = dbQuery {
+        requireOwnedSession(userId, sessionId)
+        PracticeAnswers.selectAll()
+            .where { PracticeAnswers.sessionId eq sessionId }
+            .orderBy(PracticeAnswers.sequence to SortOrder.ASC)
+            .map { it.toPracticeAnswerDto() }
+    }
+
+    /** Throws [NotFoundException] unless [sessionId] exists and belongs to [userId] (hides others'). */
+    private fun requireOwnedSession(userId: Long, sessionId: Long) {
+        PracticeSessions.selectAll()
+            .where { (PracticeSessions.id eq sessionId) and (PracticeSessions.userId eq userId) }
+            .firstOrNull() ?: throw NotFoundException("Session $sessionId not found")
     }
 
     private fun fetchSession(userId: Long, sessionId: Long): PracticeSessionDto? = (PracticeSessions innerJoin Decks)

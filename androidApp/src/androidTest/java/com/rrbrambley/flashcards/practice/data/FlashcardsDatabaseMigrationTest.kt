@@ -213,4 +213,41 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals(0, cursor.getInt(1))
         }
     }
+
+    @Test
+    fun migrate11To12_preservesSessionsAndAddsPracticeAnswers() {
+        // Seed a v11 database with a deck + a session (no practice_answers table yet).
+        helper.createDatabase(testDb, 11).apply {
+            execSQL(
+                "INSERT INTO flashcard_decks (id, title, editable, tags, discussionEnabled, isGlobal) " +
+                    "VALUES (1, 'Spanish basics', 1, '[]', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, mode, " +
+                    "pendingSync, createdAtMillis, updatedAtMillis) " +
+                    "VALUES (1, 1, 0, 0, 0, 0, 'test', 0, 1000, 1000)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_11_12 and validate against the exported v12 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 12, true, MIGRATION_11_12)
+
+        // The session survived, and the new answer-log table accepts an FK-linked row.
+        db.query("SELECT mode FROM practice_sessions WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("test", cursor.getString(0))
+        }
+        db.execSQL(
+            "INSERT INTO practice_answers " +
+                "(sessionId, answerUid, cardUid, correct, sequence, answeredAtMillis, submittedText, pendingSync) " +
+                "VALUES (1, 'a-1', 'card-1', 1, 0, 2000, NULL, 0)",
+        )
+        db.query("SELECT correct, sequence FROM practice_answers WHERE sessionId = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+            assertEquals(0, cursor.getInt(1))
+        }
+    }
 }

@@ -10,7 +10,9 @@ class RoomLocalDataStore(private val database: FlashcardsDatabase) : LocalDataSt
     override suspend fun clearAll() {
         // Deleting every deck cascades to its flashcards and sessions; the explicit session delete
         // also drops any session whose deck row is already gone. Both converge to empty, so no
-        // wrapping transaction is needed.
+        // wrapping transaction is needed. Session deletes cascade to their answers; the explicit
+        // answer wipe is belt-and-suspenders (FLA-99).
+        database.practiceAnswerDao().deleteAll()
         database.practiceSessionDao().deleteAllSessions()
         database.flashcardDao().deleteAllDecks()
     }
