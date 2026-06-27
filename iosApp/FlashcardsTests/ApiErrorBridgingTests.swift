@@ -43,4 +43,16 @@ final class ApiErrorBridgingTests: XCTestCase {
             // Caught (not crashed). ✅
         }
     }
+
+    // The Swift VMs call the API client directly (e.g. getStreaks at launch via `try?`), so its
+    // suspend endpoints need @Throws too — otherwise an offline backend crashes the app on launch.
+    func test_getStreaks_failure_isCatchable() async {
+        let apiClient = unreachableSdk().apiClient
+        do {
+            _ = try await apiClient.getStreaks(tz: "America/Los_Angeles")
+            XCTFail("expected the unreachable backend to throw")
+        } catch {
+            // Caught (not crashed) → the error bridged to Swift. ✅
+        }
+    }
 }
