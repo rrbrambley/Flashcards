@@ -89,22 +89,32 @@ class FlashcardsViewModel @Inject constructor(
     }
 
     /**
-     * Records the outcome for the current card and advances. Used by every mode — a Classic swipe, or
-     * Test/Multiple-Choice after the answer is graded. [submittedText] is the typed/picked answer
-     * (Test/Multiple-Choice), logged for the answer record + review (FLA-99); null for classic flip.
+     * Grades the current card and advances in one step — the Classic swipe, which both reveals the
+     * answer and scores it (no separate verdict to dwell on). [submittedText] is null for the flip.
      */
     fun onResult(correct: Boolean, submittedText: String? = null) {
+        applyResult(correct, submittedText)
+        goForward()
+    }
+
+    /**
+     * Applies a graded outcome for the current card — score, in-session streak, and the answer log
+     * (FLA-99) — *without* advancing, so the streak badge surfaces on the revealed answer itself.
+     * Test/Multiple-Choice call this when they show the verdict, then advance via [goForward] on Next.
+     * [submittedText] is the typed/picked answer, logged for review.
+     */
+    fun applyResult(correct: Boolean, submittedText: String? = null) {
         if (correct) numCorrect++ else numIncorrect++
         // In-session answer streak (FLA-99): grows on each correct, resets to 0 on a miss.
         streak = if (correct) streak + 1 else 0
         recordAnswer(correct, submittedText)
-        goForward()
+        updateUiState()
     }
 
     /** Appends the just-answered card to the session's log (FLA-99); signed-in only, best-effort. */
     private fun recordAnswer(correct: Boolean, submittedText: String?) {
         val currentSessionId = sessionId ?: return
-        // Capture the answered card's id now — goForward() advances the index right after.
+        // Read the answered card's id at the current (un-advanced) index.
         val cardUid = flashcards.getOrNull(currentFlashcardIndex)?.cardUid.orEmpty()
         if (cardUid.isBlank()) return
         viewModelScope.launch {

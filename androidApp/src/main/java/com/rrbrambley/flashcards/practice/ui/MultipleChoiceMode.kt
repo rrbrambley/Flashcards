@@ -29,15 +29,17 @@ import com.rrbrambley.flashcards.shared.domain.Flashcard
 
 /**
  * Multiple-choice practice: up to four options (the correct answer + distractors drawn from other
- * cards in the deck via the shared [buildChoices]). On pick, the right/wrong options highlight; "Next"
- * reports the outcome via [onResult]. Choices + selection key on [flashcard], so they're built once
- * per card and reset when the runner advances.
+ * cards in the deck via the shared [buildChoices]). On pick, the right/wrong options highlight and the
+ * outcome is scored via [onGraded] (so the streak badge shows on the revealed answer); "Next" advances
+ * via [onAdvance]. Choices + selection key on [flashcard], so they're built once per card and reset
+ * when the runner advances.
  */
 @Composable
 fun MultipleChoiceMode(
     flashcard: Flashcard,
     deck: List<Flashcard>,
-    onResult: (Boolean, String?) -> Unit,
+    onGraded: (Boolean, String?) -> Unit,
+    onAdvance: () -> Unit,
     modifier: Modifier = Modifier,
     discussionsEnabled: Boolean = false,
     onDiscuss: () -> Unit = {},
@@ -60,13 +62,19 @@ fun MultipleChoiceMode(
             ChoiceButton(
                 text = option,
                 state = choiceState(index = index, selected = selected, correctIndex = correctIndex),
-                onClick = { if (selected == null) selected = index },
+                // First pick locks the answer and grades it now, so the streak badge shows on the revealed answer.
+                onClick = {
+                    if (selected == null) {
+                        selected = index
+                        onGraded(index == correctIndex, option)
+                    }
+                },
             )
         }
 
         if (selected != null) {
             Button(
-                onClick = { onResult(selected == correctIndex, choices.getOrNull(selected ?: -1)) },
+                onClick = onAdvance,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.practice_next))

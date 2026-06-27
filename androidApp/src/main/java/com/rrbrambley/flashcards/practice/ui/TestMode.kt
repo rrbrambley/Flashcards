@@ -37,13 +37,15 @@ private data class TestGrade(val input: String, val correct: Boolean)
 /**
  * Text-entry "Test" practice: the user types the answer, which is graded case-insensitively and
  * typo-tolerantly via the shared [gradeTextAnswer]. After submitting, the typed answer + a verdict
- * are revealed (plus the correct answer when wrong); "Next" reports the outcome via [onResult]. The
- * two-phase state keys on [flashcard], so it resets when the runner advances to the next card.
+ * are revealed (plus the correct answer when wrong); grading scores it via [onGraded] (so the streak
+ * badge shows on the verdict) and "Next" advances via [onAdvance]. The two-phase state keys on
+ * [flashcard], so it resets when the runner advances to the next card.
  */
 @Composable
 fun TestMode(
     flashcard: Flashcard,
-    onResult: (Boolean, String?) -> Unit,
+    onGraded: (Boolean, String?) -> Unit,
+    onAdvance: () -> Unit,
     modifier: Modifier = Modifier,
     discussionsEnabled: Boolean = false,
     onDiscuss: () -> Unit = {},
@@ -54,10 +56,13 @@ fun TestMode(
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
 
     fun submit() {
-        graded = TestGrade(
+        val grade = TestGrade(
             input = input,
             correct = gradeTextAnswer(input, flashcard.answer, flashcard.alternativeAnswers).correct,
         )
+        graded = grade
+        // Score it now (the verdict is on screen) so the streak badge shows on this answer, not the next card.
+        onGraded(grade.correct, grade.input)
     }
 
     Column(
@@ -107,7 +112,7 @@ fun TestMode(
                     isGuest = isGuest,
                 )
             }
-            Button(onClick = { onResult(currentGrade.correct, currentGrade.input) }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onAdvance, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.practice_next))
             }
             // Discussion opens once the answer is revealed (after grading), mirroring web.
