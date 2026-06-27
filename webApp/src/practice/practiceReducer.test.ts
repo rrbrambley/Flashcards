@@ -29,39 +29,44 @@ describe('initPractice', () => {
 });
 
 describe('practiceReducer', () => {
-  it('MARK_CORRECT increments correct and advances', () => {
-    const s = practiceReducer(fresh(), { type: 'MARK_CORRECT' });
+  it('GRADE scores the current card without advancing', () => {
+    const s = practiceReducer(fresh(), { type: 'GRADE', correct: true });
+    expect(s).toMatchObject({ numCorrect: 1, numIncorrect: 0, index: 0, status: 'practicing' });
+  });
+
+  it('GRADE incorrect scores a miss without advancing', () => {
+    const s = practiceReducer(fresh(), { type: 'GRADE', correct: false });
+    expect(s).toMatchObject({ numCorrect: 0, numIncorrect: 1, index: 0 });
+  });
+
+  it('ADVANCE moves to the next card without changing the score', () => {
+    const graded = practiceReducer(fresh(), { type: 'GRADE', correct: true });
+    const s = practiceReducer(graded, { type: 'ADVANCE' });
     expect(s).toMatchObject({ numCorrect: 1, numIncorrect: 0, index: 1, status: 'practicing' });
   });
 
-  it('MARK_INCORRECT increments incorrect and advances', () => {
-    const s = practiceReducer(fresh(), { type: 'MARK_INCORRECT' });
-    expect(s).toMatchObject({ numCorrect: 0, numIncorrect: 1, index: 1 });
-  });
-
-  it('marking the last card completes the session (no further advance)', () => {
-    const onLast: PracticeState = { ...fresh(), index: 2, numCorrect: 2 };
-    const s = practiceReducer(onLast, { type: 'MARK_CORRECT' });
+  it('ADVANCE past the last card completes the session', () => {
+    const onLast: PracticeState = { ...fresh(), index: 2, numCorrect: 3 };
+    const s = practiceReducer(onLast, { type: 'ADVANCE' });
     expect(s).toMatchObject({ status: 'completed', index: 2, numCorrect: 3 });
   });
 
-  it('ignores marks once completed', () => {
+  it('ignores actions once completed', () => {
     const completed: PracticeState = { ...fresh(), status: 'completed', numCorrect: 3 };
-    expect(practiceReducer(completed, { type: 'MARK_CORRECT' })).toBe(completed);
+    expect(practiceReducer(completed, { type: 'GRADE', correct: true })).toBe(completed);
+    expect(practiceReducer(completed, { type: 'ADVANCE' })).toBe(completed);
   });
 
   it('grows the streak on consecutive correct and resets it on a miss (FLA-99)', () => {
-    // A deck large enough that the reset+regrow sequence below doesn't complete the session.
-    const bigDeck: FlashcardDto[] = Array.from({ length: 6 }, (_, i) => ({ question: `Q${i}`, answer: `A${i}` }));
-    let s = initPractice(bigDeck, { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 });
+    let s = initPractice(cards, { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 });
     expect(s.streak).toBe(0);
-    s = practiceReducer(s, { type: 'MARK_CORRECT' });
+    s = practiceReducer(s, { type: 'GRADE', correct: true });
     expect(s.streak).toBe(1);
-    s = practiceReducer(s, { type: 'MARK_CORRECT' });
+    s = practiceReducer(s, { type: 'GRADE', correct: true });
     expect(s.streak).toBe(2);
-    s = practiceReducer(s, { type: 'MARK_INCORRECT' });
+    s = practiceReducer(s, { type: 'GRADE', correct: false });
     expect(s.streak).toBe(0);
-    s = practiceReducer(s, { type: 'MARK_CORRECT' });
+    s = practiceReducer(s, { type: 'GRADE', correct: true });
     expect(s.streak).toBe(1);
   });
 

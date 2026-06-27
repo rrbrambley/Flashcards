@@ -10,14 +10,20 @@ import type { PracticeModeProps } from './types';
  * The runner remounts this per card, so the choices + selection reset on their own — and choices are
  * built once per mount so they don't reshuffle on re-render.
  */
-export function MultipleChoiceMode({ card, cards, onResult, onDiscuss }: PracticeModeProps) {
+export function MultipleChoiceMode({ card, cards, onGraded, onAdvance, onDiscuss }: PracticeModeProps) {
   const [choices] = useState(() => buildChoices(card, cards));
   const correctIndex = choices.indexOf(card.answer.trim());
   const [selected, setSelected] = useState<number | null>(null);
 
-  const proceed = useCallback(() => {
-    if (selected !== null) onResult(selected === correctIndex, choices[selected]);
-  }, [selected, correctIndex, choices, onResult]);
+  // First pick locks the answer and grades it now (the streak badge shows on the revealed answer).
+  const pick = useCallback(
+    (i: number) => {
+      if (selected !== null) return;
+      setSelected(i);
+      onGraded(i === correctIndex, choices[i]);
+    },
+    [selected, correctIndex, choices, onGraded],
+  );
 
   // Once a choice is locked in, Enter advances.
   useEffect(() => {
@@ -25,12 +31,12 @@ export function MultipleChoiceMode({ card, cards, onResult, onDiscuss }: Practic
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        proceed();
+        onAdvance();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selected, proceed]);
+  }, [selected, onAdvance]);
 
   const hasImage = card.imageUrl != null && card.imageUrl !== '';
 
@@ -43,7 +49,7 @@ export function MultipleChoiceMode({ card, cards, onResult, onDiscuss }: Practic
 
       <MultipleChoice
         options={choices}
-        onSelect={(i) => setSelected((prev) => (prev === null ? i : prev))}
+        onSelect={pick}
         selectedIndex={selected}
         correctIndex={selected === null ? null : correctIndex}
         disabled={selected !== null}
@@ -52,7 +58,7 @@ export function MultipleChoiceMode({ card, cards, onResult, onDiscuss }: Practic
       {selected !== null && (
         <>
           <div className="practice-actions">
-            <button className="mark-correct" onClick={proceed}>
+            <button className="mark-correct" onClick={() => onAdvance()}>
               Next
             </button>
           </div>
