@@ -16,8 +16,15 @@ struct MultipleChoiceModeView: View {
     let onDiscuss: () -> Void
 
     @State private var choices: [String]
-    private let correctIndex: Int
     @State private var selected: Int?
+
+    // Derived from the @State `choices` (not recomputed), so it always matches the displayed order.
+    // `buildChoices` shuffles non-deterministically, and SwiftUI re-runs `init` on every render — so
+    // computing this from a fresh `buildChoices` call would desync from the shown choices, mismarking
+    // the correct option (and the highlight) after a re-render.
+    private var correctIndex: Int {
+        choices.firstIndex(of: card.answer.trimmingCharacters(in: .whitespacesAndNewlines)) ?? -1
+    }
 
     init(
         card: Flashcard,
@@ -32,9 +39,8 @@ struct MultipleChoiceModeView: View {
         self.onAdvance = onAdvance
         self.discussionsEnabled = discussionsEnabled
         self.onDiscuss = onDiscuss
-        let built = IosPracticeGradingKt.buildChoicesForSwift(card: card, deck: deck)
-        _choices = State(initialValue: built)
-        correctIndex = built.firstIndex(of: card.answer.trimmingCharacters(in: .whitespacesAndNewlines)) ?? -1
+        // The first init's shuffle wins (@State ignores later initialValues), so `choices` is stable.
+        _choices = State(initialValue: IosPracticeGradingKt.buildChoicesForSwift(card: card, deck: deck))
     }
 
     var body: some View {
