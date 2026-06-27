@@ -3,11 +3,16 @@ import SwiftUI
 
 /// Text-entry "Test" practice: the user types the answer, graded case-insensitively and
 /// typo-tolerantly via the shared `gradeTextAnswer`. After submitting, the typed answer + a verdict
-/// are revealed (plus the correct answer when wrong); "Next" reports the outcome via `onResult`. The
-/// two-phase state resets per card because the runner re-inits this view via `.id(position)`.
+/// are revealed (plus the correct answer when wrong); grading scores it via `onGraded` (so the streak
+/// badge shows on the verdict), and "Next" advances via `onAdvance`. The two-phase state resets per
+/// card because the runner re-inits this view via `.id(position)`.
 struct TestModeView: View {
     let card: Flashcard
-    let onResult: (Bool) -> Void
+    /// Called when the answer is graded (verdict shown) — scores it + reveals the streak badge on the
+    /// answer itself, before advancing.
+    let onGraded: (Bool, String?) -> Void
+    /// Called on "Next" to move to the following card.
+    let onAdvance: () -> Void
     var discussionsEnabled = false
     var onDiscuss: () -> Void = {}
     /// Whether this is a global (catalog) deck — gates the "this should be correct" action (FLA-135).
@@ -49,7 +54,7 @@ struct TestModeView: View {
                             authService: authService
                         )
                     }
-                    Button("Next") { onResult(graded.correct) }
+                    Button("Next") { onAdvance() }
                         .buttonStyle(.primary)
                     // Discussion opens once the answer is revealed (after grading), mirroring web.
                     if discussionsEnabled {
@@ -78,6 +83,8 @@ struct TestModeView: View {
             alternativeAnswers: card.alternativeAnswers
         ).correct
         graded = Graded(input: input, correct: correct)
+        // Score it now (verdict is on screen) so the streak badge shows on this answer, not the next card.
+        onGraded(correct, input)
     }
 
     @ViewBuilder

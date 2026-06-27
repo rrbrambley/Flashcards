@@ -14,7 +14,7 @@ final class PracticeViewModelTests: XCTestCase {
         _ state: PracticeState, position: Int, correct: Int, incorrect: Int, canGoBack: Bool,
         _ file: StaticString = #file, _ line: UInt = #line
     ) -> Flashcard? {
-        guard case let .showCard(card, pos, numCorrect, numIncorrect, back, _, _, _, _) = state else {
+        guard case let .showCard(card, pos, numCorrect, numIncorrect, back, _, _, _, _, _) = state else {
             XCTFail("expected .showCard, got \(state)", file: file, line: line)
             return nil
         }
@@ -117,10 +117,68 @@ final class PracticeViewModelTests: XCTestCase {
 
         await vm.start()
 
-        guard case let .showCard(_, _, _, _, _, mode, deck, _, _) = vm.state else {
+        guard case let .showCard(_, _, _, _, _, mode, deck, _, _, _) = vm.state else {
             return XCTFail("expected .showCard, got \(vm.state)")
         }
         XCTAssertEqual(mode, "multiple_choice")
         XCTAssertEqual(deck.count, 3)
+    }
+
+    func test_onResult_recordsAnswersAndTracksTheInSessionStreak() async {
+        // A 4-card deck (with cardUids) + a session so answers are recorded and three marks stay mid-session.
+        let cards = (0..<4).map { makeCard("q\($0)", "a\($0)", cardUid: "card-\($0)") }
+        let sessions = FakePracticeSessionRepository()
+        sessions.session = makeSession(id: 9, deckId: 1)
+        let vm = makeVM(deck: makeDeck(id: 1, "Deck", cards: cards), sessions: sessions, entry: .session(9))
+        await vm.start()
+
+        func streak() -> Int {
+            guard case let .showCard(_, _, _, _, _, _, _, _, _, s) = vm.state else { return -1 }
+            return s
+        }
+
+        vm.onResult(correct: true, submittedText: "a0")
+        XCTAssertEqual(streak(), 1)
+        vm.onResult(correct: true)
+        XCTAssertEqual(streak(), 2)
+        vm.onResult(correct: false)
+        XCTAssertEqual(streak(), 0) // a miss resets the streak
+
+        // recordAnswer fires fire-and-forget Tasks that can complete out of order; wait for all three,
+        // then assert by card (not list order).
+        await waitUntil { sessions.recordedAnswers.count == 3 }
+        let byCard = Dictionary(uniqueKeysWithValues: sessions.recordedAnswers.map { ($0.cardUid, $0) })
+        XCTAssertEqual(Set(byCard.keys), ["card-0", "card-1", "card-2"])
+        XCTAssertEqual(byCard["card-0"]?.correct, true)
+        XCTAssertEqual(byCard["card-0"]?.submittedText, "a0")
+        XCTAssertEqual(byCard["card-2"]?.correct, false)
+        XCTAssertTrue(sessions.recordedAnswers.allSatisfy { $0.sessionId == 9 })
+    }
+
+    func test_applyResult_scoresAndStreaksWithoutAdvancing_soTheBadgeShowsOnTheGradedAnswer() async {
+        // Test/Multiple-Choice grade on the verdict via applyResult, then advance on Next via goForward.
+        let cards = (0..<3).map { makeCard("q\($0)", "a\($0)", cardUid: "card-\($0)") }
+        let sessions = FakePracticeSessionRepository()
+        sessions.session = makeSession(id: 9, deckId: 1, mode: "test")
+        let vm = makeVM(deck: makeDeck(id: 1, "Deck", cards: cards), sessions: sessions, entry: .session(9))
+        await vm.start()
+
+        func streak() -> Int {
+            guard case let .showCard(_, _, _, _, _, _, _, _, _, s) = vm.state else { return -1 }
+            return s
+        }
+
+        // Grading scores + streaks but stays on the same card, so the streak badge surfaces here.
+        vm.applyResult(correct: true, submittedText: "a0")
+        assertShowing(vm.state, position: 0, correct: 1, incorrect: 0, canGoBack: false)
+        XCTAssertEqual(streak(), 1)
+
+        // Next advances without re-scoring.
+        vm.goForward()
+        assertShowing(vm.state, position: 1, correct: 1, incorrect: 0, canGoBack: true)
+        XCTAssertEqual(streak(), 1)
+
+        await waitUntil { sessions.recordedAnswers.count == 1 }
+        XCTAssertEqual(sessions.recordedAnswers.first?.cardUid, "card-0")
     }
 }

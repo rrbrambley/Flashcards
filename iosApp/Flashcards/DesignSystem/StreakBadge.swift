@@ -6,7 +6,8 @@ struct StreakBadge: View {
     let streak: Int
 
     var body: some View {
-        Text("🔥 \(streak) day streak")
+        // SF Symbol (not the 🔥 emoji) so it always renders + takes the warm tint.
+        Label("\(streak) day streak", systemImage: "flame.fill")
             .font(.caption.weight(.semibold))
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, Spacing.sm)
