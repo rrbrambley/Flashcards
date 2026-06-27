@@ -187,7 +187,8 @@ fun FlashcardsScreen(
                             PracticeMode.TEST.key ->
                                 TestMode(
                                     flashcard = state.flashcard,
-                                    onResult = flashcardsViewModel::onResult,
+                                    onGraded = flashcardsViewModel::applyResult,
+                                    onAdvance = flashcardsViewModel::goForward,
                                     discussionsEnabled = state.discussionsEnabled,
                                     onDiscuss = onDiscuss,
                                     canSuggest = state.isGlobal,
@@ -198,7 +199,8 @@ fun FlashcardsScreen(
                                 MultipleChoiceMode(
                                     flashcard = state.flashcard,
                                     deck = state.deck,
-                                    onResult = flashcardsViewModel::onResult,
+                                    onGraded = flashcardsViewModel::applyResult,
+                                    onAdvance = flashcardsViewModel::goForward,
                                     discussionsEnabled = state.discussionsEnabled,
                                     onDiscuss = onDiscuss,
                                 )

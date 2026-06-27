@@ -287,6 +287,36 @@ class FlashcardsViewModelTest {
         assertTrue(sessions.recordedAnswers.all { it.sessionId == SESSION_ID })
     }
 
+    @Test
+    fun applyResult_scoresAndStreaksWithoutAdvancing_thenGoForwardAdvances() = runTest(testDispatcher) {
+        // Test/Multiple-Choice grade on the verdict via applyResult, then advance on Next via goForward.
+        val cards = (1..3).map { Flashcard(question = "Q$it", answer = "A$it", cardUid = "card-$it") }
+        val sessions = FakePracticeSessionRepository(session())
+        val viewModel = createViewModel(cards, sessions)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.applyResult(correct = true, submittedText = "A1")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Scored + streaked, but still on the first card so the badge surfaces on the graded answer.
+        val graded = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
+        assertEquals("Q1", graded.flashcard.question)
+        assertEquals(1, graded.numCorrect)
+        assertEquals(1, graded.streak)
+        assertFalse(graded.canGoBack)
+
+        // Next advances without re-scoring.
+        viewModel.goForward()
+        testDispatcher.scheduler.advanceUntilIdle()
+        val next = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
+        assertEquals("Q2", next.flashcard.question)
+        assertEquals(1, next.numCorrect)
+        assertEquals(1, next.streak)
+
+        assertEquals(listOf("card-1"), sessions.recordedAnswers.map { it.cardUid })
+    }
+
     // The guest tests use a real FlashcardApiClient over a MockEngine (real dispatcher), so they await
     // the StateFlow rather than the test scheduler.
     @Test
