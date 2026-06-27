@@ -218,30 +218,32 @@ function PracticeRunner({
     onProgress({ currentCardIndex: state.index, numCorrect: state.numCorrect, numIncorrect: state.numIncorrect }, state.status);
   }, [state, onProgress]);
 
-  const mark = useCallback(
-    (correct: boolean, submittedText?: string) => {
-      if (state.status !== 'practicing') return;
-      const wasLast = state.index >= state.cards.length - 1;
-      const card = state.cards[state.index];
-      dispatch({ type: correct ? 'MARK_CORRECT' : 'MARK_INCORRECT' });
-      // Best-effort persistence (signed-in only; guests have no session). Never block the UI.
+  // Append this answer to the session's log (FLA-99) — backs the in-session streak + an end-of-session
+  // review. sequence = answers recorded so far (0-based play order). Best-effort, signed-in only.
+  const recordAnswer = useCallback(
+    (card: FlashcardDto, correct: boolean, submittedText?: string) => {
+      if (sessionId == null || !card.cardUid) return;
+      api
+        .recordAnswers(sessionId, [
+          {
+            answerUid: crypto.randomUUID(),
+            cardUid: card.cardUid,
+            correct,
+            sequence: state.numCorrect + state.numIncorrect,
+            answeredAtMillis: Date.now(),
+            submittedText: submittedText ?? null,
+          },
+        ])
+        .catch(() => {});
+    },
+    [state, sessionId],
+  );
+
+  // Persist the session aggregate after a card is finished — or complete it (then read the daily
+  // streak) on the last card. Best-effort; never blocks the UI.
+  const persistProgress = useCallback(
+    (wasLast: boolean, nextIndex: number, numCorrect: number, numIncorrect: number) => {
       if (sessionId == null) return;
-      // Append this answer to the session's log (FLA-99) — backs the in-session streak + an
-      // end-of-session review. sequence = answers recorded so far (0-based play order). Best-effort.
-      if (card.cardUid) {
-        api
-          .recordAnswers(sessionId, [
-            {
-              answerUid: crypto.randomUUID(),
-              cardUid: card.cardUid,
-              correct,
-              sequence: state.numCorrect + state.numIncorrect,
-              answeredAtMillis: Date.now(),
-              submittedText: submittedText ?? null,
-            },
-          ])
-          .catch(() => {});
-      }
       if (wasLast) {
         // Read the streak only after the completion lands, so it reflects the day just earned.
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -251,17 +253,49 @@ function PracticeRunner({
           .then((s) => setStreak(s.overall.current))
           .catch(() => {});
       } else {
-        api
-          .updateProgress(sessionId, {
-            currentCardIndex: state.index + 1,
-            numCorrect: state.numCorrect + (correct ? 1 : 0),
-            numIncorrect: state.numIncorrect + (correct ? 0 : 1),
-          })
-          .catch(() => {});
+        api.updateProgress(sessionId, { currentCardIndex: nextIndex, numCorrect, numIncorrect }).catch(() => {});
       }
     },
-    [state, sessionId],
+    [sessionId],
   );
+
+  // Classic: grade + advance in one motion (its swipe has no verdict to dwell on). State is stale
+  // this tick, so the persisted score is computed from `correct`.
+  const mark = useCallback(
+    (correct: boolean, submittedText?: string) => {
+      if (state.status !== 'practicing') return;
+      const wasLast = state.index >= state.cards.length - 1;
+      recordAnswer(state.cards[state.index], correct, submittedText);
+      dispatch({ type: 'GRADE', correct });
+      dispatch({ type: 'ADVANCE' });
+      persistProgress(
+        wasLast,
+        state.index + 1,
+        state.numCorrect + (correct ? 1 : 0),
+        state.numIncorrect + (correct ? 0 : 1),
+      );
+    },
+    [state, recordAnswer, persistProgress],
+  );
+
+  // Test/Multiple-Choice grade when the verdict is revealed — score + streak update on the answer
+  // itself (the badge appears here), without advancing.
+  const gradeCard = useCallback(
+    (correct: boolean, submittedText?: string) => {
+      if (state.status !== 'practicing') return;
+      recordAnswer(state.cards[state.index], correct, submittedText);
+      dispatch({ type: 'GRADE', correct });
+    },
+    [state, recordAnswer],
+  );
+
+  // …then advance on "Next". The GRADE has re-rendered, so `state` already holds the post-grade score.
+  const advanceCard = useCallback(() => {
+    if (state.status !== 'practicing') return;
+    const wasLast = state.index >= state.cards.length - 1;
+    dispatch({ type: 'ADVANCE' });
+    persistProgress(wasLast, state.index + 1, state.numCorrect, state.numIncorrect);
+  }, [state, persistProgress]);
 
   if (state.status === 'completed') {
     return (
@@ -325,6 +359,8 @@ function PracticeRunner({
         card={currentCard}
         cards={state.cards}
         onResult={mark}
+        onGraded={gradeCard}
+        onAdvance={advanceCard}
         onDiscuss={canDiscuss ? () => setDiscussCardUid(currentCard.cardUid ?? null) : undefined}
         canSuggest={isGlobal && !!currentCard.cardUid}
         isGuest={isGuest}

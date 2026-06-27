@@ -12,8 +12,18 @@ export interface PracticeModeProps {
   card: FlashcardDto;
   /** The full deck (e.g. so multiple-choice can draw distractors from other cards' answers). */
   cards: FlashcardDto[];
-  /** Report the outcome for this card; advances the session. Call exactly once per card. */
+  /**
+   * Grade + advance in one step — for modes with no verdict to dwell on (Classic's swipe). Scores
+   * the card and moves on. Call exactly once per card. (Test/Multiple-Choice use [onGraded]/[onAdvance].)
+   */
   onResult: (correct: boolean, submittedText?: string) => void;
+  /**
+   * Score this card (and the in-session streak) when the verdict is revealed, *without* advancing —
+   * so the streak badge surfaces on the answer itself. Pair with [onAdvance] on "Next". Call once.
+   */
+  onGraded: (correct: boolean, submittedText?: string) => void;
+  /** Advance to the next card (the "Next" affordance after a graded verdict). */
+  onAdvance: () => void;
   /**
    * Opens the card's discussion thread (FLA-116). Provided only when the deck has discussions
    * enabled; a mode renders a 💬 control once the answer is revealed. Absent → no discussion UI.

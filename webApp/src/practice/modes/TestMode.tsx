@@ -11,7 +11,7 @@ import type { PracticeModeProps } from './types';
  * user proceeds (Next / Enter), which reports the outcome. The runner remounts this per card, so the
  * two-phase state resets on its own.
  */
-export function TestMode({ card, onResult, onDiscuss, canSuggest, isGuest }: PracticeModeProps) {
+export function TestMode({ card, onGraded, onAdvance, onDiscuss, canSuggest, isGuest }: PracticeModeProps) {
   const [graded, setGraded] = useState<{ input: string; correct: boolean } | null>(null);
 
   // Once revealed, Enter advances (mirrors the submit-with-Enter flow).
@@ -20,12 +20,12 @@ export function TestMode({ card, onResult, onDiscuss, canSuggest, isGuest }: Pra
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        onResult(graded.correct, graded.input);
+        onAdvance();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [graded, onResult]);
+  }, [graded, onAdvance]);
 
   const hasImage = card.imageUrl != null && card.imageUrl !== '';
 
@@ -38,9 +38,12 @@ export function TestMode({ card, onResult, onDiscuss, canSuggest, isGuest }: Pra
 
       {!graded ? (
         <TextAnswerInput
-          onSubmit={(input) =>
-            setGraded({ input, correct: gradeTextAnswer(input, card.answer, card.alternativeAnswers ?? []).correct })
-          }
+          onSubmit={(input) => {
+            const correct = gradeTextAnswer(input, card.answer, card.alternativeAnswers ?? []).correct;
+            setGraded({ input, correct });
+            // Score it now (the verdict is on screen) so the streak badge shows on this answer.
+            onGraded(correct, input);
+          }}
         />
       ) : (
         <>
@@ -67,7 +70,7 @@ export function TestMode({ card, onResult, onDiscuss, canSuggest, isGuest }: Pra
             <SuggestAnswerButton cardUid={card.cardUid} answer={graded.input} isGuest={!!isGuest} />
           )}
           <div className="practice-actions">
-            <button className="mark-correct" onClick={() => onResult(graded.correct, graded.input)}>
+            <button className="mark-correct" onClick={() => onAdvance()}>
               Next
             </button>
           </div>
