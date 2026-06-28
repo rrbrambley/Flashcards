@@ -1,19 +1,11 @@
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.android.kotlin.multiplatform.library)
+    id("flashcards.kmp.library")
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
 kotlin {
-    jvmToolchain(11)
-
-    // Room-KMP uses an `expect object … : RoomDatabaseConstructor` whose actual is KSP-generated;
-    // opt into the (stable-in-practice) expect/actual-classes feature to silence the Beta warning.
-    compilerOptions {
-        freeCompilerArgs.add("-Xexpect-actual-classes")
-    }
-
+    // jvmToolchain(11) + the -Xexpect-actual-classes opt-in come from the flashcards.kmp.library convention.
     android {
         namespace = "com.rrbrambley.flashcards.shared"
         compileSdk = 36

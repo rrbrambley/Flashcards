@@ -1,14 +1,12 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
+    id("flashcards.jvm")
     alias(libs.plugins.kotlin.serialization)
     application
     jacoco
     alias(libs.plugins.test.retry)
 }
 
-kotlin {
-    jvmToolchain(11)
-}
+// jvmToolchain(11) comes from the flashcards.jvm convention.
 
 dependencies {
     implementation(project(":shared"))

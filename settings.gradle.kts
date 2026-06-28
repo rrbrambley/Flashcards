@@ -1,4 +1,6 @@
 pluginManagement {
+    // The project's convention plugins (flashcards.android.application / .kmp.library / .jvm).
+    includeBuild("build-logic")
     repositories {
         google {
             content {
