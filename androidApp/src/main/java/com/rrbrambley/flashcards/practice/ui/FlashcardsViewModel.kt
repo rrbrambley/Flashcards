@@ -55,6 +55,7 @@ class FlashcardsViewModel @Inject constructor(
     // Current consecutive-correct run within this session (FLA-99); ephemeral per run (resets on load).
     private var streak: Int = 0
     private var loadJob: Job? = null
+    private var reviewJob: Job? = null
     private var loadedKey: LoadKey? = null
 
     private data class LoadKey(val sessionId: Long?, val deckId: Long?, val isGuest: Boolean, val mode: String)
@@ -69,6 +70,7 @@ class FlashcardsViewModel @Inject constructor(
         if (loadedKey == key && loadJob != null) return
         loadedKey = key
         loadJob?.cancel()
+        reviewJob?.cancel()
         this.isGuest = isGuest
         _uiState.update { FlashcardsUiState.Loading }
 
@@ -266,6 +268,27 @@ class FlashcardsViewModel @Inject constructor(
                     if (streak != null && streak > 0) {
                         _uiState.update { state ->
                             if (state is FlashcardsUiState.SessionCompleted) state.copy(streak = streak) else state
+                        }
+                    }
+                }
+                // Per-card recap (FLA-149): observe the answer log so the review fills in (and the
+                // final card's just-recorded answer lands) as Room syncs; join each to its deck card.
+                reviewJob?.cancel()
+                reviewJob = viewModelScope.launch {
+                    practiceSessionRepository.observeAnswers(id).collect { answers ->
+                        val review = answers.sortedBy { it.sequence }.map { answer ->
+                            val card = flashcards.firstOrNull { it.cardUid == answer.cardUid }
+                            ReviewItem(
+                                cardUid = answer.cardUid,
+                                question = card?.question.orEmpty(),
+                                answer = card?.answer.orEmpty(),
+                                imageUrl = card?.imageUrl,
+                                correct = answer.correct,
+                                submittedText = answer.submittedText,
+                            )
+                        }
+                        _uiState.update { state ->
+                            if (state is FlashcardsUiState.SessionCompleted) state.copy(review = review) else state
                         }
                     }
                 }

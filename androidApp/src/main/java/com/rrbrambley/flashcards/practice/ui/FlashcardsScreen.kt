@@ -9,13 +9,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Share
@@ -174,11 +179,10 @@ fun FlashcardsScreen(
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
                     is FlashcardsUiState.SessionCompleted ->
-                        FlashcardsCompletionCard(
+                        FlashcardsCompletionContent(
                             streak = state.streak,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .padding(horizontal = 28.dp, vertical = 20.dp),
+                            review = state.review,
+                            modifier = Modifier.fillMaxSize(),
                         )
 
                     is FlashcardsUiState.ShowFlashcard -> {
@@ -375,27 +379,22 @@ private fun ScoreChip(label: String, color: Color) {
 }
 
 @Composable
-private fun FlashcardsCompletionCard(streak: Int?, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(0.68f),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        tonalElevation = 1.dp,
-        shadowElevation = 10.dp,
-        border = CardDefaults.outlinedCardBorder(),
+private fun FlashcardsCompletionContent(
+    streak: Int?,
+    review: List<ReviewItem>,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            contentAlignment = Alignment.Center,
-        ) {
+        item {
             Column(
+                modifier = Modifier.padding(bottom = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
                     text = stringResource(R.string.practice_complete_title),
@@ -414,6 +413,94 @@ private fun FlashcardsCompletionCard(streak: Int?, modifier: Modifier = Modifier
                 }
             }
         }
+        // Per-card recap of the run (FLA-149), in play order.
+        if (review.isNotEmpty()) {
+            item {
+                Text(
+                    text = stringResource(R.string.practice_review_heading),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 2.dp),
+                )
+            }
+            items(review) { item -> ReviewRow(item) }
+        }
+    }
+}
+
+/** One row of the end-of-session recap: outcome + (image) + prompt + correct answer + submitted text. */
+@Composable
+private fun ReviewRow(item: ReviewItem, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = CardDefaults.outlinedCardBorder(),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutcomeBadge(correct = item.correct)
+            if (!item.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(44.dp),
+                )
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                if (item.question.isNotBlank()) {
+                    Text(
+                        text = item.question,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Text(
+                    text = item.answer,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (!item.submittedText.isNullOrBlank()) {
+                    Text(
+                        text = stringResource(R.string.practice_review_submitted, item.submittedText),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF9A3412),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** ✓ / ✗ outcome chip for a review row. */
+@Composable
+private fun OutcomeBadge(correct: Boolean, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(28.dp)
+            .background(
+                color = if (correct) Color(0xFF1D7A45) else Color(0xFFB3261E),
+                shape = CircleShape,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = if (correct) Icons.Default.Check else Icons.Default.Close,
+            contentDescription = stringResource(
+                if (correct) R.string.practice_review_correct else R.string.practice_review_incorrect,
+            ),
+            tint = Color.White,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 

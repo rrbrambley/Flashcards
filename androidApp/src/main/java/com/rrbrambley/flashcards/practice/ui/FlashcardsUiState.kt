@@ -27,5 +27,17 @@ sealed interface FlashcardsUiState {
         val numCorrect: Int,
         /** Overall practice streak after this completion (FLA-106); null until read / 0 = no streak. */
         val streak: Int? = null,
+        /** Per-card recap of the run (FLA-149); empty until the answer log loads / for guests. */
+        val review: List<ReviewItem> = emptyList(),
     ) : FlashcardsUiState
 }
+
+/** One graded card in the end-of-session recap (FLA-149) — an answer joined to its deck card. */
+data class ReviewItem(
+    val cardUid: String,
+    val question: String,
+    val answer: String,
+    val imageUrl: String?,
+    val correct: Boolean,
+    val submittedText: String?,
+)
