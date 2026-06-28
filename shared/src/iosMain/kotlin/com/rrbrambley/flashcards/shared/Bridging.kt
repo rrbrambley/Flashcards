@@ -5,6 +5,7 @@ import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeData
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeAnswer
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.flow.filterNotNull
@@ -37,6 +38,10 @@ fun PracticeSessionRepository.lastPracticedAdapter(): FlowAdapter<Map<Long, Long
 /** A practice session by id (non-null emissions), for restoring progress on the practice screen. */
 fun PracticeSessionRepository.sessionAdapter(sessionId: Long): FlowAdapter<PracticeSession> =
     FlowAdapter(observeSession(sessionId).filterNotNull())
+
+/** The session's answer log (FLA-149), for the end-of-session per-card review. */
+fun PracticeSessionRepository.answersAdapter(sessionId: Long): FlowAdapter<List<PracticeAnswer>> =
+    FlowAdapter(observeAnswers(sessionId))
 
 /** The home feed (backend GET /home, offline fallback from cached sessions + static items). */
 fun HomeRepository.homeAdapter(): FlowAdapter<List<HomeData>> = FlowAdapter(observeHomeData())

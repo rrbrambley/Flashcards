@@ -116,15 +116,28 @@ final class FakePracticeSessionRepository: PracticeSessionRepository {
         answersLock.lock(); defer { answersLock.unlock() }; return _recordedAnswers
     }
 
+    // Mirrors the real Room-backed flow: recording re-emits the updated log (so the review's final
+    // answer "lands" after completion).
+    private let answerLog = MutableAnswerLog()
+
     func recordAnswer(sessionId: Int64, cardUid: String, correct: Bool, submittedText: String?) async throws {
         answersLock.lock()
         _recordedAnswers.append((sessionId, cardUid, correct, submittedText))
+        let snapshot = _recordedAnswers.enumerated().map { index, r in
+            PracticeAnswer(
+                answerUid: "uid-\(index)",
+                cardUid: r.cardUid,
+                correct: r.correct,
+                sequence: Int32(index),
+                answeredAtMillis: 0,
+                submittedText: r.submittedText
+            )
+        }
         answersLock.unlock()
+        answerLog.set(answers: snapshot)
     }
 
-    func observeAnswers(sessionId: Int64) -> any Kotlinx_coroutines_coreFlow {
-        FlowTestSupportKt.oneShotFlow(value: [PracticeAnswer]())
-    }
+    func observeAnswers(sessionId: Int64) -> any Kotlinx_coroutines_coreFlow { answerLog.flow() }
 }
 
 final class FakeHomeRepository: HomeRepository {
