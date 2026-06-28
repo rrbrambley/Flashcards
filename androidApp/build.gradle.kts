@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.android.application)
+    id("flashcards.android.application")
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
@@ -8,13 +8,11 @@ plugins {
 }
 
 android {
+    // compileSdk / minSdk / targetSdk / Java 11 come from the flashcards.android.application convention.
     namespace = "com.rrbrambley.flashcards"
-    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.rrbrambley.flashcards"
-        minSdk = 26
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -53,13 +51,6 @@ android {
             )
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-//    kotlinOptions {
-//        jvmTarget = "11"
-//    }
     buildFeatures {
         compose = true
         buildConfig = true
