@@ -8,6 +8,7 @@ import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.LocalDataStore
+import com.rrbrambley.flashcards.shared.domain.PracticeAnswer
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import io.ktor.client.engine.mock.MockEngine
@@ -317,6 +318,31 @@ class FlashcardsViewModelTest {
         assertEquals(listOf("card-1"), sessions.recordedAnswers.map { it.cardUid })
     }
 
+    @Test
+    fun completion_buildsThePerCardReviewFromTheAnswerLog() = runTest(testDispatcher) {
+        val cards = listOf(
+            Flashcard(question = "Q1", answer = "A1", cardUid = "card-1"),
+            Flashcard(question = "Q2", answer = "A2", cardUid = "card-2"),
+        )
+        val sessions = FakePracticeSessionRepository(session())
+        val viewModel = createViewModel(cards, sessions)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onResult(correct = true, submittedText = "A1") // card 1 -> card 2
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.onResult(correct = false, submittedText = "wrong") // card 2 -> complete
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val completed = viewModel.uiState.value as FlashcardsUiState.SessionCompleted
+        // Each logged answer, in play order, joined to its deck card.
+        assertEquals(listOf("card-1", "card-2"), completed.review.map { it.cardUid })
+        assertEquals(listOf("Q1", "Q2"), completed.review.map { it.question })
+        assertEquals(listOf("A1", "A2"), completed.review.map { it.answer })
+        assertEquals(listOf(true, false), completed.review.map { it.correct })
+        assertEquals(listOf("A1", "wrong"), completed.review.map { it.submittedText })
+    }
+
     // The guest tests use a real FlashcardApiClient over a MockEngine (real dispatcher), so they await
     // the StateFlow rather than the test scheduler.
     @Test
@@ -515,9 +541,22 @@ class FlashcardsViewModelTest {
 
         val recordedAnswers = mutableListOf<RecordedAnswer>()
 
+        // Backs observeAnswers, mirroring Room: recording an answer updates the observed log.
+        private val answersFlow = MutableStateFlow<List<PracticeAnswer>>(emptyList())
+
+        override fun observeAnswers(sessionId: Long): Flow<List<PracticeAnswer>> = answersFlow
+
         override suspend fun recordAnswer(sessionId: Long, cardUid: String, correct: Boolean, submittedText: String?) {
             if (failWrites) throw RuntimeException("offline")
             recordedAnswers += RecordedAnswer(sessionId, cardUid, correct, submittedText)
+            answersFlow.value = answersFlow.value + PracticeAnswer(
+                answerUid = "uid-${recordedAnswers.size}",
+                cardUid = cardUid,
+                correct = correct,
+                sequence = recordedAnswers.size - 1,
+                answeredAtMillis = 0,
+                submittedText = submittedText,
+            )
         }
     }
 

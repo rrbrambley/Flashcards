@@ -145,6 +145,11 @@
     <!-- Live in-session answer streak (FLA-99) -->
     <string name="practice_streak_in_a_row">🔥 %1$d in a row</string>
     <string name="practice_test_blank">(blank)</string>
+    <!-- End-of-session review (FLA-149) -->
+    <string name="practice_review_heading">Review</string>
+    <string name="practice_review_submitted">You answered: %1$s</string>
+    <string name="practice_review_correct">Correct</string>
+    <string name="practice_review_incorrect">Incorrect</string>
 
     <!-- Card discussions (FLA-122) -->
     <string name="discuss_button">💬 Discuss this card</string>
