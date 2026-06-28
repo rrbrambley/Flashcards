@@ -811,6 +811,75 @@ button.danger:hover:not(:disabled) {
   padding: 2rem 0;
 }
 
+/* End-of-session per-card review (FLA-149): each logged answer in play order. */
+.review {
+  width: 100%;
+  text-align: left;
+  margin-top: 0.5rem;
+}
+.review-heading {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+.review-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.review-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.review-outcome {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-weight: 700;
+  color: #fff;
+}
+.review-item.correct .review-outcome {
+  background: var(--success);
+}
+.review-item.incorrect .review-outcome {
+  background: var(--error);
+}
+.review-image {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+.review-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.review-prompt {
+  font-weight: 600;
+}
+.review-answer {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.review-submitted {
+  font-size: 0.85rem;
+  color: #9a3412;
+}
+
 /* Practice mode chooser */
 .mode-list {
   list-style: none;
