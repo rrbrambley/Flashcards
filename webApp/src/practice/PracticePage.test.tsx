@@ -52,6 +52,7 @@ function setup(cards: FlashcardDto[], sessionOver: Partial<PracticeSessionDto> =
   vi.mocked(api.updateProgress).mockResolvedValue(session());
   vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
   vi.mocked(api.recordAnswers).mockResolvedValue(session());
+  vi.mocked(api.getAnswers).mockResolvedValue([]);
   vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 3, longest: 5 }, decks: [] });
   render(
     <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
@@ -164,6 +165,34 @@ describe('PracticePage', () => {
     // The just-earned overall streak is read after completing and shown (FLA-106).
     expect(await screen.findByText(/3 day streak/)).toBeInTheDocument();
     expect(api.getStreaks).toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it('shows a per-card review of the run on completion (FLA-149)', async () => {
+    setup([
+      { question: 'Q1', answer: 'A1', cardUid: 'c1' },
+      { question: 'Q2', answer: 'A2', cardUid: 'c2' },
+    ]);
+    // The session's answer log (read after completion), joined to the cards by cardUid.
+    vi.mocked(api.getAnswers).mockResolvedValue([
+      { answerUid: 'a1', cardUid: 'c1', correct: true, sequence: 0, answeredAtMillis: 0, submittedText: null },
+      { answerUid: 'a2', cardUid: 'c2', correct: false, sequence: 1, answeredAtMillis: 0, submittedText: 'manzana' },
+    ]);
+
+    await screen.findByText('Q1');
+    await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+    await screen.findByText('Q2');
+    await userEvent.click(screen.getByRole('button', { name: /Still learning/ }));
+
+    expect(await screen.findByText('Practice complete')).toBeInTheDocument();
+    // The review reads the session's answer log after completion.
+    expect(await screen.findByText('Review')).toBeInTheDocument();
+    expect(api.getAnswers).toHaveBeenCalledWith(1);
+    // Each card's correct answer + the submitted text (Test/MC) appear; outcomes are labelled.
+    expect(screen.getByText('A1')).toBeInTheDocument();
+    expect(screen.getByText('A2')).toBeInTheDocument();
+    expect(screen.getByText('You answered: manzana')).toBeInTheDocument();
+    expect(screen.getByLabelText('correct')).toBeInTheDocument();
+    expect(screen.getByLabelText('incorrect')).toBeInTheDocument();
   });
 
   it('shows the mode chooser when no mode is selected', async () => {

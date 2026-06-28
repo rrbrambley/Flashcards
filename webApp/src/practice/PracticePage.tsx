@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/auth-context';
-import type { FlashcardDeckDto, FlashcardDto, PracticeSessionDto } from '../api/types';
+import type { FlashcardDeckDto, FlashcardDto, PracticeAnswer, PracticeSessionDto } from '../api/types';
 import { BackHeader } from '../decks/BackHeader';
 import { ModeChooser } from './ModeChooser';
 import { DEFAULT_MODE, findMode, PRACTICE_MODES } from './modes';
@@ -210,6 +210,9 @@ function PracticeRunner({
   const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, progress));
   // Overall streak after this completion (FLA-106); null until loaded / for guests (no session).
   const [streak, setStreak] = useState<number | null>(null);
+  // The session's answer log for the end-of-session review (FLA-149); null until the session
+  // completes (or for guests, who have no session).
+  const [review, setReview] = useState<PracticeAnswer[] | null>(null);
   // The card whose discussion panel is open (FLA-116), or null when closed.
   const [discussCardUid, setDiscussCardUid] = useState<string | null>(null);
 
@@ -245,12 +248,16 @@ function PracticeRunner({
     (wasLast: boolean, nextIndex: number, numCorrect: number, numIncorrect: number) => {
       if (sessionId == null) return;
       if (wasLast) {
-        // Read the streak only after the completion lands, so it reflects the day just earned.
+        // Read the streak + the answer log only after completion lands — so the streak reflects the
+        // day just earned and the review includes the final card's (just-recorded) answer (FLA-149).
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
         api
           .completeSession(sessionId, tz)
-          .then(() => api.getStreaks(tz))
-          .then((s) => setStreak(s.overall.current))
+          .then(() => Promise.all([api.getStreaks(tz), api.getAnswers(sessionId)]))
+          .then(([s, answers]) => {
+            setStreak(s.overall.current);
+            setReview(answers);
+          })
           .catch(() => {});
       } else {
         api.updateProgress(sessionId, { currentCardIndex: nextIndex, numCorrect, numIncorrect }).catch(() => {});
@@ -312,6 +319,32 @@ function PracticeRunner({
           <p className="streak-badge" title="Days in a row with a completed practice">
             🔥 {streak} day streak
           </p>
+        )}
+        {/* Per-card recap of the run (FLA-149): each logged answer in play order, joined to its card. */}
+        {review && review.length > 0 && (
+          <div className="review">
+            <h3 className="review-heading">Review</h3>
+            <ul className="review-list">
+              {[...review]
+                .sort((a, b) => a.sequence - b.sequence)
+                .map((ans) => {
+                  const card = cards.find((c) => !!c.cardUid && c.cardUid === ans.cardUid);
+                  return (
+                    <li key={ans.answerUid} className={`review-item ${ans.correct ? 'correct' : 'incorrect'}`}>
+                      <span className="review-outcome" aria-label={ans.correct ? 'correct' : 'incorrect'}>
+                        {ans.correct ? '✓' : '✗'}
+                      </span>
+                      {card?.imageUrl && <img src={card.imageUrl} alt="" className="review-image" />}
+                      <div className="review-text">
+                        {card?.question && <span className="review-prompt">{card.question}</span>}
+                        <span className="review-answer">{card?.answer ?? '—'}</span>
+                        {ans.submittedText && <span className="review-submitted">You answered: {ans.submittedText}</span>}
+                      </div>
+                    </li>
+                  );
+                })}
+            </ul>
+          </div>
         )}
         <div className="practice-actions">
           <button onClick={onAgain}>Practice again</button>
