@@ -88,6 +88,7 @@ struct PracticeView: View {
                     if newValue == .saved { dismiss() }
                 }
                 .task { await viewModel.start() }
+                .onDisappear { viewModel.stopObserving() }
         }
     }
 
@@ -125,7 +126,12 @@ struct PracticeView: View {
             }
             .padding(Spacing.lg)
         case let .completed(numCorrect, numIncorrect):
-            CompletionView(numCorrect: numCorrect, numIncorrect: numIncorrect, streak: viewModel.streak) { dismiss() }
+            CompletionView(
+                numCorrect: numCorrect,
+                numIncorrect: numIncorrect,
+                streak: viewModel.streak,
+                review: viewModel.review
+            ) { dismiss() }
         case .failed:
             ContentUnavailableView {
                 Label("Couldn't start practice", systemImage: "exclamationmark.triangle")
@@ -247,34 +253,40 @@ private struct SessionStreakBadge: View {
     }
 }
 
-/// End-of-deck summary.
+/// End-of-deck summary + the per-card recap of the run (FLA-149).
 private struct CompletionView: View {
     let numCorrect: Int
     let numIncorrect: Int
     let streak: Int?
+    let review: [ReviewItem]
     let onDone: () -> Void
 
     var body: some View {
-        VStack(spacing: Spacing.lg) {
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 64))
-                .foregroundStyle(.green)
-                .accessibilityHidden(true)
-            Text("Practice complete")
-                .font(.title.bold())
-            HStack(spacing: Spacing.xl) {
-                stat("Correct", numCorrect, color: .green)
-                stat("To review", numIncorrect, color: .red)
+        ScrollView {
+            VStack(spacing: Spacing.lg) {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.green)
+                    .accessibilityHidden(true)
+                Text("Practice complete")
+                    .font(.title.bold())
+                HStack(spacing: Spacing.xl) {
+                    stat("Correct", numCorrect, color: .green)
+                    stat("To review", numIncorrect, color: .red)
+                }
+                if let streak, streak > 0 {
+                    StreakBadge(streak: streak)
+                }
+                if !review.isEmpty {
+                    ReviewList(items: review)
+                }
+                Button("Done", action: onDone)
+                    .buttonStyle(.primary)
+                    .padding(.horizontal, Spacing.xl)
+                    .padding(.top, Spacing.md)
             }
-            if let streak, streak > 0 {
-                StreakBadge(streak: streak)
-            }
-            Button("Done", action: onDone)
-                .buttonStyle(.primary)
-                .padding(.horizontal, Spacing.xl)
-                .padding(.top, Spacing.md)
+            .padding(Spacing.lg)
         }
-        .padding(Spacing.lg)
     }
 
     private func stat(_ label: String, _ value: Int, color: Color) -> some View {
@@ -282,5 +294,64 @@ private struct CompletionView: View {
             Text("\(value)").font(.largeTitle.bold()).foregroundStyle(color)
             Text(label).font(.subheadline).foregroundStyle(.secondary)
         }
+    }
+}
+
+/// The per-card recap list: each graded answer in play order, joined to its card.
+private struct ReviewList: View {
+    let items: [ReviewItem]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("Review")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            ForEach(items) { item in
+                ReviewRow(item: item)
+            }
+        }
+        .padding(.top, Spacing.md)
+    }
+}
+
+/// One recap row: outcome + (image) + prompt + correct answer + the submitted text (Test/MC).
+private struct ReviewRow: View {
+    let item: ReviewItem
+
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            OutcomeBadge(correct: item.correct)
+            if let url = item.imageUrl, !url.isEmpty {
+                RemoteCardImage(url: url).frame(width: 44, height: 44)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                if !item.question.isEmpty {
+                    Text(item.question).font(.body.weight(.semibold))
+                }
+                Text(item.answer).font(.subheadline).foregroundStyle(.secondary)
+                if let submitted = item.submittedText, !submitted.isEmpty {
+                    Text("You answered: \(submitted)")
+                        .font(.caption)
+                        .foregroundStyle(Color(red: 0.6, green: 0.21, blue: 0.05))
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(Spacing.md)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+/// ✓ / ✗ outcome chip for a review row.
+private struct OutcomeBadge: View {
+    let correct: Bool
+
+    var body: some View {
+        Image(systemName: correct ? "checkmark" : "xmark")
+            .font(.caption.bold())
+            .foregroundStyle(.white)
+            .frame(width: 26, height: 26)
+            .background(correct ? Color.green : Color.red, in: Circle())
+            .accessibilityLabel(correct ? "Correct" : "Incorrect")
     }
 }

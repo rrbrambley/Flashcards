@@ -181,4 +181,22 @@ final class PracticeViewModelTests: XCTestCase {
         await waitUntil { sessions.recordedAnswers.count == 1 }
         XCTAssertEqual(sessions.recordedAnswers.first?.cardUid, "card-0")
     }
+
+    func test_completion_buildsThePerCardReviewFromTheAnswerLog() async {
+        let cards = [makeCard("Q1", "A1", cardUid: "card-1"), makeCard("Q2", "A2", cardUid: "card-2")]
+        let sessions = FakePracticeSessionRepository()
+        sessions.session = makeSession(id: 9, deckId: 1)
+        let vm = makeVM(deck: makeDeck(id: 1, "Deck", cards: cards), sessions: sessions, entry: .session(9))
+        await vm.start()
+
+        vm.onResult(correct: true, submittedText: "A1") // card 1 -> card 2
+        vm.onResult(correct: false, submittedText: "wrong") // card 2 -> completed
+
+        // The recap is built from the answer log, which re-emits as the final card's answer lands.
+        await waitUntil { vm.review.count == 2 }
+        XCTAssertEqual(vm.review.map { $0.question }, ["Q1", "Q2"])
+        XCTAssertEqual(vm.review.map { $0.answer }, ["A1", "A2"])
+        XCTAssertEqual(vm.review.map { $0.correct }, [true, false])
+        XCTAssertEqual(vm.review.map { $0.submittedText }, ["A1", "wrong"])
+    }
 }

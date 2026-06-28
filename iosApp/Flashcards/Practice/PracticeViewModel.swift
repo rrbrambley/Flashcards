@@ -47,6 +47,9 @@ final class PracticeViewModel: ObservableObject {
     @Published private(set) var saveState: GuestSaveState = .idle
     /// Overall practice streak after this completion (FLA-106); nil until read / 0 = no streak.
     @Published private(set) var streak: Int?
+    /// Per-card recap of the run (FLA-149); populated after completion from the answer log.
+    @Published private(set) var review: [ReviewItem] = []
+    private var reviewTask: Task<Void, Never>?
 
     private let flashcardRepository: FlashcardRepository
     private let sessionRepository: PracticeSessionRepository
@@ -94,7 +97,16 @@ final class PracticeViewModel: ObservableObject {
         return index > 0 || numCorrect > 0 || numIncorrect > 0
     }
 
+    /// Stops observing the answer log — call when the practice screen goes away (the review flow is
+    /// long-lived, so it must be cancelled explicitly).
+    func stopObserving() {
+        reviewTask?.cancel()
+        reviewTask = nil
+    }
+
     func start() async {
+        reviewTask?.cancel()
+        review = []
         switch entry {
         case let .deck(deckId, mode):
             // The backend keys start-or-resume on (user, deck, mode); restore then reads back the
@@ -136,7 +148,8 @@ final class PracticeViewModel: ObservableObject {
         answerStreak = correct ? answerStreak + 1 : 0
         recordAnswer(correct: correct, submittedText: submittedText)
         updateState()
-        persist()
+        // Progress persists on advance (goForward/goBack) — matching web/Android — so the grade alone
+        // doesn't double-write; the answer log above already captures this card.
     }
 
     /// Appends the just-answered card to the session's log (FLA-99); signed-in only, best-effort.
@@ -298,5 +311,37 @@ final class PracticeViewModel: ObservableObject {
                 streak = Int(result.overall.current)
             }
         }
+        // Per-card recap (FLA-149): observe the answer log so the review fills in (and the final card's
+        // just-recorded answer lands) as Room syncs; join each to its deck card. Cancelled on teardown.
+        let repo = sessionRepository
+        reviewTask?.cancel()
+        reviewTask = Task { [weak self] in
+            for await answers in asyncStream(BridgingKt.answersAdapter(repo, sessionId: sid)) {
+                guard let self else { break }
+                self.review = ((answers as? [PracticeAnswer]) ?? [])
+                    .sorted { $0.sequence < $1.sequence }
+                    .map { answer in
+                        let card = self.cards.first { $0.cardUid == answer.cardUid }
+                        return ReviewItem(
+                            id: answer.answerUid,
+                            question: card?.question ?? "",
+                            answer: card?.answer ?? "",
+                            imageUrl: card?.imageUrl,
+                            correct: answer.correct,
+                            submittedText: answer.submittedText
+                        )
+                    }
+            }
+        }
     }
+}
+
+/// One graded card in the end-of-session recap (FLA-149) — an answer joined to its deck card.
+struct ReviewItem: Identifiable {
+    let id: String // answerUid
+    let question: String
+    let answer: String
+    let imageUrl: String?
+    let correct: Bool
+    let submittedText: String?
 }
