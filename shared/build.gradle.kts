@@ -23,11 +23,16 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = xcfName
             isStatic = true
+            // Re-export the API contract so Swift still sees the DTOs + FlashcardApiClient (FLA-161).
+            export(project(":shared:api"))
         }
     }
 
     sourceSets {
         commonMain.dependencies {
+            // The HTTP API contract (DTOs + client) lives in :shared:api; `api(...)` re-exposes it to
+            // consumers (androidApp) and exports it into the iOS framework (FLA-161).
+            api(project(":shared:api"))
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
