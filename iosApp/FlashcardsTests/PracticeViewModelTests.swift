@@ -192,8 +192,11 @@ final class PracticeViewModelTests: XCTestCase {
         vm.onResult(correct: true, submittedText: "A1") // card 1 -> card 2
         vm.onResult(correct: false, submittedText: "wrong") // card 2 -> completed
 
-        // The recap is built from the answer log, which re-emits as the final card's answer lands.
-        await waitUntil { vm.review.count == 2 }
+        // Both answers are recorded via fire-and-forget Tasks; ensure they've landed first, then the
+        // recap (built from the answer log, which re-emits as each lands) reflects them. A generous
+        // timeout because the log→review observation chain can lag on a loaded CI runner.
+        await waitUntil(timeout: 5) { sessions.recordedAnswers.count == 2 }
+        await waitUntil(timeout: 5) { vm.review.count == 2 }
         XCTAssertEqual(vm.review.map { $0.question }, ["Q1", "Q2"])
         XCTAssertEqual(vm.review.map { $0.answer }, ["A1", "A2"])
         XCTAssertEqual(vm.review.map { $0.correct }, [true, false])
