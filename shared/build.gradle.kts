@@ -5,11 +5,10 @@ plugins {
 }
 
 kotlin {
-    // jvmToolchain(11) + the -Xexpect-actual-classes opt-in come from the flashcards.kmp.library convention.
+    // jvmToolchain(11), the -Xexpect-actual-classes opt-in, and compileSdk/minSdk come from the
+    // flashcards.kmp.library convention.
     android {
         namespace = "com.rrbrambley.flashcards.shared"
-        compileSdk = 36
-        minSdk = 26
     }
 
     jvm()

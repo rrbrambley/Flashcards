@@ -9,9 +9,8 @@ plugins {
 // into the iOS framework (so Swift still sees the DTOs + client). See FLA-161.
 kotlin {
     android {
+        // compileSdk / minSdk come from the flashcards.kmp.library convention.
         namespace = "com.rrbrambley.flashcards.shared.api"
-        compileSdk = 36
-        minSdk = 26
     }
 
     jvm()

@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = FlashcardsSdk.COMPILE
 
     defaultConfig {
-        minSdk = 26
-        targetSdk = 36
+        minSdk = FlashcardsSdk.MIN
+        targetSdk = FlashcardsSdk.TARGET
     }
 
     compileOptions {
