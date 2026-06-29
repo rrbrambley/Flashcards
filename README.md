@@ -4,55 +4,72 @@ A multiplatform flashcards app for self-testing across subjects. The goal is a s
 product across **Android, iOS, web, and a backend**, sharing business logic via Kotlin
 Multiplatform (KMP) while keeping a native UI per platform.
 
-You can build decks of cards (term + definition, with an optional image on the front),
-practice them in spaced sessions, and sync across devices through the backend. The Android
-app is offline-first; the web app is a thin client over the same API.
+You can build decks of cards (term + definition, with an optional front image and a category),
+practice them three ways (classic flip, text-entry **Test**, **Multiple Choice**) with a live
+in-session streak and an end-of-session per-card review, discuss individual cards on the shared
+catalog, and sync across devices through the backend. The Android and iOS apps are offline-first;
+the web app is a thin client over the same API. You can also browse and practice the public deck
+catalog as a **guest**, with no account.
 
 ## Status
 
-| Component | State |
-|-----------|-------|
-| KMP monorepo (`shared` library) | ✅ Done |
-| Ktor + Postgres backend (auth, decks, sessions, home feed, image uploads) | ✅ Done |
-| Android app — Compose, offline-first, synced to the backend | ✅ Done |
-| Email/password + Google sign-in (Android & web) | ✅ Done |
-| Flashcard images (front side), uploaded to S3 and served via CloudFront | ✅ Done |
-| Web app (React/TypeScript) — auth, library (search + sort + categories), deck create/edit, practice (3 modes), admin UI | ✅ Done |
-| JWT access + refresh tokens, transparent refresh-on-401, logout (server-side revocation) | ✅ Done |
-| Role-based access control — roles + feature permissions; admins manage the global deck catalog & user roles (web + operator CLI) | ✅ Done |
-| Practice modes (web) — classic flip, text-entry Test, Multiple Choice | ✅ Done |
-| iOS app (SwiftUI) — auth, library, deck create/edit, classic practice | 🚧 In progress |
+| Area | State |
+|------|-------|
+| KMP monorepo — `:shared:api` (Room-free API contract) + `:shared` (offline-first Room data layer + iOS framework); `build-logic` convention plugins | ✅ |
+| Ktor + Postgres backend — auth, decks, sessions, home feed, images, streaks, discussions, RBAC | ✅ |
+| Android app — Compose, offline-first, full feature set | ✅ |
+| Web app — React/TypeScript, full feature set **+ admin UI** | ✅ |
+| iOS app — SwiftUI, near-parity (everything below except the admin UI) | ✅ |
+| Email/password + Google sign-in (all clients) | ✅ |
+| Practice — classic flip, text-entry Test, Multiple Choice (all clients) | ✅ |
+| In-session answer streak (live "N in a row") + daily practice streak | ✅ |
+| End-of-session per-card review (correct/incorrect recap with your answers) | ✅ |
+| Guest mode — browse + practice the public catalog without an account | ✅ |
+| Card discussions on global decks — threaded, opt-in per deck, moderated (report / lock / delete) | ✅ |
+| Answer suggestions ("this should be correct" on global-deck cards) with admin review | ✅ |
+| Flashcard images (front side) — uploaded to S3, served via CloudFront | ✅ |
+| Role-based access control — roles + feature permissions; manage the global catalog, user roles & moderation (web + operator CLI) | ✅ |
+| JWT access + refresh tokens, transparent refresh-on-401, server-side logout | ✅ |
 
 ## Repository layout
 
-A single Gradle build with three modules, plus a separate web app:
+A single Gradle build with four modules (`:shared` + its `:shared:api` child, `:androidApp`,
+`:backend`) plus a `build-logic` included build, and a separate web app:
 
 ```
 Flashcards/
-├── shared/        KMP library — @Serializable API DTOs + a Ktor HTTP client
-│                  (FlashcardApiClient), targeting android, iOS, and jvm.
-│                  Consumed by androidApp and the backend.
-├── androidApp/    Android app (Jetpack Compose, MVVM, Hilt, Room). Offline-first.
-├── iosApp/        SwiftUI app consuming the shared framework (XcodeGen project, not in the Gradle build).
+├── shared/        KMP library — the offline-first data layer (domain, Room-KMP database,
+│   │              repositories, sync) + the Kotlin/Native iOS framework. Used by androidApp & iosApp.
+│   └── api/       :shared:api — the @Serializable API DTOs + Ktor FlashcardApiClient + token
+│                  refresh. Room-free; the backend depends on only this, and :shared re-exports it.
+├── build-logic/   Gradle convention plugins (SDK levels + JVM/Kotlin baseline), applied by each module.
+├── androidApp/    Android app (Jetpack Compose, MVVM, Hilt). Offline-first.
+├── iosApp/        SwiftUI app consuming the Shared framework (XcodeGen project, not in the Gradle build).
 ├── backend/       Ktor server (Netty) + Exposed + Postgres. The API the apps sync against.
 ├── webApp/        React + TypeScript + Vite SPA (its own npm toolchain, not in the Gradle build).
 ├── docker-compose.yml          Local Postgres for the backend
 └── gradle/libs.versions.toml   Version catalog (single source for deps)
 ```
 
-The shared offline-first data layer (domain, Room-KMP database, repositories) and the Ktor
-client + token refresh live in `shared/` and are reused by both apps; iOS gets a one-call
-`createIosFlashcardSdk(...)` factory. The `iosApp/` SwiftUI app is under active development.
+The HTTP API contract (DTOs + `FlashcardApiClient` + token refresh) lives in `:shared:api`, so
+the backend can consume it without dragging in the mobile Room/SQLite layer. The offline-first
+data layer (domain, Room-KMP database, repositories, sync) lives in `:shared` and is reused by both
+apps — iOS gets a one-call `createIosFlashcardSdk(...)` factory and links it all as a single
+`Shared.framework` (which re-exports `:shared:api`).
 
 ## Tech stack
 
 - **Language:** Kotlin 2.2.10 (JVM toolchain 11), Kotlin Multiplatform
-- **Android:** Jetpack Compose, Hilt (DI), Room (local cache), Ktor client (OkHttp),
+- **Android:** Jetpack Compose, Hilt (DI), Room-KMP (offline cache), Ktor client (OkHttp),
   DataStore, Coil (images), Credential Manager (Google sign-in)
+- **iOS:** SwiftUI, the shared `Shared` Kotlin/Native framework (Room-KMP offline cache, Darwin
+  Ktor engine), Keychain token storage; XcodeGen-generated project
 - **Backend:** Ktor 3.2.x, Exposed + HikariCP, PostgreSQL, BCrypt, kotlinx.serialization,
-  AWS SDK for Kotlin (S3)
+  AWS SDK for Kotlin (S3), a profanity filter for discussion moderation
 - **Web:** React 19 + TypeScript + Vite
-- **Shared:** kotlinx.serialization DTOs + a Ktor `FlashcardApiClient` reused across platforms
+- **Shared:** `:shared:api` (kotlinx.serialization DTOs + a Ktor `FlashcardApiClient` + token
+  refresh) and `:shared` (the offline-first Room data layer) reused across platforms
+- **Build:** Gradle with `build-logic` convention plugins + a version catalog
 
 ## Prerequisites
 
@@ -221,12 +238,13 @@ npm run dev              # http://localhost:5173
 ```
 
 The web app calls the backend at `VITE_API_BASE_URL` (default `http://localhost:8080`),
-which is allowed by the backend's CORS config out of the box. It covers the Android client's
-core flows — auth, the deck library (title + category search, sort), deck create/edit (with an
-optional Category) — and goes further: three **practice modes** (classic flip, text-entry Test,
-Multiple Choice; routed at `/decks/:id/practice`) and **admin** screens for users with the right
-permissions (manage the global deck catalog at `/library/global`; assign user roles at
-`/admin/users`).
+which is allowed by the backend's CORS config out of the box. It covers the same core flows as
+the mobile apps — auth, the deck library (title + category search, sort), deck create/edit, all
+three practice modes (routed at `/decks/:id/practice`) with the streak + end-of-session review,
+card discussions, and guest browsing — and is the only client with the **admin** surfaces:
+managing the global deck catalog (`/library/global`), assigning user roles (`/admin/users`), and
+the content-moderation queues. Admin screens are gated on the user's permissions and redirect
+otherwise.
 
 > The dev server is pinned to **port 5173** (`vite.config.ts`, `strictPort`) because that's the
 > origin registered with the Google OAuth client; if 5173 is taken it fails loudly rather than
@@ -356,33 +374,45 @@ brand art before release. **Distribution** (TestFlight/App Store) needs a real s
 
 ## API
 
-Endpoints require an **access-token JWT** as a bearer except the public auth routes
-(`/auth/register`, `/auth/login`, `/auth/google`, `/auth/refresh`). When an access token
-expires the client transparently calls `/auth/refresh` and retries. Bodies are the
-`@Serializable` DTOs in `shared/src/commonMain/.../api/`.
+Endpoints require an **access-token JWT** as a bearer except the public routes — the auth
+entrypoints (`/auth/register`, `/auth/login`, `/auth/google`, `/auth/refresh`), the read-only
+guest **catalog** (`/catalog/*`), and **reading** a card's discussion (`GET /discussions/{cardUid}/messages`).
+When an access token expires the client transparently calls `/auth/refresh` and retries. Bodies are
+the `@Serializable` DTOs in `shared/api/src/commonMain/.../api/` (the discussion + admin DTOs are
+backend-only, mirrored by the web app).
 
 | Method + Path | Purpose |
 |---------------|---------|
 | `POST /auth/register`, `POST /auth/login` | Issue an access JWT + a refresh token |
 | `POST /auth/google` | Exchange a Google ID token for access + refresh tokens (requires `GOOGLE_WEB_CLIENT_ID`) |
-| `POST /auth/refresh` | Exchange a refresh token for a fresh access token (rotates the refresh token) |
-| `POST /auth/logout` | Revoke a refresh token server-side (ends the session) |
-| `GET /auth/me` | The caller's identity, roles, and effective permissions |
+| `POST /auth/refresh`, `POST /auth/logout` | Rotate a refresh token / revoke it server-side (end the session) |
+| `GET /auth/me`, `PATCH /auth/me` | The caller's identity, roles + permissions / set the display name |
 | `GET /decks`, `GET /decks/{id}` | List (cursor-paginated: `?limit&cursor`) / fetch decks (a user's decks + the global catalog) |
-| `POST /decks`, `PUT /decks/{id}`, `DELETE /decks/{id}` | Create / update / delete a deck (owner-scoped; global decks are writable only by an admin) |
+| `POST /decks`, `PUT /decks/{id}`, `DELETE /decks/{id}` | Create / update / delete a deck (owner-scoped; global decks writable only by an admin) |
 | `GET /decks/global`, `POST /decks/global` | List / create global (ownerless) catalog decks — admin only (`manage_global_decks`) |
+| `GET /catalog`, `GET /catalog/{id}` | **Public** — browse the global deck catalog without an account (guest mode) |
 | `POST /sessions` | Start or resume a practice session for a deck (in a given `mode`) |
 | `GET /sessions?active=`, `GET /sessions/{id}` | List (cursor-paginated) / fetch practice sessions |
 | `PATCH /sessions/{id}`, `POST /sessions/{id}/complete` | Update progress / complete a session |
+| `POST /sessions/{id}/answers`, `GET /sessions/{id}/answers` | Append to / read the per-card answer log (drives the streak + end-of-session review) |
+| `GET /streaks` | The caller's daily practice streak (overall + per deck) |
 | `GET /home` | Server-computed home feed |
 | `POST /images` | Upload a flashcard image; returns its CloudFront URL (requires S3 config) |
+| `GET /discussions/{cardUid}/messages` (public), `POST /discussions/{cardUid}/messages` | Read (paginated) / post a card discussion message (posting is auth-gated) |
+| `POST /discussions/messages/{id}/report` | Report a discussion message |
+| `PATCH /discussions/{cardUid}/lock`, `PATCH /discussions/decks/{deckId}/discussion` | Lock a thread / toggle discussions for a deck — admin only (`manage_discussions`) |
+| `POST /cards/{cardUid}/answer-suggestions` | Suggest a typed answer as also-correct on a global-deck card |
 | `GET /admin/users`, `GET /admin/roles` | List users (paginated + `?q=` email search) / the role catalog — admin only (`manage_roles`) |
 | `POST /admin/users/{id}/roles`, `DELETE /admin/users/{id}/roles/{key}` | Grant / revoke a user's role — admin only |
+| `GET /admin/discussions/reports`, `DELETE /admin/discussions/messages/{id}` | The reports queue / moderator-delete a message — admin only |
+| `GET /admin/answer-suggestions`, `POST /admin/answer-suggestions/{id}/accept` (or `…/dismiss`) | Review queue / accept (adds the alternative answer) or dismiss a suggestion — admin only |
 
-> The `/auth/*` routes are rate-limited per client IP (`429` on exceed). Login/register/google and
-> `/auth/me` carry the user's `permissions` so clients can gate admin UI. List endpoints return a
-> `Page<T>` envelope (`{ items, nextCursor }`); pass `nextCursor` back as `cursor` for the next page.
-> Admin routes (`/admin/*`, `/decks/global`) require a feature permission and return `403` otherwise.
+> The `/auth/*` routes are rate-limited per client IP (`429` on exceed); discussion posting is
+> additionally rate-limited per user per thread. Login/register/google and `/auth/me` carry the
+> user's `permissions` so clients can gate admin UI. List endpoints return a `Page<T>` envelope
+> (`{ items, nextCursor }`); pass `nextCursor` back as `cursor` for the next page. Admin routes
+> (`/admin/*`, `/decks/global`, discussion lock/toggle) require a feature permission and return `403`
+> otherwise. Discussion content is plaintext-only, profanity-filtered, and auto-locks past a size threshold.
 
 ---
 
@@ -392,9 +422,10 @@ expires the client transparently calls `/auth/refresh` and retries. Bodies are t
 ./gradlew :androidApp:assembleDebug         # build the Android APK
 ./gradlew :androidApp:testDebugUnitTest     # Android unit tests
 ./gradlew :androidApp:connectedDebugAndroidTest  # instrumented tests, incl. the Room migration test (needs a device/emulator)
-./gradlew :shared:build                     # build shared for android/iOS/JVM
-./gradlew :shared:jvmTest                   # shared commonTest on the JVM host
+./gradlew :shared:build                     # build :shared (+ :shared:api) for android/iOS/JVM
+./gradlew :shared:jvmTest :shared:api:jvmTest  # shared commonTest on the JVM host
 ./gradlew :backend:build                    # build the backend
+./gradlew ktlintCheck                       # Kotlin lint across all modules
 ./gradlew :backend:test                     # backend integration tests (Testcontainers)
 cd webApp && npm run build && npm run lint && npm run test  # build + lint + test the web app
 ```
