@@ -9,7 +9,8 @@ plugins {
 // jvmToolchain(11) comes from the flashcards.jvm convention.
 
 dependencies {
-    implementation(project(":shared"))
+    // Only the HTTP API contract (DTOs + Page) — not the Room/offline data layer (FLA-161).
+    implementation(project(":shared:api"))
 
     // Ktor server
     implementation(libs.ktor.server.core)

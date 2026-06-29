@@ -5,11 +5,10 @@ plugins {
 }
 
 kotlin {
-    // jvmToolchain(11) + the -Xexpect-actual-classes opt-in come from the flashcards.kmp.library convention.
+    // jvmToolchain(11), the -Xexpect-actual-classes opt-in, and compileSdk/minSdk come from the
+    // flashcards.kmp.library convention.
     android {
         namespace = "com.rrbrambley.flashcards.shared"
-        compileSdk = 36
-        minSdk = 26
     }
 
     jvm()
@@ -23,11 +22,16 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = xcfName
             isStatic = true
+            // Re-export the API contract so Swift still sees the DTOs + FlashcardApiClient (FLA-161).
+            export(project(":shared:api"))
         }
     }
 
     sourceSets {
         commonMain.dependencies {
+            // The HTTP API contract (DTOs + client) lives in :shared:api; `api(...)` re-exposes it to
+            // consumers (androidApp) and exports it into the iOS framework (FLA-161).
+            api(project(":shared:api"))
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
