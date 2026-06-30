@@ -138,24 +138,39 @@ object AuthService {
         RefreshTokens.deleteWhere { expiresAtMillis less now }
     }
 
-    /** Identity + roles + effective permissions for the authenticated user (GET /auth/me). */
+    /** Identity + roles + effective permissions + profile for the authenticated user (GET /auth/me). */
     suspend fun me(userId: Long): MeResponse = dbQuery {
         val row = Users.selectAll().where { Users.id eq userId }.firstOrNull()
             ?: throw NotFoundException("User $userId not found")
+        val avatarKey = row[Users.avatarKey]
         MeResponse(
             userId = userId,
             email = row[Users.email],
             roles = PermissionRepository.rolesTx(userId).toList(),
             permissions = PermissionRepository.effectivePermissionsTx(userId).toList(),
             displayName = row[Users.displayName],
+            avatarKey = avatarKey,
+            avatarUrl = Avatars.urlFor(avatarKey),
         )
     }
 
-    /** Sets (or clears, when blank) the caller's display name and returns the refreshed profile (FLA-114). */
-    suspend fun updateProfile(userId: Long, displayName: String?): MeResponse {
-        val normalized = Validation.normalizeDisplayName(displayName)
+    /**
+     * Updates the caller's profile and returns the refreshed [MeResponse] (FLA-114 / FLA-162).
+     * **Merge semantics per field:** a null/absent field is left unchanged, a blank string clears it,
+     * a value sets it. [avatarKey] must be one of [Avatars.keys] (else 400 via [IllegalArgumentException]).
+     */
+    suspend fun updateProfile(userId: Long, displayName: String?, avatarKey: String?): MeResponse {
+        // Resolve "set vs clear vs leave" outside the transaction (validation throws before any write).
+        val normalizedName = displayName?.let { Validation.normalizeDisplayName(it) } // blank -> null (clear)
+        val normalizedAvatar = avatarKey?.takeIf { it.isNotBlank() } // blank -> null (clear)
+        if (normalizedAvatar != null) {
+            require(Avatars.isValid(normalizedAvatar)) { "'$normalizedAvatar' is not a valid avatar" }
+        }
         dbQuery {
-            val updated = Users.update({ Users.id eq userId }) { it[Users.displayName] = normalized }
+            val updated = Users.update({ Users.id eq userId }) {
+                if (displayName != null) it[Users.displayName] = normalizedName
+                if (avatarKey != null) it[Users.avatarKey] = normalizedAvatar
+            }
             if (updated == 0) throw NotFoundException("User $userId not found")
         }
         return me(userId)

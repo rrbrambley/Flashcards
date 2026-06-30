@@ -30,6 +30,7 @@ import com.rrbrambley.flashcards.backend.storage.Storage
 import com.rrbrambley.flashcards.backend.storage.StorageService
 import com.rrbrambley.flashcards.backend.suggestions.AnswerSuggestionDto
 import com.rrbrambley.flashcards.shared.api.AuthResponse
+import com.rrbrambley.flashcards.shared.api.AvatarDto
 import com.rrbrambley.flashcards.shared.api.CompleteSessionRequest
 import com.rrbrambley.flashcards.shared.api.CreateDeckRequest
 import com.rrbrambley.flashcards.shared.api.CreateMessageRequest
@@ -2046,6 +2047,41 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(UpdateProfileRequest("x".repeat(81))))
         }
         assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun auth_me_avatar_is_set_validated_independently_and_cleared() = runApp { client ->
+        val user = client.register("avatarer", "password1")
+        // Unset by default. (avatarUrl stays null throughout — no CDN configured in tests.)
+        assertNull(client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>().avatarKey)
+
+        suspend fun patchProfile(body: UpdateProfileRequest) = client.patch("/auth/me") {
+            bearerAuth(user.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(body))
+        }
+
+        // Set the avatar.
+        assertEquals("dragon", patchProfile(UpdateProfileRequest(avatarKey = "dragon")).decode<MeResponse>().avatarKey)
+
+        // An unknown key is rejected.
+        assertEquals(HttpStatusCode.BadRequest, patchProfile(UpdateProfileRequest(avatarKey = "wyvern")).status)
+
+        // Merge semantics: editing the display name leaves the avatar untouched.
+        val named = patchProfile(UpdateProfileRequest(displayName = "Drake")).decode<MeResponse>()
+        assertEquals("dragon", named.avatarKey)
+        assertEquals("Drake", named.displayName)
+
+        // A blank avatarKey clears it.
+        assertNull(patchProfile(UpdateProfileRequest(avatarKey = "")).decode<MeResponse>().avatarKey)
+    }
+
+    @Test
+    fun avatars_catalog_is_empty_without_cdn() = runApp { client ->
+        val user = client.register("cataloger", "password1")
+        // Graceful degradation: no CDN configured in tests → empty catalog (clients show initials).
+        val catalog = client.get("/avatars") { bearerAuth(user.accessToken) }.decode<List<AvatarDto>>()
+        assertTrue(catalog.isEmpty())
     }
 
     @Test

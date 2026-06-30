@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.backend
 
+import com.rrbrambley.flashcards.backend.auth.Avatars
 import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
@@ -40,6 +41,9 @@ fun main() {
 
     val bucket = config.propertyOrNull("storage.bucket")?.getString()
     val cdnBaseUrl = config.propertyOrNull("storage.cdnBaseUrl")?.getString()
+    // Profile avatars (FLA-162) are static CDN assets — they need only the CDN base URL (not the S3
+    // upload bucket/creds), so configure them off cdnBaseUrl alone.
+    Avatars.configure(cdnBaseUrl)
     if (!bucket.isNullOrBlank() && !cdnBaseUrl.isNullOrBlank()) {
         Storage.service = S3StorageService(
             bucket = bucket,

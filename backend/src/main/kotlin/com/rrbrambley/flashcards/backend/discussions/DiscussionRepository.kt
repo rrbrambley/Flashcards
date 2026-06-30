@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.backend.discussions
 
 import com.rrbrambley.flashcards.backend.auth.AuthService
+import com.rrbrambley.flashcards.backend.auth.Avatars
 import com.rrbrambley.flashcards.backend.db.Decks
 import com.rrbrambley.flashcards.backend.db.DiscussionMessages
 import com.rrbrambley.flashcards.backend.db.DiscussionReports
@@ -128,6 +129,7 @@ object DiscussionRepository {
         DiscussionMessageDto(
             id = messageId,
             authorDisplayName = authorDisplayName(userId),
+            authorAvatarUrl = authorAvatarUrl(userId),
             content = text,
             parentMessageId = parentMessageId,
             createdAtMillis = now,
@@ -328,6 +330,9 @@ object DiscussionRepository {
         return AuthService.displayNameOrDefault(row[Users.displayName], row[Users.email])
     }
 
+    private fun authorAvatarUrl(userId: Long): String? =
+        Avatars.urlFor(Users.selectAll().where { Users.id eq userId }.first()[Users.avatarKey])
+
     /** Cursor packs `createdAtMillis:id` of the last item, so paging is stable across ties. */
     private fun decodeCursor(cursor: String): Pair<Long, Long> {
         val parts = Cursor.decode(cursor).split(":")
@@ -350,6 +355,7 @@ object DiscussionRepository {
         return DiscussionMessageDto(
             id = this[DiscussionMessages.id].value,
             authorDisplayName = AuthService.displayNameOrDefault(this[Users.displayName], this[Users.email]),
+            authorAvatarUrl = Avatars.urlFor(this[Users.avatarKey]),
             content = if (deleted) "" else this[DiscussionMessages.content],
             parentMessageId = this[DiscussionMessages.parentMessageId],
             createdAtMillis = this[DiscussionMessages.createdAtMillis],

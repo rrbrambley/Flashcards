@@ -72,6 +72,19 @@ class FlashcardApiClient(
     @Throws(Exception::class)
     suspend fun getMe(): MeResponse = client.get(url("/auth/me")) { auth() }.body()
 
+    /** Updates the caller's profile (display name / avatar) and returns the refreshed `MeResponse`
+     *  (FLA-114 / FLA-162). Merge semantics — only the fields you set change (see [UpdateProfileRequest]). */
+    @Throws(Exception::class)
+    suspend fun updateProfile(request: UpdateProfileRequest): MeResponse = client.patch(url("/auth/me")) {
+        auth()
+        jsonBody(request)
+    }.body()
+
+    /** The curated profile-avatar catalog (`GET /avatars`) — `[{ key, url }]`; empty when the CDN
+     *  isn't configured (FLA-162). */
+    @Throws(Exception::class)
+    suspend fun getAvatars(): List<AvatarDto> = client.get(url("/avatars")) { auth() }.body()
+
     // --- Images ---
     /** Uploads an image and returns its public (CDN) URL to store as a flashcard's imageUrl. */
     @Throws(Exception::class)

@@ -22,6 +22,9 @@ data class DiscussionMessageDto(
     /** Whether a moderator removed this message (FLA-118). When true, [content] is blank (the
      *  original text is never returned); clients render a tombstone. Defaulted for older payloads. */
     val deleted: Boolean = false,
+    /** The poster's avatar CDN URL, or null when unset / the CDN isn't configured (FLA-162). Last in
+     *  the list (additive + defaulted) so positional constructors aren't disturbed. */
+    val authorAvatarUrl: String? = null,
 )
 
 /** Body for POST /discussions/{cardUid}/messages. [parentMessageId] replies to a top-level message. */

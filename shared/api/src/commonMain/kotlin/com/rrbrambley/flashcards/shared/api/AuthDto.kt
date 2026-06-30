@@ -46,8 +46,22 @@ data class MeResponse(
      * email local-part). Defaulted so older clients keep working (FLA-114).
      */
     val displayName: String? = null,
+    /** The user's selected avatar key (e.g. "dragon"), or null. Lets the picker show the current
+     *  selection. Defaulted (FLA-162). */
+    val avatarKey: String? = null,
+    /** The resolved CDN URL for [avatarKey] (`…/avatars/<key>.png`), or null when unset or the CDN
+     *  isn't configured. Clients render this and fall back to an initials monogram when null. */
+    val avatarUrl: String? = null,
 )
 
-/** Body for PATCH /auth/me — update the caller's profile. A blank/absent [displayName] clears it. */
+/**
+ * Body for PATCH /auth/me — update the caller's profile. **Merge semantics per field:** a field that
+ * is absent/null is left unchanged; a blank string clears it; a value sets it. So a display-name edit
+ * needn't resend the avatar, and vice-versa. [avatarKey] must be one of `GET /avatars` (FLA-114 / FLA-162).
+ */
 @Serializable
-data class UpdateProfileRequest(val displayName: String? = null)
+data class UpdateProfileRequest(val displayName: String? = null, val avatarKey: String? = null)
+
+/** One selectable profile avatar (FLA-162): its stable [key] and the CDN [url] to render it. */
+@Serializable
+data class AvatarDto(val key: String, val url: String)
