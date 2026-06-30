@@ -10,6 +10,7 @@
 #   make db-stop   Stop the local Postgres container
 #   make reseed    Wipe the Postgres volume + restart so the backend reseeds from scratch
 #   make admin ARGS="user list"   Run the admin CLI against the local Postgres
+#   make avatars   Deploy the profile-avatar set (assets/avatars/) to S3 → CloudFront
 #
 # The backend points at whatever host port the flashcards-postgres container publishes
 # for 5432, so a non-default mapping (e.g. 5433 when 5432 is taken) is handled automatically.
@@ -17,7 +18,7 @@
 SHELL := /bin/bash
 BACKEND_LOG := backend.local.log
 
-.PHONY: start stop restart logs status web db db-stop reseed admin
+.PHONY: start stop restart logs status web db db-stop reseed admin avatars
 
 db:
 	@if docker ps --format '{{.Names}}' | grep -q '^flashcards-postgres$$'; then \
@@ -84,3 +85,14 @@ status:
 
 web:
 	cd webApp && npm run dev
+
+# Deploy the curated profile-avatar set (FLA-162/163) to S3 under the avatars/ prefix, served
+# via the same CloudFront distribution as flashcard images → $CDN_BASE_URL/avatars/<key>.png.
+# Needs S3_BUCKET set and AWS credentials in the environment (or ~/.aws). Long-cache + immutable,
+# so re-running re-uploads changed files only.
+avatars:
+	@bucket="$${S3_BUCKET:?Set S3_BUCKET (and AWS creds via env or ~/.aws) first}"; \
+	aws s3 sync assets/avatars/ "s3://$$bucket/avatars/" \
+		--content-type image/png \
+		--cache-control "public, max-age=31536000, immutable"; \
+	echo "Uploaded $$(ls assets/avatars/*.png | wc -l | tr -d ' ') avatars → s3://$$bucket/avatars/"
