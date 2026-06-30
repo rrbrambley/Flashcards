@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api/client';
 import { useAuth } from '../auth/auth-context';
 import { setTokens } from '../auth/token';
+import { Avatar } from '../components/Avatar';
 import type { DiscussionMessage, DiscussionThread } from '../api/types';
 
 interface DiscussionPanelProps {
@@ -292,6 +293,7 @@ function MessageItem({
 }: MessageItemProps) {
   const meta = (
     <div className="discussion-message-meta">
+      <Avatar url={message.authorAvatarUrl} name={message.authorDisplayName} size={22} />
       <span className="discussion-author">{message.authorDisplayName}</span>
       <span className="muted discussion-time">{relativeTime(message.createdAtMillis)}</span>
     </div>

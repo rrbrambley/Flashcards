@@ -67,6 +67,21 @@ describe('DiscussionPanel', () => {
     expect(screen.getByLabelText('Your message')).toBeInTheDocument();
   });
 
+  it("renders the author's avatar image when present, else an initials monogram", async () => {
+    setup({
+      messages: [
+        message({ id: 1, authorDisplayName: 'Quiz Whiz', authorAvatarUrl: 'https://cdn.test/avatars/dragon.png' }),
+        message({ id: 2, authorDisplayName: 'Plain Jane', authorAvatarUrl: null, parentMessageId: 1 }),
+      ],
+    });
+    const withAvatar = await screen.findByRole('img', { name: "Quiz Whiz's avatar" });
+    expect(withAvatar).toHaveAttribute('src', 'https://cdn.test/avatars/dragon.png');
+    // No URL → monogram (a span, not an img with src).
+    const monogram = screen.getByRole('img', { name: "Plain Jane's avatar" });
+    expect(monogram.tagName).toBe('SPAN');
+    expect(monogram).toHaveTextContent('PJ');
+  });
+
   it('posts a message as a signed-in user and shows it', async () => {
     setup();
     await screen.findByText('Why is it Paris?');

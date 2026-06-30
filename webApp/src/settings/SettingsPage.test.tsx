@@ -4,9 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsPage } from './SettingsPage';
 import { api } from '../api/client';
-import type { MeResponse } from '../api/types';
+import type { AvatarOption, MeResponse } from '../api/types';
 
-vi.mock('../api/client', () => ({ api: { getMe: vi.fn(), updateProfile: vi.fn() } }));
+vi.mock('../api/client', () => ({
+  api: { getMe: vi.fn(), updateProfile: vi.fn(), getAvatars: vi.fn() },
+}));
+
+const setProfile = vi.fn();
+vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ setProfile }) }));
 
 const me = (over: Partial<MeResponse> = {}): MeResponse => ({
   userId: 1,
@@ -14,11 +19,21 @@ const me = (over: Partial<MeResponse> = {}): MeResponse => ({
   roles: [],
   permissions: [],
   displayName: null,
+  avatarKey: null,
+  avatarUrl: null,
   ...over,
 });
 
+const catalog: AvatarOption[] = [
+  { key: 'dragon', url: 'https://cdn.test/avatars/dragon.png' },
+  { key: 'yeti', url: 'https://cdn.test/avatars/yeti.png' },
+];
+
 describe('SettingsPage', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(api.getAvatars).mockResolvedValue([]);
+  });
 
   it('loads the profile (blank name placeholders the email prefix) and saves a new display name', async () => {
     vi.mocked(api.getMe).mockResolvedValue(me());
@@ -36,7 +51,7 @@ describe('SettingsPage', () => {
     await userEvent.type(input, 'Rob B');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-    await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith('Rob B'));
+    await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({ displayName: 'Rob B' }));
     expect(await screen.findByText('Saved.')).toBeInTheDocument();
   });
 
@@ -49,5 +64,48 @@ describe('SettingsPage', () => {
     );
 
     expect(await screen.findByLabelText(/Display name/)).toHaveValue('Existing Name');
+  });
+
+  it('lists the avatar catalog and PATCHes the chosen key', async () => {
+    vi.mocked(api.getMe).mockResolvedValue(me());
+    vi.mocked(api.getAvatars).mockResolvedValue(catalog);
+    vi.mocked(api.updateProfile).mockResolvedValue(
+      me({ avatarKey: 'dragon', avatarUrl: 'https://cdn.test/avatars/dragon.png' }),
+    );
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
+
+    await userEvent.click(await screen.findByRole('radio', { name: 'dragon' }));
+
+    await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({ avatarKey: 'dragon' }));
+    // The chosen option becomes selected and the in-memory profile is updated for the header.
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'dragon' })).toBeChecked());
+    expect(setProfile).toHaveBeenCalledWith({
+      displayName: null,
+      avatarUrl: 'https://cdn.test/avatars/dragon.png',
+    });
+  });
+
+  it('clears the avatar via remove and hides the picker when the catalog is empty', async () => {
+    vi.mocked(api.getMe).mockResolvedValue(
+      me({ avatarKey: 'dragon', avatarUrl: 'https://cdn.test/avatars/dragon.png' }),
+    );
+    vi.mocked(api.getAvatars).mockResolvedValue([]); // no CDN → empty catalog
+    vi.mocked(api.updateProfile).mockResolvedValue(me());
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
+
+    const remove = await screen.findByRole('button', { name: 'Remove avatar' });
+    // Picker is hidden without a catalog, but the user can still clear an existing avatar.
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+
+    await userEvent.click(remove);
+    await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({ avatarKey: '' }));
   });
 });

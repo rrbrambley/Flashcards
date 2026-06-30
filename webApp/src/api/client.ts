@@ -3,6 +3,7 @@ import type {
   AdminUserDto,
   AnswerSuggestion,
   AuthResponse,
+  AvatarOption,
   CreateDeckRequest,
   DiscussionMessage,
   DiscussionThread,
@@ -17,6 +18,7 @@ import type {
   ReportedMessage,
   RoleDto,
   StreaksResponse,
+  UpdateProfileRequest,
   UpdateProgressRequest,
 } from './types';
 
@@ -184,9 +186,12 @@ export const api = {
     request<void>('/auth/logout', { method: 'POST', body: { refreshToken }, auth: true }),
   // The current user's identity, roles, and effective permissions (gates admin UI).
   getMe: () => request<MeResponse>('/auth/me', { auth: true }),
-  // Update the current user's profile (display name). A blank value clears it (FLA-114).
-  updateProfile: (displayName: string) =>
-    request<MeResponse>('/auth/me', { method: 'PATCH', body: { displayName }, auth: true }),
+  // Update the current user's profile (FLA-114/FLA-162). Per-field merge: omit a field to leave it
+  // unchanged, pass a blank string to clear it. (Omitted fields are dropped by JSON.stringify.)
+  updateProfile: (update: UpdateProfileRequest) =>
+    request<MeResponse>('/auth/me', { method: 'PATCH', body: update, auth: true }),
+  // The curated avatar catalog (FLA-162). Empty when the CDN is unconfigured.
+  getAvatars: () => request<AvatarOption[]>('/avatars', { auth: true }),
   getHome: () => request<HomeData[]>('/home', { auth: true }),
   // One cursor-paginated page of decks (newest first). Pass a prior page's nextCursor to continue.
   getDecks: (params: { limit?: number; cursor?: string } = {}) => getDecksPage(params),
