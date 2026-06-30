@@ -88,11 +88,15 @@ web:
 
 # Deploy the curated profile-avatar set (FLA-162/163) to S3 under the avatars/ prefix, served
 # via the same CloudFront distribution as flashcard images → $CDN_BASE_URL/avatars/<key>.png.
-# Needs S3_BUCKET set and AWS credentials in the environment (or ~/.aws). Long-cache + immutable,
-# so re-running re-uploads changed files only.
+# Needs S3_BUCKET set and AWS credentials in the environment (or ~/.aws). Long-cache + immutable.
+# Uses `cp --recursive` (not `sync`) so it needs only s3:PutObject — the backend IAM user has no
+# s3:ListBucket, which `sync` requires to diff. There are only 10 small files, so re-uploading the
+# whole set each run is fine.
 avatars:
 	@bucket="$${S3_BUCKET:?Set S3_BUCKET (and AWS creds via env or ~/.aws) first}"; \
-	aws s3 sync assets/avatars/ "s3://$$bucket/avatars/" \
+	aws s3 cp assets/avatars/ "s3://$$bucket/avatars/" \
+		--recursive \
+		--exclude "*" --include "*.png" \
 		--content-type image/png \
-		--cache-control "public, max-age=31536000, immutable"; \
-	echo "Uploaded $$(ls assets/avatars/*.png | wc -l | tr -d ' ') avatars → s3://$$bucket/avatars/"
+		--cache-control "public, max-age=31536000, immutable" \
+	&& echo "Uploaded $$(ls assets/avatars/*.png | wc -l | tr -d ' ') avatars → s3://$$bucket/avatars/"

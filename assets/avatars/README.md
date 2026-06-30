@@ -24,8 +24,15 @@ resolves `${CDN_BASE_URL}/avatars/<key>.png`; clients render that URL and pick f
 ## Deploy
 
 ```bash
-make avatars      # aws s3 sync assets/avatars/ → s3://$S3_BUCKET/avatars/ (needs AWS creds)
+S3_BUCKET=<bucket> make avatars   # aws s3 cp --recursive assets/avatars/*.png → s3://$S3_BUCKET/avatars/
 ```
+
+Needs AWS credentials (env or `~/.aws`) whose identity can `s3:PutObject` on the bucket's
+`avatars/*` prefix. The runtime backend IAM user is scoped to `images/*` only, so deploying avatars
+requires either extending that user's policy with `s3:PutObject` on
+`arn:aws:s3:::<bucket>/avatars/*` or running with a broader deploy identity. The target uses
+`cp --recursive` (not `sync`) precisely so it needs only `PutObject`, not the bucket-level
+`s3:ListBucket` that `sync` requires to diff.
 
 Served at `${CDN_BASE_URL}/avatars/<key>.png` via the same CloudFront distribution as flashcard
 images. To add/replace an avatar: drop a `<key>.png` here, add the key to the backend's set
