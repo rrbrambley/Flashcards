@@ -61,6 +61,25 @@ export interface MeResponse {
   // Explicit public display name, or null when unset (attribution then falls back to the email
   // local-part). FLA-114.
   displayName?: string | null;
+  // The chosen avatar's key (one of the curated set), or null when unset. FLA-162.
+  avatarKey?: string | null;
+  // Resolved CDN URL for the chosen avatar, or null when unset / the CDN isn't configured (the UI
+  // then renders an initials monogram). FLA-162.
+  avatarUrl?: string | null;
+}
+
+// PATCH /auth/me body (FLA-114/FLA-162). Per-field merge: an omitted field is left unchanged, a
+// blank string clears it. So updating the avatar never disturbs the display name, and vice-versa.
+export interface UpdateProfileRequest {
+  displayName?: string;
+  avatarKey?: string;
+}
+
+// GET /avatars — one option in the curated avatar catalog (FLA-162). Empty list when the CDN is
+// unconfigured (graceful degradation → the picker is hidden).
+export interface AvatarOption {
+  key: string;
+  url: string;
 }
 
 // GET /admin/users — a user as seen by the admin RBAC UI.
@@ -151,6 +170,8 @@ export interface DiscussionThread {
 export interface DiscussionMessage {
   id: number;
   authorDisplayName: string;
+  // The author's avatar URL, or null/absent when unset (→ initials monogram). FLA-162.
+  authorAvatarUrl?: string | null;
   content: string;
   // Present on a reply (one level deep); null/absent on a top-level message.
   parentMessageId?: number | null;

@@ -13,6 +13,15 @@ export interface AuthContextValue {
   permissionsReady: boolean;
   /** Whether the user holds a given permission (e.g. `can('manage_global_decks')`). */
   can: (permission: string) => boolean;
+  /** The current user's public display name (null when unset → falls back to the email local-part). */
+  displayName: string | null;
+  /** The current user's avatar URL (null when unset → the UI renders an initials monogram). FLA-162. */
+  avatarUrl: string | null;
+  /**
+   * Update the in-memory profile after a settings change (display name / avatar) so the header and
+   * any other consumers reflect it immediately, without a reload.
+   */
+  setProfile: (profile: { displayName: string | null; avatarUrl: string | null }) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   googleSignIn: (idToken: string) => Promise<void>;

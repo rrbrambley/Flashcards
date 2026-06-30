@@ -12,7 +12,9 @@ vi.mock('../api/client', () => ({
     register: vi.fn(),
     googleSignIn: vi.fn(),
     logout: vi.fn(() => Promise.resolve()),
-    getMe: vi.fn(),
+    // Defaulted to a resolved profile so persist()'s background fetch doesn't reject; individual
+    // tests override it. Only displayName/avatarUrl are consumed from this in persist.
+    getMe: vi.fn(() => Promise.resolve({ userId: 1, email: 'a@b.com', roles: [], permissions: [] })),
   },
   setUnauthorizedHandler: vi.fn(),
 }));
