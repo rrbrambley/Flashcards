@@ -300,6 +300,11 @@ Uploads go **through the backend** (client → `POST /images` → backend valida
 S3 `PutObject` → returns the CloudFront URL), so no browser CORS config is needed on the bucket.
 Accepted types: JPEG, PNG, WebP, GIF; max 5 MB.
 
+The curated **profile avatars** (FLA-162) are served from the same CDN under an `avatars/` prefix
+(`${CDN_BASE_URL}/avatars/<key>.png`) — source PNGs live in `assets/avatars/`, deployed with
+`make avatars`. They degrade gracefully: with no CDN configured the avatar catalog is empty and
+clients fall back to an initials monogram.
+
 ---
 
 ## Configuration
