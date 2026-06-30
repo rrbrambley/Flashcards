@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.backend.plugins
 import com.rrbrambley.flashcards.backend.admin.adminRoutes
 import com.rrbrambley.flashcards.backend.auth.authRoutes
 import com.rrbrambley.flashcards.backend.auth.authenticatedAuthRoutes
+import com.rrbrambley.flashcards.backend.auth.avatarRoutes
 import com.rrbrambley.flashcards.backend.decks.catalogRoutes
 import com.rrbrambley.flashcards.backend.decks.deckRoutes
 import com.rrbrambley.flashcards.backend.discussions.discussionAuthedRoutes
@@ -32,6 +33,7 @@ fun Application.configureRouting() {
         }
         authenticate(BEARER_AUTH) {
             authenticatedAuthRoutes()
+            avatarRoutes()
             deckRoutes()
             sessionRoutes()
             streakRoutes()

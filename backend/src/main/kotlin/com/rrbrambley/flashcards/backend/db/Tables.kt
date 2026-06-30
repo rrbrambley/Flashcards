@@ -17,6 +17,10 @@ object Users : LongIdTable("users") {
     // Optional public-facing name for message attribution (FLA-114); null falls back to the email
     // local-part. Nullable so createMissingTablesAndColumns adds it to an existing DB.
     val displayName = varchar("display_name", 80).nullable()
+
+    // Selected profile avatar key (FLA-162), one of Avatars.keys; null = none (initials fallback).
+    // Resolved to a CDN URL on read. Nullable so createMissingTablesAndColumns adds it.
+    val avatarKey = varchar("avatar_key", 40).nullable()
 }
 
 /**

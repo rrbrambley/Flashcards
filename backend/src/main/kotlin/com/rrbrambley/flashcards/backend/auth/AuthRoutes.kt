@@ -69,10 +69,17 @@ fun Route.authenticatedAuthRoutes() {
         get("/me") {
             call.respond(AuthService.me(call.userId()))
         }
-        // Update the caller's profile (currently just the display name, FLA-114).
+        // Update the caller's profile — display name (FLA-114) and/or avatar (FLA-162). Merge semantics.
         patch("/me") {
             val request = call.receive<UpdateProfileRequest>()
-            call.respond(AuthService.updateProfile(call.userId(), request.displayName))
+            call.respond(AuthService.updateProfile(call.userId(), request.displayName, request.avatarKey))
         }
+    }
+}
+
+/** The curated profile-avatar catalog for the picker (FLA-162); empty when the CDN is unconfigured. */
+fun Route.avatarRoutes() {
+    get("/avatars") {
+        call.respond(Avatars.catalog())
     }
 }

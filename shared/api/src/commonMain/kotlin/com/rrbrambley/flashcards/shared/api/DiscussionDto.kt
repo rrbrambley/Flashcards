@@ -16,6 +16,8 @@ data class DiscussionThreadDto(val cardUid: String, val isLocked: Boolean, val m
 data class DiscussionMessageDto(
     val id: Long,
     val authorDisplayName: String,
+    /** The poster's avatar CDN URL, or null when unset / the CDN isn't configured (FLA-162). */
+    val authorAvatarUrl: String? = null,
     val content: String,
     val parentMessageId: Long? = null,
     val createdAtMillis: Long,
