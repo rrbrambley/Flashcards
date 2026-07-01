@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.shared.api.DiscussionMessageDto
+import com.rrbrambley.flashcards.ui.Avatar
 
 /** The 💬 control each mode shows once a card's answer is revealed, opening its discussion (FLA-122). */
 @Composable
@@ -236,10 +237,16 @@ private fun MessageItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = message.authorDisplayName,
-                style = MaterialTheme.typography.labelLarge,
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Avatar(url = message.authorAvatarUrl, name = message.authorDisplayName, size = 24.dp)
+                Text(
+                    text = message.authorDisplayName,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
             Text(
                 text = relativeTime(message.createdAtMillis),
                 style = MaterialTheme.typography.labelSmall,

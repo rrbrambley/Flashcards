@@ -214,4 +214,19 @@
     <string name="main_cd_finish_deck_creation">Finish deck creation</string>
     <string name="main_cd_account_menu">Account menu</string>
     <string name="main_log_out">Log out</string>
+    <string name="main_profile">Profile</string>
+
+    <!-- Profile / avatar (FLA-166) -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_avatar_section">Avatar</string>
+    <string name="profile_avatar_hint">Pick an avatar shown on your profile and discussion posts.</string>
+    <string name="profile_avatar_unavailable">Avatars are unavailable right now.</string>
+    <string name="profile_remove_avatar">Remove avatar</string>
+    <string name="profile_load_failed">Couldn\'t load your profile.</string>
+    <string name="profile_retry">Try again</string>
+    <string name="profile_avatar_error">Couldn\'t update your avatar.</string>
+    <string name="profile_cd_close">Back</string>
+    <string name="profile_cd_avatar_option">%1$s avatar</string>
+    <string name="avatar_cd">%1$s\'s avatar</string>
+    <string name="avatar_cd_generic">Avatar</string>
 </resources>
