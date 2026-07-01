@@ -57,6 +57,7 @@ import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.library.ui.LibraryScreen
 import com.rrbrambley.flashcards.practice.ui.FlashcardsActivity
 import com.rrbrambley.flashcards.practice.ui.PracticeMode
+import com.rrbrambley.flashcards.profile.ui.ProfileActivity
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import androidx.compose.material3.TextButton
 import dagger.hilt.android.AndroidEntryPoint
@@ -230,6 +231,13 @@ private fun HomeScaffolding(
                                 expanded = showAccountMenu,
                                 onDismissRequest = { showAccountMenu = false },
                             ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.main_profile)) },
+                                    onClick = {
+                                        showAccountMenu = false
+                                        context.startActivity(Intent(context, ProfileActivity::class.java))
+                                    },
+                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.main_log_out)) },
                                     onClick = {
