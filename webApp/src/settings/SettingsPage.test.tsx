@@ -7,7 +7,7 @@ import { api } from '../api/client';
 import type { AvatarOption, MeResponse } from '../api/types';
 
 vi.mock('../api/client', () => ({
-  api: { getMe: vi.fn(), updateProfile: vi.fn(), getAvatars: vi.fn() },
+  api: { getMe: vi.fn(), updateProfile: vi.fn(), getAvatars: vi.fn(), getStreakCalendar: vi.fn() },
 }));
 
 const setProfile = vi.fn();
@@ -33,6 +33,8 @@ describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(api.getAvatars).mockResolvedValue([]);
+    // SettingsPage embeds the StreakCalendar, which fetches on mount.
+    vi.mocked(api.getStreakCalendar).mockResolvedValue({ month: '2026-07', activeDays: [], current: 0, longest: 0 });
   });
 
   it('loads the profile (blank name placeholders the email prefix) and saves a new display name', async () => {

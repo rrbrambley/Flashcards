@@ -1292,3 +1292,69 @@ button.danger:hover:not(:disabled) {
 .avatar-option:disabled {
   cursor: default;
 }
+
+/* Practice-activity streak calendar (FLA-171). */
+.streak-calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 22rem;
+}
+.streak-calendar-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+.streak-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.streak-calendar-month {
+  font-weight: 600;
+}
+.streak-calendar-nav .link-btn {
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0 0.5rem;
+}
+.streak-calendar-nav .link-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.streak-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.streak-calendar-weekday {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  padding-bottom: 0.25rem;
+}
+.streak-calendar-blank {
+  aspect-ratio: 1;
+}
+.streak-calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  color: var(--text);
+}
+/* An active day reuses the warm 🔥 streak-badge palette. */
+.streak-calendar-day-active {
+  background: #fff1e6;
+  color: #c2410c;
+  font-weight: 600;
+}
+.streak-calendar-day-today {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
