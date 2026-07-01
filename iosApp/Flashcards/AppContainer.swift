@@ -19,6 +19,7 @@ final class AppContainer: ObservableObject {
     var homeRepository: HomeRepository { sdk.homeRepository }
     var apiClient: FlashcardApiClient { sdk.apiClient }
     var imageUploader: ImageUploader { ImageUploader(apiClient: sdk.apiClient) }
+    var profileService: ProfileService { ApiProfileService(apiClient: sdk.apiClient) }
 
     init(baseURL: String = AppConfig.backendBaseURL, tokenStore: TokenStore = KeychainTokenStore()) {
         self.tokenStore = tokenStore

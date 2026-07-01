@@ -32,6 +32,19 @@ func makeCard(_ question: String, _ answer: String, imageUrl: String? = nil, car
     Flashcard(question: question, answer: answer, imageUrl: imageUrl, alternativeAnswers: [], cardUid: cardUid)
 }
 
+func makeMe(avatarKey: String? = nil, avatarUrl: String? = nil) -> MeResponse {
+    // Kotlin default args don't bridge, so pass them all explicitly.
+    MeResponse(
+        userId: 1,
+        email: "rob@example.com",
+        roles: [],
+        permissions: [],
+        displayName: "Rob B",
+        avatarKey: avatarKey,
+        avatarUrl: avatarUrl
+    )
+}
+
 func makeSession(
     id: Int64 = 1, deckId: Int64 = 1, index: Int32 = 0,
     correct: Int32 = 0, incorrect: Int32 = 0, completed: Bool = false, mode: String = "flashcards"
@@ -170,4 +183,43 @@ final class FakeAuthService: AuthenticationService {
     }
 
     func signInWithGoogle(idToken: String) async throws -> AuthResult { googleResult }
+}
+
+final class FakeProfileService: ProfileService {
+    var meResponse: MeResponse
+    var avatarList: [AvatarDto]
+    var failMe = false
+    var failAvatars = false
+    var failUpdate = false
+    private(set) var updatedKeys: [String] = []
+
+    init(me: MeResponse, avatars: [AvatarDto]) {
+        self.meResponse = me
+        self.avatarList = avatars
+    }
+
+    func me() async throws -> MeResponse {
+        if failMe { throw NSError(domain: "test", code: 1) }
+        return meResponse
+    }
+
+    func avatars() async throws -> [AvatarDto] {
+        if failAvatars { throw NSError(domain: "test", code: 1) }
+        return avatarList
+    }
+
+    func updateAvatar(key: String) async throws -> MeResponse {
+        if failUpdate { throw NSError(domain: "test", code: 1) }
+        updatedKeys.append(key)
+        meResponse = MeResponse(
+            userId: meResponse.userId,
+            email: meResponse.email,
+            roles: meResponse.roles,
+            permissions: meResponse.permissions,
+            displayName: meResponse.displayName,
+            avatarKey: key.isEmpty ? nil : key,
+            avatarUrl: key.isEmpty ? nil : "https://cdn.test/avatars/\(key).png"
+        )
+        return meResponse
+    }
 }

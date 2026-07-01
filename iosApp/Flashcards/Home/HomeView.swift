@@ -14,6 +14,7 @@ struct HomeView: View {
         let entry: PracticeEntry
     }
     @State private var practice: PracticePresentation?
+    @State private var showProfile = false
 
     init(repository: HomeRepository, apiClient: FlashcardApiClient, onCreateDeck: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: HomeViewModel(repository: repository, apiClient: apiClient))
@@ -31,6 +32,9 @@ struct HomeView: View {
                     entry: presentation.entry,
                     apiClient: container.apiClient
                 )
+            }
+            .sheet(isPresented: $showProfile) {
+                ProfileView(service: container.profileService)
             }
             .task { await viewModel.observe() }
             .task { await viewModel.loadStreak() }
@@ -119,6 +123,7 @@ struct HomeView: View {
     private var accountMenu: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
+                Button("Profile", systemImage: "person.crop.circle") { showProfile = true }
                 Button("Log out", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
                     // Clears the Keychain (and revokes server-side) → RootView returns to sign-in.
                     Task { try? await container.authService.logout() }

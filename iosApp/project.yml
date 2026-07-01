@@ -117,6 +117,9 @@ targets:
       base:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Flashcards.app/Flashcards"
         BUNDLE_LOADER: "$(TEST_HOST)"
+        # Auto-generate the test bundle's Info.plist — newer Xcode no longer defaults this on for
+        # unit-test bundles, so code signing (and `xcodebuild test`) fails without it.
+        GENERATE_INFOPLIST_FILE: "YES"
         # Compile-time access to the Shared framework's module (symbols resolve from the host app).
         FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
 
