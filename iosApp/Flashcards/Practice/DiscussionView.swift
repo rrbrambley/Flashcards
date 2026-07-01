@@ -369,7 +369,8 @@ private struct MessageRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack {
+            HStack(spacing: 6) {
+                AvatarView(url: message.authorAvatarUrl, name: message.authorDisplayName, size: 22)
                 Text(message.authorDisplayName)
                     .font(.subheadline.weight(.semibold))
                 Spacer()
