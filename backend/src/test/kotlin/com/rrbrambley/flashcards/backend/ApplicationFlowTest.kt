@@ -54,6 +54,7 @@ import com.rrbrambley.flashcards.shared.api.RecordAnswersRequest
 import com.rrbrambley.flashcards.shared.api.RefreshRequest
 import com.rrbrambley.flashcards.shared.api.RegisterRequest
 import com.rrbrambley.flashcards.shared.api.ReportMessageRequest
+import com.rrbrambley.flashcards.shared.api.StreakCalendarResponse
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
 import com.rrbrambley.flashcards.shared.api.SuggestAnswerRequest
 import com.rrbrambley.flashcards.shared.api.ToggleDiscussionRequest
@@ -95,7 +96,10 @@ import org.jetbrains.exposed.sql.update
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.YearMonth
 import java.time.ZoneId
+import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -1059,6 +1063,86 @@ class ApplicationFlowTest {
             assertEquals(2, s.decks.single { it.deckId == deckA }.current)
             assertEquals(1, s.decks.single { it.deckId == deckB }.current)
         }
+    }
+
+    @Test
+    fun streak_calendar_lists_active_days_for_month() = runApp { client ->
+        val tz = "America/New_York"
+        val zone = ZoneId.of(tz)
+        val auth = client.register("streakcal", "password1")
+        val deckId = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // Complete a session, then back-date it to noon (local) on [date] with [tz] stored — so the
+        // day bucketing is unambiguous.
+        suspend fun completeOnDate(date: LocalDate) {
+            val session = client.createSession(auth.accessToken, deckId)
+            client.post("/sessions/${session.id}/complete") {
+                bearerAuth(auth.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(CompleteSessionRequest(tz)))
+            }
+            val millis = date.atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+            transaction {
+                PracticeSessions.update({ PracticeSessions.id eq session.id }) {
+                    it[completedAtMillis] = millis
+                }
+            }
+        }
+
+        val target = YearMonth.of(2026, 3)
+        completeOnDate(target.atDay(3))
+        completeOnDate(target.atDay(5))
+        completeOnDate(target.atDay(10))
+        completeOnDate(YearMonth.of(2026, 4).atDay(2)) // a different month — excluded from March
+
+        suspend fun calendar(month: String): StreakCalendarResponse =
+            client.get("/streaks/calendar?month=$month&tz=$tz") { bearerAuth(auth.accessToken) }.decode()
+
+        calendar("2026-03").let { c ->
+            assertEquals("2026-03", c.month)
+            assertEquals(listOf(3, 5, 10), c.activeDays)
+        }
+        // A month with no completions → empty list (not an error).
+        assertEquals(emptyList<Int>(), calendar("2026-01").activeDays)
+        // The neighbouring month lists only its own day.
+        assertEquals(listOf(2), calendar("2026-04").activeDays)
+    }
+
+    @Test
+    fun streak_calendar_buckets_completion_by_stored_timezone() = runApp { client ->
+        val tz = "America/New_York"
+        val auth = client.register("streakcaltz", "password1")
+        val deckId = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        val session = client.createSession(auth.accessToken, deckId)
+        client.post("/sessions/${session.id}/complete") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CompleteSessionRequest(tz)))
+        }
+        // 2026-05-01 02:00 UTC is 2026-04-30 22:00 in New York — so with the stored NY zone this
+        // completion buckets to April 30, not May 1.
+        val millis = LocalDateTime.of(2026, 5, 1, 2, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
+        transaction {
+            PracticeSessions.update({ PracticeSessions.id eq session.id }) {
+                it[completedAtMillis] = millis
+            }
+        }
+
+        suspend fun calendar(month: String): StreakCalendarResponse =
+            client.get("/streaks/calendar?month=$month&tz=$tz") { bearerAuth(auth.accessToken) }.decode()
+
+        assertEquals(listOf(30), calendar("2026-04").activeDays)
+        assertEquals(emptyList<Int>(), calendar("2026-05").activeDays)
+    }
+
+    @Test
+    fun streak_calendar_rejects_a_malformed_month() = runApp { client ->
+        val auth = client.register("streakcalbad", "password1")
+        val response = client.get("/streaks/calendar?month=2026-13") { bearerAuth(auth.accessToken) }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
     }
 
     @Test

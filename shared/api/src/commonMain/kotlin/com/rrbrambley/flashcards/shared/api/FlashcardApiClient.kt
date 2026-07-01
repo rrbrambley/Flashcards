@@ -229,6 +229,19 @@ class FlashcardApiClient(
         tz?.let { parameter("tz", it) }
     }.body()
 
+    /**
+     * The days of [month] (an ISO `YYYY-MM`) the user completed a session — for the activity
+     * calendar (FLA-170). [tz] anchors day bucketing exactly like [getStreaks]. Also carries the
+     * overall current/longest streak for the calendar header.
+     */
+    @Throws(Exception::class)
+    suspend fun getStreakCalendar(month: String, tz: String? = null): StreakCalendarResponse =
+        client.get(url("/streaks/calendar")) {
+            auth()
+            parameter("month", month)
+            tz?.let { parameter("tz", it) }
+        }.body()
+
     // --- Card discussions (FLA-115/FLA-121) ---
     /**
      * A card's discussion thread metadata (lock state + message count). Public read (guest mode):

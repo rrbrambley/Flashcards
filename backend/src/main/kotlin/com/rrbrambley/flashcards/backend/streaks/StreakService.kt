@@ -3,11 +3,13 @@ package com.rrbrambley.flashcards.backend.streaks
 import com.rrbrambley.flashcards.backend.db.PracticeSessions
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.shared.api.DeckStreakDto
+import com.rrbrambley.flashcards.shared.api.StreakCalendarResponse
 import com.rrbrambley.flashcards.shared.api.StreakDto
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
 import org.jetbrains.exposed.sql.and
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZoneOffset
 
@@ -22,7 +24,48 @@ object StreakService {
     suspend fun streaks(userId: Long, tz: String?): StreaksResponse = dbQuery {
         val requestZone = tz.toZoneOrNull() ?: ZoneOffset.UTC
         val today = LocalDate.now(requestZone)
+        val completed = completedDates(userId, requestZone)
 
+        StreaksResponse(
+            overall = computeStreak(completed.overall, today),
+            decks = completed.perDeck.map { (deckId, dates) ->
+                val streak = computeStreak(dates, today)
+                DeckStreakDto(deckId, streak.current, streak.longest)
+            },
+        )
+    }
+
+    /**
+     * The days of [month] (`YYYY-MM`) the user completed a session — for the activity calendar
+     * (FLA-170). Reuses the same per-day bucketing as [streaks] (anchored to [tz]); filters the
+     * completed dates to [month] and returns their day-of-month, plus the overall streak for the
+     * header. A malformed [month] is a 400 ([IllegalArgumentException]).
+     */
+    suspend fun calendar(userId: Long, month: String, tz: String?): StreakCalendarResponse = dbQuery {
+        val yearMonth = runCatching { YearMonth.parse(month) }.getOrNull()
+            ?: throw IllegalArgumentException("Invalid 'month' '$month'; expected YYYY-MM")
+        val requestZone = tz.toZoneOrNull() ?: ZoneOffset.UTC
+        val today = LocalDate.now(requestZone)
+        val overall = completedDates(userId, requestZone).overall
+
+        val activeDays = overall
+            .filter { YearMonth.from(it) == yearMonth }
+            .map { it.dayOfMonth }
+            .sorted()
+        val streak = computeStreak(overall, today)
+
+        StreakCalendarResponse(
+            month = yearMonth.toString(),
+            activeDays = activeDays,
+            current = streak.current,
+            longest = streak.longest,
+        )
+    }
+
+    /** Distinct local dates the user completed a session on, overall and per deck (shared by
+     *  [streaks] + [calendar]). Each completion is bucketed to its recorded zone, else [requestZone].
+     *  Must be called within a `dbQuery` transaction. */
+    private fun completedDates(userId: Long, requestZone: ZoneId): CompletedDates {
         val overall = mutableSetOf<LocalDate>()
         val perDeck = mutableMapOf<Long, MutableSet<LocalDate>>()
 
@@ -41,14 +84,10 @@ object StreakService {
                 perDeck.getOrPut(row[PracticeSessions.deckId].value) { mutableSetOf() } += date
             }
 
-        StreaksResponse(
-            overall = computeStreak(overall, today),
-            decks = perDeck.map { (deckId, dates) ->
-                val streak = computeStreak(dates, today)
-                DeckStreakDto(deckId, streak.current, streak.longest)
-            },
-        )
+        return CompletedDates(overall, perDeck)
     }
+
+    private data class CompletedDates(val overall: Set<LocalDate>, val perDeck: Map<Long, Set<LocalDate>>)
 
     /**
      * From a set of distinct local [dates] a session was completed on, the [current] and [longest]

@@ -18,3 +18,12 @@ data class StreakDto(val current: Int, val longest: Int)
 /** A per-deck [StreakDto], keyed by [deckId]. */
 @Serializable
 data class DeckStreakDto(val deckId: Long, val current: Int, val longest: Int)
+
+/**
+ * Response for `GET /streaks/calendar?month=YYYY-MM` (FLA-170): the days of [month] on which the
+ * user completed a practice session, for the streak **activity calendar**. [activeDays] are
+ * day-of-month integers (1–31), ascending. [current]/[longest] are the overall streak (identical to
+ * `GET /streaks`), included so the calendar header needs no second request.
+ */
+@Serializable
+data class StreakCalendarResponse(val month: String, val activeDays: List<Int>, val current: Int, val longest: Int)

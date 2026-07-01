@@ -10,4 +10,10 @@ fun Route.streakRoutes() {
     get("/streaks") {
         call.respond(StreakService.streaks(call.userId(), call.request.queryParameters["tz"]))
     }
+    // Days of `month` (YYYY-MM) the user completed a session — for the activity calendar (FLA-170).
+    get("/streaks/calendar") {
+        val month = call.request.queryParameters["month"]
+            ?: throw IllegalArgumentException("Missing 'month' query parameter (YYYY-MM)")
+        call.respond(StreakService.calendar(call.userId(), month, call.request.queryParameters["tz"]))
+    }
 }
