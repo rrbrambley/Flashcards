@@ -11,6 +11,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // signed out. Auth responses don't carry it, so login/cold-load fetch it from /auth/me.
   const [displayName, setDisplayNameState] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  // The caller's resolved feature flags (FLA-174), hydrated from /auth/me. Empty when signed out or
+  // not yet loaded — isEnabled defaults false, so a flagged feature stays hidden until proven on.
+  const [flags, setFlags] = useState<Record<string, boolean>>({});
   // Only a cold load with a stored token needs async hydration; otherwise permissions are known
   // immediately (signed-out, or seeded inline by login/register/google). (FLA-136)
   const [permissionsReady, setPermissionsReady] = useState<boolean>(() => getToken() === null);
@@ -29,7 +32,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setPermissionsReady(true);
     void api
       .getMe()
-      .then((me) => setProfile({ displayName: me.displayName ?? null, avatarUrl: me.avatarUrl ?? null }))
+      .then((me) => {
+        setProfile({ displayName: me.displayName ?? null, avatarUrl: me.avatarUrl ?? null });
+        setFlags(me.flags ?? {});
+      })
       .catch(() => {
         /* header just falls back to a monogram until the next load */
       });
@@ -42,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTokenState(null);
       setPermissions([]);
       setProfile({ displayName: null, avatarUrl: null });
+      setFlags({});
       setPermissionsReady(true); // signed out — nothing left to hydrate
     });
     return () => setUnauthorizedHandler(null);
@@ -57,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         setPermissions(me.permissions);
         setProfile({ displayName: me.displayName ?? null, avatarUrl: me.avatarUrl ?? null });
+        setFlags(me.flags ?? {});
       })
       .catch(() => {
         /* ignore — a 401 is handled by the unauthorized handler; otherwise stay un-permissioned */
@@ -74,6 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     permissions,
     permissionsReady,
     can: (permission) => permissions.includes(permission),
+    flags,
+    isEnabled: (key) => flags[key] === true,
     displayName,
     avatarUrl,
     setProfile,
@@ -90,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setTokenState(null);
       setPermissions([]);
       setProfile({ displayName: null, avatarUrl: null });
+      setFlags({});
       setPermissionsReady(true); // signed out — nothing left to hydrate
     },
   };

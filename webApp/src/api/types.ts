@@ -66,6 +66,9 @@ export interface MeResponse {
   // Resolved CDN URL for the chosen avatar, or null when unset / the CDN isn't configured (the UI
   // then renders an initials monogram). FLA-162.
   avatarUrl?: string | null;
+  // The caller's resolved feature flags — each catalog flag key → its effective value (FLA-174).
+  // Also available via GET /flags.
+  flags?: Record<string, boolean>;
 }
 
 // PATCH /auth/me body (FLA-114/FLA-162). Per-field merge: an omitted field is left unchanged, a
@@ -94,6 +97,27 @@ export interface RoleDto {
   key: string;
   description: string;
   permissions: string[];
+}
+
+// GET /admin/flags — a feature flag as seen by the admin management UI (FLA-176). `enabled` is the
+// global default state; the override lists carry per-user / per-role targeting.
+export interface AdminFlagDto {
+  key: string;
+  description: string;
+  enabled: boolean;
+  userOverrides: FlagUserOverrideDto[];
+  roleOverrides: FlagRoleOverrideDto[];
+}
+
+export interface FlagUserOverrideDto {
+  userId: number;
+  email: string;
+  enabled: boolean;
+}
+
+export interface FlagRoleOverrideDto {
+  roleKey: string;
+  enabled: boolean;
 }
 
 export interface ErrorResponse {

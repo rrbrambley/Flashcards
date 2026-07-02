@@ -13,6 +13,10 @@ export interface AuthContextValue {
   permissionsReady: boolean;
   /** Whether the user holds a given permission (e.g. `can('manage_global_decks')`). */
   can: (permission: string) => boolean;
+  /** The caller's resolved feature flags (FLA-174), keyed by flag key. */
+  flags: Record<string, boolean>;
+  /** Whether a feature flag is enabled for the caller (false when unknown/absent). */
+  isEnabled: (key: string) => boolean;
   /** The current user's public display name (null when unset → falls back to the email local-part). */
   displayName: string | null;
   /** The current user's avatar URL (null when unset → the UI renders an initials monogram). FLA-162. */

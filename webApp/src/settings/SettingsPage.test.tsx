@@ -11,7 +11,8 @@ vi.mock('../api/client', () => ({
 }));
 
 const setProfile = vi.fn();
-vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ setProfile }) }));
+const isEnabled = vi.fn().mockReturnValue(false);
+vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ setProfile, isEnabled }) }));
 
 const me = (over: Partial<MeResponse> = {}): MeResponse => ({
   userId: 1,
@@ -32,8 +33,9 @@ const catalog: AvatarOption[] = [
 describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isEnabled.mockReturnValue(false); // the streak_calendar flag is off by default in these tests
     vi.mocked(api.getAvatars).mockResolvedValue([]);
-    // SettingsPage embeds the StreakCalendar, which fetches on mount.
+    // SettingsPage embeds the StreakCalendar (behind the flag), which fetches on mount when shown.
     vi.mocked(api.getStreakCalendar).mockResolvedValue({ month: '2026-07', activeDays: [], current: 0, longest: 0 });
   });
 
@@ -109,5 +111,29 @@ describe('SettingsPage', () => {
 
     await userEvent.click(remove);
     await waitFor(() => expect(api.updateProfile).toHaveBeenCalledWith({ avatarKey: '' }));
+  });
+
+  it('gates the Practice activity section behind the streak_calendar flag', async () => {
+    vi.mocked(api.getMe).mockResolvedValue(me());
+
+    // Flag off → the section is hidden.
+    isEnabled.mockReturnValue(false);
+    const { unmount } = render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
+    await screen.findByLabelText(/Display name/);
+    expect(screen.queryByText('Practice activity')).not.toBeInTheDocument();
+    unmount();
+
+    // Flag on → the section renders.
+    isEnabled.mockImplementation((key: string) => key === 'streak_calendar');
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText('Practice activity')).toBeInTheDocument();
   });
 });
