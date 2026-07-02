@@ -6,6 +6,7 @@ import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.ConflictException
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.error.UnauthorizedException
+import com.rrbrambley.flashcards.backend.flags.FeatureFlagService
 import com.rrbrambley.flashcards.backend.validation.Validation
 import com.rrbrambley.flashcards.shared.api.AuthResponse
 import com.rrbrambley.flashcards.shared.api.MeResponse
@@ -151,6 +152,7 @@ object AuthService {
             displayName = row[Users.displayName],
             avatarKey = avatarKey,
             avatarUrl = Avatars.urlFor(avatarKey),
+            flags = FeatureFlagService.flagsForTx(userId),
         )
     }
 

@@ -52,6 +52,9 @@ data class MeResponse(
     /** The resolved CDN URL for [avatarKey] (`…/avatars/<key>.png`), or null when unset or the CDN
      *  isn't configured. Clients render this and fall back to an initials monogram when null. */
     val avatarUrl: String? = null,
+    /** The caller's resolved feature flags — every catalog flag key → its effective value (FLA-174).
+     *  Also available via `GET /flags`. Defaulted so older clients keep working. */
+    val flags: Map<String, Boolean> = emptyMap(),
 )
 
 /**

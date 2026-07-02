@@ -8,6 +8,8 @@ import com.rrbrambley.flashcards.backend.decks.catalogRoutes
 import com.rrbrambley.flashcards.backend.decks.deckRoutes
 import com.rrbrambley.flashcards.backend.discussions.discussionAuthedRoutes
 import com.rrbrambley.flashcards.backend.discussions.discussionPublicRoutes
+import com.rrbrambley.flashcards.backend.flags.adminFlagRoutes
+import com.rrbrambley.flashcards.backend.flags.flagRoutes
 import com.rrbrambley.flashcards.backend.health.healthRoutes
 import com.rrbrambley.flashcards.backend.home.homeRoutes
 import com.rrbrambley.flashcards.backend.images.imageRoutes
@@ -42,6 +44,8 @@ fun Application.configureRouting() {
             adminRoutes()
             discussionAuthedRoutes()
             suggestionRoutes()
+            flagRoutes()
+            adminFlagRoutes()
         }
     }
 }

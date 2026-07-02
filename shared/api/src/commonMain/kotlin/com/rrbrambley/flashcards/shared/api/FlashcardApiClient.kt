@@ -72,6 +72,11 @@ class FlashcardApiClient(
     @Throws(Exception::class)
     suspend fun getMe(): MeResponse = client.get(url("/auth/me")) { auth() }.body()
 
+    /** The caller's resolved feature flags (FLA-174): each catalog flag key → its effective value.
+     *  Also delivered on [MeResponse.flags]; this lets a client refresh flags without re-auth. */
+    @Throws(Exception::class)
+    suspend fun getFlags(): Map<String, Boolean> = client.get(url("/flags")) { auth() }.body()
+
     /** Updates the caller's profile (display name / avatar) and returns the refreshed `MeResponse`
      *  (FLA-114 / FLA-162). Merge semantics — only the fields you set change (see [UpdateProfileRequest]). */
     @Throws(Exception::class)
