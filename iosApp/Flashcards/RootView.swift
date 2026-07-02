@@ -38,8 +38,14 @@ struct RootView: View {
             // updated on sign-in / logout).
             for await loggedIn in asyncStream(BridgingKt.loggedInAdapter(container.tokenStore)) {
                 session = loggedIn?.boolValue == true ? .signedIn : .signedOut
-                // Once signed in, drop the guest flag so a later logout returns to the auth screen.
-                if session == .signedIn { browsingAsGuest = false }
+                if session == .signedIn {
+                    // Once signed in, drop the guest flag so a later logout returns to the auth screen,
+                    // and resolve the caller's feature flags (FLA-178).
+                    browsingAsGuest = false
+                    await container.featureFlagStore.load()
+                } else {
+                    container.featureFlagStore.clear()
+                }
             }
         }
     }

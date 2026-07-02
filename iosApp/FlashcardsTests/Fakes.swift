@@ -41,7 +41,8 @@ func makeMe(avatarKey: String? = nil, avatarUrl: String? = nil) -> MeResponse {
         permissions: [],
         displayName: "Rob B",
         avatarKey: avatarKey,
-        avatarUrl: avatarUrl
+        avatarUrl: avatarUrl,
+        flags: [:]
     )
 }
 
@@ -218,8 +219,23 @@ final class FakeProfileService: ProfileService {
             permissions: meResponse.permissions,
             displayName: meResponse.displayName,
             avatarKey: key.isEmpty ? nil : key,
-            avatarUrl: key.isEmpty ? nil : "https://cdn.test/avatars/\(key).png"
+            avatarUrl: key.isEmpty ? nil : "https://cdn.test/avatars/\(key).png",
+            flags: meResponse.flags
         )
         return meResponse
+    }
+}
+
+final class FakeFeatureFlagService: FeatureFlagService {
+    var flagMap: [String: Bool]
+    var error: Error?
+
+    init(flags: [String: Bool]) {
+        self.flagMap = flags
+    }
+
+    func flags() async throws -> [String: Bool] {
+        if let error { throw error }
+        return flagMap
     }
 }

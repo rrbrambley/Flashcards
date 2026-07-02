@@ -17,6 +17,7 @@ struct FlashcardsApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(container)
+                .environmentObject(container.featureFlagStore)
                 // Completes the Google Sign-In OAuth callback (no-op when Google isn't configured).
                 .onOpenURL { GIDSignIn.sharedInstance.handle($0) }
         }
