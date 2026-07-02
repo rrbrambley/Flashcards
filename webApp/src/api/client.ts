@@ -17,6 +17,7 @@ import type {
   PracticeSessionDto,
   ReportedMessage,
   RoleDto,
+  StreakCalendarResponse,
   StreaksResponse,
   UpdateProfileRequest,
   UpdateProgressRequest,
@@ -235,6 +236,9 @@ export const api = {
 
   // Practice streak (FLA-106). `tz` (IANA) anchors "today" to the caller's local day.
   getStreaks: (tz?: string) => request<StreaksResponse>(`/streaks${buildQuery({ tz })}`, { auth: true }),
+  // One month's practice-activity days for the streak calendar (FLA-170). `month` is `YYYY-MM`.
+  getStreakCalendar: (month: string, tz?: string) =>
+    request<StreakCalendarResponse>(`/streaks/calendar${buildQuery({ month, tz })}`, { auth: true }),
 
   // Card discussions (FLA-116). Reads are public (guests can read); posting/locking need auth.
   getDiscussionThread: (cardUid: string) =>

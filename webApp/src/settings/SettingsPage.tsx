@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import type { AvatarOption } from '../api/types';
 import { BackHeader } from '../decks/BackHeader';
 import { Avatar } from '../components/Avatar';
+import { StreakCalendar } from './StreakCalendar';
 import { useAuth } from '../auth/auth-context';
 
 /**
@@ -91,6 +92,11 @@ export function SettingsPage() {
           <p className="muted">Loading…</p>
         ) : (
           <>
+            <section className="settings-section settings-section-activity">
+              <h2 className="settings-section-title">Practice activity</h2>
+              <StreakCalendar />
+            </section>
+
             <section className="settings-section">
               <h2 className="settings-section-title">Avatar</h2>
               <div className="avatar-current">

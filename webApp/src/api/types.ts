@@ -160,6 +160,16 @@ export interface StreaksResponse {
   decks: DeckStreakDto[];
 }
 
+// GET /streaks/calendar?month=YYYY-MM — the days of `month` the user completed a session (FLA-170),
+// for the activity calendar. `activeDays` are day-of-month ints (1–31); `current`/`longest` are the
+// overall streak (so the calendar header needs no second request).
+export interface StreakCalendarResponse {
+  month: string;
+  activeDays: number[];
+  current: number;
+  longest: number;
+}
+
 // Card discussions (FLA-116), mirroring the backend⇄web contract in backend/.../discussions.
 export interface DiscussionThread {
   cardUid: string;
