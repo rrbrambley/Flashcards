@@ -50,7 +50,7 @@ describe('StreakCalendar', () => {
     expect(screen.queryByLabelText(`${MONTHS[curMonth - 1]} 2: practiced`)).not.toBeInTheDocument();
 
     expect(screen.getByText(/2 day streak/)).toBeInTheDocument();
-    expect(screen.getByText(/Longest: 9 days/)).toBeInTheDocument();
+    expect(screen.getByText(/Longest streak: 9 days/)).toBeInTheDocument();
   });
 
   it('disables next at the current month and pages back on prev', async () => {

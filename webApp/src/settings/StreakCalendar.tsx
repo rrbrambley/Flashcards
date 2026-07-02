@@ -84,7 +84,7 @@ export function StreakCalendar() {
         )}
         {data && (
           <span className="muted">
-            Longest: {data.longest} {data.longest === 1 ? 'day' : 'days'}
+            Longest streak: {data.longest} {data.longest === 1 ? 'day' : 'days'}
           </span>
         )}
       </div>
