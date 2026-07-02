@@ -1293,6 +1293,14 @@ button.danger:hover:not(:disabled) {
   cursor: default;
 }
 
+/* The lead "Practice activity" section sits above the rest of Settings, set apart with generous
+   space + a divider so the calendar reads as its own block (FLA-171). */
+.settings-section-activity {
+  margin-bottom: 3rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid var(--border);
+}
+
 /* Practice-activity streak calendar (FLA-171). */
 .streak-calendar {
   display: flex;

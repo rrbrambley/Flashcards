@@ -92,6 +92,11 @@ export function SettingsPage() {
           <p className="muted">Loading…</p>
         ) : (
           <>
+            <section className="settings-section settings-section-activity">
+              <h2 className="settings-section-title">Practice activity</h2>
+              <StreakCalendar />
+            </section>
+
             <section className="settings-section">
               <h2 className="settings-section-title">Avatar</h2>
               <div className="avatar-current">
@@ -163,11 +168,6 @@ export function SettingsPage() {
                 {saving ? 'Saving…' : 'Save'}
               </button>
             </form>
-
-            <section className="settings-section">
-              <h2 className="settings-section-title">Practice activity</h2>
-              <StreakCalendar />
-            </section>
           </>
         )}
       </main>
