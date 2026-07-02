@@ -43,6 +43,10 @@ private val COMMANDS: List<AdminCommand> = listOf(
     UserDeleteCommand,
     RoleGrantCommand,
     RoleRevokeCommand,
+    FlagListCommand,
+    FlagSetCommand,
+    FlagOverrideCommand,
+    FlagClearCommand,
 )
 
 fun main(argv: Array<String>) {

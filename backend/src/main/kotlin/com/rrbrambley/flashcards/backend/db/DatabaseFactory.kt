@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.backend.db
 import com.rrbrambley.flashcards.backend.auth.Passwords
 import com.rrbrambley.flashcards.backend.auth.Permission
 import com.rrbrambley.flashcards.backend.auth.Role
+import com.rrbrambley.flashcards.backend.flags.FeatureFlag
 import com.rrbrambley.flashcards.data.mapping.DeckTags
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -73,6 +74,9 @@ object DatabaseFactory {
                 DiscussionMessages,
                 DiscussionReports,
                 AnswerSuggestions,
+                FeatureFlags,
+                FeatureFlagUserOverrides,
+                FeatureFlagRoleOverrides,
             )
             backfillCardUids()
             seed()
@@ -158,6 +162,30 @@ object DatabaseFactory {
         )
 
         seedRbac(demoUserId)
+        seedFeatureFlags()
+    }
+
+    /**
+     * Seeds the feature-flag catalog from the code-defined [FeatureFlag] enum: each flag's row is
+     * created once with its default enabled state, which then becomes admin-owned. Idempotent — an
+     * existing flag's `enabled` is left untouched (so an admin toggle survives restarts); only the
+     * description is refreshed to match the catalog.
+     */
+    private fun seedFeatureFlags() {
+        FeatureFlag.entries.forEach { flag ->
+            val exists = FeatureFlags.selectAll().where { FeatureFlags.key eq flag.key }.any()
+            if (!exists) {
+                FeatureFlags.insert {
+                    it[key] = flag.key
+                    it[description] = flag.description
+                    it[enabled] = flag.defaultEnabled
+                }
+            } else {
+                FeatureFlags.update({ FeatureFlags.key eq flag.key }) {
+                    it[description] = flag.description
+                }
+            }
+        }
     }
 
     /**

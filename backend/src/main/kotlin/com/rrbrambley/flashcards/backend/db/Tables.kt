@@ -126,6 +126,37 @@ object UserRoles : Table("user_roles") {
     }
 }
 
+/**
+ * Feature flags (FLA-174). [FeatureFlags] is the catalog seeded from the code-defined
+ * `flags/FeatureFlags.kt` enum; [FeatureFlags.enabled] is the global default state (admin-owned after
+ * seeding). The override tables hold per-user and per-role targeting. Evaluation precedence is
+ * user override → role override → global default (see `flags/FeatureFlagService.kt`).
+ */
+object FeatureFlags : LongIdTable("feature_flags") {
+    val key = varchar("key", 64).uniqueIndex() // e.g. "streak_calendar"
+    val description = varchar("description", 255)
+    val enabled = bool("enabled") // global default state
+}
+
+object FeatureFlagUserOverrides : Table("feature_flag_user_overrides") {
+    val flagId = reference("flag_id", FeatureFlags, onDelete = ReferenceOption.CASCADE)
+    val userId = reference("user_id", Users, onDelete = ReferenceOption.CASCADE)
+    val enabled = bool("enabled")
+    override val primaryKey = PrimaryKey(flagId, userId)
+
+    init {
+        // Evaluation looks up a single user's overrides.
+        index(false, userId)
+    }
+}
+
+object FeatureFlagRoleOverrides : Table("feature_flag_role_overrides") {
+    val flagId = reference("flag_id", FeatureFlags, onDelete = ReferenceOption.CASCADE)
+    val roleId = reference("role_id", Roles, onDelete = ReferenceOption.CASCADE)
+    val enabled = bool("enabled")
+    override val primaryKey = PrimaryKey(flagId, roleId)
+}
+
 object PracticeSessions : LongIdTable("practice_sessions") {
     val userId = reference("user_id", Users, onDelete = ReferenceOption.CASCADE)
     val deckId = reference("deck_id", Decks, onDelete = ReferenceOption.CASCADE)

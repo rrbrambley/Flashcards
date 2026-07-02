@@ -24,6 +24,9 @@ import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.discussions.ReportedMessageDto
 import com.rrbrambley.flashcards.backend.discussions.UpdateReportRequest
+import com.rrbrambley.flashcards.backend.flags.AdminFlagDto
+import com.rrbrambley.flashcards.backend.flags.SetFlagEnabledRequest
+import com.rrbrambley.flashcards.backend.flags.SetFlagOverrideRequest
 import com.rrbrambley.flashcards.backend.plugins.BEARER_AUTH
 import com.rrbrambley.flashcards.backend.routes.requirePermission
 import com.rrbrambley.flashcards.backend.storage.Storage
@@ -320,6 +323,7 @@ class ApplicationFlowTest {
                 Permission.MANAGE_ROLES.key,
                 Permission.MANAGE_DISCUSSIONS.key,
                 Permission.MANAGE_SUGGESTIONS.key,
+                Permission.MANAGE_FEATURE_FLAGS.key,
             ),
             PermissionRepository.effectivePermissions(demoUserId),
         )
@@ -402,6 +406,7 @@ class ApplicationFlowTest {
                 Permission.MANAGE_ROLES.key,
                 Permission.MANAGE_DISCUSSIONS.key,
                 Permission.MANAGE_SUGGESTIONS.key,
+                Permission.MANAGE_FEATURE_FLAGS.key,
             ),
             PermissionRepository.effectivePermissions(userId),
         )
@@ -468,6 +473,7 @@ class ApplicationFlowTest {
                 Permission.MANAGE_ROLES.key,
                 Permission.MANAGE_DISCUSSIONS.key,
                 Permission.MANAGE_SUGGESTIONS.key,
+                Permission.MANAGE_FEATURE_FLAGS.key,
             ),
             PermissionRepository.effectivePermissions(auth.userId),
         )
@@ -1143,6 +1149,110 @@ class ApplicationFlowTest {
         val auth = client.register("streakcalbad", "password1")
         val response = client.get("/streaks/calendar?month=2026-13") { bearerAuth(auth.accessToken) }
         assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    // --- Feature flags (FLA-175) ---
+    // Tests set the global state explicitly at the start (rather than assuming the seed default) and
+    // clean up shared state (global reset, role overrides removed) so they're order-independent;
+    // per-user overrides are on fresh users so they never collide.
+
+    @Test
+    fun feature_flags_delivered_via_me_and_flags_with_user_override_precedence() = runApp { client ->
+        val admin = client.register("flagadmin", "password1")
+        grantAdmin(admin.userId)
+        val user = client.register("flaguser", "password1")
+
+        suspend fun setGlobal(enabled: Boolean) = client.patch("/admin/flags/streak_calendar") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(SetFlagEnabledRequest(enabled)))
+        }
+        suspend fun flag(token: String): Boolean? =
+            client.get("/flags") { bearerAuth(token) }.decode<Map<String, Boolean>>()["streak_calendar"]
+
+        // Global off → the plain user sees it off, on both /flags and /auth/me.
+        assertEquals(HttpStatusCode.OK, setGlobal(false).status)
+        assertEquals(false, flag(user.accessToken))
+        val me = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
+        assertEquals(false, me.flags["streak_calendar"])
+
+        // Admin flips the global default → the same user token now sees it on (no restart).
+        setGlobal(true)
+        assertEquals(true, flag(user.accessToken))
+
+        // A per-user override (off) wins over the global default.
+        client.put("/admin/flags/streak_calendar/users/${user.userId}") {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(SetFlagOverrideRequest(enabled = false)))
+        }
+        assertEquals(false, flag(user.accessToken))
+
+        // Clearing the override falls back to the (still-on) global default.
+        client.delete("/admin/flags/streak_calendar/users/${user.userId}") { bearerAuth(admin.accessToken) }
+        assertEquals(true, flag(user.accessToken))
+
+        setGlobal(false) // cleanup shared global state
+    }
+
+    @Test
+    fun feature_flag_role_override_applies_and_user_override_beats_it() = runApp { client ->
+        val admin = client.register("flagadmin2", "password1")
+        grantAdmin(admin.userId)
+        val member = client.register("flagmember", "password1")
+        grantAdmin(member.userId) // give member the admin role so a role override targets them
+
+        suspend fun flag(token: String): Boolean? =
+            client.get("/flags") { bearerAuth(token) }.decode<Map<String, Boolean>>()["streak_calendar"]
+        suspend fun putOverride(path: String, enabled: Boolean) = client.put(path) {
+            bearerAuth(admin.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(SetFlagOverrideRequest(enabled)))
+        }
+
+        // Role override (admin → on) reveals it to the member (who holds the admin role).
+        putOverride("/admin/flags/streak_calendar/roles/admin", enabled = true)
+        assertEquals(true, flag(member.accessToken))
+
+        // A per-user override (off) beats the role override.
+        putOverride("/admin/flags/streak_calendar/users/${member.userId}", enabled = false)
+        assertEquals(false, flag(member.accessToken))
+
+        // cleanup shared role override + the member's user override
+        client.delete("/admin/flags/streak_calendar/roles/admin") { bearerAuth(admin.accessToken) }
+        client.delete("/admin/flags/streak_calendar/users/${member.userId}") { bearerAuth(admin.accessToken) }
+    }
+
+    @Test
+    fun admin_flag_list_reflects_state_and_requires_permission() = runApp { client ->
+        val admin = client.register("flagadmin3", "password1")
+        grantAdmin(admin.userId)
+        val user = client.register("flagnoperm", "password1")
+
+        // The catalog lists the seeded flag.
+        val flags = client.get("/admin/flags") { bearerAuth(admin.accessToken) }.decode<List<AdminFlagDto>>()
+        assertTrue(flags.any { it.key == "streak_calendar" })
+
+        // Non-admins are forbidden on every /admin/flags verb.
+        assertEquals(HttpStatusCode.Forbidden, client.get("/admin/flags") { bearerAuth(user.accessToken) }.status)
+        assertEquals(
+            HttpStatusCode.Forbidden,
+            client.patch("/admin/flags/streak_calendar") {
+                bearerAuth(user.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(SetFlagEnabledRequest(enabled = true)))
+            }.status,
+        )
+
+        // An unknown flag key is a 404.
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.patch("/admin/flags/does_not_exist") {
+                bearerAuth(admin.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(SetFlagEnabledRequest(enabled = true)))
+            }.status,
+        )
     }
 
     @Test
@@ -2082,7 +2192,13 @@ class ApplicationFlowTest {
         val me1 = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(listOf("admin"), me1.roles)
         assertEquals(
-            setOf("manage_global_decks", "manage_roles", "manage_discussions", "manage_suggestions"),
+            setOf(
+                "manage_global_decks",
+                "manage_roles",
+                "manage_discussions",
+                "manage_suggestions",
+                "manage_feature_flags",
+            ),
             me1.permissions.toSet(),
         )
 
@@ -2092,7 +2208,13 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(LoginRequest("meuser@example.com", "password1")))
         }.decode<AuthResponse>()
         assertEquals(
-            setOf("manage_global_decks", "manage_roles", "manage_discussions", "manage_suggestions"),
+            setOf(
+                "manage_global_decks",
+                "manage_roles",
+                "manage_discussions",
+                "manage_suggestions",
+                "manage_feature_flags",
+            ),
             login.permissions.toSet(),
         )
     }
@@ -2195,7 +2317,13 @@ class ApplicationFlowTest {
         val roles = client.get("/admin/roles") { bearerAuth(admin.accessToken) }.decode<List<RoleDto>>()
         val adminRole = roles.single { it.key == "admin" }
         assertEquals(
-            setOf("manage_global_decks", "manage_roles", "manage_discussions", "manage_suggestions"),
+            setOf(
+                "manage_global_decks",
+                "manage_roles",
+                "manage_discussions",
+                "manage_suggestions",
+                "manage_feature_flags",
+            ),
             adminRole.permissions.toSet(),
         )
         assertTrue(roles.any { it.key == "user" && it.permissions.isEmpty() })

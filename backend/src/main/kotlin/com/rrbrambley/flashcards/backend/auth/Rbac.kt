@@ -14,6 +14,7 @@ enum class Permission(val key: String, val description: String) {
     MANAGE_ROLES("manage_roles", "View users and grant or revoke their roles"),
     MANAGE_DISCUSSIONS("manage_discussions", "Enable discussions on a deck and lock/unlock threads"),
     MANAGE_SUGGESTIONS("manage_suggestions", "Review and accept/dismiss alternative-answer suggestions"),
+    MANAGE_FEATURE_FLAGS("manage_feature_flags", "View feature flags and toggle their state and targeting"),
 }
 
 enum class Role(val key: String, val description: String, val permissions: Set<Permission>) {
@@ -25,6 +26,7 @@ enum class Role(val key: String, val description: String, val permissions: Set<P
             Permission.MANAGE_ROLES,
             Permission.MANAGE_DISCUSSIONS,
             Permission.MANAGE_SUGGESTIONS,
+            Permission.MANAGE_FEATURE_FLAGS,
         ),
     ),
     USER("user", "A standard, non-privileged user", emptySet()),
