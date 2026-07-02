@@ -10,7 +10,9 @@ export function LibraryPage() {
   const canManageRoles = can('manage_roles');
   const canManageDiscussions = can('manage_discussions');
   const canManageSuggestions = can('manage_suggestions');
-  const isAdmin = canManageGlobal || canManageRoles || canManageDiscussions || canManageSuggestions;
+  const canManageFlags = can('manage_feature_flags');
+  const isAdmin =
+    canManageGlobal || canManageRoles || canManageDiscussions || canManageSuggestions || canManageFlags;
 
   return (
     <div className="app">
@@ -54,6 +56,11 @@ export function LibraryPage() {
                   {canManageSuggestions && (
                     <button className="secondary" onClick={() => navigate('/admin/suggestions')}>
                       Answer suggestions
+                    </button>
+                  )}
+                  {canManageFlags && (
+                    <button className="secondary" onClick={() => navigate('/admin/flags')}>
+                      Feature flags
                     </button>
                   )}
                 </div>

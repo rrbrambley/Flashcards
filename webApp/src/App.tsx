@@ -8,6 +8,7 @@ import { CatalogPage } from './decks/CatalogPage';
 import { AdminUsersPage } from './admin/AdminUsersPage';
 import { AdminDiscussionsPage } from './admin/AdminDiscussionsPage';
 import { AdminSuggestionsPage } from './admin/AdminSuggestionsPage';
+import { AdminFlagsPage } from './admin/AdminFlagsPage';
 import { CreateDeckPage } from './decks/CreateDeckPage';
 import { EditDeckPage } from './decks/EditDeckPage';
 import { PracticePage } from './practice/PracticePage';
@@ -38,6 +39,7 @@ export default function App() {
       <Route path="/admin/users" element={<AdminUsersPage />} />
       <Route path="/admin/discussions" element={<AdminDiscussionsPage />} />
       <Route path="/admin/suggestions" element={<AdminSuggestionsPage />} />
+      <Route path="/admin/flags" element={<AdminFlagsPage />} />
       <Route path="/create" element={<CreateDeckPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/decks/:id/edit" element={<EditDeckPage />} />

@@ -13,7 +13,7 @@ import { useAuth } from '../auth/auth-context';
  * name saves via the form, while picking/removing an avatar PATCHes /auth/me immediately.
  */
 export function SettingsPage() {
-  const { setProfile } = useAuth();
+  const { setProfile, isEnabled } = useAuth();
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [emailPrefix, setEmailPrefix] = useState('');
@@ -92,10 +92,12 @@ export function SettingsPage() {
           <p className="muted">Loading…</p>
         ) : (
           <>
-            <section className="settings-section settings-section-activity">
-              <h2 className="settings-section-title">Practice activity</h2>
-              <StreakCalendar />
-            </section>
+            {isEnabled('streak_calendar') && (
+              <section className="settings-section settings-section-activity">
+                <h2 className="settings-section-title">Practice activity</h2>
+                <StreakCalendar />
+              </section>
+            )}
 
             <section className="settings-section">
               <h2 className="settings-section-title">Avatar</h2>

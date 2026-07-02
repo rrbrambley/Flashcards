@@ -1,5 +1,6 @@
 import { clearToken, getRefreshToken, getToken, setTokens } from '../auth/token';
 import type {
+  AdminFlagDto,
   AdminUserDto,
   AnswerSuggestion,
   AuthResponse,
@@ -234,6 +235,9 @@ export const api = {
     request<PracticeSessionDto>(`/sessions/${id}/answers`, { method: 'POST', body: { answers }, auth: true }),
   getAnswers: (id: number) => request<PracticeAnswer[]>(`/sessions/${id}/answers`, { auth: true }),
 
+  // The caller's resolved feature flags (FLA-174). Also delivered on /auth/me; this refreshes them.
+  getFlags: () => request<Record<string, boolean>>('/flags', { auth: true }),
+
   // Practice streak (FLA-106). `tz` (IANA) anchors "today" to the caller's local day.
   getStreaks: (tz?: string) => request<StreaksResponse>(`/streaks${buildQuery({ tz })}`, { auth: true }),
   // One month's practice-activity days for the streak calendar (FLA-170). `month` is `YYYY-MM`.
@@ -301,4 +305,29 @@ export const api = {
     request<AdminUserDto>(`/admin/users/${userId}/roles`, { method: 'POST', body: { role }, auth: true }),
   revokeRole: (userId: number, role: string) =>
     request<AdminUserDto>(`/admin/users/${userId}/roles/${role}`, { method: 'DELETE', auth: true }),
+
+  // Admin feature-flag management (FLA-176; server-gated on manage_feature_flags). List the catalog,
+  // toggle the global state, and set/clear per-user (by id) and per-role overrides.
+  getAdminFlags: () => request<AdminFlagDto[]>('/admin/flags', { auth: true }),
+  setFlagGlobal: (key: string, enabled: boolean) =>
+    request<AdminFlagDto>(`/admin/flags/${encodeURIComponent(key)}`, { method: 'PATCH', body: { enabled }, auth: true }),
+  setFlagUserOverride: (key: string, userId: number, enabled: boolean) =>
+    request<AdminFlagDto>(`/admin/flags/${encodeURIComponent(key)}/users/${userId}`, {
+      method: 'PUT',
+      body: { enabled },
+      auth: true,
+    }),
+  clearFlagUserOverride: (key: string, userId: number) =>
+    request<AdminFlagDto>(`/admin/flags/${encodeURIComponent(key)}/users/${userId}`, { method: 'DELETE', auth: true }),
+  setFlagRoleOverride: (key: string, roleKey: string, enabled: boolean) =>
+    request<AdminFlagDto>(`/admin/flags/${encodeURIComponent(key)}/roles/${encodeURIComponent(roleKey)}`, {
+      method: 'PUT',
+      body: { enabled },
+      auth: true,
+    }),
+  clearFlagRoleOverride: (key: string, roleKey: string) =>
+    request<AdminFlagDto>(`/admin/flags/${encodeURIComponent(key)}/roles/${encodeURIComponent(roleKey)}`, {
+      method: 'DELETE',
+      auth: true,
+    }),
 };

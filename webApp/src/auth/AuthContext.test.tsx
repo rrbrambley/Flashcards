@@ -20,12 +20,13 @@ vi.mock('../api/client', () => ({
 }));
 
 function Consumer() {
-  const { token, login, signOut, can, permissionsReady } = useAuth();
+  const { token, login, signOut, can, permissionsReady, isEnabled } = useAuth();
   return (
     <div>
       <span data-testid="token">{token ?? 'none'}</span>
       <span data-testid="admin">{can('manage_global_decks') ? 'admin' : 'no'}</span>
       <span data-testid="ready">{permissionsReady ? 'ready' : 'pending'}</span>
+      <span data-testid="flag">{isEnabled('streak_calendar') ? 'on' : 'off'}</span>
       <button onClick={() => login('a@b.com', 'pw')}>login</button>
       <button onClick={signOut}>signout</button>
     </div>
@@ -117,6 +118,34 @@ describe('AuthProvider / useAuth', () => {
 
     expect(await screen.findByTestId('admin')).toHaveTextContent('admin');
     expect(api.getMe).toHaveBeenCalled();
+  });
+
+  it('hydrates feature flags from /me and exposes them via isEnabled', async () => {
+    setTokens('stored-tok', 'stored-r');
+    vi.mocked(api.getMe).mockResolvedValue({
+      userId: 1,
+      email: 'a@b.com',
+      roles: [],
+      permissions: [],
+      flags: { streak_calendar: true },
+    });
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>,
+    );
+
+    expect(await screen.findByTestId('flag')).toHaveTextContent('on');
+  });
+
+  it('defaults isEnabled to false for an unknown/absent flag', () => {
+    // Logged out (no stored token): flags are empty, so isEnabled is false.
+    render(
+      <AuthProvider>
+        <Consumer />
+      </AuthProvider>,
+    );
+    expect(screen.getByTestId('flag')).toHaveTextContent('off');
   });
 
   it('permissions are ready immediately when logged out', () => {
