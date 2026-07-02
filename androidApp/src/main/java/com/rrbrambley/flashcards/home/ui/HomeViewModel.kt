@@ -3,6 +3,8 @@ package com.rrbrambley.flashcards.home.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.auth.FeatureFlagRepository
+import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
@@ -25,6 +27,7 @@ class HomeViewModel @Inject constructor(
     private val homeRepository: HomeRepository,
     private val apiClient: FlashcardApiClient,
     private val stringProvider: StringProvider,
+    private val featureFlagRepository: FeatureFlagRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -37,6 +40,11 @@ class HomeViewModel @Inject constructor(
     private val _streak = MutableStateFlow<Int?>(null)
     val streak: StateFlow<Int?> = _streak.asStateFlow()
 
+    // Whether the streak-calendar feature is enabled for this user (FLA-174); false until resolved.
+    // The Android streak calendar (FLA-172) will render behind this.
+    private val _streakCalendarEnabled = MutableStateFlow(false)
+    val streakCalendarEnabled: StateFlow<Boolean> = _streakCalendarEnabled.asStateFlow()
+
     // One-shot user-facing messages (e.g. a failed background refresh), surfaced as a snackbar.
     private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val userMessages: SharedFlow<String> = _userMessages.asSharedFlow()
@@ -46,6 +54,7 @@ class HomeViewModel @Inject constructor(
     init {
         observeHome()
         loadStreak()
+        loadFlags()
     }
 
     /** Best-effort overall-streak fetch; a failure (or no streak) simply leaves the badge hidden. */
@@ -54,6 +63,13 @@ class HomeViewModel @Inject constructor(
             _streak.value = runCatching {
                 apiClient.getStreaks(ZoneId.systemDefault().id).overall.current
             }.getOrNull()
+        }
+    }
+
+    /** Resolves the feature flags this screen cares about (FLA-174); off when unknown or on failure. */
+    private fun loadFlags() {
+        viewModelScope.launch {
+            _streakCalendarEnabled.value = featureFlagRepository.isEnabled(FeatureFlags.STREAK_CALENDAR)
         }
     }
 
@@ -86,6 +102,7 @@ class HomeViewModel @Inject constructor(
         _isRefreshing.value = true
         observeHome()
         loadStreak()
+        loadFlags()
     }
 
     /** Retry after a load failure: show the loading state, then re-subscribe. */

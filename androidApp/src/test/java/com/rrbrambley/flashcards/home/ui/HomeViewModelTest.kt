@@ -1,6 +1,8 @@
 package com.rrbrambley.flashcards.home.ui
 
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.auth.FeatureFlagRepository
+import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.FakeStringProvider
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
@@ -47,7 +49,7 @@ class HomeViewModelTest {
     fun uiState_startsAsLoading() {
         val repository = FakeHomeRepository(homeData = emptyList())
 
-        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider())
+        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
 
         assertEquals(HomeUiState.Loading, viewModel.uiState.value)
     }
@@ -65,7 +67,7 @@ class HomeViewModelTest {
         )
         val repository = FakeHomeRepository(homeData = homeData)
 
-        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider())
+        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(HomeUiState.ShowHome(homeData), viewModel.uiState.value)
@@ -75,7 +77,7 @@ class HomeViewModelTest {
     fun retry_afterFailure_reloadsHomeData() = runTest(testDispatcher) {
         val homeData = listOf(HomeData(title = "Practice", button = null))
         val repository = FakeHomeRepository(homeData = homeData, failFirstSubscription = true)
-        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider())
+        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(HomeUiState.LoadingFailed, viewModel.uiState.value)
 
@@ -90,7 +92,7 @@ class HomeViewModelTest {
         val homeData = listOf(HomeData(title = "Practice", button = null))
         // Offline-first repo: emits the cached feed, then the backend fetch throws.
         val repository = FakeHomeRepository(homeData = homeData, throwAfterFirstEmit = true)
-        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider())
+        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
 
         // Subscribe to the one-shot messages before the failing flow runs (UNDISPATCHED so the
         // collector registers before advanceUntilIdle drives the emission).
@@ -111,10 +113,31 @@ class HomeViewModelTest {
         val repository = FakeHomeRepository(homeData = emptyList())
         val client = apiClient("""{"overall":{"current":7,"longest":12},"decks":[]}""")
 
-        val viewModel = HomeViewModel(repository, client, FakeStringProvider())
+        val viewModel = HomeViewModel(repository, client, FakeStringProvider(), FakeFeatureFlagRepository())
 
         // The streak fetch runs over a real client/MockEngine, so await the StateFlow.
         assertEquals(7, viewModel.streak.first { it != null })
+    }
+
+    @Test
+    fun streakCalendarFlag_isSurfacedFromTheFeatureFlagRepository() = runTest(testDispatcher) {
+        val repository = FakeHomeRepository(homeData = emptyList())
+        val flags = FakeFeatureFlagRepository(mapOf(FeatureFlags.STREAK_CALENDAR to true))
+
+        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider(), flags)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(true, viewModel.streakCalendarEnabled.value)
+    }
+
+    @Test
+    fun streakCalendarFlag_defaultsOff_whenAbsent() = runTest(testDispatcher) {
+        val repository = FakeHomeRepository(homeData = emptyList())
+
+        val viewModel = HomeViewModel(repository, unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(false, viewModel.streakCalendarEnabled.value)
     }
 
     /** A client whose /streaks call fails — streak stays null, for tests that don't care about it. */
@@ -146,5 +169,9 @@ class HomeViewModelTest {
             emit(homeData)
             if (throwAfterFirstEmit) throw RuntimeException("backend unreachable")
         }
+    }
+
+    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) : FeatureFlagRepository {
+        override suspend fun flags(): Map<String, Boolean> = flags
     }
 }
