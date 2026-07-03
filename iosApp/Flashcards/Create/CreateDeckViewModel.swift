@@ -57,7 +57,11 @@ final class CreateDeckViewModel: ObservableObject {
 
     func save() async {
         let complete = cards.completeCards
-        let isValid = !deckTitle.trimmed.isEmpty && !complete.isEmpty && !cards.hasIncompleteStartedCard
+        let isValid = DeckForm.shared.isDeckSavable(
+            title: deckTitle,
+            hasCompleteCard: !complete.isEmpty,
+            hasIncompleteStartedCard: cards.hasIncompleteStartedCard
+        )
         guard isValid else {
             showErrors = true
             return
@@ -69,20 +73,19 @@ final class CreateDeckViewModel: ObservableObject {
         let deck = FlashcardDeck(
             id: 0,
             title: deckTitle.trimmed,
+            // New cards carry an empty cardUid — the backend mints one on save (FLA-113).
             flashcards: complete.map {
-                // New cards have no cardUid — the backend mints one on save (FLA-113).
-                Flashcard(
-                    question: $0.term.trimmed,
-                    answer: $0.definition.trimmed,
+                DeckForm.shared.toFlashcard(
+                    term: $0.term,
+                    definition: $0.definition,
                     imageUrl: $0.imageUrl,
-                    alternativeAnswers: parseAlternatives($0.alternatives),
+                    alternativesRaw: $0.alternatives,
                     cardUid: $0.cardUid
                 )
             },
             isEditable: true,
-            // The optional category as a single tag (empty when blank). Kotlin default args don't
-            // bridge, so pass it explicitly.
-            tags: category.toCategoryTags(),
+            // The optional category as a single tag (empty when blank).
+            tags: DeckForm.shared.categoryTags(category: category),
             // Discussions are admin-toggled on global decks; a newly created deck never has them.
             discussionsEnabled: false,
             // A user-created deck is never a global (catalog) deck.

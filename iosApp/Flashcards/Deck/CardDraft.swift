@@ -1,4 +1,5 @@
 import Foundation
+import Shared
 
 /// A single editable card in the create/edit deck form. `question = term`, `answer = definition`
 /// (matching the shared `Flashcard`). A front-of-card image is optional; an **image-only** card is
@@ -12,7 +13,7 @@ struct CardDraft: Identifiable, Equatable {
     var definition: String
     var imageUrl: String?
     /// Raw editable text for extra Test-mode accepted answers (FLA-109/FLA-111), one per line; parsed
-    /// to `[String]` on save (see `parseAlternatives`). Seeded from the saved alternatives when editing.
+    /// to `[String]` on save (see `DeckForm.parseAlternatives`). Seeded from the saved alternatives when editing.
     var alternatives: String
     /// Stable backend card id (FLA-113), carried through edits so it's preserved on save; "" when new.
     var cardUid: String
@@ -39,29 +40,15 @@ struct CardDraft: Identifiable, Equatable {
         self.uploadError = uploadError
     }
 
-    /// Complete when there's a definition plus either a term or an image (parity with Android:
-    /// `definition.isNotBlank() && (term.isNotBlank() || imageUrl != null)`).
-    var isComplete: Bool { !definition.trimmed.isEmpty && (!term.trimmed.isEmpty || imageUrl != nil) }
-    var isStarted: Bool { !term.trimmed.isEmpty || !definition.trimmed.isEmpty || imageUrl != nil }
+    /// Completeness/started rules delegate to the shared `DeckForm` (FLA-192) so all platforms agree.
+    var isComplete: Bool { DeckForm.shared.isCardComplete(term: term, definition: definition, hasImage: imageUrl != nil) }
+    var isStarted: Bool { DeckForm.shared.isCardStarted(term: term, definition: definition, hasImage: imageUrl != nil) }
 
     static func == (lhs: CardDraft, rhs: CardDraft) -> Bool {
         lhs.id == rhs.id && lhs.term == rhs.term && lhs.definition == rhs.definition &&
             lhs.imageUrl == rhs.imageUrl && lhs.alternatives == rhs.alternatives &&
             lhs.cardUid == rhs.cardUid
     }
-}
-
-/// Parses the alternatives field: one per line, trimmed, blanks dropped, de-duplicated (FLA-111).
-func parseAlternatives(_ raw: String) -> [String] {
-    var seen = Set<String>()
-    var result: [String] = []
-    for line in raw.split(separator: "\n", omittingEmptySubsequences: false) {
-        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty, seen.insert(trimmed).inserted {
-            result.append(trimmed)
-        }
-    }
-    return result
 }
 
 extension Array where Element == CardDraft {

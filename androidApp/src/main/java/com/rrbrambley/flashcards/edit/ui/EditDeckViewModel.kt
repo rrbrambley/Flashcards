@@ -8,10 +8,8 @@ import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.create.ui.isComplete
 import com.rrbrambley.flashcards.create.ui.isStarted
-import com.rrbrambley.flashcards.create.ui.parseAlternatives
-import com.rrbrambley.flashcards.create.ui.toCategoryTags
 import com.rrbrambley.flashcards.data.image.ImageUploader
-import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.DeckForm
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,8 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-private const val MinimumCompleteCardCount = 1
 
 @HiltViewModel
 class EditDeckViewModel @Inject constructor(
@@ -60,7 +56,7 @@ class EditDeckViewModel @Inject constructor(
                 val drafts = deck.toDrafts()
                 nextDraftCardId = (drafts.maxOfOrNull { it.id } ?: 0L) + 1L
                 // Surface only the first tag as the editable category (the backend keeps a list).
-                val category = deck.tags.firstOrNull().orEmpty()
+                val category = DeckForm.categoryOf(deck.tags)
                 val snapshot = EditDeckFormSnapshot(
                     deckTitle = deck.title,
                     category = category,
@@ -166,9 +162,11 @@ class EditDeckViewModel @Inject constructor(
         if (!currentState.isEditable || currentState.isSaving) return // block repeat taps mid-save
         val completeCards = currentState.cards.filter { it.isComplete() }
         val hasIncompleteStartedCard = currentState.cards.any { it.isStarted() && !it.isComplete() }
-        val isValid = currentState.deckTitle.isNotBlank() &&
-            completeCards.size >= MinimumCompleteCardCount &&
-            !hasIncompleteStartedCard
+        val isValid = DeckForm.isDeckSavable(
+            title = currentState.deckTitle,
+            hasCompleteCard = completeCards.isNotEmpty(),
+            hasIncompleteStartedCard = hasIncompleteStartedCard,
+        )
 
         if (!isValid) {
             _uiState.update { it.copy(showValidationErrors = true, deckSaved = false) }
@@ -182,18 +180,17 @@ class EditDeckViewModel @Inject constructor(
                     FlashcardDeck(
                         id = currentDeckId,
                         title = currentState.deckTitle.trim(),
+                        // Preserves each card's stable cardUid so the backend updates in place (FLA-113).
                         flashcards = completeCards.map { card ->
-                            Flashcard(
-                                question = card.term.trim(),
-                                answer = card.definition.trim(),
+                            DeckForm.toFlashcard(
+                                term = card.term,
+                                definition = card.definition,
                                 imageUrl = card.imageUrl,
-                                // Authored/edited alternatives (FLA-110), parsed from the raw field.
-                                alternativeAnswers = parseAlternatives(card.alternatives),
-                                // Preserve the stable card id so the backend updates in place (FLA-113).
+                                alternativesRaw = card.alternatives,
                                 cardUid = card.cardUid,
                             )
                         },
-                        tags = currentState.category.toCategoryTags(),
+                        tags = DeckForm.categoryTags(currentState.category),
                     ),
                 )
             }.isSuccess
@@ -261,7 +258,7 @@ class EditDeckViewModel @Inject constructor(
             term = flashcard.question,
             definition = flashcard.answer,
             imageUrl = flashcard.imageUrl,
-            alternatives = flashcard.alternativeAnswers.joinToString("\n"),
+            alternatives = DeckForm.alternativesText(flashcard.alternativeAnswers),
             cardUid = flashcard.cardUid,
         )
     }.ifEmpty {
