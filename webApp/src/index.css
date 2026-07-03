@@ -944,6 +944,23 @@ button.danger:hover:not(:disabled) {
   flex: 1;
 }
 
+/* Blank-submit guard (FLA-179): inline confirm instead of grading an accidental empty Enter. */
+.text-answer-confirm {
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.text-answer-confirm p {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+}
+
+.text-answer-confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
 /* Post-submit: the typed answer stays in place, with a ✓/✗ verdict beside it. */
 .test-submitted {
   display: flex;

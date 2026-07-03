@@ -38,6 +38,7 @@ export function TestMode({ card, onGraded, onAdvance, onDiscuss, canSuggest, isG
 
       {!graded ? (
         <TextAnswerInput
+          confirmBlankSubmit
           onSubmit={(input) => {
             const correct = gradeTextAnswer(input, card.answer, card.alternativeAnswers ?? []).correct;
             setGraded({ input, correct });

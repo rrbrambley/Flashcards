@@ -76,4 +76,58 @@ describe('TestMode', () => {
 
     expect(screen.queryByText(/Also acceptable/)).not.toBeInTheDocument();
   });
+
+  // FLA-179: an accidental empty Enter/Check must not silently grade the card wrong.
+  it('confirms before grading a blank Enter instead of scoring it', async () => {
+    const onGraded = vi.fn();
+    render(<TestMode card={card} cards={[card]} onResult={vi.fn()} onGraded={onGraded} onAdvance={vi.fn()} />);
+
+    await userEvent.type(screen.getByLabelText('Your answer'), '{Enter}');
+
+    expect(screen.getByText(/skip this card\?/i)).toBeInTheDocument();
+    expect(onGraded).not.toHaveBeenCalled();
+    expect(screen.queryByText('✗ Incorrect')).not.toBeInTheDocument();
+  });
+
+  it('confirms before grading a blank Check click', async () => {
+    const onGraded = vi.fn();
+    render(<TestMode card={card} cards={[card]} onResult={vi.fn()} onGraded={onGraded} onAdvance={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+
+    expect(screen.getByText(/skip this card\?/i)).toBeInTheDocument();
+    expect(onGraded).not.toHaveBeenCalled();
+  });
+
+  it('Skip submits the blank answer and grades it incorrect', async () => {
+    const onGraded = vi.fn();
+    render(<TestMode card={card} cards={[card]} onResult={vi.fn()} onGraded={onGraded} onAdvance={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Skip' }));
+
+    expect(onGraded).toHaveBeenCalledWith(false, '');
+    expect(screen.getByText('✗ Incorrect')).toBeInTheDocument();
+    expect(screen.getByText('(blank)')).toBeInTheDocument();
+  });
+
+  it('Keep typing dismisses the confirm and refocuses the input', async () => {
+    render(<TestMode card={card} cards={[card]} {...noopProps} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Keep typing' }));
+
+    expect(screen.queryByText(/skip this card\?/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Your answer')).toHaveFocus();
+  });
+
+  it('a non-blank answer submits immediately with no confirm', async () => {
+    const onGraded = vi.fn();
+    render(<TestMode card={card} cards={[card]} onResult={vi.fn()} onGraded={onGraded} onAdvance={vi.fn()} />);
+
+    await userEvent.type(screen.getByLabelText('Your answer'), 'paris{Enter}');
+
+    expect(screen.queryByText(/skip this card\?/i)).not.toBeInTheDocument();
+    expect(onGraded).toHaveBeenCalledWith(true, 'paris');
+  });
 });
