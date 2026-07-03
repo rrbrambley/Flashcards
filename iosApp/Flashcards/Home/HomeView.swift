@@ -30,11 +30,15 @@ struct HomeView: View {
                     flashcardRepository: container.flashcardRepository,
                     sessionRepository: container.practiceSessionRepository,
                     entry: presentation.entry,
+                    featureFlagStore: container.featureFlagStore,
                     apiClient: container.apiClient
                 )
             }
             .sheet(isPresented: $showProfile) {
-                ProfileView(service: container.profileService)
+                ProfileView(
+                    service: container.profileService,
+                    avatarSelectionEnabled: container.featureFlagStore.isEnabled(FeatureFlag.avatarSelection)
+                )
             }
             .task { await viewModel.observe() }
             .task { await viewModel.loadStreak() }

@@ -33,6 +33,7 @@ struct GuestHomeView: View {
                         flashcardRepository: container.flashcardRepository,
                         sessionRepository: container.practiceSessionRepository,
                         entry: .guestDeck(deck.id, mode: deck.mode),
+                        featureFlagStore: container.featureFlagStore,
                         apiClient: container.apiClient,
                         authService: container.authService
                     )

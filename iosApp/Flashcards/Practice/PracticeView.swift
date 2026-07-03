@@ -17,16 +17,20 @@ struct PracticeView: View {
     // Kept so the discussion sheet can post over the shared client (and convert a guest to sign in).
     private let apiClient: FlashcardApiClient?
     private let authService: AuthService?
+    // Gates the discuss affordance behind the `discussions` kill switch (FLA-185); guests bypass it.
+    private let featureFlagStore: FeatureFlagStore
 
     init(
         flashcardRepository: FlashcardRepository,
         sessionRepository: PracticeSessionRepository,
         entry: PracticeEntry,
+        featureFlagStore: FeatureFlagStore,
         apiClient: FlashcardApiClient? = nil,
         authService: AuthService? = nil
     ) {
         self.apiClient = apiClient
         self.authService = authService
+        self.featureFlagStore = featureFlagStore
         _viewModel = StateObject(
             wrappedValue: PracticeViewModel(
                 flashcardRepository: flashcardRepository,
@@ -154,6 +158,11 @@ struct PracticeView: View {
     ) -> some View {
         // Opens the discussion sheet for the current card once its answer is revealed.
         let onDiscuss = { discussionTarget = DiscussionTarget(id: card.cardUid) }
+        // Kill switch (FLA-185): hide discuss for signed-in users when `discussions` is off; guests keep it.
+        let showDiscuss = featureFlagStore.discussionsVisible(
+            deckEnabled: discussionsEnabled,
+            isGuest: viewModel.isGuestMode
+        )
         switch PracticeMode(rawValue: mode) ?? .classic {
         case .classic:
             ClassicModeView(
@@ -162,7 +171,7 @@ struct PracticeView: View {
                 onResult: viewModel.onResult,
                 onPrevious: viewModel.goBack,
                 onNext: viewModel.goForward,
-                discussionsEnabled: discussionsEnabled,
+                discussionsEnabled: showDiscuss,
                 onDiscuss: onDiscuss
             )
         case .test:
@@ -170,7 +179,7 @@ struct PracticeView: View {
                 card: card,
                 onGraded: viewModel.applyResult,
                 onAdvance: viewModel.goForward,
-                discussionsEnabled: discussionsEnabled,
+                discussionsEnabled: showDiscuss,
                 onDiscuss: onDiscuss,
                 canSuggest: isGlobal,
                 isGuest: viewModel.isGuestMode,
@@ -183,7 +192,7 @@ struct PracticeView: View {
                 deck: deck,
                 onGraded: viewModel.applyResult,
                 onAdvance: viewModel.goForward,
-                discussionsEnabled: discussionsEnabled,
+                discussionsEnabled: showDiscuss,
                 onDiscuss: onDiscuss
             )
         }
