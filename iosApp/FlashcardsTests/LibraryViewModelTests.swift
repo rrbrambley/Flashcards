@@ -64,7 +64,7 @@ final class LibraryViewModelTests: XCTestCase {
         await vm.observeDecks()
         await vm.observeLastPracticed()
 
-        vm.sortOrder = .recentlyPracticed
+        vm.sortOrder = .recentlypracticed
 
         // 2 (900) then 1 (500), then never-practiced 3 falls back to id-desc.
         XCTAssertEqual(loadedTitles(vm.state), ["B", "A", "C"])

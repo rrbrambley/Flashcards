@@ -1,12 +1,12 @@
 import Shared
 import SwiftUI
 
-/// How the library is ordered (parity with Android's `DeckSortOrder`).
-enum DeckSortOrder: String, CaseIterable, Identifiable {
-    case alphabetical
-    case recentlyPracticed
-
-    var id: String { rawValue }
+/// SwiftUI conveniences on the shared `DeckSortOrder` (FLA-193). The sort *order type* and the
+/// filter/sort *logic* now live in the shared KMP `DeckLibrary`; this only adds the label + the
+/// `Identifiable` conformance `Picker`/`ForEach` need. (The bridged Kotlin enum is a non-final class,
+/// so it can't cleanly be `CaseIterable` — the view iterates its `.entries` instead.)
+extension DeckSortOrder: @retroactive Identifiable {
+    public var id: String { name }
     var label: String { self == .alphabetical ? "A–Z" : "Recently practiced" }
 }
 
@@ -88,28 +88,18 @@ final class LibraryViewModel: ObservableObject {
 
     private func recompute() {
         guard loaded else { return }
-        let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-        let filtered = query.isEmpty
-            ? rawDecks
-            // Match the deck title or any of its tags (the category surfaced in the UI).
-            : rawDecks.filter { deck in
-                deck.title.localizedCaseInsensitiveContains(query)
-                    || ((deck.tags as? [String]) ?? []).contains { $0.localizedCaseInsensitiveContains(query) }
-            }
-        state = .loaded(sorted(filtered))
-    }
-
-    private func sorted(_ decks: [FlashcardDeck]) -> [FlashcardDeck] {
-        switch sortOrder {
-        case .alphabetical:
-            return decks.sorted { $0.title.lowercased() < $1.title.lowercased() }
-        case .recentlyPracticed:
-            // Most-recently-practiced first; never-practiced fall back to newest-created (id desc).
-            return decks.sorted {
-                let lhs = lastPracticed[$0.id] ?? 0
-                let rhs = lastPracticed[$1.id] ?? 0
-                return lhs == rhs ? $0.id > $1.id : lhs > rhs
-            }
-        }
+        // Search + sort rules live in the shared KMP layer (DeckLibrary) so Android + iOS match.
+        // Kotlin `Map<Long, Long>` params cross the KN bridge as boxed `KotlinLong` keys/values.
+        let boxed = Dictionary(uniqueKeysWithValues: lastPracticed.map {
+            (KotlinLong(longLong: $0.key), KotlinLong(longLong: $0.value))
+        })
+        state = .loaded(
+            DeckLibrary.shared.query(
+                decks: rawDecks,
+                query: searchQuery,
+                order: sortOrder,
+                lastPracticedMillis: boxed
+            )
+        )
     }
 }

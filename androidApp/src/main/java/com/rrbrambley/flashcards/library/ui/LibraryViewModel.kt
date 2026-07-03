@@ -4,7 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.StringProvider
-import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.DeckLibrary
+import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -86,17 +87,8 @@ class LibraryViewModel @Inject constructor(
                 _sortOrder,
                 practiceSessionRepository.observeLastPracticedByDeck(),
             ) { decks, query, order, lastPracticed ->
-                val filtered = if (query.isBlank()) {
-                    decks
-                } else {
-                    val trimmedQuery = query.trim()
-                    // Match the deck title or any of its tags (the category surfaced in the UI).
-                    decks.filter { deck ->
-                        deck.title.contains(trimmedQuery, ignoreCase = true) ||
-                            deck.tags.any { it.contains(trimmedQuery, ignoreCase = true) }
-                    }
-                }
-                sortDecks(filtered, order, lastPracticed)
+                // Search + sort rules live in the shared KMP layer (DeckLibrary) so Android + iOS match.
+                DeckLibrary.query(decks, query, order, lastPracticed)
             }
                 .catch {
                     _uiState.update { LibraryUiState.LoadingFailed }
@@ -107,18 +99,6 @@ class LibraryViewModel @Inject constructor(
                     _isRefreshing.value = false
                 }
         }
-    }
-
-    private fun sortDecks(
-        decks: List<FlashcardDeck>,
-        order: DeckSortOrder,
-        lastPracticed: Map<Long, Long>,
-    ) = when (order) {
-        DeckSortOrder.Alphabetical -> decks.sortedBy { it.title.lowercase() }
-        // Most-recently-practiced first; never-practiced decks fall back to newest-created (id desc).
-        DeckSortOrder.RecentlyPracticed -> decks.sortedWith(
-            compareByDescending<FlashcardDeck> { lastPracticed[it.id] ?: 0L }.thenByDescending { it.id },
-        )
     }
 
     /** Pull-to-refresh: keep the current decks visible while we re-sync. */

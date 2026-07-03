@@ -9,9 +9,3 @@ sealed interface LibraryUiState {
         val decks: List<FlashcardDeck>,
     ) : LibraryUiState
 }
-
-/** How the library list is ordered. */
-enum class DeckSortOrder {
-    RecentlyPracticed,
-    Alphabetical,
-}
