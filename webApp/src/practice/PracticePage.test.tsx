@@ -27,8 +27,10 @@ vi.mock('../api/client', () => ({
 let mockToken: string | null = 'test-token';
 const applyAuth = vi.fn();
 let mockCan = false;
+// The `discussions` kill switch (FLA-180); default on so the discuss surface shows.
+let mockDiscussionsFlag = true;
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ token: mockToken, applyAuth, can: () => mockCan }),
+  useAuth: () => ({ token: mockToken, applyAuth, can: () => mockCan, isEnabled: () => mockDiscussionsFlag }),
 }));
 vi.mock('../auth/token', () => ({ setTokens: vi.fn() }));
 
@@ -75,6 +77,7 @@ describe('PracticePage', () => {
     vi.clearAllMocks();
     mockToken = 'test-token';
     mockCan = false;
+    mockDiscussionsFlag = true;
   });
 
   it('starts a session in the default (classic) mode and shows the (resumed) current card', async () => {
@@ -302,6 +305,31 @@ describe('PracticePage', () => {
 
     expect(await screen.findByText('Nice card')).toBeInTheDocument();
     expect(api.getDiscussionThread).toHaveBeenCalledWith('uid-1');
+  });
+
+  it('hides the discuss control when the discussions flag is off (FLA-180)', async () => {
+    mockDiscussionsFlag = false; // kill switch off for this signed-in user
+    vi.mocked(api.createSession).mockResolvedValue(session());
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Spanish',
+      editable: true,
+      discussionsEnabled: true, // deck allows it, but the flag gates it off
+      flashcards: [{ question: 'Q1', answer: 'A1', cardUid: 'uid-1' }],
+    });
+    vi.mocked(api.updateProgress).mockResolvedValue(session());
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('Q1');
+    await userEvent.click(screen.getByRole('button', { name: 'Show answer' }));
+    // Even revealed + deck-enabled, the discuss control is absent because the flag is off.
+    expect(screen.queryByRole('button', { name: /Discuss this card/ })).toBeNull();
   });
 
   describe('guest mode (no account)', () => {
