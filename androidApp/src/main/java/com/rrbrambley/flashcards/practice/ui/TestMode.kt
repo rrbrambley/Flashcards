@@ -54,15 +54,27 @@ fun TestMode(
 ) {
     var input by remember(flashcard) { mutableStateOf("") }
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
+    // Guards an accidental empty submit (keyboard Done or Check) from grading it wrong (FLA-190).
+    var confirmingBlank by remember(flashcard) { mutableStateOf(false) }
+
+    fun grade(value: String) {
+        val result = TestGrade(
+            input = value,
+            correct = gradeTextAnswer(value, flashcard.answer, flashcard.alternativeAnswers).correct,
+        )
+        graded = result
+        // Score it now (the verdict is on screen) so the streak badge shows on this answer, not the next card.
+        onGraded(result.correct, result.input)
+    }
 
     fun submit() {
-        val grade = TestGrade(
-            input = input,
-            correct = gradeTextAnswer(input, flashcard.answer, flashcard.alternativeAnswers).correct,
-        )
-        graded = grade
-        // Score it now (the verdict is on screen) so the streak badge shows on this answer, not the next card.
-        onGraded(grade.correct, grade.input)
+        if (input.isBlank()) {
+            // Confirm the skip instead of silently grading a blank answer wrong; the user can still
+            // submit blank via Confirm (an intentional "I don't know this"), so Check is never disabled.
+            confirmingBlank = true
+            return
+        }
+        grade(input)
     }
 
     Column(
@@ -79,7 +91,11 @@ fun TestMode(
         if (currentGrade == null) {
             OutlinedTextField(
                 value = input,
-                onValueChange = { input = it },
+                onValueChange = {
+                    input = it
+                    // Typing again means they didn't want to skip — dismiss the prompt.
+                    if (confirmingBlank) confirmingBlank = false
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 label = { Text(stringResource(R.string.practice_test_hint)) },
@@ -88,6 +104,24 @@ fun TestMode(
             )
             Button(onClick = { submit() }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.practice_test_check))
+            }
+            if (confirmingBlank) {
+                Text(
+                    text = stringResource(R.string.practice_test_blank_confirm),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Button(
+                    onClick = {
+                        confirmingBlank = false
+                        grade(input)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.practice_test_blank_confirm_action))
+                }
             }
         } else {
             TestVerdict(grade = currentGrade, answer = flashcard.answer)
