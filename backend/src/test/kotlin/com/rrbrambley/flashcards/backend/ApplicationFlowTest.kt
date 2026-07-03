@@ -1157,6 +1157,19 @@ class ApplicationFlowTest {
     // per-user overrides are on fresh users so they never collide.
 
     @Test
+    fun feature_flags_catalog_ships_kill_switches_default_on() = runApp { client ->
+        // The discussions + avatar_selection kill switches are seeded default-on (FLA-180/181), so a
+        // fresh user sees them enabled on both /flags and /auth/me with no admin action.
+        val user = client.register("flagdefaults", "password1")
+        val flags = client.get("/flags") { bearerAuth(user.accessToken) }.decode<Map<String, Boolean>>()
+        assertEquals(true, flags["discussions"])
+        assertEquals(true, flags["avatar_selection"])
+        val me = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
+        assertEquals(true, me.flags["discussions"])
+        assertEquals(true, me.flags["avatar_selection"])
+    }
+
+    @Test
     fun feature_flags_delivered_via_me_and_flags_with_user_override_precedence() = runApp { client ->
         val admin = client.register("flagadmin", "password1")
         grantAdmin(admin.userId)
