@@ -66,8 +66,9 @@ export function TestMode({ card, onGraded, onAdvance, onDiscuss, canSuggest, isG
               Also acceptable: <strong>{card.alternativeAnswers!.join(', ')}</strong>
             </p>
           )}
-          {/* "This should be correct" — propose the typed answer as an alternative (FLA-130). */}
-          {!graded.correct && canSuggest && card.cardUid && (
+          {/* "This should be correct" — propose the typed answer as an alternative (FLA-130); never
+              for a blank answer (a skip can't be a valid alternative, FLA-190). */}
+          {!graded.correct && graded.input.trim() !== '' && canSuggest && card.cardUid && (
             <SuggestAnswerButton cardUid={card.cardUid} answer={graded.input} isGuest={!!isGuest} />
           )}
           <div className="practice-actions">
