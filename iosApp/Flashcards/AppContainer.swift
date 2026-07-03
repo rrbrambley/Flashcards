@@ -13,6 +13,8 @@ final class AppContainer: ObservableObject {
     let tokenStore: TokenStore
     let sdk: FlashcardSdk
     let authService: AuthService
+    /// The caller's feature flags (FLA-178) — loaded after sign-in, injected via `.environmentObject`.
+    let featureFlagStore: FeatureFlagStore
 
     var flashcardRepository: FlashcardRepository { sdk.flashcardRepository }
     var practiceSessionRepository: PracticeSessionRepository { sdk.practiceSessionRepository }
@@ -35,5 +37,6 @@ final class AppContainer: ObservableObject {
             tokenStore: tokenStore,
             localDataStore: sdk.localDataStore
         )
+        self.featureFlagStore = FeatureFlagStore(service: ApiFeatureFlagService(apiClient: sdk.apiClient))
     }
 }
