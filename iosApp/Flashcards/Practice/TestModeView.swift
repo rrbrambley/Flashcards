@@ -23,6 +23,8 @@ struct TestModeView: View {
 
     @State private var input = ""
     @State private var graded: Graded?
+    /// Guards an accidental empty submit (keyboard Done or Check) from grading it wrong (FLA-190).
+    @State private var confirmingBlank = false
 
     private struct Graded {
         let input: String
@@ -66,8 +68,21 @@ struct TestModeView: View {
                         .autocorrectionDisabled()
                         .submitLabel(.done)
                         .onSubmit(submit)
+                        .onChange(of: input) {
+                            // Typing again means they didn't want to skip — dismiss the prompt.
+                            if confirmingBlank { confirmingBlank = false }
+                        }
                     Button("Check", action: submit)
                         .buttonStyle(.primary)
+                    if confirmingBlank {
+                        Text("You haven't typed an answer — skip this one?")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
+                        Button("Confirm") { grade() }
+                            .buttonStyle(.primary)
+                    }
                 }
             }
             .frame(maxWidth: .infinity)
@@ -76,6 +91,17 @@ struct TestModeView: View {
     }
 
     private func submit() {
+        if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            // Confirm the skip instead of grading a blank answer wrong; Confirm still allows an
+            // intentional blank submit, so Check is never disabled (FLA-190).
+            confirmingBlank = true
+            return
+        }
+        grade()
+    }
+
+    private func grade() {
+        confirmingBlank = false
         // Kotlin default args don't bridge to Swift, so pass alternativeAnswers explicitly (FLA-109).
         let correct = TextAnswerGradingKt.gradeTextAnswer(
             input: input,
