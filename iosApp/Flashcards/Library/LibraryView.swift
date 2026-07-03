@@ -5,6 +5,7 @@ import SwiftUI
 /// A–Z / recently-practiced sorting. Tapping a deck opens a deck-actions sheet — Practice / Edit /
 /// Delete (parity with Android, FLA-58); Practice and Delete are also row-swipe shortcuts.
 struct LibraryView: View {
+    @EnvironmentObject private var featureFlagStore: FeatureFlagStore
     @StateObject private var viewModel: LibraryViewModel
     private let flashcardRepository: FlashcardRepository
     private let sessionRepository: PracticeSessionRepository
@@ -65,6 +66,7 @@ struct LibraryView: View {
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
                     entry: .deck(item.id, mode: item.mode),
+                    featureFlagStore: featureFlagStore,
                     apiClient: apiClient
                 )
             }

@@ -8,9 +8,12 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: ProfileViewModel
+    /// Kill switch (FLA-189): when the `avatar_selection` flag is off, the picker hides with a note.
+    private let avatarSelectionEnabled: Bool
 
-    init(service: ProfileService) {
+    init(service: ProfileService, avatarSelectionEnabled: Bool = true) {
         _viewModel = StateObject(wrappedValue: ProfileViewModel(service: service))
+        self.avatarSelectionEnabled = avatarSelectionEnabled
     }
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: Spacing.md), count: 5)
@@ -43,57 +46,69 @@ struct ProfileView: View {
 
     private var form: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Spacing.lg) {
-                Text("AVATAR")
-                    .font(.caption)
-                    .fontWeight(.semibold)
+            if avatarSelectionEnabled {
+                avatarSection
+            } else {
+                Text("Avatar selection isn't available right now.")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .padding(Spacing.md)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
 
-                HStack(spacing: Spacing.md) {
-                    AvatarView(url: viewModel.avatarUrl, name: viewModel.monogramName, size: 72)
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Text(viewModel.avatars.isEmpty
-                            ? "Avatars are unavailable right now."
-                            : "Pick an avatar shown on your profile and discussion posts.")
+    private var avatarSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
+            Text("AVATAR")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: Spacing.md) {
+                AvatarView(url: viewModel.avatarUrl, name: viewModel.monogramName, size: 72)
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Text(viewModel.avatars.isEmpty
+                        ? "Avatars are unavailable right now."
+                        : "Pick an avatar shown on your profile and discussion posts.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if viewModel.selectedAvatarKey != nil {
+                        Button("Remove avatar") { Task { await viewModel.clear() } }
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        if viewModel.selectedAvatarKey != nil {
-                            Button("Remove avatar") { Task { await viewModel.clear() } }
-                                .font(.subheadline)
-                                .disabled(viewModel.isSaving)
-                        }
-                    }
-                }
-
-                if !viewModel.avatars.isEmpty {
-                    LazyVGrid(columns: columns, spacing: Spacing.md) {
-                        ForEach(viewModel.avatars, id: \.key) { option in
-                            Button {
-                                Task { await viewModel.select(key: option.key) }
-                            } label: {
-                                AvatarView(url: option.url, name: option.key, size: 56)
-                                    .overlay {
-                                        Circle().strokeBorder(
-                                            Color.accentColor,
-                                            lineWidth: option.key == viewModel.selectedAvatarKey ? 3 : 0
-                                        )
-                                    }
-                            }
-                            .buttonStyle(.plain)
                             .disabled(viewModel.isSaving)
-                            .accessibilityLabel("\(option.key) avatar")
-                        }
                     }
-                }
-
-                if viewModel.avatarError {
-                    Text("Couldn't update your avatar.")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
                 }
             }
-            .padding(Spacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if !viewModel.avatars.isEmpty {
+                LazyVGrid(columns: columns, spacing: Spacing.md) {
+                    ForEach(viewModel.avatars, id: \.key) { option in
+                        Button {
+                            Task { await viewModel.select(key: option.key) }
+                        } label: {
+                            AvatarView(url: option.url, name: option.key, size: 56)
+                                .overlay {
+                                    Circle().strokeBorder(
+                                        Color.accentColor,
+                                        lineWidth: option.key == viewModel.selectedAvatarKey ? 3 : 0
+                                    )
+                                }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(viewModel.isSaving)
+                        .accessibilityLabel("\(option.key) avatar")
+                    }
+                }
+            }
+
+            if viewModel.avatarError {
+                Text("Couldn't update your avatar.")
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
         }
+        .padding(Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
