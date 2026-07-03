@@ -81,4 +81,18 @@ class TestModeTest {
         assertEquals("paris", graded?.second)
         composeTestRule.onNodeWithText("skip this one", substring = true).assertDoesNotExist()
     }
+
+    @Test
+    fun confirmedBlankAnswer_hidesTheSuggestAction_onAGlobalCard() {
+        val globalCard = Flashcard(question = "Capital of France?", answer = "Paris", cardUid = "card-1")
+        composeTestRule.setContent {
+            TestMode(flashcard = globalCard, onGraded = { _, _ -> }, onAdvance = {}, canSuggest = true)
+        }
+
+        composeTestRule.onNodeWithText("Check").performClick()
+        composeTestRule.onNodeWithText("Confirm").performClick()
+
+        // Graded incorrect, but a blank answer can't be proposed as an acceptable alternative.
+        composeTestRule.onNodeWithText("This should be correct").assertDoesNotExist()
+    }
 }

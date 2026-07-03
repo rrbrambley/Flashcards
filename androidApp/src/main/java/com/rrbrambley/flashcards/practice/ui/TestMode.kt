@@ -138,8 +138,9 @@ fun TestMode(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            // On a global-deck card graded wrong, offer to suggest the typed answer as acceptable (FLA-134).
-            if (canSuggest && !currentGrade.correct && flashcard.cardUid.isNotBlank()) {
+            // On a global-deck card graded wrong, offer to suggest the typed answer as acceptable
+            // (FLA-134) — but never for a blank answer (a skip can't be a valid alternative, FLA-190).
+            if (canSuggest && !currentGrade.correct && currentGrade.input.isNotBlank() && flashcard.cardUid.isNotBlank()) {
                 SuggestAnswerAction(
                     cardUid = flashcard.cardUid,
                     suggestedAnswer = currentGrade.input,
