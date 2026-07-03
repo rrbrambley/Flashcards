@@ -46,8 +46,11 @@ struct TestModeView: View {
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
                     }
-                    // On a global-deck card graded wrong, offer to suggest the typed answer (FLA-135).
-                    if canSuggest, !graded.correct, !card.cardUid.isEmpty, let apiClient {
+                    // On a global-deck card graded wrong, offer to suggest the typed answer (FLA-135) —
+                    // but never for a blank answer (a skip can't be a valid alternative, FLA-190).
+                    if canSuggest, !graded.correct,
+                        !graded.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                        !card.cardUid.isEmpty, let apiClient {
                         SuggestAnswerView(
                             cardUid: card.cardUid,
                             suggestedAnswer: graded.input,
