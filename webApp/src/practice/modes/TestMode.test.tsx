@@ -3,6 +3,11 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TestMode } from './TestMode';
 
+// Stub the suggest button (it needs auth context); we only assert whether it renders.
+vi.mock('../SuggestAnswerButton', () => ({
+  SuggestAnswerButton: () => <div>This should be correct</div>,
+}));
+
 const card = { question: 'Capital of France?', answer: 'Paris' };
 
 // All three are required by the mode contract; tests pass no-ops for the ones they don't assert.
@@ -129,5 +134,27 @@ describe('TestMode', () => {
 
     expect(screen.queryByText(/skip this one\?/i)).not.toBeInTheDocument();
     expect(onGraded).toHaveBeenCalledWith(true, 'paris');
+  });
+
+  // FLA-190: a blank answer can't be proposed as an acceptable alternative.
+  it('shows the suggest action on a wrong non-blank answer (global card)', async () => {
+    const globalCard = { ...card, cardUid: 'card-1' };
+    render(<TestMode card={globalCard} cards={[globalCard]} canSuggest {...noopProps} />);
+
+    await userEvent.type(screen.getByLabelText('Your answer'), 'Berlin');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+
+    expect(screen.getByText('This should be correct')).toBeInTheDocument();
+  });
+
+  it('hides the suggest action after confirming a blank answer', async () => {
+    const globalCard = { ...card, cardUid: 'card-1' };
+    render(<TestMode card={globalCard} cards={[globalCard]} canSuggest {...noopProps} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+
+    expect(screen.getByText('✗ Incorrect')).toBeInTheDocument();
+    expect(screen.queryByText('This should be correct')).not.toBeInTheDocument();
   });
 });
