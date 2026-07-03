@@ -221,6 +221,7 @@
     <string name="profile_avatar_section">Avatar</string>
     <string name="profile_avatar_hint">Pick an avatar shown on your profile and discussion posts.</string>
     <string name="profile_avatar_unavailable">Avatars are unavailable right now.</string>
+    <string name="profile_avatar_selection_disabled">Avatar selection isn\'t available right now.</string>
     <string name="profile_remove_avatar">Remove avatar</string>
     <string name="profile_load_failed">Couldn\'t load your profile.</string>
     <string name="profile_retry">Try again</string>

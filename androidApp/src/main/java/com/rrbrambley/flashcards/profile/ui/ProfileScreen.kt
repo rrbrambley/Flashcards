@@ -72,6 +72,16 @@ fun ProfileScreen(
             return@Column
         }
 
+        // Avatar selection can be turned off via the `avatar_selection` feature flag (FLA-181).
+        if (!uiState.avatarSelectionEnabled) {
+            Text(
+                text = stringResource(R.string.profile_avatar_selection_disabled),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@Column
+        }
+
         Text(
             text = stringResource(R.string.profile_avatar_section),
             style = MaterialTheme.typography.titleSmall,

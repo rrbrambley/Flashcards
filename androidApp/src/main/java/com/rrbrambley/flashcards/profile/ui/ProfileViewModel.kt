@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.profile.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rrbrambley.flashcards.auth.FeatureFlagRepository
+import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.profile.ProfileRepository
 import com.rrbrambley.flashcards.shared.api.ApiError
 import com.rrbrambley.flashcards.shared.api.AvatarDto
@@ -21,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val repository: ProfileRepository,
+    private val featureFlagRepository: FeatureFlagRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
@@ -36,6 +39,7 @@ class ProfileViewModel @Inject constructor(
                 val me = repository.me()
                 // A missing/empty catalog (no CDN) must not fail the screen — just hides the picker.
                 val avatars = runCatching { repository.avatars() }.getOrDefault(emptyList<AvatarDto>())
+                val selectionEnabled = featureFlagRepository.isEnabled(FeatureFlags.AVATAR_SELECTION)
                 _uiState.update {
                     it.copy(
                         loading = false,
@@ -44,6 +48,7 @@ class ProfileViewModel @Inject constructor(
                         avatarUrl = me.avatarUrl,
                         displayName = me.displayName,
                         email = me.email,
+                        avatarSelectionEnabled = selectionEnabled,
                     )
                 }
             } catch (e: ApiError) {

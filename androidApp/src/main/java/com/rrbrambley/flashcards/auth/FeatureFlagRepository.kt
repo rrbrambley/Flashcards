@@ -10,6 +10,8 @@ import javax.inject.Singleton
 /** Feature-flag keys mirrored from the backend catalog (`flags/FeatureFlags.kt`). */
 object FeatureFlags {
     const val STREAK_CALENDAR = "streak_calendar"
+    const val DISCUSSIONS = "discussions"
+    const val AVATAR_SELECTION = "avatar_selection"
 }
 
 /**

@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.profile.ui
 
+import com.rrbrambley.flashcards.auth.FeatureFlagRepository
+import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.profile.ProfileRepository
 import com.rrbrambley.flashcards.shared.api.ApiError
 import com.rrbrambley.flashcards.shared.api.AvatarDto
@@ -32,7 +34,7 @@ class ProfileViewModelTest {
     @Test
     fun load_populatesCatalogAndCurrentSelection() = runTest(testDispatcher) {
         val repo = FakeProfileRepository(me = me(avatarKey = "dragon", avatarUrl = url("dragon")), avatars = catalog)
-        val viewModel = ProfileViewModel(repo)
+        val viewModel = ProfileViewModel(repo, flagRepo)
 
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -46,7 +48,7 @@ class ProfileViewModelTest {
     @Test
     fun selectAvatar_sendsKeyAndUpdatesSelection() = runTest(testDispatcher) {
         val repo = FakeProfileRepository(me = me(), avatars = catalog)
-        val viewModel = ProfileViewModel(repo)
+        val viewModel = ProfileViewModel(repo, flagRepo)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.selectAvatar("yeti")
@@ -62,7 +64,7 @@ class ProfileViewModelTest {
     @Test
     fun clearAvatar_sendsBlankKeyAndResetsSelection() = runTest(testDispatcher) {
         val repo = FakeProfileRepository(me = me(avatarKey = "dragon", avatarUrl = url("dragon")), avatars = catalog)
-        val viewModel = ProfileViewModel(repo)
+        val viewModel = ProfileViewModel(repo, flagRepo)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.clearAvatar()
@@ -77,7 +79,7 @@ class ProfileViewModelTest {
     @Test
     fun load_emptyCatalog_whenAvatarsFail_stillShowsProfile() = runTest(testDispatcher) {
         val repo = FakeProfileRepository(me = me(), avatars = catalog, failAvatars = true)
-        val viewModel = ProfileViewModel(repo)
+        val viewModel = ProfileViewModel(repo, flagRepo)
 
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -90,7 +92,7 @@ class ProfileViewModelTest {
     @Test
     fun load_failsWhenMeFails() = runTest(testDispatcher) {
         val repo = FakeProfileRepository(me = me(), avatars = catalog, failMe = true)
-        val viewModel = ProfileViewModel(repo)
+        val viewModel = ProfileViewModel(repo, flagRepo)
 
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -100,7 +102,7 @@ class ProfileViewModelTest {
     @Test
     fun selectAvatar_setsErrorOnFailure() = runTest(testDispatcher) {
         val repo = FakeProfileRepository(me = me(), avatars = catalog, failUpdate = true)
-        val viewModel = ProfileViewModel(repo)
+        val viewModel = ProfileViewModel(repo, flagRepo)
         testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.selectAvatar("yeti")
@@ -110,6 +112,24 @@ class ProfileViewModelTest {
         assertTrue(state.avatarError)
         assertFalse(state.saving)
     }
+
+    @Test
+    fun avatarSelectionEnabled_reflectsTheFlag() = runTest(testDispatcher) {
+        val repo = FakeProfileRepository(me = me(), avatars = catalog)
+        val offFlags = FakeFeatureFlagRepository(mapOf(FeatureFlags.AVATAR_SELECTION to false))
+
+        val viewModel = ProfileViewModel(repo, offFlags)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.avatarSelectionEnabled)
+
+        // ...and on when the flag is enabled (the shared flagRepo).
+        val onViewModel = ProfileViewModel(FakeProfileRepository(me = me(), avatars = catalog), flagRepo)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(onViewModel.uiState.value.avatarSelectionEnabled)
+    }
+
+    // Avatar selection on by default; the gating test builds its own repo with it off.
+    private val flagRepo = FakeFeatureFlagRepository(mapOf(FeatureFlags.AVATAR_SELECTION to true))
 
     private fun me(avatarKey: String? = null, avatarUrl: String? = null) = MeResponse(
         userId = 1,
@@ -154,5 +174,9 @@ class ProfileViewModelTest {
             )
             return me
         }
+    }
+
+    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) : FeatureFlagRepository {
+        override suspend fun flags(): Map<String, Boolean> = flags
     }
 }
