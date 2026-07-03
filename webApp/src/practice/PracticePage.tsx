@@ -43,7 +43,7 @@ const ZERO_PROGRESS: Progress = { currentCardIndex: 0, numCorrect: 0, numIncorre
 
 function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode }) {
   const navigate = useNavigate();
-  const { token, can } = useAuth();
+  const { token, can, isEnabled } = useAuth();
   const isGuest = !token;
   const [reloadToken, setReloadToken] = useState(0);
   const [data, setData] = useState<LoadedPractice | null>(null);
@@ -154,7 +154,9 @@ function PracticeSession({ deckId, mode }: { deckId: number; mode: PracticeMode 
             cards={data.cards}
             progress={data.progress}
             mode={mode}
-            discussionsEnabled={data.discussionsEnabled}
+            // Gate the discuss surface on the `discussions` feature flag (FLA-180). Guests carry no
+            // flags, so keep their (read-only) discussions unflagged rather than hiding them.
+            discussionsEnabled={data.discussionsEnabled && (isGuest || isEnabled('discussions'))}
             isGlobal={data.isGlobal}
             isGuest={isGuest}
             canModerate={can('manage_discussions')}

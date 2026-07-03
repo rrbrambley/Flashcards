@@ -33,7 +33,8 @@ const catalog: AvatarOption[] = [
 describe('SettingsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    isEnabled.mockReturnValue(false); // the streak_calendar flag is off by default in these tests
+    // avatar_selection on (avatar section shown), streak_calendar off — the default for these tests.
+    isEnabled.mockImplementation((key: string) => key === 'avatar_selection');
     vi.mocked(api.getAvatars).mockResolvedValue([]);
     // SettingsPage embeds the StreakCalendar (behind the flag), which fetches on mount when shown.
     vi.mocked(api.getStreakCalendar).mockResolvedValue({ month: '2026-07', activeDays: [], current: 0, longest: 0 });
@@ -135,5 +136,31 @@ describe('SettingsPage', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('Practice activity')).toBeInTheDocument();
+  });
+
+  it('gates the Avatar section behind the avatar_selection flag', async () => {
+    vi.mocked(api.getMe).mockResolvedValue(me());
+    vi.mocked(api.getAvatars).mockResolvedValue(catalog);
+
+    // Flag off → the Avatar section is hidden, but the rest of Settings still loads.
+    isEnabled.mockReturnValue(false);
+    const { unmount } = render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
+    await screen.findByLabelText(/Display name/);
+    expect(screen.queryByText('Avatar')).not.toBeInTheDocument();
+    expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
+    unmount();
+
+    // Flag on → the Avatar section + picker render.
+    isEnabled.mockImplementation((key: string) => key === 'avatar_selection');
+    render(
+      <MemoryRouter>
+        <SettingsPage />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByRole('radiogroup', { name: 'Choose an avatar' })).toBeInTheDocument();
   });
 });

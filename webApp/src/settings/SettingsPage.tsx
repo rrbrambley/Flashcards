@@ -99,6 +99,7 @@ export function SettingsPage() {
               </section>
             )}
 
+            {isEnabled('avatar_selection') && (
             <section className="settings-section">
               <h2 className="settings-section-title">Avatar</h2>
               <div className="avatar-current">
@@ -142,6 +143,7 @@ export function SettingsPage() {
               )}
               {avatarError && <p className="error">{avatarError}</p>}
             </section>
+            )}
 
             <form className="create-form" onSubmit={save}>
               <label>
