@@ -11,4 +11,8 @@ package com.rrbrambley.flashcards.backend.flags
  */
 enum class FeatureFlag(val key: String, val description: String, val defaultEnabled: Boolean) {
     STREAK_CALENDAR("streak_calendar", "Show the practice-activity streak calendar", false),
+
+    // Kill switches for shipped features — default ON, flipped off (or targeted) to hide/experiment.
+    DISCUSSIONS("discussions", "Show card discussions", true),
+    AVATAR_SELECTION("avatar_selection", "Allow choosing a profile avatar", true),
 }
