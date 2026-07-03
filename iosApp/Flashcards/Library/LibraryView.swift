@@ -198,7 +198,7 @@ struct LibraryView: View {
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
                 Picker("Sort", selection: $viewModel.sortOrder) {
-                    ForEach(DeckSortOrder.allCases) { order in
+                    ForEach(DeckSortOrder.entries) { order in
                         Text(order.label).tag(order)
                     }
                 }
