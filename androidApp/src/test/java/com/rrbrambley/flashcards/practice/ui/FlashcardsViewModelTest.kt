@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.practice.ui
 
+import com.rrbrambley.flashcards.auth.FeatureFlagRepository
+import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
@@ -192,6 +194,27 @@ class FlashcardsViewModelTest {
             ),
             viewModel.uiState.value,
         )
+    }
+
+    @Test
+    fun discussions_areOn_whenDeckEnabledAndFlagOn() = runTest(testDispatcher) {
+        val viewModel = createViewModel(testFlashcards(), deckDiscussionsEnabled = true, discussionsFlagEnabled = true)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
+        assertTrue(state.discussionsEnabled)
+    }
+
+    @Test
+    fun discussions_areGatedOff_whenTheDiscussionsFlagIsDisabled() = runTest(testDispatcher) {
+        // Deck allows discussions, but the `discussions` feature flag is off → the 💬 affordance hides.
+        val viewModel = createViewModel(testFlashcards(), deckDiscussionsEnabled = true, discussionsFlagEnabled = false)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
+        assertFalse(state.discussionsEnabled)
     }
 
     @Test
@@ -432,6 +455,8 @@ class FlashcardsViewModelTest {
         flashcards: List<Flashcard>,
         practiceSessionRepository: FakePracticeSessionRepository = FakePracticeSessionRepository(session()),
         engine: MockEngine = unavailableEngine(),
+        discussionsFlagEnabled: Boolean = true,
+        deckDiscussionsEnabled: Boolean = false,
     ): FlashcardsViewModel {
         val apiClient = FlashcardApiClient(
             client = createFlashcardHttpClient(engine),
@@ -440,11 +465,21 @@ class FlashcardsViewModelTest {
         )
         return FlashcardsViewModel(
             flashcardRepository = FakeFlashcardRepository(
-                listOf(FlashcardDeck(id = DECK_ID, title = "Deck", flashcards = flashcards)),
+                listOf(
+                    FlashcardDeck(
+                        id = DECK_ID,
+                        title = "Deck",
+                        flashcards = flashcards,
+                        discussionsEnabled = deckDiscussionsEnabled,
+                    ),
+                ),
             ),
             practiceSessionRepository = practiceSessionRepository,
             apiClient = apiClient,
             authService = AuthService(apiClient, FakeTokenStore(), FakeLocalDataStore()),
+            featureFlagRepository = FakeFeatureFlagRepository(
+                mapOf(FeatureFlags.DISCUSSIONS to discussionsFlagEnabled),
+            ),
         )
     }
 
@@ -469,6 +504,10 @@ class FlashcardsViewModelTest {
 
     private class FakeLocalDataStore : LocalDataStore {
         override suspend fun clearAll() = Unit
+    }
+
+    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) : FeatureFlagRepository {
+        override suspend fun flags(): Map<String, Boolean> = flags
     }
 
     private fun session(

@@ -21,6 +21,8 @@ data class ProfileUiState(
     val saving: Boolean = false,
     /** True after a failed select/clear; the UI shows an inline error (copy resolved there). */
     val avatarError: Boolean = false,
+    /** Whether avatar selection is enabled for this user — the `avatar_selection` flag (FLA-181). */
+    val avatarSelectionEnabled: Boolean = true,
 ) {
     /** The name used for the monogram fallback + image alt: display name, else the email local-part. */
     val monogramName: String?

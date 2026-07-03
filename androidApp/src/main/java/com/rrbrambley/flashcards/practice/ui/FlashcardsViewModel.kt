@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.practice.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rrbrambley.flashcards.auth.FeatureFlagRepository
+import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.shared.AuthResult
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
@@ -34,6 +36,7 @@ class FlashcardsViewModel @Inject constructor(
     private val practiceSessionRepository: PracticeSessionRepository,
     private val apiClient: FlashcardApiClient,
     private val authService: AuthService,
+    private val featureFlagRepository: FeatureFlagRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<FlashcardsUiState>(FlashcardsUiState.Loading)
     val uiState: StateFlow<FlashcardsUiState> = _uiState.asStateFlow()
@@ -207,7 +210,9 @@ class FlashcardsViewModel @Inject constructor(
         flashcards = deckFlashcards
         mode = session.mode
         // The discussions + global flags travel with the cached deck (FLA-122/134), so they're available offline too.
-        discussionsEnabled = deck?.discussionsEnabled ?: false
+        // Gate the discuss surface on the `discussions` feature flag (FLA-180) for the signed-in user.
+        discussionsEnabled = (deck?.discussionsEnabled ?: false) &&
+            featureFlagRepository.isEnabled(FeatureFlags.DISCUSSIONS)
         isGlobal = deck?.isGlobal ?: false
         currentFlashcardIndex = session.currentCardIndex.coerceIn(0, flashcards.lastIndex)
         numCorrect = session.numCorrect
