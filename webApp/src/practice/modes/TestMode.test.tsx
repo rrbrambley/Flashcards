@@ -84,7 +84,7 @@ describe('TestMode', () => {
 
     await userEvent.type(screen.getByLabelText('Your answer'), '{Enter}');
 
-    expect(screen.getByText(/skip this card\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/skip this one\?/i)).toBeInTheDocument();
     expect(onGraded).not.toHaveBeenCalled();
     expect(screen.queryByText('✗ Incorrect')).not.toBeInTheDocument();
   });
@@ -95,30 +95,30 @@ describe('TestMode', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
 
-    expect(screen.getByText(/skip this card\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/skip this one\?/i)).toBeInTheDocument();
     expect(onGraded).not.toHaveBeenCalled();
   });
 
-  it('Skip submits the blank answer and grades it incorrect', async () => {
+  it('Confirm submits the blank answer and grades it incorrect', async () => {
     const onGraded = vi.fn();
     render(<TestMode card={card} cards={[card]} onResult={vi.fn()} onGraded={onGraded} onAdvance={vi.fn()} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Skip' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
 
     expect(onGraded).toHaveBeenCalledWith(false, '');
     expect(screen.getByText('✗ Incorrect')).toBeInTheDocument();
     expect(screen.getByText('(blank)')).toBeInTheDocument();
   });
 
-  it('Keep typing dismisses the confirm and refocuses the input', async () => {
+  it('resuming typing dismisses the blank confirm', async () => {
     render(<TestMode card={card} cards={[card]} {...noopProps} />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Keep typing' }));
+    expect(screen.getByText(/skip this one\?/i)).toBeInTheDocument();
 
-    expect(screen.queryByText(/skip this card\?/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText('Your answer')).toHaveFocus();
+    await userEvent.type(screen.getByLabelText('Your answer'), 'p');
+    expect(screen.queryByText(/skip this one\?/i)).not.toBeInTheDocument();
   });
 
   it('a non-blank answer submits immediately with no confirm', async () => {
@@ -127,7 +127,7 @@ describe('TestMode', () => {
 
     await userEvent.type(screen.getByLabelText('Your answer'), 'paris{Enter}');
 
-    expect(screen.queryByText(/skip this card\?/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/skip this one\?/i)).not.toBeInTheDocument();
     expect(onGraded).toHaveBeenCalledWith(true, 'paris');
   });
 });

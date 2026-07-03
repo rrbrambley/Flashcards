@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 
 /**
  * A presentational answer field: a text input + submit (Enter submits). It holds no grading or
  * correctness logic, so any mode that needs typed input (Test, and a future Learn mode) can reuse it.
  *
  * With `confirmBlankSubmit`, submitting an empty (trimmed) answer — via Enter or the Check button —
- * shows an inline "skip this card?" confirm instead of submitting immediately, guarding against an
+ * shows an inline "skip this one?" confirm instead of submitting immediately, guarding against an
  * accidental early Enter that would otherwise be graded wrong (FLA-179). Intentional blank submission
- * stays possible via the Skip action, so the Check button is never disabled.
+ * stays possible via the Confirm action, so the Check button is never disabled; resuming typing
+ * dismisses the prompt.
  */
 export function TextAnswerInput({
   onSubmit,
@@ -20,7 +21,6 @@ export function TextAnswerInput({
 }) {
   const [value, setValue] = useState('');
   const [confirmingBlank, setConfirmingBlank] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const submit = () => {
     if (confirmBlankSubmit && value.trim() === '') {
@@ -43,7 +43,6 @@ export function TextAnswerInput({
         }}
       >
         <input
-          ref={inputRef}
           className="text-answer-input"
           type="text"
           value={value}
@@ -61,8 +60,8 @@ export function TextAnswerInput({
       </form>
 
       {confirmingBlank && (
-        <div className="text-answer-confirm" role="alertdialog" aria-label="Skip this card?">
-          <p>You haven't typed an answer — skip this card?</p>
+        <div className="text-answer-confirm" role="alertdialog" aria-label="Skip this one?">
+          <p>You haven't typed an answer — skip this one?</p>
           <div className="text-answer-confirm-actions">
             <button
               type="button"
@@ -71,16 +70,7 @@ export function TextAnswerInput({
                 onSubmit(value);
               }}
             >
-              Skip
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setConfirmingBlank(false);
-                inputRef.current?.focus();
-              }}
-            >
-              Keep typing
+              Confirm
             </button>
           </div>
         </div>

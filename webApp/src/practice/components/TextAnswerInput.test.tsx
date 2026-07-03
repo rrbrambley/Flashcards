@@ -21,7 +21,7 @@ describe('TextAnswerInput', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
 
     expect(onSubmit).toHaveBeenCalledWith('');
-    expect(screen.queryByText(/skip this card\?/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/skip this one\?/i)).not.toBeInTheDocument();
   });
 
   it('confirms a blank submit when confirmBlankSubmit is on, and a second Enter does not double-submit', async () => {
@@ -30,12 +30,16 @@ describe('TextAnswerInput', () => {
 
     const input = screen.getByLabelText('Your answer');
     await userEvent.type(input, '{Enter}');
-    expect(screen.getByText(/skip this card\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/skip this one\?/i)).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
 
     // A second Enter while the confirm is up must not re-trigger or submit.
     await userEvent.type(input, '{Enter}');
     expect(onSubmit).not.toHaveBeenCalled();
+
+    // Confirm goes through with the blank value.
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    expect(onSubmit).toHaveBeenCalledWith('');
   });
 
   it('dismisses the confirm when the user resumes typing', async () => {
@@ -43,10 +47,10 @@ describe('TextAnswerInput', () => {
     render(<TextAnswerInput onSubmit={onSubmit} confirmBlankSubmit />);
 
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
-    expect(screen.getByText(/skip this card\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/skip this one\?/i)).toBeInTheDocument();
 
     await userEvent.type(screen.getByLabelText('Your answer'), 'a');
-    expect(screen.queryByText(/skip this card\?/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/skip this one\?/i)).not.toBeInTheDocument();
   });
 
   it('treats a whitespace-only answer as blank', async () => {
@@ -55,7 +59,7 @@ describe('TextAnswerInput', () => {
 
     await userEvent.type(screen.getByLabelText('Your answer'), '   {Enter}');
 
-    expect(screen.getByText(/skip this card\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/skip this one\?/i)).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });
