@@ -145,6 +145,9 @@
     <!-- Live in-session answer streak (FLA-99) -->
     <string name="practice_streak_in_a_row">🔥 %1$d in a row</string>
     <string name="practice_test_blank">(blank)</string>
+    <!-- Blank-submit guard (FLA-190): confirm an accidental empty submit instead of grading it wrong -->
+    <string name="practice_test_blank_confirm">You haven\'t typed an answer — skip this one?</string>
+    <string name="practice_test_blank_confirm_action">Confirm</string>
     <!-- End-of-session review (FLA-149) -->
     <string name="practice_review_heading">Review</string>
     <string name="practice_review_submitted">You answered: %1$s</string>
