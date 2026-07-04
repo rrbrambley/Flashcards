@@ -1,20 +1,18 @@
-import Foundation
+import Shared
+import SwiftUI
 
-/// A selectable practice mode: its persisted `key` (stored on the session + sent to the backend) and
-/// the chooser copy. `allCases` is the chooser's display order; the runner dispatches the per-card UI
-/// on the session's mode key (unknown keys fall back to Classic).
-enum PracticeMode: String, CaseIterable, Identifiable {
-    case classic = "flashcards"
-    case test = "test"
-    case multipleChoice = "multiple_choice"
-
-    var id: String { rawValue }
+/// SwiftUI conveniences on the shared `PracticeMode` (FLA-195). The mode + its persisted `key` live in
+/// `:shared`; only the localized label + the `Identifiable` conformance `Picker`/`ForEach` need stay
+/// here. The chooser iterates `PracticeMode.entries` (KN-provided) since the bridged enum is a
+/// non-final class and can't be `CaseIterable`.
+extension PracticeMode: @retroactive Identifiable {
+    public var id: String { key }
 
     var label: String {
         switch self {
-        case .classic: "Classic"
         case .test: "Test"
-        case .multipleChoice: "Multiple Choice"
+        case .multiplechoice: "Multiple Choice"
+        default: "Classic"
         }
     }
 }

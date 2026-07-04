@@ -53,7 +53,7 @@ struct GuestHomeView: View {
                 Section {
                     ForEach(decks, id: \.id) { deck in
                         Button {
-                            practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.rawValue)
+                            practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.key)
                         } label: {
                             DeckCard(title: deck.title, category: (deck.tags as? [String])?.first, cardCount: deck.flashcards.count)
                         }

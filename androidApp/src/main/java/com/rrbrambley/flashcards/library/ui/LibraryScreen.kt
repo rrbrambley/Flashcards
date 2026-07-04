@@ -1,4 +1,6 @@
 package com.rrbrambley.flashcards.library.ui
+import com.rrbrambley.flashcards.practice.ui.labelRes
+import com.rrbrambley.flashcards.practice.ui.descriptionRes
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,7 +55,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
-import com.rrbrambley.flashcards.practice.ui.PracticeMode
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
@@ -439,12 +441,12 @@ private fun PracticeModeOption(mode: PracticeMode, onClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = stringResource(mode.label),
+                text = stringResource(mode.labelRes),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = stringResource(mode.description),
+                text = stringResource(mode.descriptionRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

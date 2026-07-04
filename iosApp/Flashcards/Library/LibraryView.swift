@@ -80,9 +80,9 @@ struct LibraryView: View {
             ) { selected in
                 // One button per mode (the iOS take on the Android mode chooser).
                 if !selected.deck.flashcards.isEmpty {
-                    ForEach(PracticeMode.allCases) { mode in
+                    ForEach(PracticeMode.entries) { mode in
                         Button("Practice (\(mode.label))") {
-                            practicing = PracticingDeck(id: selected.deck.id, mode: mode.rawValue)
+                            practicing = PracticingDeck(id: selected.deck.id, mode: mode.key)
                         }
                     }
                 }
@@ -172,7 +172,7 @@ struct LibraryView: View {
                 .swipeActions(edge: .leading) {
                     // Quick swipe-to-practice uses Classic; tap the deck to choose another mode.
                     Button {
-                        practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.rawValue)
+                        practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.key)
                     } label: {
                         Label("Practice", systemImage: "play.fill")
                     }

@@ -120,7 +120,7 @@ struct HomeView: View {
         } else if let practiceDeck = action as? HomeButtonActionNavigateToPractice {
             // The backend/offline layer resolves which deck (the featured global deck) and its id.
             // Featured practice from Home uses Classic; the Library offers the mode chooser.
-            practice = PracticePresentation(entry: .deck(practiceDeck.deckId, mode: PracticeMode.classic.rawValue))
+            practice = PracticePresentation(entry: .deck(practiceDeck.deckId, mode: PracticeMode.classic.key))
         }
     }
 
@@ -170,7 +170,7 @@ private struct SessionDetail: View {
     var body: some View {
         let total = Int(session.totalCards)
         let current = Int(session.currentCardIndex)
-        let modeLabel = PracticeMode(rawValue: session.mode)?.label ?? session.mode
+        let modeLabel = PracticeMode.companion.fromKey(key: session.mode).label
 
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(spacing: Spacing.sm) {

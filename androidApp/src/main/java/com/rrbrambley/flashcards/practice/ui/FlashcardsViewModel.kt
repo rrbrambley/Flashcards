@@ -1,4 +1,5 @@
 package com.rrbrambley.flashcards.practice.ui
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -52,7 +53,7 @@ class FlashcardsViewModel @Inject constructor(
     private var numCorrect = 0
     private var currentFlashcardIndex = 0
     private var flashcards: List<Flashcard> = emptyList()
-    private var mode: String = PracticeMode.CLASSIC.key
+    private var mode: String = PracticeMode.Classic.key
     private var discussionsEnabled: Boolean = false
     private var isGlobal: Boolean = false
     // Current consecutive-correct run within this session (FLA-99); ephemeral per run (resets on load).
@@ -68,7 +69,7 @@ class FlashcardsViewModel @Inject constructor(
      * deck. When [isGuest] is true the deck is practiced from the public catalog entirely in memory:
      * no session is created and nothing is persisted (FLA-103).
      */
-    fun load(sessionId: Long?, deckId: Long?, isGuest: Boolean = false, mode: String = PracticeMode.CLASSIC.key) {
+    fun load(sessionId: Long?, deckId: Long?, isGuest: Boolean = false, mode: String = PracticeMode.Classic.key) {
         val key = LoadKey(sessionId, deckId, isGuest, mode)
         if (loadedKey == key && loadJob != null) return
         loadedKey = key

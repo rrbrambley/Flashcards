@@ -1,4 +1,5 @@
 package com.rrbrambley.flashcards.practice.ui
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 
 import android.content.Context
 import android.content.Intent
@@ -78,7 +79,7 @@ fun FlashcardsScreen(
     sessionId: Long? = null,
     deckId: Long? = null,
     isGuest: Boolean = false,
-    mode: String = PracticeMode.CLASSIC.key,
+    mode: String = PracticeMode.Classic.key,
     flashcardsViewModel: FlashcardsViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
 ) {
@@ -95,7 +96,7 @@ fun FlashcardsScreen(
 
     // The help copy explains flip/swipe, so it's only offered in Classic mode.
     val isClassic = (flashcardsState as? FlashcardsUiState.ShowFlashcard)?.mode?.let {
-        it == PracticeMode.CLASSIC.key
+        it == PracticeMode.Classic.key
     } ?: true
     // Share is available once a deck is loaded (a card is showing or the session is complete).
     val canShare = flashcardsState is FlashcardsUiState.ShowFlashcard ||
@@ -188,7 +189,7 @@ fun FlashcardsScreen(
                     is FlashcardsUiState.ShowFlashcard -> {
                         val onDiscuss = { discussionCardUid = state.flashcard.cardUid }
                         when (state.mode) {
-                            PracticeMode.TEST.key ->
+                            PracticeMode.Test.key ->
                                 TestMode(
                                     flashcard = state.flashcard,
                                     onGraded = flashcardsViewModel::applyResult,
@@ -199,7 +200,7 @@ fun FlashcardsScreen(
                                     isGuest = isGuest,
                                 )
 
-                            PracticeMode.MULTIPLE_CHOICE.key ->
+                            PracticeMode.MultipleChoice.key ->
                                 MultipleChoiceMode(
                                     flashcard = state.flashcard,
                                     deck = state.deck,

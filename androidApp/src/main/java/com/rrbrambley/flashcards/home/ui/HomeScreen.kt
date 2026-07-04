@@ -1,4 +1,5 @@
 package com.rrbrambley.flashcards.home.ui
+import com.rrbrambley.flashcards.practice.ui.labelRes
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -40,7 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
-import com.rrbrambley.flashcards.practice.ui.PracticeMode
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.shared.domain.HomeButton
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.shared.domain.HomeData
@@ -230,7 +231,7 @@ fun HomeCard(
 /** Mode + score + a progress bar for an in-progress session, shown on its "continue" home card. */
 @Composable
 private fun SessionDetail(session: HomeSessionInfo) {
-    val modeLabel = PracticeMode.entries.firstOrNull { it.key == session.mode }?.label
+    val modeLabel = PracticeMode.entries.firstOrNull { it.key == session.mode }?.labelRes
     val total = session.totalCards
     val progress = if (total > 0) (session.currentCardIndex.toFloat() / total).coerceIn(0f, 1f) else 0f
 
