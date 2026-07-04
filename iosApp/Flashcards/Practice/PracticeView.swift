@@ -45,7 +45,7 @@ struct PracticeView: View {
     /// The help copy explains flip/swipe, so it's only offered in Classic mode.
     private var isClassic: Bool {
         if case let .showCard(_, _, _, _, _, mode, _, _, _, _) = viewModel.state {
-            return (PracticeMode(rawValue: mode) ?? .classic) == .classic
+            return PracticeMode.companion.fromKey(key: mode) == .classic
         }
         return true
     }
@@ -163,17 +163,8 @@ struct PracticeView: View {
             deckEnabled: discussionsEnabled,
             isGuest: viewModel.isGuestMode
         )
-        switch PracticeMode(rawValue: mode) ?? .classic {
-        case .classic:
-            ClassicModeView(
-                card: card,
-                canGoBack: canGoBack,
-                onResult: viewModel.onResult,
-                onPrevious: viewModel.goBack,
-                onNext: viewModel.goForward,
-                discussionsEnabled: showDiscuss,
-                onDiscuss: onDiscuss
-            )
+        // Bridged Kotlin enum is a non-final class, so the switch needs a `default` (→ Classic).
+        switch PracticeMode.companion.fromKey(key: mode) {
         case .test:
             TestModeView(
                 card: card,
@@ -186,12 +177,22 @@ struct PracticeView: View {
                 apiClient: apiClient,
                 authService: authService
             )
-        case .multipleChoice:
+        case .multiplechoice:
             MultipleChoiceModeView(
                 card: card,
                 deck: deck,
                 onGraded: viewModel.applyResult,
                 onAdvance: viewModel.goForward,
+                discussionsEnabled: showDiscuss,
+                onDiscuss: onDiscuss
+            )
+        default:
+            ClassicModeView(
+                card: card,
+                canGoBack: canGoBack,
+                onResult: viewModel.onResult,
+                onPrevious: viewModel.goBack,
+                onNext: viewModel.goForward,
                 discussionsEnabled: showDiscuss,
                 onDiscuss: onDiscuss
             )

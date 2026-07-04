@@ -56,7 +56,7 @@ import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.library.ui.LibraryScreen
 import com.rrbrambley.flashcards.practice.ui.FlashcardsActivity
-import com.rrbrambley.flashcards.practice.ui.PracticeMode
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.profile.ui.ProfileActivity
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 import androidx.compose.material3.TextButton
@@ -145,7 +145,7 @@ private fun GuestScaffolding(onSignIn: () -> Unit) {
                 val intent = Intent(context, FlashcardsActivity::class.java).apply {
                     putExtra(FlashcardsActivity.DECK_ID_EXTRA, deck.id)
                     putExtra(FlashcardsActivity.GUEST_EXTRA, true)
-                    putExtra(FlashcardsActivity.MODE_EXTRA, PracticeMode.CLASSIC.key)
+                    putExtra(FlashcardsActivity.MODE_EXTRA, PracticeMode.Classic.key)
                 }
                 context.startActivity(intent)
             },

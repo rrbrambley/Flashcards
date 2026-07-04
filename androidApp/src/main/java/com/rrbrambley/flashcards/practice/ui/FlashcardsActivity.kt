@@ -1,4 +1,5 @@
 package com.rrbrambley.flashcards.practice.ui
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -18,7 +19,7 @@ class FlashcardsActivity : ComponentActivity() {
         val deckId = intent.takeIf { it.hasExtra(DECK_ID_EXTRA) }?.getLongExtra(DECK_ID_EXTRA, 0L)
         // Guest mode (no account): practice a public catalog deck in-memory, no persisted session (FLA-103).
         val isGuest = intent.getBooleanExtra(GUEST_EXTRA, false)
-        val mode = intent.getStringExtra(MODE_EXTRA) ?: PracticeMode.CLASSIC.key
+        val mode = intent.getStringExtra(MODE_EXTRA) ?: PracticeMode.Classic.key
         setContent {
             FlashcardsTheme {
                 FlashcardsScreen(

@@ -2,18 +2,25 @@ package com.rrbrambley.flashcards.practice.ui
 
 import androidx.annotation.StringRes
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 
 /**
- * A selectable practice mode: its persisted [key] (stored on the session + sent to the backend) and
- * the chooser copy. Order is the mode chooser's display order. The runner dispatches the per-card UI
- * on the session's mode key (unknown keys fall back to Classic).
+ * Localized chooser copy for the shared [PracticeMode] (FLA-195). The mode + its persisted key live in
+ * `:shared`; only the `@StringRes` labels stay on the platform. [PracticeMode.entries] gives the
+ * chooser's display order.
  */
-enum class PracticeMode(
-    val key: String,
-    @StringRes val label: Int,
-    @StringRes val description: Int,
-) {
-    CLASSIC("flashcards", R.string.practice_mode_classic, R.string.practice_mode_classic_desc),
-    TEST("test", R.string.practice_mode_test, R.string.practice_mode_test_desc),
-    MULTIPLE_CHOICE("multiple_choice", R.string.practice_mode_mc, R.string.practice_mode_mc_desc),
-}
+@get:StringRes
+val PracticeMode.labelRes: Int
+    get() = when (this) {
+        PracticeMode.Classic -> R.string.practice_mode_classic
+        PracticeMode.Test -> R.string.practice_mode_test
+        PracticeMode.MultipleChoice -> R.string.practice_mode_mc
+    }
+
+@get:StringRes
+val PracticeMode.descriptionRes: Int
+    get() = when (this) {
+        PracticeMode.Classic -> R.string.practice_mode_classic_desc
+        PracticeMode.Test -> R.string.practice_mode_test_desc
+        PracticeMode.MultipleChoice -> R.string.practice_mode_mc_desc
+    }
