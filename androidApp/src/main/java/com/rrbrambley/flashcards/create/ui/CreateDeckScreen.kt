@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.shared.domain.DeckForm
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
 private const val MinimumCompleteCardCount = 1
@@ -67,25 +68,10 @@ data class DeckFlashcardDraft(
     val uploadError: String? = null,
 )
 
-/** Parses the alternatives field: one per line, trimmed, blanks dropped, de-duplicated (FLA-110). */
-fun parseAlternatives(raw: String): List<String> {
-    val seen = LinkedHashSet<String>()
-    for (line in raw.split('\n')) {
-        val trimmed = line.trim()
-        if (trimmed.isNotEmpty()) seen.add(trimmed)
-    }
-    return seen.toList()
-}
+/** Card completeness/started rules delegate to the shared [DeckForm] (FLA-192) so all platforms agree. */
+fun DeckFlashcardDraft.isComplete(): Boolean = DeckForm.isCardComplete(term, definition, imageUrl != null)
 
-/** A card needs a definition plus either a term or an image (image-only cards are allowed). */
-fun DeckFlashcardDraft.isComplete(): Boolean =
-    definition.isNotBlank() && (term.isNotBlank() || imageUrl != null)
-
-fun DeckFlashcardDraft.isStarted(): Boolean =
-    term.isNotBlank() || definition.isNotBlank() || imageUrl != null
-
-/** The optional category as the deck's tag list: a single trimmed tag, or empty when blank. */
-fun String.toCategoryTags(): List<String> = trim().let { if (it.isEmpty()) emptyList() else listOf(it) }
+fun DeckFlashcardDraft.isStarted(): Boolean = DeckForm.isCardStarted(term, definition, imageUrl != null)
 
 @Composable
 fun CreateDeckScreen(

@@ -80,7 +80,11 @@ final class EditDeckViewModel: ObservableObject {
     func save() async {
         guard isEditable else { return }
         let complete = cards.completeCards
-        let isValid = !deckTitle.trimmed.isEmpty && !complete.isEmpty && !cards.hasIncompleteStartedCard
+        let isValid = DeckForm.shared.isDeckSavable(
+            title: deckTitle,
+            hasCompleteCard: !complete.isEmpty,
+            hasIncompleteStartedCard: cards.hasIncompleteStartedCard
+        )
         guard isValid else {
             showErrors = true
             return
@@ -92,18 +96,19 @@ final class EditDeckViewModel: ObservableObject {
         let deck = FlashcardDeck(
             id: deckId,
             title: deckTitle.trimmed,
+            // Preserves each card's stable cardUid so the backend updates in place (FLA-113).
             flashcards: complete.map {
-                Flashcard(
-                    question: $0.term.trimmed,
-                    answer: $0.definition.trimmed,
+                DeckForm.shared.toFlashcard(
+                    term: $0.term,
+                    definition: $0.definition,
                     imageUrl: $0.imageUrl,
-                    alternativeAnswers: parseAlternatives($0.alternatives),
+                    alternativesRaw: $0.alternatives,
                     cardUid: $0.cardUid
                 )
             },
             isEditable: true,
             // The optional category as a single tag (empty when blank).
-            tags: category.toCategoryTags(),
+            tags: DeckForm.shared.categoryTags(category: category),
             // Not edited here — discussions are admin-toggled and not part of the deck-edit write.
             discussionsEnabled: false,
             // A user-edited deck is never a global (catalog) deck.
@@ -128,13 +133,13 @@ final class EditDeckViewModel: ObservableObject {
                 term: $0.question,
                 definition: $0.answer,
                 imageUrl: $0.imageUrl,
-                alternatives: $0.alternativeAnswers.joined(separator: "\n"),
+                alternatives: DeckForm.shared.alternativesText(alternatives: $0.alternativeAnswers),
                 cardUid: $0.cardUid
             )
         } ?? []
         let cards = drafts.isEmpty ? [CardDraft()] : drafts
         // Surface only the first tag as the editable category (the backend keeps a list).
-        let category = ((deck.tags as? [String]) ?? []).first ?? ""
+        let category = DeckForm.shared.categoryOf(tags: (deck.tags as? [String]) ?? [])
         deckTitle = deck.title
         self.category = category
         self.cards = cards

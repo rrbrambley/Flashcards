@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.data.image.ImageUploader
-import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.DeckForm
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,8 +19,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-private const val MinimumCompleteCardCount = 1
 
 @HiltViewModel
 class CreateDeckViewModel @Inject constructor(
@@ -100,9 +98,11 @@ class CreateDeckViewModel @Inject constructor(
         if (currentState.isSaving) return // ignore repeat taps while a save is already in flight
         val completeCards = currentState.cards.filter { it.isComplete() }
         val hasIncompleteStartedCard = currentState.cards.any { it.isStarted() && !it.isComplete() }
-        val isValid = currentState.deckTitle.isNotBlank() &&
-            completeCards.size >= MinimumCompleteCardCount &&
-            !hasIncompleteStartedCard
+        val isValid = DeckForm.isDeckSavable(
+            title = currentState.deckTitle,
+            hasCompleteCard = completeCards.isNotEmpty(),
+            hasIncompleteStartedCard = hasIncompleteStartedCard,
+        )
 
         if (!isValid) {
             _uiState.update { it.copy(showValidationErrors = true, deckSaved = false) }
@@ -116,14 +116,15 @@ class CreateDeckViewModel @Inject constructor(
                     FlashcardDeck(
                         title = currentState.deckTitle.trim(),
                         flashcards = completeCards.map { card ->
-                            Flashcard(
-                                question = card.term.trim(),
-                                answer = card.definition.trim(),
+                            DeckForm.toFlashcard(
+                                term = card.term,
+                                definition = card.definition,
                                 imageUrl = card.imageUrl,
-                                alternativeAnswers = parseAlternatives(card.alternatives),
+                                alternativesRaw = card.alternatives,
+                                cardUid = card.cardUid,
                             )
                         },
-                        tags = currentState.category.toCategoryTags(),
+                        tags = DeckForm.categoryTags(currentState.category),
                     ),
                 )
             }.isSuccess
