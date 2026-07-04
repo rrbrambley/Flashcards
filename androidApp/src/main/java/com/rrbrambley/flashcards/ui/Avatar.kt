@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.shared.domain.Monogram
 
 /**
  * A user's avatar (FLA-162): the curated CDN image clipped to a circle, or — when no avatar is set or
@@ -58,7 +59,7 @@ fun Avatar(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = initials(label),
+                text = Monogram.initials(label),
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = TextUnit(size.value * 0.42f, TextUnitType.Sp),
@@ -68,22 +69,6 @@ fun Avatar(
     }
 }
 
-/** Up to two uppercase initials from [name]; "?" when there's no name. */
-private fun initials(name: String?): String {
-    if (name == null) return "?"
-    val words = name.split(Regex("\\s+")).filter { it.isNotEmpty() }
-    val first = words.firstOrNull()?.firstOrNull()?.toString() ?: ""
-    val last = if (words.size > 1) words.last().firstOrNull()?.toString() ?: "" else ""
-    return (first + last).uppercase().ifEmpty { "?" }
-}
-
-/** A stable, pleasant background color derived from [name] (HSV hue hashed from the characters). */
-private fun monogramColor(name: String?): Color {
-    val seed = name ?: ""
-    var hash = 0
-    for (ch in seed) {
-        hash = (hash * 31 + ch.code) % 360
-    }
-    val hue = ((hash % 360) + 360) % 360
-    return Color.hsv(hue.toFloat(), 0.45f, 0.55f)
-}
+/** A stable, pleasant background color derived from [name] — the shared [Monogram] hue as HSV. */
+private fun monogramColor(name: String?): Color =
+    Color.hsv(Monogram.hue(name).toFloat(), 0.45f, 0.55f)

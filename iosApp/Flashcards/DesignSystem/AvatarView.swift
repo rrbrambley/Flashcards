@@ -1,4 +1,5 @@
 import SDWebImageSwiftUI
+import Shared
 import SwiftUI
 
 /// A user's avatar (FLA-162): the curated CDN image clipped to a circle, or — when no avatar is set
@@ -41,25 +42,12 @@ struct AvatarView: View {
         return trimmed
     }
 
-    /// Up to two uppercase initials from the name; "?" when there's no name.
-    private var initials: String {
-        guard let name = trimmedName else { return "?" }
-        let words = name.split(whereSeparator: { $0.isWhitespace })
-        let first = words.first?.first.map(String.init) ?? ""
-        let last = words.count > 1 ? (words.last?.first.map(String.init) ?? "") : ""
-        let result = (first + last).uppercased()
-        return result.isEmpty ? "?" : result
-    }
+    /// Initials + hue come from the shared `Monogram` (FLA-194) so all platforms agree.
+    private var initials: String { Monogram.shared.initials(name: name) }
 
-    /// A stable, pleasant color derived from the name (HSB hue hashed from its characters).
+    /// Builds the color from the shared hue (HSB at hue / 360, S 0.45, B 0.55).
     private var monogramColor: Color {
-        let seed = trimmedName ?? ""
-        var hash = 0
-        for scalar in seed.unicodeScalars {
-            hash = (hash * 31 + Int(scalar.value)) % 360
-        }
-        let hue = Double((hash % 360 + 360) % 360) / 360.0
-        return Color(hue: hue, saturation: 0.45, brightness: 0.55)
+        Color(hue: Double(Monogram.shared.hue(name: name)) / 360.0, saturation: 0.45, brightness: 0.55)
     }
 
     private var label: String {
