@@ -23,10 +23,8 @@ final class ProfileViewModel: ObservableObject {
     }
 
     /// The name used for the monogram fallback + image label: display name, else the email local-part.
-    var monogramName: String? {
-        if let name = displayName?.trimmingCharacters(in: .whitespaces), !name.isEmpty { return name }
-        return email.map { String($0.prefix { $0 != "@" }) }
-    }
+    /// Shared with Android via `Monogram` (FLA-194).
+    var monogramName: String? { Monogram.shared.name(displayName: displayName, email: email) }
 
     func load() async {
         isLoading = true

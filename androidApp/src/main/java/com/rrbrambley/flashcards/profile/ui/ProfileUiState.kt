@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.profile.ui
 
 import com.rrbrambley.flashcards.shared.api.AvatarDto
+import com.rrbrambley.flashcards.shared.domain.Monogram
 
 /**
  * State of the profile screen (FLA-166): the curated avatar catalog, the current selection, and the
@@ -26,5 +27,5 @@ data class ProfileUiState(
 ) {
     /** The name used for the monogram fallback + image alt: display name, else the email local-part. */
     val monogramName: String?
-        get() = displayName?.takeIf { it.isNotBlank() } ?: email?.substringBefore('@')
+        get() = Monogram.name(displayName, email)
 }
