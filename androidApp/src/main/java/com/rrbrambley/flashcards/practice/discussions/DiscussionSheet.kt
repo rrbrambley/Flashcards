@@ -1,4 +1,5 @@
 package com.rrbrambley.flashcards.practice.discussions
+import com.rrbrambley.flashcards.shared.domain.ActionError
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -318,7 +319,7 @@ private fun PostForm(
     onCancelReply: () -> Unit,
     isGuest: Boolean,
     posting: Boolean,
-    postError: DiscussionPostError?,
+    postError: ActionError?,
     onPost: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -468,12 +469,12 @@ private fun DiscussionAuthPrompt(
 }
 
 @Composable
-private fun postErrorText(error: DiscussionPostError): String = when (error) {
-    DiscussionPostError.RateLimit -> stringResource(R.string.discussion_post_error_rate)
-    DiscussionPostError.Locked -> stringResource(R.string.discussion_post_error_locked)
-    is DiscussionPostError.Rejected ->
+private fun postErrorText(error: ActionError): String = when (error) {
+    ActionError.RateLimit -> stringResource(R.string.discussion_post_error_rate)
+    ActionError.Locked -> stringResource(R.string.discussion_post_error_locked)
+    is ActionError.Rejected ->
         error.message ?: stringResource(R.string.discussion_post_error_rejected)
-    DiscussionPostError.Generic -> stringResource(R.string.discussion_post_error_generic)
+    ActionError.Generic -> stringResource(R.string.discussion_post_error_generic)
 }
 
 /** Compact relative time: "just now", "5m", "3h", "2d", else an absolute date. */

@@ -7,6 +7,7 @@ import com.rrbrambley.flashcards.auth.PermissionsRepository
 import com.rrbrambley.flashcards.shared.AuthResult
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.ApiError
+import com.rrbrambley.flashcards.shared.domain.ActionError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -96,7 +97,7 @@ class DiscussionViewModel @Inject constructor(
                 val thread = repository.setLocked(cardUid, target)
                 _uiState.update { it.copy(isLocked = thread.isLocked, togglingLock = false) }
             } catch (e: ApiError) {
-                _uiState.update { it.copy(togglingLock = false, postError = postErrorFor(e)) }
+                _uiState.update { it.copy(togglingLock = false, postError = ActionError.from(e)) }
             }
         }
     }
@@ -143,7 +144,7 @@ class DiscussionViewModel @Inject constructor(
                     it.copy(posting = false, messages = it.messages + message, postedTick = it.postedTick + 1)
                 }
             } catch (e: ApiError) {
-                _uiState.update { it.copy(posting = false, postError = postErrorFor(e)) }
+                _uiState.update { it.copy(posting = false, postError = ActionError.from(e)) }
             }
         }
     }
@@ -165,7 +166,7 @@ class DiscussionViewModel @Inject constructor(
                 repository.report(messageId, cleaned)
                 _uiState.update { it.copy(reportedIds = it.reportedIds + messageId) }
             } catch (e: ApiError) {
-                _uiState.update { it.copy(postError = postErrorFor(e)) }
+                _uiState.update { it.copy(postError = ActionError.from(e)) }
             }
         }
     }
@@ -224,7 +225,7 @@ class DiscussionViewModel @Inject constructor(
                                 isGuest = false,
                                 authPrompt = false,
                                 authSubmitting = false,
-                                postError = postErrorFor(e),
+                                postError = ActionError.from(e),
                             )
                         }
                     }
@@ -236,14 +237,4 @@ class DiscussionViewModel @Inject constructor(
         }
     }
 
-    private fun postErrorFor(e: ApiError): DiscussionPostError = when (e) {
-        is ApiError.Validation -> DiscussionPostError.Rejected(e.message)
-        is ApiError.Client -> when (e.status) {
-            429 -> DiscussionPostError.RateLimit
-            403 -> DiscussionPostError.Locked
-            400 -> DiscussionPostError.Rejected(e.message)
-            else -> DiscussionPostError.Generic
-        }
-        else -> DiscussionPostError.Generic
-    }
 }

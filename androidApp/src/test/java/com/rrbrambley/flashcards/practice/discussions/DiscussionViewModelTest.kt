@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.practice.discussions
 
+import com.rrbrambley.flashcards.shared.domain.ActionError
+
 import com.rrbrambley.flashcards.auth.Permissions
 import com.rrbrambley.flashcards.auth.PermissionsRepository
 import com.rrbrambley.flashcards.shared.AuthService
@@ -140,7 +142,7 @@ class DiscussionViewModelTest {
         viewModel.post("Too fast", parentMessageId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(DiscussionPostError.RateLimit, viewModel.uiState.value.postError)
+        assertEquals(ActionError.RateLimit, viewModel.uiState.value.postError)
         assertTrue(viewModel.uiState.value.messages.isEmpty())
     }
 

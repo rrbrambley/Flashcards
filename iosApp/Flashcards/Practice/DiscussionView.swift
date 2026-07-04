@@ -169,7 +169,7 @@ final class DiscussionViewModel: ObservableObject {
             postError = nil
             postedTick += 1
         } catch {
-            postError = "Couldn't post your message. Check your connection and try again."
+            postError = ActionErrorCopy.discussionPost(error)
         }
     }
 
