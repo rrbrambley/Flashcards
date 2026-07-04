@@ -15,7 +15,7 @@ struct PracticeView: View {
     @State private var discussionTarget: DiscussionTarget?
 
     // Kept so the discussion sheet can post over the shared client (and convert a guest to sign in).
-    private let apiClient: FlashcardApiClient?
+    private let apiClient: FlashcardApiClient
     private let authService: AuthService?
     // Gates the discuss affordance behind the `discussions` kill switch (FLA-185); guests bypass it.
     private let featureFlagStore: FeatureFlagStore
@@ -25,7 +25,7 @@ struct PracticeView: View {
         sessionRepository: PracticeSessionRepository,
         entry: PracticeEntry,
         featureFlagStore: FeatureFlagStore,
-        apiClient: FlashcardApiClient? = nil,
+        apiClient: FlashcardApiClient,
         authService: AuthService? = nil
     ) {
         self.apiClient = apiClient
@@ -77,14 +77,12 @@ struct PracticeView: View {
                     GuestSavePromptView(viewModel: viewModel, onLeave: { dismiss() }, onCancel: { showSavePrompt = false })
                 }
                 .sheet(item: $discussionTarget) { target in
-                    if let apiClient {
-                        DiscussionView(
-                            cardUid: target.id,
-                            isGuest: viewModel.isGuestMode,
-                            apiClient: apiClient,
-                            authService: authService
-                        )
-                    }
+                    DiscussionView(
+                        cardUid: target.id,
+                        isGuest: viewModel.isGuestMode,
+                        apiClient: apiClient,
+                        authService: authService
+                    )
                 }
                 .onChange(of: viewModel.saveState) { _, newValue in
                     // A successful save signs the user in; leave the practice screen so RootView swaps

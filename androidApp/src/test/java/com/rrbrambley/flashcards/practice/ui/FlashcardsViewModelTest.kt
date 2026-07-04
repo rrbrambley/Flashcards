@@ -13,15 +13,14 @@ import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import com.rrbrambley.flashcards.shared.domain.PracticeAnswer
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeUiState
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -34,6 +33,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
+/**
+ * The session state machine now lives in (and is tested by) the shared `PracticeSessionController`
+ * (FLA-197); this covers the thin Android adapter — that it wires the controller and applies the
+ * `discussions` feature flag to the shared (raw) opt-in.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FlashcardsViewModelTest {
 
@@ -51,149 +55,39 @@ class FlashcardsViewModelTest {
 
     @Test
     fun uiState_startsAsLoading() {
-        val viewModel = createViewModel(testFlashcards())
-
-        assertEquals(FlashcardsUiState.Loading, viewModel.uiState.value)
+        assertEquals(PracticeUiState.Loading, createViewModel(testFlashcards()).uiState.value)
     }
 
     @Test
-    fun deckEntry_startsOrResumesASessionAndShowsFirstCard() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val sessions = FakePracticeSessionRepository(session(deckId = DECK_ID))
-        val viewModel = createViewModel(flashcards, sessions)
-
-        // The Home "Practice" action passes a deck id, not a session id.
-        viewModel.load(sessionId = null, deckId = DECK_ID)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(DECK_ID, sessions.startOrResumeDeckId)
-        assertEquals(
-            FlashcardsUiState.ShowFlashcard(
-                numIncorrect = 0,
-                numCorrect = 0,
-                flashcard = flashcards.first(),
-                deck = flashcards,
-                mode = "flashcards",
+    fun sessionEntry_restoresProgressAndShowsCard() = runTest(testDispatcher) {
+        val viewModel = createViewModel(
+            testFlashcards(),
+            practiceSessionRepository = FakePracticeSessionRepository(
+                session(currentCardIndex = 1, numCorrect = 2, numIncorrect = 1),
             ),
-            viewModel.uiState.value,
         )
-    }
-
-    @Test
-    fun swipeRight_incrementsCorrectCountAndShowsNextFlashcard() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards).also { it.loadDeck() }
-
-        viewModel.onResult(correct = true)
-
-        assertEquals(
-            FlashcardsUiState.ShowFlashcard(
-                numIncorrect = 0,
-                numCorrect = 1,
-                flashcard = flashcards[1],
-                deck = flashcards,
-                mode = "flashcards",
-                canGoBack = true,
-                streak = 1,
-            ),
-            viewModel.uiState.value,
-        )
-    }
-
-    @Test
-    fun swipeLeft_incrementsIncorrectCountAndShowsNextFlashcard() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards).also { it.loadDeck() }
-
-        viewModel.onResult(correct = false)
-
-        assertEquals(
-            FlashcardsUiState.ShowFlashcard(
-                numIncorrect = 1,
-                numCorrect = 0,
-                flashcard = flashcards[1],
-                deck = flashcards,
-                mode = "flashcards",
-                canGoBack = true,
-            ),
-            viewModel.uiState.value,
-        )
-    }
-
-    @Test
-    fun goForward_showsNextFlashcardWithoutChangingScores() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards).also { it.loadDeck() }
-
-        viewModel.goForward()
-
-        assertEquals(
-            FlashcardsUiState.ShowFlashcard(
-                numIncorrect = 0,
-                numCorrect = 0,
-                flashcard = flashcards[1],
-                deck = flashcards,
-                mode = "flashcards",
-                canGoBack = true,
-            ),
-            viewModel.uiState.value,
-        )
-    }
-
-    @Test
-    fun goBack_whenOnSecondFlashcard_showsPreviousFlashcardWithoutChangingScores() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val viewModel = createViewModel(flashcards).also { it.loadDeck() }
-        viewModel.onResult(correct = true)
-
-        viewModel.goBack()
-
-        assertEquals(
-            FlashcardsUiState.ShowFlashcard(
-                numIncorrect = 0,
-                numCorrect = 1,
-                flashcard = flashcards.first(),
-                deck = flashcards,
-                mode = "flashcards",
-                // A correct answer set the streak to 1; going back doesn't change it.
-                streak = 1,
-            ),
-            viewModel.uiState.value,
-        )
-    }
-
-    @Test
-    fun goBack_whenOnFirstFlashcard_doesNotChangeUiState() = runTest(testDispatcher) {
-        val viewModel = createViewModel(testFlashcards()).also { it.loadDeck() }
-        val initialUiState = viewModel.uiState.value
-
-        viewModel.goBack()
-
-        assertEquals(initialUiState, viewModel.uiState.value)
-    }
-
-    @Test
-    fun load_restoresProgressFromPracticeSession() = runTest(testDispatcher) {
-        val flashcards = testFlashcards()
-        val sessions = FakePracticeSessionRepository(
-            session(currentCardIndex = 1, numCorrect = 2, numIncorrect = 1),
-        )
-        val viewModel = createViewModel(flashcards, sessions)
-
         viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(
-            FlashcardsUiState.ShowFlashcard(
-                numIncorrect = 1,
-                numCorrect = 2,
-                flashcard = flashcards[1],
-                deck = flashcards,
-                mode = "flashcards",
-                canGoBack = true,
-            ),
-            viewModel.uiState.value,
-        )
+        val state = viewModel.uiState.value as PracticeUiState.ShowCard
+        assertEquals("Question 2", state.card.question) // restored to index 1
+        assertEquals(2, state.numCorrect)
+        assertEquals(1, state.numIncorrect)
+        assertTrue(state.canGoBack)
+    }
+
+    @Test
+    fun onResult_delegatesToController_andAdvances() = runTest(testDispatcher) {
+        val viewModel = createViewModel(testFlashcards())
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onResult(correct = true)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as PracticeUiState.ShowCard
+        assertEquals(1, state.position)
+        assertEquals(1, state.numCorrect)
     }
 
     @Test
@@ -202,8 +96,7 @@ class FlashcardsViewModelTest {
         viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
-        assertTrue(state.discussionsEnabled)
+        assertTrue((viewModel.uiState.value as PracticeUiState.ShowCard).discussionsEnabled)
     }
 
     @Test
@@ -213,242 +106,7 @@ class FlashcardsViewModelTest {
         viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
-        assertFalse(state.discussionsEnabled)
-    }
-
-    @Test
-    fun sessionProgress_isPersistedWhenAdvancing() = runTest(testDispatcher) {
-        val sessions = FakePracticeSessionRepository(session())
-        val viewModel = createViewModel(testFlashcards(), sessions)
-        viewModel.load(sessionId = SESSION_ID, deckId = null)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.onResult(correct = true)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(
-            PracticeProgress(sessionId = SESSION_ID, currentCardIndex = 1, numCorrect = 1, numIncorrect = 0),
-            sessions.updatedProgress,
-        )
-    }
-
-    @Test
-    fun sessionCompletes_whenAdvancingPastLastCard() = runTest(testDispatcher) {
-        val sessions = FakePracticeSessionRepository(session(currentCardIndex = 2))
-        val viewModel = createViewModel(testFlashcards(), sessions)
-        viewModel.load(sessionId = SESSION_ID, deckId = null)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.onResult(correct = false)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(SESSION_ID, sessions.completedSessionId)
-        assertEquals(
-            FlashcardsUiState.SessionCompleted(numIncorrect = 1, numCorrect = 0),
-            viewModel.uiState.value,
-        )
-    }
-
-    @Test
-    fun progressAndCompletionSyncFailures_doNotCrashAndUiStillAdvances() = runTest(testDispatcher) {
-        // Offline-style: the server sync for progress AND completion throws. The UI must keep
-        // advancing on local state (an uncaught failure in the persist coroutine would crash).
-        val sessions = FakePracticeSessionRepository(session(currentCardIndex = 2), failWrites = true)
-        val viewModel = createViewModel(testFlashcards(), sessions)
-        viewModel.load(sessionId = SESSION_ID, deckId = null)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.onResult(correct = true)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(
-            FlashcardsUiState.SessionCompleted(numIncorrect = 0, numCorrect = 1),
-            viewModel.uiState.value,
-        )
-    }
-
-    @Test
-    fun load_exposesTheSessionMode() = runTest(testDispatcher) {
-        val sessions = FakePracticeSessionRepository(session(mode = "multiple_choice"))
-        val viewModel = createViewModel(testFlashcards(), sessions)
-
-        viewModel.load(sessionId = SESSION_ID, deckId = null)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
-        assertEquals("multiple_choice", state.mode)
-        assertEquals(testFlashcards(), state.deck)
-    }
-
-    @Test
-    fun onResult_recordsEachAnswerAndTracksTheInSessionStreak() = runTest(testDispatcher) {
-        // Cards carry a cardUid so answers are recorded; 4 cards so three marks stay mid-session.
-        val cards = (1..4).map { Flashcard(question = "Q$it", answer = "A$it", cardUid = "card-$it") }
-        val sessions = FakePracticeSessionRepository(session())
-        val viewModel = createViewModel(cards, sessions)
-        viewModel.load(sessionId = SESSION_ID, deckId = null)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        fun streak() = (viewModel.uiState.value as FlashcardsUiState.ShowFlashcard).streak
-
-        viewModel.onResult(correct = true, submittedText = "A1")
-        testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(1, streak())
-
-        viewModel.onResult(correct = true)
-        testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(2, streak())
-
-        viewModel.onResult(correct = false)
-        testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(0, streak()) // a miss resets the streak
-
-        // Each answer was logged with its card + outcome (the first carried the typed text).
-        assertEquals(listOf(true, true, false), sessions.recordedAnswers.map { it.correct })
-        assertEquals(listOf("card-1", "card-2", "card-3"), sessions.recordedAnswers.map { it.cardUid })
-        assertEquals("A1", sessions.recordedAnswers.first().submittedText)
-        assertTrue(sessions.recordedAnswers.all { it.sessionId == SESSION_ID })
-    }
-
-    @Test
-    fun applyResult_scoresAndStreaksWithoutAdvancing_thenGoForwardAdvances() = runTest(testDispatcher) {
-        // Test/Multiple-Choice grade on the verdict via applyResult, then advance on Next via goForward.
-        val cards = (1..3).map { Flashcard(question = "Q$it", answer = "A$it", cardUid = "card-$it") }
-        val sessions = FakePracticeSessionRepository(session())
-        val viewModel = createViewModel(cards, sessions)
-        viewModel.load(sessionId = SESSION_ID, deckId = null)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.applyResult(correct = true, submittedText = "A1")
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        // Scored + streaked, but still on the first card so the badge surfaces on the graded answer.
-        val graded = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
-        assertEquals("Q1", graded.flashcard.question)
-        assertEquals(1, graded.numCorrect)
-        assertEquals(1, graded.streak)
-        assertFalse(graded.canGoBack)
-
-        // Next advances without re-scoring.
-        viewModel.goForward()
-        testDispatcher.scheduler.advanceUntilIdle()
-        val next = viewModel.uiState.value as FlashcardsUiState.ShowFlashcard
-        assertEquals("Q2", next.flashcard.question)
-        assertEquals(1, next.numCorrect)
-        assertEquals(1, next.streak)
-
-        assertEquals(listOf("card-1"), sessions.recordedAnswers.map { it.cardUid })
-    }
-
-    @Test
-    fun completion_buildsThePerCardReviewFromTheAnswerLog() = runTest(testDispatcher) {
-        val cards = listOf(
-            Flashcard(question = "Q1", answer = "A1", cardUid = "card-1"),
-            Flashcard(question = "Q2", answer = "A2", cardUid = "card-2"),
-        )
-        val sessions = FakePracticeSessionRepository(session())
-        val viewModel = createViewModel(cards, sessions)
-        viewModel.load(sessionId = SESSION_ID, deckId = null)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        viewModel.onResult(correct = true, submittedText = "A1") // card 1 -> card 2
-        testDispatcher.scheduler.advanceUntilIdle()
-        viewModel.onResult(correct = false, submittedText = "wrong") // card 2 -> complete
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val completed = viewModel.uiState.value as FlashcardsUiState.SessionCompleted
-        // Each logged answer, in play order, joined to its deck card.
-        assertEquals(listOf("card-1", "card-2"), completed.review.map { it.cardUid })
-        assertEquals(listOf("Q1", "Q2"), completed.review.map { it.question })
-        assertEquals(listOf("A1", "A2"), completed.review.map { it.answer })
-        assertEquals(listOf(true, false), completed.review.map { it.correct })
-        assertEquals(listOf("A1", "wrong"), completed.review.map { it.submittedText })
-    }
-
-    // The guest tests use a real FlashcardApiClient over a MockEngine (real dispatcher), so they await
-    // the StateFlow rather than the test scheduler.
-    @Test
-    fun guestMode_loadsTheCatalogDeckWithoutCreatingASession() = runTest(testDispatcher) {
-        val sessions = FakePracticeSessionRepository(session())
-        val engine = routedEngine { if (it == "/catalog/$DECK_ID") deckJson(DECK_ID) else null }
-        val viewModel = createViewModel(testFlashcards(), sessions, engine)
-
-        viewModel.load(sessionId = null, deckId = DECK_ID, isGuest = true, mode = "flashcards")
-
-        val state = viewModel.uiState.first { it is FlashcardsUiState.ShowFlashcard } as FlashcardsUiState.ShowFlashcard
-        assertEquals("Q1", state.flashcard.question)
-        // No session was started for a guest.
-        assertEquals(null, sessions.startOrResumeDeckId)
-        assertFalse(viewModel.shouldPromptSave()) // nothing answered yet
-    }
-
-    @Test
-    fun guestMode_promptsToSaveOnceThereIsProgress() = runTest(testDispatcher) {
-        val engine = routedEngine { if (it == "/catalog/$DECK_ID") deckJson(DECK_ID) else null }
-        val viewModel = createViewModel(testFlashcards(), engine = engine)
-        viewModel.load(sessionId = null, deckId = DECK_ID, isGuest = true, mode = "flashcards")
-        viewModel.uiState.first { it is FlashcardsUiState.ShowFlashcard }
-
-        viewModel.onResult(correct = true) // advances to card 2
-
-        assertTrue(viewModel.shouldPromptSave())
-    }
-
-    @Test
-    fun guestMode_saveByCreatingAccount_registersThenPushesTheSession() = runTest(testDispatcher) {
-        val sessionJson = """{"id":7,"deckId":$DECK_ID,"deckTitle":"Catalog deck","currentCardIndex":1,""" +
-            """"numCorrect":1,"numIncorrect":0,"isCompleted":false,"mode":"flashcards",""" +
-            """"createdAtMillis":0,"updatedAtMillis":0}"""
-        val engine = routedEngine { path ->
-            when (path) {
-                "/catalog/$DECK_ID" -> deckJson(DECK_ID)
-                "/auth/register" -> """{"accessToken":"a","refreshToken":"r","userId":1}"""
-                "/sessions" -> sessionJson
-                "/sessions/7" -> sessionJson
-                else -> null
-            }
-        }
-        val viewModel = createViewModel(testFlashcards(), engine = engine)
-        viewModel.load(sessionId = null, deckId = DECK_ID, isGuest = true, mode = "flashcards")
-        viewModel.uiState.first { it is FlashcardsUiState.ShowFlashcard }
-        viewModel.onResult(correct = true)
-
-        viewModel.saveProgressByCreatingAccount("new@user.com", "password1")
-
-        viewModel.saveState.first { it is GuestSaveState.Saved || it is GuestSaveState.Error }
-        assertEquals(GuestSaveState.Saved, viewModel.saveState.value)
-    }
-
-    @Test
-    fun completingTheLastCard_loadsTheOverallStreakOntoTheCompletionState() = runTest(testDispatcher) {
-        val sessions = FakePracticeSessionRepository(session())
-        val engine = routedEngine { path ->
-            if (path == "/streaks") """{"overall":{"current":5,"longest":8},"decks":[]}""" else null
-        }
-        val viewModel = createViewModel(testFlashcards(), sessions, engine)
-        viewModel.loadDeck()
-
-        // Advance through every card; the last one completes the session.
-        repeat(testFlashcards().size) { viewModel.onResult(correct = true) }
-
-        val completed = viewModel.uiState
-            .first { it is FlashcardsUiState.SessionCompleted && it.streak != null } as FlashcardsUiState.SessionCompleted
-        assertEquals(5, completed.streak)
-        assertEquals(SESSION_ID, sessions.completedSessionId)
-    }
-
-    // --- Helpers ---
-
-    private fun routedEngine(route: (path: String) -> String?) = MockEngine { request ->
-        val body = route(request.url.encodedPath) ?: error("unexpected ${request.url.encodedPath}")
-        respond(body, HttpStatusCode.OK, jsonHeaders)
-    }
-
-    /** Loads via the deck entry (Home "Practice") and drains the dispatcher. */
-    private fun FlashcardsViewModel.loadDeck() {
-        load(sessionId = null, deckId = DECK_ID)
-        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse((viewModel.uiState.value as PracticeUiState.ShowCard).discussionsEnabled)
     }
 
     private fun createViewModel(
@@ -485,12 +143,6 @@ class FlashcardsViewModelTest {
 
     /** A MockEngine that fails every request — the default for tests that don't touch the network. */
     private fun unavailableEngine() = MockEngine { respond("unavailable", HttpStatusCode.ServiceUnavailable) }
-
-    private val jsonHeaders = headersOf("Content-Type", "application/json")
-
-    private fun deckJson(id: Long): String =
-        """{"id":$id,"title":"Catalog deck","flashcards":[{"question":"Q1","answer":"A1"},""" +
-            """{"question":"Q2","answer":"A2"}],"editable":false}"""
 
     private class FakeTokenStore : TokenStore {
         private val token = MutableStateFlow<String?>(null)
@@ -543,75 +195,26 @@ class FlashcardsViewModelTest {
 
     private class FakePracticeSessionRepository(
         private val session: PracticeSession? = null,
-        private val failWrites: Boolean = false,
     ) : PracticeSessionRepository {
-        var updatedProgress: PracticeProgress? = null
-        var completedSessionId: Long? = null
-        var startOrResumeDeckId: Long? = null
-
-        override suspend fun startOrResumeSession(deckId: Long, mode: String): Long {
-            startOrResumeDeckId = deckId
-            return session?.id ?: 0L
-        }
-
+        override suspend fun startOrResumeSession(deckId: Long, mode: String): Long = session?.id ?: 0L
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(session?.let { listOf(it) }.orEmpty())
-
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(session?.takeIf { it.id == sessionId })
+        override suspend fun updateProgress(sessionId: Long, currentCardIndex: Int, numCorrect: Int, numIncorrect: Int) = Unit
+        override suspend fun completeSession(sessionId: Long) = Unit
 
-        override suspend fun updateProgress(
-            sessionId: Long,
-            currentCardIndex: Int,
-            numCorrect: Int,
-            numIncorrect: Int,
-        ) {
-            if (failWrites) throw RuntimeException("offline")
-            updatedProgress = PracticeProgress(
-                sessionId = sessionId,
-                currentCardIndex = currentCardIndex,
-                numCorrect = numCorrect,
-                numIncorrect = numIncorrect,
-            )
-        }
-
-        override suspend fun completeSession(sessionId: Long) {
-            if (failWrites) throw RuntimeException("offline")
-            completedSessionId = sessionId
-        }
-
-        val recordedAnswers = mutableListOf<RecordedAnswer>()
-
-        // Backs observeAnswers, mirroring Room: recording an answer updates the observed log.
         private val answersFlow = MutableStateFlow<List<PracticeAnswer>>(emptyList())
-
         override fun observeAnswers(sessionId: Long): Flow<List<PracticeAnswer>> = answersFlow
-
         override suspend fun recordAnswer(sessionId: Long, cardUid: String, correct: Boolean, submittedText: String?) {
-            if (failWrites) throw RuntimeException("offline")
-            recordedAnswers += RecordedAnswer(sessionId, cardUid, correct, submittedText)
             answersFlow.value = answersFlow.value + PracticeAnswer(
-                answerUid = "uid-${recordedAnswers.size}",
+                answerUid = "uid-${answersFlow.value.size + 1}",
                 cardUid = cardUid,
                 correct = correct,
-                sequence = recordedAnswers.size - 1,
+                sequence = answersFlow.value.size,
                 answeredAtMillis = 0,
                 submittedText = submittedText,
             )
         }
     }
-
-    private data class RecordedAnswer(
-        val sessionId: Long,
-        val cardUid: String,
-        val correct: Boolean,
-        val submittedText: String?,
-    )
-
-    private data class PracticeProgress(
-        val sessionId: Long,
-        val currentCardIndex: Int,
-        val numCorrect: Int,
-        val numIncorrect: Int,
-    )
 
     private companion object {
         const val DECK_ID = 42L
