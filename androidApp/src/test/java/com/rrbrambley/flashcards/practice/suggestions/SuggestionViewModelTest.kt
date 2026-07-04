@@ -1,5 +1,7 @@
 package com.rrbrambley.flashcards.practice.suggestions
 
+import com.rrbrambley.flashcards.shared.domain.ActionError
+
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
@@ -85,7 +87,7 @@ class SuggestionViewModelTest {
         viewModel.suggest(CARD_UID, "Lisbon", isGuest = false)
 
         val state = viewModel.uiState.first { it.error != null }
-        assertEquals(SuggestionError.RateLimit, state.error)
+        assertEquals(ActionError.RateLimit, state.error)
         assertFalse(state.submitted)
     }
 

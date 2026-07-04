@@ -6,6 +6,7 @@ import com.rrbrambley.flashcards.shared.AuthResult
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.ApiError
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.domain.ActionError
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,22 +15,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Why a suggestion couldn't be submitted; resolved to copy in the composable. */
-sealed interface SuggestionError {
-    /** Over the per-user rate limit (429). */
-    data object RateLimit : SuggestionError
-
-    /** Rejected by the backend with a message (validation / 400). */
-    data class Rejected(val message: String?) : SuggestionError
-
-    /** Anything else (network, 5xx, …). */
-    data object Generic : SuggestionError
-}
-
 data class SuggestionUiState(
     val submitting: Boolean = false,
     val submitted: Boolean = false,
-    val error: SuggestionError? = null,
+    val error: ActionError? = null,
     val authPrompt: Boolean = false,
     val authSubmitting: Boolean = false,
     val authError: String? = null,
@@ -81,7 +70,7 @@ class SuggestionViewModel @Inject constructor(
                 apiClient.suggestAnswer(cardUid, answer)
                 _uiState.update { it.copy(submitting = false, submitted = true) }
             } catch (e: ApiError) {
-                _uiState.update { it.copy(submitting = false, error = errorFor(e)) }
+                _uiState.update { it.copy(submitting = false, error = ActionError.from(e)) }
             }
         }
     }
@@ -113,10 +102,4 @@ class SuggestionViewModel @Inject constructor(
         }
     }
 
-    private fun errorFor(e: ApiError): SuggestionError = when (e) {
-        is ApiError.Validation -> SuggestionError.Rejected(e.message)
-        is ApiError.Conflict -> SuggestionError.Rejected(e.message)
-        is ApiError.Client -> if (e.status == 429) SuggestionError.RateLimit else SuggestionError.Generic
-        else -> SuggestionError.Generic
-    }
 }

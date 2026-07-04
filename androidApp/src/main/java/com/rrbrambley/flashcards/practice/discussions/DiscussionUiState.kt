@@ -1,16 +1,7 @@
 package com.rrbrambley.flashcards.practice.discussions
 
 import com.rrbrambley.flashcards.shared.api.DiscussionMessageDto
-
-/** Why a post was rejected; the UI resolves each to user-facing copy. */
-sealed interface DiscussionPostError {
-    data object RateLimit : DiscussionPostError
-    data object Locked : DiscussionPostError
-
-    /** A 400 from moderation (links/profanity/length); [message] is the backend's reason, if any. */
-    data class Rejected(val message: String?) : DiscussionPostError
-    data object Generic : DiscussionPostError
-}
+import com.rrbrambley.flashcards.shared.domain.ActionError
 
 /**
  * State of the per-card discussion thread (FLA-122). Messages are oldest-first; one level of replies
@@ -27,7 +18,7 @@ data class DiscussionUiState(
     /** Guests can read but must sign in to post (the conversion prompt). */
     val isGuest: Boolean = false,
     val posting: Boolean = false,
-    val postError: DiscussionPostError? = null,
+    val postError: ActionError? = null,
     /** Whether the guest sign-in/up conversion prompt is showing. */
     val authPrompt: Boolean = false,
     val authSubmitting: Boolean = false,

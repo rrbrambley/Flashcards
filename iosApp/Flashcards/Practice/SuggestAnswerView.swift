@@ -87,7 +87,7 @@ final class SuggestAnswerViewModel: ObservableObject {
             try await apiClient.suggestAnswer(cardUid: cardUid, suggestedAnswer: text)
             submitted = true
         } catch {
-            errorMessage = "Couldn't send your suggestion. Check your connection and try again."
+            errorMessage = ActionErrorCopy.suggestion(error)
         }
         submitting = false
     }

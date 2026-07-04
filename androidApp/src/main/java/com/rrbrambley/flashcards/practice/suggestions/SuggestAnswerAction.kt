@@ -1,4 +1,5 @@
 package com.rrbrambley.flashcards.practice.suggestions
+import com.rrbrambley.flashcards.shared.domain.ActionError
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -176,8 +177,9 @@ private fun SuggestionAuthPrompt(
 }
 
 @Composable
-private fun errorText(error: SuggestionError): String = when (error) {
-    SuggestionError.RateLimit -> stringResource(R.string.suggest_error_rate)
-    is SuggestionError.Rejected -> error.message ?: stringResource(R.string.suggest_error_rejected)
-    SuggestionError.Generic -> stringResource(R.string.suggest_error_generic)
+private fun errorText(error: ActionError): String = when (error) {
+    ActionError.RateLimit -> stringResource(R.string.suggest_error_rate)
+    is ActionError.Rejected -> error.message ?: stringResource(R.string.suggest_error_rejected)
+    // A suggestion never gets a locked thread; fall back to the generic message.
+    ActionError.Locked, ActionError.Generic -> stringResource(R.string.suggest_error_generic)
 }
