@@ -1,4 +1,7 @@
 package com.rrbrambley.flashcards.practice.ui
+import com.rrbrambley.flashcards.shared.domain.GuestSaveState
+import com.rrbrambley.flashcards.shared.domain.PracticeUiState
+import com.rrbrambley.flashcards.shared.domain.ReviewItem
 import com.rrbrambley.flashcards.shared.domain.PracticeMode
 
 import android.content.Context
@@ -69,7 +72,7 @@ import com.rrbrambley.flashcards.shared.domain.Flashcard
 
 /**
  * The mode-agnostic practice runner. The Scaffold + score row + loading/completion states are shared;
- * each card is rendered by the per-mode view chosen from the session's [FlashcardsUiState.ShowFlashcard.mode]
+ * each card is rendered by the per-mode view chosen from the session's [PracticeUiState.ShowCard.mode]
  * (Classic flip / Test text-entry / Multiple Choice). The ViewModel owns the session loop — index,
  * score, persistence, completion — and every mode reports its outcome via `onResult(correct)`.
  */
@@ -95,12 +98,12 @@ fun FlashcardsScreen(
     var discussionCardUid by remember { mutableStateOf<String?>(null) }
 
     // The help copy explains flip/swipe, so it's only offered in Classic mode.
-    val isClassic = (flashcardsState as? FlashcardsUiState.ShowFlashcard)?.mode?.let {
+    val isClassic = (flashcardsState as? PracticeUiState.ShowCard)?.mode?.let {
         it == PracticeMode.Classic.key
     } ?: true
     // Share is available once a deck is loaded (a card is showing or the session is complete).
-    val canShare = flashcardsState is FlashcardsUiState.ShowFlashcard ||
-        flashcardsState is FlashcardsUiState.SessionCompleted
+    val canShare = flashcardsState is PracticeUiState.ShowCard ||
+        flashcardsState is PracticeUiState.Completed
 
     // A guest leaving mid-session is offered the save prompt; everyone else just exits.
     val handleExit = {
@@ -166,7 +169,7 @@ fun FlashcardsScreen(
         Column(modifier = Modifier.padding(padding)) {
             ScoreRow(flashcardsState = flashcardsState)
             // Live in-session streak (FLA-99): appears at 2+ in a row, with milestone emphasis at 5+.
-            (flashcardsState as? FlashcardsUiState.ShowFlashcard)?.takeIf { it.streak >= 2 }?.let {
+            (flashcardsState as? PracticeUiState.ShowCard)?.takeIf { it.streak >= 2 }?.let {
                 SessionStreakBadge(
                     streak = it.streak,
                     modifier = Modifier
@@ -176,22 +179,22 @@ fun FlashcardsScreen(
             }
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (val state = flashcardsState) {
-                    FlashcardsUiState.Loading, FlashcardsUiState.LoadingFailed ->
+                    PracticeUiState.Loading, PracticeUiState.Failed ->
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                    is FlashcardsUiState.SessionCompleted ->
+                    is PracticeUiState.Completed ->
                         FlashcardsCompletionContent(
                             streak = state.streak,
                             review = state.review,
                             modifier = Modifier.fillMaxSize(),
                         )
 
-                    is FlashcardsUiState.ShowFlashcard -> {
-                        val onDiscuss = { discussionCardUid = state.flashcard.cardUid }
+                    is PracticeUiState.ShowCard -> {
+                        val onDiscuss = { discussionCardUid = state.card.cardUid }
                         when (state.mode) {
                             PracticeMode.Test.key ->
                                 TestMode(
-                                    flashcard = state.flashcard,
+                                    flashcard = state.card,
                                     onGraded = flashcardsViewModel::applyResult,
                                     onAdvance = flashcardsViewModel::goForward,
                                     discussionsEnabled = state.discussionsEnabled,
@@ -202,7 +205,7 @@ fun FlashcardsScreen(
 
                             PracticeMode.MultipleChoice.key ->
                                 MultipleChoiceMode(
-                                    flashcard = state.flashcard,
+                                    flashcard = state.card,
                                     deck = state.deck,
                                     onGraded = flashcardsViewModel::applyResult,
                                     onAdvance = flashcardsViewModel::goForward,
@@ -211,7 +214,7 @@ fun FlashcardsScreen(
                                 )
 
                             else -> ClassicMode(
-                                flashcard = state.flashcard,
+                                flashcard = state.card,
                                 canGoBack = state.canGoBack,
                                 onResult = flashcardsViewModel::onResult,
                                 onPrevious = flashcardsViewModel::goBack,
@@ -320,16 +323,16 @@ private fun FlashcardsHelpDialog(onDismissRequest: () -> Unit) {
 }
 
 @Composable
-fun ScoreRow(flashcardsState: FlashcardsUiState) {
+fun ScoreRow(flashcardsState: PracticeUiState) {
     val numIncorrect = when (flashcardsState) {
-        is FlashcardsUiState.ShowFlashcard -> flashcardsState.numIncorrect
-        is FlashcardsUiState.SessionCompleted -> flashcardsState.numIncorrect
-        FlashcardsUiState.Loading, FlashcardsUiState.LoadingFailed -> 0
+        is PracticeUiState.ShowCard -> flashcardsState.numIncorrect
+        is PracticeUiState.Completed -> flashcardsState.numIncorrect
+        PracticeUiState.Loading, PracticeUiState.Failed -> 0
     }
     val numCorrect = when (flashcardsState) {
-        is FlashcardsUiState.ShowFlashcard -> flashcardsState.numCorrect
-        is FlashcardsUiState.SessionCompleted -> flashcardsState.numCorrect
-        FlashcardsUiState.Loading, FlashcardsUiState.LoadingFailed -> 0
+        is PracticeUiState.ShowCard -> flashcardsState.numCorrect
+        is PracticeUiState.Completed -> flashcardsState.numCorrect
+        PracticeUiState.Loading, PracticeUiState.Failed -> 0
     }
     Row(
         modifier = Modifier
@@ -470,9 +473,9 @@ private fun ReviewRow(item: ReviewItem, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (!item.submittedText.isNullOrBlank()) {
+                item.submittedText?.takeIf { it.isNotBlank() }?.let { submitted ->
                     Text(
-                        text = stringResource(R.string.practice_review_submitted, item.submittedText),
+                        text = stringResource(R.string.practice_review_submitted, submitted),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF9A3412),
                     )

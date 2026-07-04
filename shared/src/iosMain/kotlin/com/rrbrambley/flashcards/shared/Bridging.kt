@@ -1,13 +1,19 @@
 package com.rrbrambley.flashcards.shared
 
+import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.GuestSaveState
 import com.rrbrambley.flashcards.shared.domain.HomeData
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeAnswer
+import com.rrbrambley.flashcards.shared.domain.PracticeEntry
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionController
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeUiState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 
@@ -42,6 +48,26 @@ fun PracticeSessionRepository.sessionAdapter(sessionId: Long): FlowAdapter<Pract
 /** The session's answer log (FLA-149), for the end-of-session per-card review. */
 fun PracticeSessionRepository.answersAdapter(sessionId: Long): FlowAdapter<List<PracticeAnswer>> =
     FlowAdapter(observeAnswers(sessionId))
+
+/**
+ * Builds the shared practice runner (FLA-197) for iOS — supplies the main dispatcher (Kotlin default
+ * args don't bridge to Swift). The iOS view model observes [stateAdapter]/[saveStateAdapter] and
+ * calls [PracticeSessionController.close] on teardown.
+ */
+fun createPracticeSessionController(
+    flashcardRepository: FlashcardRepository,
+    sessionRepository: PracticeSessionRepository,
+    apiClient: FlashcardApiClient,
+    authService: AuthService?,
+    entry: PracticeEntry,
+): PracticeSessionController =
+    PracticeSessionController(flashcardRepository, sessionRepository, apiClient, authService, entry, Dispatchers.Main)
+
+/** The runner's UI state (Loading / ShowCard / Completed / Failed). */
+fun PracticeSessionController.stateAdapter(): FlowAdapter<PracticeUiState> = FlowAdapter(state)
+
+/** The guest "save your progress" flow state. */
+fun PracticeSessionController.saveStateAdapter(): FlowAdapter<GuestSaveState> = FlowAdapter(saveState)
 
 /** The home feed (backend GET /home, offline fallback from cached sessions + static items). */
 fun HomeRepository.homeAdapter(): FlowAdapter<List<HomeData>> = FlowAdapter(observeHomeData())
