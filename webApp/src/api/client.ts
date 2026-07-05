@@ -220,8 +220,8 @@ export const api = {
     request<FlashcardDeckDto>(`/decks/${deckId}/global`, { method: 'PATCH', body: { global }, auth: true }),
 
   // Practice sessions
-  createSession: (deckId: number, mode = 'flashcards') =>
-    request<PracticeSessionDto>('/sessions', { method: 'POST', body: { deckId, mode }, auth: true }),
+  createSession: (deckId: number, mode = 'flashcards', shuffle = false) =>
+    request<PracticeSessionDto>('/sessions', { method: 'POST', body: { deckId, mode, shuffle }, auth: true }),
   getSession: (id: number) => request<PracticeSessionDto>(`/sessions/${id}`, { auth: true }),
   // Every session across all pages (active + completed) — used to derive per-deck last-practiced time.
   getAllSessions: () => fetchAllPages((cursor) => getSessionsPage(cursor)),

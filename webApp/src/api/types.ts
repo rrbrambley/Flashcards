@@ -141,11 +141,18 @@ export interface PracticeSessionDto {
   mode: string;
   createdAtMillis: number;
   updatedAtMillis: number;
+  // Whether this session presents cards in a randomized order, and the seed that reproduces it
+  // (FLA-200). Applied client-side by `orderCards`. Defaulted server-side (unshuffled, seed 0).
+  shuffle: boolean;
+  shuffleSeed: number;
 }
 
 export interface CreateSessionRequest {
   deckId: number;
   mode?: string;
+  // Randomize card order for a newly-created session (FLA-200); ignored when resuming (the stored
+  // order wins). The server mints `shuffleSeed` once when true.
+  shuffle?: boolean;
 }
 
 export interface UpdateProgressRequest {

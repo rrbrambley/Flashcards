@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { PracticePage } from './PracticePage';
 import { api } from '../api/client';
+import { orderCards } from './shuffle';
 import type { FlashcardDto, PracticeSessionDto } from '../api/types';
 
 vi.mock('../api/client', () => ({
@@ -45,6 +46,8 @@ const session = (over: Partial<PracticeSessionDto> = {}): PracticeSessionDto => 
   mode: 'flashcards',
   createdAtMillis: 0,
   updatedAtMillis: 0,
+  shuffle: false,
+  shuffleSeed: 0,
   ...over,
 });
 
@@ -83,7 +86,8 @@ describe('PracticePage', () => {
   it('starts a session in the default (classic) mode and shows the (resumed) current card', async () => {
     setup(threeCards, { currentCardIndex: 1 });
     expect(await screen.findByText('Q2')).toBeInTheDocument();
-    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards');
+    // No `shuffle=` in the route → the toggle defaults On (FLA-200), so the new session is created shuffled.
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true);
   });
 
   it('clicking the card flips it', async () => {
@@ -199,6 +203,8 @@ describe('PracticePage', () => {
   });
 
   it('shows the mode chooser when no mode is selected', async () => {
+    // The chooser fetches the deck for its "Practice <deck>" title.
+    vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: threeCards });
     render(
       <MemoryRouter initialEntries={['/decks/5/practice']}>
         <Routes>
@@ -208,6 +214,8 @@ describe('PracticePage', () => {
     );
     expect(await screen.findByText('Choose a mode')).toBeInTheDocument();
     expect(screen.getByText('Test')).toBeInTheDocument();
+    // Selecting a mode no longer auto-starts — a Start button drives it.
+    expect(screen.getByRole('button', { name: 'Start practice' })).toBeInTheDocument();
   });
 
   it('runs the test mode end-to-end when ?mode=test', async () => {
@@ -223,7 +231,7 @@ describe('PracticePage', () => {
     );
 
     await screen.findByText('Q1');
-    expect(api.createSession).toHaveBeenCalledWith(5, 'test');
+    expect(api.createSession).toHaveBeenCalledWith(5, 'test', true);
 
     await userEvent.type(screen.getByLabelText('Your answer'), 'A1');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
@@ -246,7 +254,7 @@ describe('PracticePage', () => {
     );
 
     await screen.findByText('Q1');
-    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice');
+    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice', true);
 
     await userEvent.click(screen.getByRole('button', { name: /A1/ })); // the correct option
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
@@ -337,7 +345,9 @@ describe('PracticePage', () => {
       mockToken = null;
       vi.mocked(api.getCatalogDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: false, flashcards: cards });
       render(
-        <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards']}>
+        // shuffle=0 keeps the catalog order so these tests can assert on Q1/Q2/Q3 (a dedicated test
+        // below covers the guest shuffle path).
+        <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards&shuffle=0']}>
           <Routes>
             <Route path="/decks/:id/practice" element={<PracticePage />} />
             <Route path="/" element={<div>catalog</div>} />
@@ -357,6 +367,27 @@ describe('PracticePage', () => {
 
       expect(await screen.findByText('Q2')).toBeInTheDocument();
       expect(api.updateProgress).not.toHaveBeenCalled();
+    });
+
+    it('shuffle on (default): applies a randomized in-memory order (FLA-200)', async () => {
+      // Pin the guest seed via Math.random so the order is deterministic, then assert the first card
+      // shown is the shuffle's first card — verifying the wiring (URL shuffle → orderCards).
+      vi.spyOn(Math, 'random').mockReturnValue(0.42);
+      const seed = Math.floor(0.42 * (2 ** 31 - 1)) + 1;
+      const expectedFirst = orderCards(threeCards, true, seed)[0].question;
+
+      mockToken = null;
+      vi.mocked(api.getCatalogDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: false, flashcards: threeCards });
+      render(
+        <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards&shuffle=1']}>
+          <Routes>
+            <Route path="/decks/:id/practice" element={<PracticePage />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(await screen.findByText(expectedFirst)).toBeInTheDocument();
+      expect(api.createSession).not.toHaveBeenCalled();
     });
 
     it('prompts to save when leaving an in-progress session', async () => {
@@ -398,7 +429,8 @@ describe('PracticePage', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Create account & save' }));
 
       await vi.waitFor(() => expect(api.register).toHaveBeenCalledWith('new@user.com', 'password1'));
-      expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards');
+      // Guest route carried shuffle=0, so the saved session is created unshuffled.
+      expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', false);
       expect(api.updateProgress).toHaveBeenCalledWith(99, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
       expect(applyAuth).toHaveBeenCalled();
     });
