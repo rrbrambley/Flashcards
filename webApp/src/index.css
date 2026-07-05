@@ -954,8 +954,11 @@ button.danger:hover:not(:disabled) {
   font-size: 1.1rem;
 }
 
-/* Selected practice mode (FLA-200): the radio-style option the run will use. */
-.mode-option.selected {
+/* Selected practice mode (FLA-200): the radio-style option the run will use. The :hover variant is
+   listed too so the tint survives hover — otherwise the more-specific .mode-option:hover rule above
+   repaints the background white while the cursor is over the selected card. */
+.mode-option.selected,
+.mode-option.selected:hover:not(:disabled) {
   border-color: var(--primary);
   background: var(--primary-soft);
 }
