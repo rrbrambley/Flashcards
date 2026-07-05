@@ -23,6 +23,7 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.update
+import kotlin.random.Random
 
 object SessionRepository {
 
@@ -31,41 +32,51 @@ object SessionRepository {
      * means a user can have concurrent in-progress sessions on the same deck in different modes (e.g.
      * classic + test), each resuming to its own mode.
      */
-    suspend fun startOrResume(userId: Long, deckId: Long, mode: String): PracticeSessionDto = dbQuery {
-        val deckTitle = visibleDeckTitle(userId, deckId)
-            ?: throw NotFoundException("Deck $deckId not found")
+    suspend fun startOrResume(userId: Long, deckId: Long, mode: String, shuffle: Boolean): PracticeSessionDto =
+        dbQuery {
+            val deckTitle = visibleDeckTitle(userId, deckId)
+                ?: throw NotFoundException("Deck $deckId not found")
 
-        val active = PracticeSessions.selectAll()
-            .where {
-                (PracticeSessions.userId eq userId) and
-                    (PracticeSessions.deckId eq deckId) and
-                    (PracticeSessions.mode eq mode) and
-                    (PracticeSessions.isCompleted eq false)
-            }
-            .firstOrNull()
-        if (active != null) return@dbQuery active.toPracticeSessionDto(deckTitle)
+            val active = PracticeSessions.selectAll()
+                .where {
+                    (PracticeSessions.userId eq userId) and
+                        (PracticeSessions.deckId eq deckId) and
+                        (PracticeSessions.mode eq mode) and
+                        (PracticeSessions.isCompleted eq false)
+                }
+                .firstOrNull()
+            // Resume wins: an existing active session keeps its stored order, so `shuffle` on the request
+            // only takes effect when a brand-new session is created below.
+            if (active != null) return@dbQuery active.toPracticeSessionDto(deckTitle)
 
-        val now = System.currentTimeMillis()
-        val newId = PracticeSessions.insertAndGetId {
-            it[PracticeSessions.userId] = userId
-            it[PracticeSessions.deckId] = deckId
-            it[PracticeSessions.mode] = mode
-            it[createdAtMillis] = now
-            it[updatedAtMillis] = now
-        }.value
-        PracticeSessionDto(
-            id = newId,
-            deckId = deckId,
-            deckTitle = deckTitle,
-            currentCardIndex = 0,
-            numCorrect = 0,
-            numIncorrect = 0,
-            isCompleted = false,
-            mode = mode,
-            createdAtMillis = now,
-            updatedAtMillis = now,
-        )
-    }
+            val now = System.currentTimeMillis()
+            // Mint the seed once, server-authoritative, in a JS-safe range (< 2^31) so it round-trips
+            // through the web app's JSON numbers. 0 when unshuffled.
+            val seed = if (shuffle) Random.nextInt(1, Int.MAX_VALUE).toLong() else 0L
+            val newId = PracticeSessions.insertAndGetId {
+                it[PracticeSessions.userId] = userId
+                it[PracticeSessions.deckId] = deckId
+                it[PracticeSessions.mode] = mode
+                it[PracticeSessions.shuffle] = shuffle
+                it[shuffleSeed] = seed
+                it[createdAtMillis] = now
+                it[updatedAtMillis] = now
+            }.value
+            PracticeSessionDto(
+                id = newId,
+                deckId = deckId,
+                deckTitle = deckTitle,
+                currentCardIndex = 0,
+                numCorrect = 0,
+                numIncorrect = 0,
+                isCompleted = false,
+                mode = mode,
+                createdAtMillis = now,
+                updatedAtMillis = now,
+                shuffle = shuffle,
+                shuffleSeed = seed,
+            )
+        }
 
     /**
      * One page of the user's sessions (optionally only active ones), most-recently-updated first.

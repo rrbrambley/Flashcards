@@ -28,6 +28,8 @@ fun ResultRow.toPracticeSessionDto(deckTitle: String): PracticeSessionDto = Prac
     mode = this[PracticeSessions.mode],
     createdAtMillis = this[PracticeSessions.createdAtMillis],
     updatedAtMillis = this[PracticeSessions.updatedAtMillis],
+    shuffle = this[PracticeSessions.shuffle],
+    shuffleSeed = this[PracticeSessions.shuffleSeed],
 )
 
 fun ResultRow.toPracticeAnswerDto(): PracticeAnswerDto = PracticeAnswerDto(

@@ -57,6 +57,8 @@ kotlin {
         // GradingParityFixtureTest can load it; the web reads the same file directly via node:fs.
         jvmTest {
             resources.srcDir(rootDir.resolve("testFixtures/practice-grading"))
+            // The shuffle golden fixture (FLA-200), likewise shared with the web Vitest suite.
+            resources.srcDir(rootDir.resolve("testFixtures/practice-shuffle"))
         }
     }
 }

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 /**
  * The mode-agnostic practice session runner shared by Android + iOS (FLA-197): start-or-resume (or
@@ -59,6 +60,8 @@ class PracticeSessionController(
     private var numCorrect = 0
     private var numIncorrect = 0
     private var mode: String = PracticeMode.Classic.key
+    private var shuffle = false
+    private var shuffleSeed = 0L
     private var discussionsEnabled = false
     private var isGlobal = false
     private var answerStreak = 0
@@ -75,7 +78,9 @@ class PracticeSessionController(
         reviewJob?.cancel()
         when (val e = entry) {
             is PracticeEntry.Deck -> {
-                val sid = runCatching { sessionRepository.startOrResumeSession(e.deckId, e.mode) }.getOrNull()
+                val sid = runCatching {
+                    sessionRepository.startOrResumeSession(e.deckId, e.mode, e.shuffle)
+                }.getOrNull()
                 if (sid == null) {
                     _state.update { PracticeUiState.Failed }
                     return
@@ -91,6 +96,9 @@ class PracticeSessionController(
                 isGuest = true
                 deckId = e.deckId
                 mode = e.mode
+                // No session persists a guest seed, so mint one here (once per run) for a stable order.
+                shuffle = e.shuffle
+                shuffleSeed = if (e.shuffle) Random.nextInt(1, Int.MAX_VALUE).toLong() else 0L
                 loadGuestDeck(e.deckId)
             }
         }
@@ -110,7 +118,10 @@ class PracticeSessionController(
         }
         deckId = session.deckId
         deckTitle = session.deckTitle
-        cards = deckCards
+        // Apply the session's stored shuffle order (FLA-200); the seed makes it stable across resume.
+        shuffle = session.shuffle
+        shuffleSeed = session.shuffleSeed
+        cards = SessionOrdering.order(deckCards, session.shuffle, session.shuffleSeed)
         mode = session.mode
         // The discussions + global flags travel with the cached deck (FLA-122/134), available offline.
         discussionsEnabled = deck?.discussionsEnabled ?: false
@@ -135,7 +146,8 @@ class PracticeSessionController(
         deckTitle = deck.title
         discussionsEnabled = deck.discussionsEnabled
         isGlobal = deck.isGlobal
-        cards = deckCards
+        // Guests have no persisted session; the seed minted in start() keeps this order stable per run.
+        cards = SessionOrdering.order(deckCards, shuffle, shuffleSeed)
         index = 0
         numCorrect = 0
         numIncorrect = 0
@@ -203,7 +215,7 @@ class PracticeSessionController(
             AuthResult.Success -> {
                 // Best-effort: the account exists either way; push the in-progress session if we can.
                 runCatching {
-                    val session = apiClient.createSession(targetDeckId, mode)
+                    val session = apiClient.createSession(targetDeckId, mode, shuffle)
                     apiClient.updateProgress(
                         session.id,
                         UpdateProgressRequest(index, numCorrect, numIncorrect),

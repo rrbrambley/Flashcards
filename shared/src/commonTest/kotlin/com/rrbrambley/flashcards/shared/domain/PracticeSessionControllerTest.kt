@@ -44,6 +44,8 @@ class PracticeSessionControllerTest {
         correct: Int = 0,
         incorrect: Int = 0,
         completed: Boolean = false,
+        shuffle: Boolean = false,
+        shuffleSeed: Long = 0L,
     ) = PracticeSession(
         id = SESSION_ID,
         deckId = deckId,
@@ -53,6 +55,8 @@ class PracticeSessionControllerTest {
         numIncorrect = incorrect,
         isCompleted = completed,
         mode = PracticeMode.Test.key,
+        shuffle = shuffle,
+        shuffleSeed = shuffleSeed,
     )
 
     /** MockEngine routing the few endpoints the controller touches (streaks / catalog / register / sessions). */
@@ -118,6 +122,22 @@ class PracticeSessionControllerTest {
         assertEquals(PracticeMode.Test.key, s.mode)
         assertTrue(s.canGoBack)
         assertEquals(0, s.streak) // resumed session starts the in-session streak fresh
+    }
+
+    @Test
+    fun sessionEntry_appliesStoredShuffleOrder() = runTest {
+        // A shuffled session (seed 1, 5 cards) must present cards in the deterministic shuffled order
+        // — the golden fixture's [0,3,4,1,2] — not the deck's saved order. Resuming reproduces it.
+        val cards = (0 until 5).map { card("c$it") }
+        val sessions = FakeSessionRepo(session(deckId = 1, shuffle = true, shuffleSeed = 1))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, FakeDeckRepo(deck(1, cards)))
+
+        c.start()
+        advanceUntilIdle()
+
+        val s = show(c.state.value)
+        assertEquals(listOf("c0", "c3", "c4", "c1", "c2"), s.deck.map { it.cardUid })
+        assertEquals("c0", s.card.cardUid) // first card of the shuffled order
     }
 
     @Test
@@ -245,7 +265,7 @@ class PracticeSessionControllerTest {
     private class FakeSessionRepo(private val session: PracticeSession? = null) : PracticeSessionRepository {
         val answers = MutableStateFlow<List<PracticeAnswer>>(emptyList())
         var completed = false
-        override suspend fun startOrResumeSession(deckId: Long, mode: String): Long = SESSION_ID
+        override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long = SESSION_ID
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = MutableStateFlow(listOfNotNull(session))
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> = MutableStateFlow(session)
         override suspend fun updateProgress(

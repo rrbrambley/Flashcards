@@ -31,9 +31,11 @@ enum PracticeEntry {
 
     var shared: Shared.PracticeEntry {
         switch self {
-        case let .deck(id, mode): Shared.PracticeEntry.Deck(deckId: id, mode: mode)
+        // shuffle: false keeps today's saved order (Kotlin default args don't bridge, so it's explicit);
+        // the shuffle toggle wiring lands in FLA-204.
+        case let .deck(id, mode): Shared.PracticeEntry.Deck(deckId: id, mode: mode, shuffle: false)
         case let .session(id): Shared.PracticeEntry.Session(sessionId: id)
-        case let .guestDeck(id, mode): Shared.PracticeEntry.GuestDeck(deckId: id, mode: mode)
+        case let .guestDeck(id, mode): Shared.PracticeEntry.GuestDeck(deckId: id, mode: mode, shuffle: false)
         }
     }
 }
