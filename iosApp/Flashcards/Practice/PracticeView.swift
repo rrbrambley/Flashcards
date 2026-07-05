@@ -111,7 +111,7 @@ struct PracticeView: View {
             VStack(spacing: Spacing.lg) {
                 ScoreRow(numIncorrect: numIncorrect, numCorrect: numCorrect)
                 // Live in-session streak (FLA-99): appears at 2+ in a row, milestone emphasis at 5+.
-                if streak >= 2 {
+                if InSessionStreak.shared.showsBadge(streak: Int32(streak)) {
                     SessionStreakBadge(streak: streak)
                 }
                 modeView(
@@ -250,7 +250,7 @@ private struct SessionStreakBadge: View {
     let streak: Int
 
     var body: some View {
-        let hot = streak >= 5
+        let hot = InSessionStreak.shared.isHot(streak: Int32(streak))
         // SF Symbol (not the 🔥 emoji) so it always renders + takes the warm tint.
         Label("\(streak) in a row", systemImage: "flame.fill")
             .font(hot ? .subheadline.bold() : .caption.weight(.semibold))

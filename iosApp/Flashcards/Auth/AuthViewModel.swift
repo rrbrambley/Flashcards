@@ -38,7 +38,7 @@ final class AuthViewModel: ObservableObject {
 
     func submit() async {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedEmail.isEmpty, !password.isEmpty else {
+        guard PresentationHelpersKt.credentialsProvided(email: email, password: password) else {
             errorMessage = "Enter your email and password."
             return
         }

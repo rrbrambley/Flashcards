@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.practice.ui
 import com.rrbrambley.flashcards.shared.domain.GuestSaveState
+import com.rrbrambley.flashcards.shared.domain.InSessionStreak
 import com.rrbrambley.flashcards.shared.domain.PracticeUiState
 import com.rrbrambley.flashcards.shared.domain.ReviewItem
 import com.rrbrambley.flashcards.shared.domain.PracticeMode
@@ -169,7 +170,7 @@ fun FlashcardsScreen(
         Column(modifier = Modifier.padding(padding)) {
             ScoreRow(flashcardsState = flashcardsState)
             // Live in-session streak (FLA-99): appears at 2+ in a row, with milestone emphasis at 5+.
-            (flashcardsState as? PracticeUiState.ShowCard)?.takeIf { it.streak >= 2 }?.let {
+            (flashcardsState as? PracticeUiState.ShowCard)?.takeIf { InSessionStreak.showsBadge(it.streak) }?.let {
                 SessionStreakBadge(
                     streak = it.streak,
                     modifier = Modifier
@@ -349,7 +350,7 @@ fun ScoreRow(flashcardsState: PracticeUiState) {
 /** Live in-session answer-streak pill (FLA-99) — warm like the daily streak, bolder at the 5+ milestone. */
 @Composable
 private fun SessionStreakBadge(streak: Int, modifier: Modifier = Modifier) {
-    val hot = streak >= 5
+    val hot = InSessionStreak.isHot(streak)
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(50),
