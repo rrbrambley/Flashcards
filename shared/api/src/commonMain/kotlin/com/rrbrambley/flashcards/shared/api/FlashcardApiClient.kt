@@ -193,10 +193,9 @@ class FlashcardApiClient(
         deckId: Long,
         mode: String = "flashcards",
         shuffle: Boolean = false,
-    ): PracticeSessionDto =
-        client.post(url("/sessions")) {
-            jsonBody(CreateSessionRequest(deckId, mode, shuffle))
-        }.body()
+    ): PracticeSessionDto = client.post(url("/sessions")) {
+        jsonBody(CreateSessionRequest(deckId, mode, shuffle))
+    }.body()
 
     @Throws(Exception::class)
     suspend fun updateProgress(sessionId: Long, request: UpdateProgressRequest): PracticeSessionDto =
