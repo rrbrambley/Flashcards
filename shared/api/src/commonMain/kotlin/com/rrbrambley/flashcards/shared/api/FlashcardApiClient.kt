@@ -189,9 +189,13 @@ class FlashcardApiClient(
     }.body()
 
     @Throws(Exception::class)
-    suspend fun createSession(deckId: Long, mode: String = "flashcards"): PracticeSessionDto =
+    suspend fun createSession(
+        deckId: Long,
+        mode: String = "flashcards",
+        shuffle: Boolean = false,
+    ): PracticeSessionDto =
         client.post(url("/sessions")) {
-            jsonBody(CreateSessionRequest(deckId, mode))
+            jsonBody(CreateSessionRequest(deckId, mode, shuffle))
         }.body()
 
     @Throws(Exception::class)

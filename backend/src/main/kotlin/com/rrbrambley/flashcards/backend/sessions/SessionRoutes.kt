@@ -22,7 +22,7 @@ fun Route.sessionRoutes() {
         // Create = start-or-resume the deck's active session for the requested mode.
         post {
             val request = call.receive<CreateSessionRequest>()
-            call.respond(SessionRepository.startOrResume(call.userId(), request.deckId, request.mode))
+            call.respond(SessionRepository.startOrResume(call.userId(), request.deckId, request.mode, request.shuffle))
         }
         get {
             val activeOnly = call.request.queryParameters["active"]?.toBooleanStrictOrNull() ?: false

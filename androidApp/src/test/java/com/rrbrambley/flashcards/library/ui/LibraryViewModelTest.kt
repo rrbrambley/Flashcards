@@ -323,7 +323,7 @@ class LibraryViewModelTest {
         var startedDeckId: Long? = null
         var startedMode: String? = null
 
-        override suspend fun startOrResumeSession(deckId: Long, mode: String): Long {
+        override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long {
             if (startShouldFail) throw RuntimeException("offline")
             startedDeckId = deckId
             startedMode = mode

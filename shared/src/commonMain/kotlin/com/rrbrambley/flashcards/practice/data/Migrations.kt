@@ -99,6 +99,14 @@ val MIGRATION_11_12 = object : Migration(11, 12) {
     }
 }
 
+/** v12 → v13: add `shuffle` + `shuffleSeed` to practice_sessions (randomized card order, FLA-200). */
+val MIGRATION_12_13 = object : Migration(12, 13) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `practice_sessions` ADD COLUMN `shuffle` INTEGER NOT NULL DEFAULT 0")
+        connection.execSQL("ALTER TABLE `practice_sessions` ADD COLUMN `shuffleSeed` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
     arrayOf(
@@ -111,4 +119,5 @@ val ALL_MIGRATIONS =
         MIGRATION_9_10,
         MIGRATION_10_11,
         MIGRATION_11_12,
+        MIGRATION_12_13,
     )

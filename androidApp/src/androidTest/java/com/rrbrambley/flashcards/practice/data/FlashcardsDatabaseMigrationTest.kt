@@ -250,4 +250,33 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals(0, cursor.getInt(1))
         }
     }
+
+    @Test
+    fun migrate12To13_preservesSessionsAndAddsShuffleColumns() {
+        // Seed a v12 database with a session (no shuffle / shuffleSeed columns yet).
+        helper.createDatabase(testDb, 12).apply {
+            execSQL(
+                "INSERT INTO flashcard_decks (id, title, editable, tags, discussionEnabled, isGlobal) " +
+                    "VALUES (1, 'Spanish basics', 1, '[]', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, mode, " +
+                    "pendingSync, createdAtMillis, updatedAtMillis) " +
+                    "VALUES (1, 1, 2, 1, 0, 0, 'test', 0, 1000, 1000)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_12_13 and validate against the exported v13 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 13, true, MIGRATION_12_13)
+
+        // The existing row survived and got the defaults (unshuffled, seed 0).
+        db.query("SELECT currentCardIndex, shuffle, shuffleSeed FROM practice_sessions WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+            assertEquals(0, cursor.getInt(1))
+            assertEquals(0, cursor.getInt(2))
+        }
+    }
 }

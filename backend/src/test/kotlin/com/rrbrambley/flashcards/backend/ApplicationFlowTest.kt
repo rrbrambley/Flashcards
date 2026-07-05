@@ -981,6 +981,28 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun session_create_with_shuffle_mints_stable_seed() = runApp { client ->
+        val auth = client.register("shuffly", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // A shuffled create mints a positive, JS-safe seed once.
+        val created = client.createSession(auth.accessToken, deckId, mode = "test", shuffle = true)
+        assertTrue(created.shuffle, "session should be marked shuffled")
+        assertTrue(created.shuffleSeed in 1..Int.MAX_VALUE.toLong(), "seed should be a positive JS-safe value")
+
+        // Resume returns the SAME stored seed (never re-minted), so the order reproduces.
+        val resumed = client.createSession(auth.accessToken, deckId, mode = "test", shuffle = true)
+        assertEquals(created.id, resumed.id)
+        assertEquals(created.shuffleSeed, resumed.shuffleSeed, "resume must keep the original seed")
+
+        // A different mode is a separate session; unshuffled by default with seed 0.
+        val classic = client.createSession(auth.accessToken, deckId, mode = "flashcards")
+        assertEquals(false, classic.shuffle)
+        assertEquals(0L, classic.shuffleSeed)
+    }
+
+    @Test
     fun complete_records_completion_time_and_timezone() = runApp { client ->
         fun completion(sessionId: Long): Pair<Long?, String?> = transaction {
             PracticeSessions.selectAll().where { PracticeSessions.id eq sessionId }.first()
@@ -2518,10 +2540,11 @@ class ApplicationFlowTest {
         token: String,
         deckId: Long,
         mode: String = "flashcards",
+        shuffle: Boolean = false,
     ): PracticeSessionDto = post("/sessions") {
         bearerAuth(token)
         contentType(ContentType.Application.Json)
-        setBody(json.encodeToString(CreateSessionRequest(deckId, mode)))
+        setBody(json.encodeToString(CreateSessionRequest(deckId, mode, shuffle)))
     }.decode()
 
     /** Grants the seeded `admin` role to [userId] (bootstraps an admin for a test). */

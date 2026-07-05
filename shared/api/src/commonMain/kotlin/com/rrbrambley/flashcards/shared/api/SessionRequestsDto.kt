@@ -8,6 +8,10 @@ data class CreateSessionRequest(
     /** Practice mode to start/resume (web-driven string). Defaulted so older clients (and mobile,
      *  which only does classic) keep working — see [PracticeSessionDto.mode]. */
     val mode: String = "flashcards",
+    /** Whether to randomize card order for a newly-created session (FLA-200). Defaulted false so
+     *  older clients keep the deck's saved order; the backend mints [PracticeSessionDto.shuffleSeed]
+     *  once when this is true. Ignored when resuming an existing session (its stored value wins). */
+    val shuffle: Boolean = false,
 )
 
 @Serializable

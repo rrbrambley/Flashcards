@@ -136,7 +136,7 @@ class HomeRepositoryTest {
 
     private class FakePracticeSessionRepository(private val activeSessions: List<PracticeSession>) :
         PracticeSessionRepository {
-        override suspend fun startOrResumeSession(deckId: Long, mode: String): Long = 0L
+        override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long = 0L
 
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(activeSessions)
 

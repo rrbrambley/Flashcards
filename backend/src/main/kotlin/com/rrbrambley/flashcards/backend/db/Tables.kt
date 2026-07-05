@@ -171,6 +171,13 @@ object PracticeSessions : LongIdTable("practice_sessions") {
     // deck, mode).
     val mode = varchar("mode", 32).default("flashcards")
 
+    // Randomized card order (FLA-200). `shuffle` is set at creation from the request; `shuffleSeed` is
+    // minted once (server-authoritative) so the order is stable across resume/devices, and applied
+    // client-side by SessionOrdering. Defaulted so createMissingTablesAndColumns backfills old rows
+    // (unshuffled) and clients that omit shuffle keep the deck's saved order.
+    val shuffle = bool("shuffle").default(false)
+    val shuffleSeed = long("shuffle_seed").default(0)
+
     val createdAtMillis = long("created_at_millis")
     val updatedAtMillis = long("updated_at_millis")
 

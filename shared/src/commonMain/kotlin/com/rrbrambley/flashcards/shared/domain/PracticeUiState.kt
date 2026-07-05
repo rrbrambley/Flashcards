@@ -60,12 +60,16 @@ sealed class GuestSaveState {
 
 /** How a practice run is launched. */
 sealed class PracticeEntry {
-    /** Start or resume a session for a deck in a given mode. */
-    data class Deck(val deckId: Long, val mode: String) : PracticeEntry()
+    /**
+     * Start or resume a session for a deck in a given mode. [shuffle] applies only when a *new* session
+     * is created (resume keeps the existing session's stored order); defaulted false so the data layer
+     * stays backward-compatible — the picker UIs pass the user's choice (default On). See FLA-200.
+     */
+    data class Deck(val deckId: Long, val mode: String, val shuffle: Boolean = false) : PracticeEntry()
 
-    /** Resume an existing session; the mode comes from the session. */
+    /** Resume an existing session; the mode + shuffle order come from the session. */
     data class Session(val sessionId: Long) : PracticeEntry()
 
     /** Guest mode (FLA-104): practice a public catalog deck in memory — no session, no persistence. */
-    data class GuestDeck(val deckId: Long, val mode: String) : PracticeEntry()
+    data class GuestDeck(val deckId: Long, val mode: String, val shuffle: Boolean = false) : PracticeEntry()
 }

@@ -1,0 +1,10 @@
+{
+  "_comment": "Canonical golden fixture for the deterministic practice-card shuffle (FLA-200). Both the shared Kotlin SessionOrdering (:shared:jvmTest ShuffleParityFixtureTest) and the web TS runner (webApp Vitest) load this file and must reproduce `expectedOrder` exactly for a deck of `size` cards shuffled with `seed`, keeping the mulberry32 Fisher-Yates in lockstep across platforms. Generated from the Kotlin implementation; a drift on either side fails CI.",
+  "seededOrders": [
+    { "name": "seed1-size5", "seed": 1, "size": 5, "expectedOrder": [0, 3, 4, 1, 2] },
+    { "name": "seed12345-size10", "seed": 12345, "size": 10, "expectedOrder": [3, 1, 5, 8, 7, 0, 4, 2, 6, 9] },
+    { "name": "seed987654321-size8", "seed": 987654321, "size": 8, "expectedOrder": [7, 4, 1, 0, 5, 2, 3, 6] },
+    { "name": "seedMax-size4", "seed": 2147483646, "size": 4, "expectedOrder": [1, 3, 2, 0] },
+    { "name": "seed42-size20", "seed": 42, "size": 20, "expectedOrder": [0, 14, 3, 13, 8, 1, 11, 15, 4, 5, 9, 19, 7, 2, 12, 10, 17, 6, 18, 16] }
+  ]
+}

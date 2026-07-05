@@ -16,4 +16,8 @@ data class PracticeSession(
     // True when this session has local progress not yet synced to the backend (started/advanced
     // offline). Defaulted; lets the UI optionally show a "saved locally" affordance (FLA-91).
     val pendingSync: Boolean = false,
+    // Whether this session presents its cards in a randomized order, and the seed that makes that
+    // order reproducible across resume/devices (FLA-200). Applied by SessionOrdering at load.
+    val shuffle: Boolean = false,
+    val shuffleSeed: Long = 0L,
 )
