@@ -881,7 +881,18 @@ button.danger:hover:not(:disabled) {
 }
 
 /* Practice mode chooser */
-/* Shuffle toggle above the mode list (FLA-200). */
+/* Section headings on the practice-config screen (FLA-200): "Choose a mode" / "Settings". */
+.section-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 1.25rem 0 0.5rem;
+}
+.section-heading:first-child {
+  margin-top: 0;
+}
+
+/* Shuffle toggle in the Settings section (FLA-200). */
 .shuffle-toggle {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -941,6 +952,18 @@ button.danger:hover:not(:disabled) {
 .mode-option-label {
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+/* Selected practice mode (FLA-200): the radio-style option the run will use. */
+.mode-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+/* Start-practice button, full-width below the settings (FLA-200); disabled until a mode is picked. */
+.start-practice {
+  width: 100%;
+  margin-top: 1.25rem;
 }
 
 /* Test (text-entry) mode */

@@ -1,9 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 import { ModeChooser } from './ModeChooser';
 import { PRACTICE_MODES } from './modes';
+import { api } from '../api/client';
+
+vi.mock('../api/client', () => ({
+  api: { getDeck: vi.fn(), getCatalogDeck: vi.fn() },
+}));
+
+let mockToken: string | null = 'test-token';
+vi.mock('../auth/auth-context', () => ({
+  useAuth: () => ({ token: mockToken }),
+}));
 
 function RunnerStub() {
   const [params] = useSearchParams();
@@ -27,25 +37,48 @@ function renderChooser() {
 }
 
 describe('ModeChooser', () => {
-  it('lists the registered modes and routes the choice with ?mode= and shuffle on by default', async () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockToken = 'test-token';
+    vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: [] });
+    vi.mocked(api.getCatalogDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: false, flashcards: [] });
+  });
+
+  it('titles the header with the deck name and lists the registered modes', async () => {
     renderChooser();
 
-    // Every registered mode is offered.
+    expect(await screen.findByText('Practice Spanish')).toBeInTheDocument();
     for (const mode of PRACTICE_MODES) {
       expect(screen.getByText(mode.label)).toBeInTheDocument();
     }
+  });
 
-    // Shuffle defaults On (FLA-200): picking a mode routes with shuffle=1.
-    await userEvent.click(screen.getByText(PRACTICE_MODES[0].label));
+  it('does not start until a mode is selected, then routes with the mode + shuffle on by default', async () => {
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    // Start is disabled until a mode is picked (selecting a mode does not auto-start).
+    const start = screen.getByRole('button', { name: 'Start practice' });
+    expect(start).toBeDisabled();
+
+    await userEvent.click(screen.getByRole('radio', { name: new RegExp(PRACTICE_MODES[0].label) }));
+    expect(start).toBeEnabled();
+    // Still on the config screen (no auto-navigation on select).
+    expect(screen.queryByText(/^mode=/)).not.toBeInTheDocument();
+
+    await userEvent.click(start);
+    // Shuffle defaults On (FLA-200) → shuffle=1.
     expect(await screen.findByText(`mode=${PRACTICE_MODES[0].key}`)).toBeInTheDocument();
     expect(screen.getByText('shuffle=1')).toBeInTheDocument();
   });
 
   it('routes with shuffle=0 when the toggle is turned off', async () => {
     renderChooser();
+    await screen.findByText('Practice Spanish');
 
+    await userEvent.click(screen.getByRole('radio', { name: new RegExp(PRACTICE_MODES[0].label) }));
     await userEvent.click(screen.getByRole('checkbox', { name: /Shuffle/ }));
-    await userEvent.click(screen.getByText(PRACTICE_MODES[0].label));
+    await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
 
     expect(await screen.findByText('shuffle=0')).toBeInTheDocument();
   });

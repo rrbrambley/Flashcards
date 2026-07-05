@@ -203,6 +203,8 @@ describe('PracticePage', () => {
   });
 
   it('shows the mode chooser when no mode is selected', async () => {
+    // The chooser fetches the deck for its "Practice <deck>" title.
+    vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: threeCards });
     render(
       <MemoryRouter initialEntries={['/decks/5/practice']}>
         <Routes>
@@ -212,6 +214,8 @@ describe('PracticePage', () => {
     );
     expect(await screen.findByText('Choose a mode')).toBeInTheDocument();
     expect(screen.getByText('Test')).toBeInTheDocument();
+    // Selecting a mode no longer auto-starts — a Start button drives it.
+    expect(screen.getByRole('button', { name: 'Start practice' })).toBeInTheDocument();
   });
 
   it('runs the test mode end-to-end when ?mode=test', async () => {
