@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.shared.api.TokenStore
+import com.rrbrambley.flashcards.shared.domain.credentialsProvided
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -66,7 +67,7 @@ class AuthViewModel @Inject constructor(
 
     private inline fun submitWithCredentials(crossinline call: suspend (AuthFormState) -> AuthOutcome) {
         val current = _formState.value
-        if (current.email.isBlank() || current.password.isBlank()) {
+        if (!credentialsProvided(current.email, current.password)) {
             _formState.update { it.copy(errorMessage = stringProvider.getString(R.string.auth_error_enter_credentials)) }
             return
         }

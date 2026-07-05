@@ -1,4 +1,6 @@
 package com.rrbrambley.flashcards.home.ui
+import com.rrbrambley.flashcards.shared.domain.SessionProgress
+import com.rrbrambley.flashcards.shared.domain.groupHomeBySection
 import com.rrbrambley.flashcards.practice.ui.labelRes
 
 import androidx.compose.foundation.background
@@ -47,7 +49,6 @@ import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.shared.domain.HomeData
 import com.rrbrambley.flashcards.shared.domain.HomeSessionInfo
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
-import kotlin.math.min
 
 // Score colors for the home session detail: a green correct count and a red incorrect count.
 private val CorrectGreen = Color(0xFF2E7D32)
@@ -132,9 +133,9 @@ private fun HomeScreenContent(
             item { HomeStreakBadge(streak = streak) }
         }
         // Group consecutive cards under their section header (FLA-96); header-less for null sections.
-        groupBySection(cards).forEach { (section, sectionCards) ->
-            section?.let { item { SectionHeader(text = it) } }
-            items(sectionCards) { card ->
+        groupHomeBySection(cards).forEach { group ->
+            group.section?.let { item { SectionHeader(text = it) } }
+            items(group.items) { card ->
                 HomeCard(
                     card = card,
                     onButtonAction = onButtonAction,
@@ -159,23 +160,6 @@ private fun HomeStreakBadge(streak: Int) {
             fontWeight = FontWeight.SemiBold,
         )
     }
-}
-
-/**
- * Group consecutive feed cards by their section header (FLA-96), preserving feed order so each
- * section renders under one header. Cards with a null section form their own header-less group.
- */
-private fun groupBySection(cards: List<HomeData>): List<Pair<String?, List<HomeData>>> {
-    val groups = mutableListOf<Pair<String?, MutableList<HomeData>>>()
-    for (card in cards) {
-        val last = groups.lastOrNull()
-        if (last != null && last.first == card.section) {
-            last.second.add(card)
-        } else {
-            groups.add(card.section to mutableListOf(card))
-        }
-    }
-    return groups
 }
 
 /** A muted, uppercase section header above a group of home cards (mirrors the web's home-section-header). */
@@ -233,7 +217,7 @@ fun HomeCard(
 private fun SessionDetail(session: HomeSessionInfo) {
     val modeLabel = PracticeMode.entries.firstOrNull { it.key == session.mode }?.labelRes
     val total = session.totalCards
-    val progress = if (total > 0) (session.currentCardIndex.toFloat() / total).coerceIn(0f, 1f) else 0f
+    val progress = SessionProgress.fraction(session.currentCardIndex, total)
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -262,7 +246,7 @@ private fun SessionDetail(session: HomeSessionInfo) {
                 Text(
                     text = stringResource(
                         R.string.home_session_progress,
-                        min(session.currentCardIndex + 1, total),
+                        SessionProgress.position(session.currentCardIndex, total),
                         total,
                     ),
                     style = MaterialTheme.typography.bodySmall,
