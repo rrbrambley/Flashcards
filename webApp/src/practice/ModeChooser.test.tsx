@@ -7,27 +7,46 @@ import { PRACTICE_MODES } from './modes';
 
 function RunnerStub() {
   const [params] = useSearchParams();
-  return <div>runner mode={params.get('mode')}</div>;
+  return (
+    <div>
+      <span>mode={params.get('mode')}</span>
+      <span>shuffle={params.get('shuffle')}</span>
+    </div>
+  );
+}
+
+function renderChooser() {
+  render(
+    <MemoryRouter initialEntries={['/decks/5/practice/choose']}>
+      <Routes>
+        <Route path="/decks/:id/practice/choose" element={<ModeChooser deckId={5} />} />
+        <Route path="/decks/:id/practice" element={<RunnerStub />} />
+      </Routes>
+    </MemoryRouter>,
+  );
 }
 
 describe('ModeChooser', () => {
-  it('lists the registered modes and routes the choice with ?mode=', async () => {
-    render(
-      <MemoryRouter initialEntries={['/decks/5/practice/choose']}>
-        <Routes>
-          <Route path="/decks/:id/practice/choose" element={<ModeChooser deckId={5} />} />
-          <Route path="/decks/:id/practice" element={<RunnerStub />} />
-        </Routes>
-      </MemoryRouter>,
-    );
+  it('lists the registered modes and routes the choice with ?mode= and shuffle on by default', async () => {
+    renderChooser();
 
     // Every registered mode is offered.
     for (const mode of PRACTICE_MODES) {
       expect(screen.getByText(mode.label)).toBeInTheDocument();
     }
 
-    // Picking the first mode routes to the runner carrying that mode key.
+    // Shuffle defaults On (FLA-200): picking a mode routes with shuffle=1.
     await userEvent.click(screen.getByText(PRACTICE_MODES[0].label));
-    expect(await screen.findByText(`runner mode=${PRACTICE_MODES[0].key}`)).toBeInTheDocument();
+    expect(await screen.findByText(`mode=${PRACTICE_MODES[0].key}`)).toBeInTheDocument();
+    expect(screen.getByText('shuffle=1')).toBeInTheDocument();
+  });
+
+  it('routes with shuffle=0 when the toggle is turned off', async () => {
+    renderChooser();
+
+    await userEvent.click(screen.getByRole('checkbox', { name: /Shuffle/ }));
+    await userEvent.click(screen.getByText(PRACTICE_MODES[0].label));
+
+    expect(await screen.findByText('shuffle=0')).toBeInTheDocument();
   });
 });

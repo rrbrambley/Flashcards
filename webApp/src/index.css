@@ -881,6 +881,35 @@ button.danger:hover:not(:disabled) {
 }
 
 /* Practice mode chooser */
+/* Shuffle toggle above the mode list (FLA-200). */
+.shuffle-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+.shuffle-toggle input {
+  grid-row: span 2;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.shuffle-toggle-label {
+  font-weight: 600;
+}
+
+.shuffle-toggle .muted {
+  grid-column: 2;
+  font-size: 0.85rem;
+}
+
 .mode-list {
   list-style: none;
   margin: 0;

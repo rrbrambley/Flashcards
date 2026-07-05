@@ -163,24 +163,24 @@ describe('api client', () => {
     setToken('tok');
     const fetchMock = stubFetch({ json: () => Promise.resolve({ id: 7, deckId: 3 }) });
 
-    const session = await api.createSession(3, 'test');
+    const session = await api.createSession(3, 'test', true);
 
     expect(session).toMatchObject({ id: 7, deckId: 3 });
     const { url, init } = lastCall(fetchMock);
     expect(url).toContain('/sessions');
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBe('Bearer tok');
-    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3, mode: 'test' });
+    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3, mode: 'test', shuffle: true });
   });
 
-  it('createSession defaults the mode to flashcards', async () => {
+  it('createSession defaults the mode to flashcards and shuffle off', async () => {
     setToken('tok');
     const fetchMock = stubFetch({ json: () => Promise.resolve({ id: 7, deckId: 3 }) });
 
     await api.createSession(3);
 
     const { init } = lastCall(fetchMock);
-    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3, mode: 'flashcards' });
+    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3, mode: 'flashcards', shuffle: false });
   });
 
   it('updateProgress PATCHes the session with progress', async () => {
