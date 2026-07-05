@@ -34,6 +34,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -79,9 +80,9 @@ fun LibraryScreen(
         LibraryDeckActionsSheet(
             deck = deck,
             onDismissRequest = { selectedDeck = null },
-            onPracticeWithMode = { mode ->
+            onPracticeWithMode = { mode, shuffle ->
                 selectedDeck = null
-                libraryViewModel.startPractice(deck.id, mode.key, onPracticeDeck)
+                libraryViewModel.startPractice(deck.id, mode.key, shuffle, onPracticeDeck)
             },
             onEditClick = {
                 selectedDeck = null
@@ -361,12 +362,15 @@ private fun LibraryDeckCard(
 private fun LibraryDeckActionsSheet(
     deck: FlashcardDeck,
     onDismissRequest: () -> Unit,
-    onPracticeWithMode: (PracticeMode) -> Unit,
+    onPracticeWithMode: (PracticeMode, Boolean) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
-    // Tapping "Practice" swaps the sheet to a mode chooser; everything else dismisses on action.
+    // Tapping "Practice" swaps the sheet to a configure step: pick a mode, adjust settings (Shuffle,
+    // default On — FLA-200), then Start. Selecting a mode marks it rather than launching immediately.
     var choosingMode by remember { mutableStateOf(false) }
+    var selectedMode by remember { mutableStateOf<PracticeMode?>(null) }
+    var shuffle by remember { mutableStateOf(true) }
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
         Column(
             modifier = Modifier
@@ -387,7 +391,24 @@ private fun LibraryDeckActionsSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 PracticeMode.entries.forEach { mode ->
-                    PracticeModeOption(mode = mode, onClick = { onPracticeWithMode(mode) })
+                    PracticeModeOption(
+                        mode = mode,
+                        selected = selectedMode == mode,
+                        onClick = { selectedMode = mode },
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.practice_settings),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                ShuffleSettingRow(checked = shuffle, onCheckedChange = { shuffle = it })
+                Button(
+                    onClick = { selectedMode?.let { onPracticeWithMode(it, shuffle) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = selectedMode != null,
+                ) {
+                    Text(stringResource(R.string.practice_start))
                 }
             } else {
                 Text(
@@ -430,11 +451,21 @@ private fun LibraryDeckActionsSheet(
 }
 
 @Composable
-private fun PracticeModeOption(mode: PracticeMode, onClick: () -> Unit) {
+private fun PracticeModeOption(mode: PracticeMode, selected: Boolean, onClick: () -> Unit) {
+    // A selectable option (FLA-200): the chosen mode fills with the primary container tint.
+    val colors = if (selected) {
+        ButtonDefaults.outlinedButtonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    } else {
+        ButtonDefaults.outlinedButtonColors()
+    }
     OutlinedButton(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(16.dp),
+        colors = colors,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
@@ -448,9 +479,37 @@ private fun PracticeModeOption(mode: PracticeMode, onClick: () -> Unit) {
             Text(
                 text = stringResource(mode.descriptionRes),
                 style = MaterialTheme.typography.bodyMedium,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+        }
+    }
+}
+
+/** The Shuffle toggle in the practice "Settings" section (FLA-200): label + description + a Switch. */
+@Composable
+private fun ShuffleSettingRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = stringResource(R.string.practice_shuffle_label),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(R.string.practice_shuffle_description),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

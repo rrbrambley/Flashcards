@@ -185,11 +185,12 @@ class LibraryViewModelTest {
             stringProvider = FakeStringProvider(),
         )
 
-        viewModel.startPractice(deckId = 7L, mode = "test") { startedSessionId = it }
+        viewModel.startPractice(deckId = 7L, mode = "test", shuffle = true) { startedSessionId = it }
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(7L, practiceSessionRepository.startedDeckId)
         assertEquals("test", practiceSessionRepository.startedMode)
+        assertEquals(true, practiceSessionRepository.startedShuffle)
         assertEquals(42L, startedSessionId)
     }
 
@@ -207,7 +208,7 @@ class LibraryViewModelTest {
         }
 
         // Offline / server down: this used to crash (uncaught ConnectException). Now it's caught.
-        viewModel.startPractice(deckId = 7L, mode = "multiple_choice") { startedSessionId = it }
+        viewModel.startPractice(deckId = 7L, mode = "multiple_choice", shuffle = false) { startedSessionId = it }
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(null, startedSessionId) // no navigation
@@ -322,11 +323,13 @@ class LibraryViewModelTest {
     ) : PracticeSessionRepository {
         var startedDeckId: Long? = null
         var startedMode: String? = null
+        var startedShuffle: Boolean? = null
 
         override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long {
             if (startShouldFail) throw RuntimeException("offline")
             startedDeckId = deckId
             startedMode = mode
+            startedShuffle = shuffle
             return sessionId
         }
 
