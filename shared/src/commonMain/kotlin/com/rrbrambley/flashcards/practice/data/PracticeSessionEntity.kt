@@ -41,6 +41,10 @@ data class PracticeSessionEntity(
     // complete); the sync routine flushes these on reconnect and clears it once the server confirms.
     // Distinct from a negative [id], which means "offline-minted, no server id yet". See MIGRATION_6_7.
     val pendingSync: Boolean = false,
+    // True when the user removed this session locally but the backend DELETE hasn't been confirmed yet
+    // (FLA-205). A local tombstone: the row is hidden from the active/observe queries immediately and
+    // syncPendingSessions flushes the DELETE on reconnect, then hard-removes it. See MIGRATION_13_14.
+    val pendingDelete: Boolean = false,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
 )

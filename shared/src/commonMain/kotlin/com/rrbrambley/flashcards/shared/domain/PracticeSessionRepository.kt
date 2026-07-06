@@ -21,6 +21,14 @@ interface PracticeSessionRepository {
     suspend fun completeSession(sessionId: Long)
 
     /**
+     * Removes (discards) an in-progress session — the home "×" action (FLA-205). Offline-first: a
+     * server-owned session is tombstoned locally (hidden immediately) and the backend DELETE is
+     * flushed on reconnect; an offline-minted one is just dropped. Default no-op so fakes compile.
+     */
+    @Throws(Exception::class)
+    suspend fun deleteSession(sessionId: Long) {}
+
+    /**
      * Appends an answer to the session's log (FLA-99): mints its play-order `sequence` + a UUID,
      * persists locally (offline-first), and best-effort flushes to the backend. Default no-op so
      * existing fakes/tests compile unchanged.

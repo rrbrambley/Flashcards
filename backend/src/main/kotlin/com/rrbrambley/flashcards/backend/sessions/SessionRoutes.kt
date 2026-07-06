@@ -8,10 +8,12 @@ import com.rrbrambley.flashcards.shared.api.CompleteSessionRequest
 import com.rrbrambley.flashcards.shared.api.CreateSessionRequest
 import com.rrbrambley.flashcards.shared.api.RecordAnswersRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.request.receive
 import io.ktor.server.request.receiveNullable
 import io.ktor.server.response.respond
 import io.ktor.server.routing.Route
+import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.patch
 import io.ktor.server.routing.post
@@ -32,6 +34,11 @@ fun Route.sessionRoutes() {
         }
         get("/{id}") {
             call.respond(SessionRepository.getSession(call.userId(), call.pathLong("id")))
+        }
+        // Discard an in-progress session (the home "×" action, FLA-205). Hard delete; cascades answers.
+        delete("/{id}") {
+            SessionRepository.delete(call.userId(), call.pathLong("id"))
+            call.respond(HttpStatusCode.NoContent)
         }
         patch("/{id}") {
             val request = call.receive<UpdateProgressRequest>()

@@ -8,16 +8,21 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PracticeSessionDao {
+    // pendingDelete rows are locally-removed sessions awaiting the backend DELETE (FLA-205) — hidden
+    // from every read below so the card disappears immediately.
     @Transaction
-    @Query("SELECT * FROM practice_sessions WHERE isCompleted = 0 ORDER BY updatedAtMillis DESC")
+    @Query("SELECT * FROM practice_sessions WHERE isCompleted = 0 AND pendingDelete = 0 ORDER BY updatedAtMillis DESC")
     fun observeActiveSessions(): Flow<List<PracticeSessionWithDeck>>
 
     @Transaction
-    @Query("SELECT * FROM practice_sessions WHERE id = :sessionId")
+    @Query("SELECT * FROM practice_sessions WHERE id = :sessionId AND pendingDelete = 0")
     fun observeSession(sessionId: Long): Flow<PracticeSessionWithDeck?>
 
     /** Most recent practice time per deck (across active and completed sessions); for sorting. */
-    @Query("SELECT deckId, MAX(updatedAtMillis) AS lastPracticedAtMillis FROM practice_sessions GROUP BY deckId")
+    @Query(
+        "SELECT deckId, MAX(updatedAtMillis) AS lastPracticedAtMillis FROM practice_sessions " +
+            "WHERE pendingDelete = 0 GROUP BY deckId",
+    )
     fun observeLastPracticedByDeck(): Flow<List<DeckLastPracticed>>
 
     /** Caches a backend session under its backend id (in-place update, no cascade). */
@@ -38,9 +43,17 @@ interface PracticeSessionDao {
     )
     suspend fun findActiveByDeckAndMode(deckId: Long, mode: String): PracticeSessionEntity?
 
-    /** Rows with local writes not yet flushed to the backend (FLA-91 sync). */
-    @Query("SELECT * FROM practice_sessions WHERE pendingSync = 1")
+    /** Rows with local writes not yet flushed to the backend (FLA-91 sync); excludes pending-deletes. */
+    @Query("SELECT * FROM practice_sessions WHERE pendingSync = 1 AND pendingDelete = 0")
     suspend fun getPendingSessions(): List<PracticeSessionEntity>
+
+    /** Rows the user removed locally, awaiting the backend DELETE flush on reconnect (FLA-205). */
+    @Query("SELECT * FROM practice_sessions WHERE pendingDelete = 1")
+    suspend fun getPendingDeleteSessions(): List<PracticeSessionEntity>
+
+    /** Marks a session as locally removed (a tombstone); syncPendingSessions flushes the DELETE. */
+    @Query("UPDATE practice_sessions SET pendingDelete = 1 WHERE id = :id")
+    suspend fun markPendingDelete(id: Long)
 
     /** Smallest existing id, or null when empty; used to mint a decreasing negative offline id. */
     @Query("SELECT MIN(id) FROM practice_sessions")

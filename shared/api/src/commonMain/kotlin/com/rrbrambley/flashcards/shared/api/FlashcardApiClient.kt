@@ -197,6 +197,12 @@ class FlashcardApiClient(
         jsonBody(CreateSessionRequest(deckId, mode, shuffle))
     }.body()
 
+    /** Deletes (discards) a practice session the user owns; the backend cascades to its answer log. */
+    @Throws(Exception::class)
+    suspend fun deleteSession(sessionId: Long) {
+        client.delete(url("/sessions/$sessionId")) { auth() }
+    }
+
     @Throws(Exception::class)
     suspend fun updateProgress(sessionId: Long, request: UpdateProgressRequest): PracticeSessionDto =
         client.patch(url("/sessions/$sessionId")) {

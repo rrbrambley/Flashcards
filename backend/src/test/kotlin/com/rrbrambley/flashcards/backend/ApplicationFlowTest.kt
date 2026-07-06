@@ -981,6 +981,36 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun deleting_a_session_removes_it_and_is_owner_scoped() = runApp { client ->
+        val auth = client.register("discarder", "password1")
+        val other = client.register("intruder", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+        val session = client.createSession(auth.accessToken, deckId)
+
+        // Another user can't delete someone else's session (hidden as 404).
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.delete("/sessions/${session.id}") { bearerAuth(other.accessToken) }.status,
+        )
+
+        // The owner discards it → 204, and it drops out of the active list.
+        assertEquals(
+            HttpStatusCode.NoContent,
+            client.delete("/sessions/${session.id}") { bearerAuth(auth.accessToken) }.status,
+        )
+        val active = client.get("/sessions?active=true") { bearerAuth(auth.accessToken) }
+            .decode<Page<PracticeSessionDto>>()
+        assertTrue(active.items.none { it.id == session.id })
+
+        // Deleting a now-missing session is a 404.
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.delete("/sessions/${session.id}") { bearerAuth(auth.accessToken) }.status,
+        )
+    }
+
+    @Test
     fun session_create_with_shuffle_mints_stable_seed() = runApp { client ->
         val auth = client.register("shuffly", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }

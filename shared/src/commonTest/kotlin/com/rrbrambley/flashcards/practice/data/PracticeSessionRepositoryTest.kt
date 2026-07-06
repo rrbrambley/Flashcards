@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -309,6 +311,95 @@ class PracticeSessionRepositoryTest {
         assertTrue(sessionDao.observeActiveSessions().first().isEmpty())
     }
 
+    // --- Delete / discard a session (FLA-205) ---
+
+    @Test
+    fun deleteSession_offlineMintedId_deletesLocallyWithNoServerCall() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        sessionDao.upsertSession(sessionEntity(id = -1, deckId = 5, pendingSync = true))
+        // The engine errors on any request; a negative-id delete must not hit the network.
+        val repository = repository(flashcardDao, sessionDao, offlineEngine(HttpMethod.Delete to "/sessions/-1"))
+
+        repository.deleteSession(-1)
+
+        assertTrue(sessionDao.getSessionById(-1) == null)
+    }
+
+    @Test
+    fun deleteSession_online_deletesServerThenRemovesLocalRow() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        sessionDao.upsertSession(sessionEntity(id = 12, deckId = 5))
+        val repository = repository(flashcardDao, sessionDao, mockEngine(HttpMethod.Delete to "/sessions/12" to ""))
+
+        repository.deleteSession(12)
+
+        // Server delete succeeded → the local row is hard-removed (no lingering tombstone).
+        assertTrue(sessionDao.getSessionById(12) == null)
+    }
+
+    @Test
+    fun deleteSession_offline_tombstonesAndHidesFromActiveList() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        sessionDao.upsertSession(sessionEntity(id = 12, deckId = 5))
+        val repository = repository(flashcardDao, sessionDao, offlineEngine(HttpMethod.Delete to "/sessions/12"))
+
+        repository.deleteSession(12)
+
+        // The DELETE failed (offline), so the row is tombstoned — kept for the sync flush, but hidden.
+        assertTrue(sessionDao.getSessionById(12)!!.pendingDelete)
+        assertTrue(sessionDao.observeActiveSessions().first().isEmpty())
+    }
+
+    @Test
+    fun deleteSession_tombstoneSurvivesBackgroundPull() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        // Already tombstoned locally; the backend still lists it (the DELETE hasn't flushed yet).
+        sessionDao.upsertSession(sessionEntity(id = 12, deckId = 5).copy(pendingDelete = true))
+        val repository = repository(
+            flashcardDao,
+            sessionDao,
+            mockEngine(
+                HttpMethod.Get to "/sessions" to
+                    """{"items":[${sessionJson(id = 12, deckId = 5)}],"nextCursor":null}""",
+            ),
+        )
+
+        val emissions = mutableListOf<List<Long>>()
+        backgroundScope.launch {
+            repository.observeActiveSessions().collect { list -> emissions.add(list.map { it.id }) }
+        }
+        advanceUntilIdle()
+
+        // cache() skips the pending-delete row, so the background pull never resurrects the card…
+        assertTrue(emissions.all { it.isEmpty() }, "tombstoned session should never appear: $emissions")
+        // …and the tombstone is intact for syncPendingSessions to flush.
+        assertTrue(sessionDao.getSessionById(12)!!.pendingDelete)
+    }
+
+    @Test
+    fun syncPendingSessions_flushesPendingDeletes() = runTest {
+        val flashcardDao = FakeFlashcardDao()
+        val sessionDao = FakePracticeSessionDao(flashcardDao.decks)
+        flashcardDao.insertDeckIfAbsent(FlashcardDeckEntity(id = 5L, title = "Spanish"))
+        // A server-owned session the user removed while offline (tombstoned).
+        sessionDao.upsertSession(sessionEntity(id = 12, deckId = 5).copy(pendingDelete = true))
+        val repository = repository(flashcardDao, sessionDao, mockEngine(HttpMethod.Delete to "/sessions/12" to ""))
+
+        repository.syncPendingSessions()
+
+        // The DELETE flushed and the tombstone was hard-removed.
+        assertTrue(sessionDao.getSessionById(12) == null)
+        assertTrue(sessionDao.getPendingDeleteSessions().isEmpty())
+    }
+
     // --- Answer log (FLA-99) ---
 
     @Test
@@ -488,15 +579,16 @@ class PracticeSessionRepositoryTest {
         private val sessions = MutableStateFlow<List<PracticeSessionEntity>>(emptyList())
 
         override fun observeActiveSessions(): Flow<List<PracticeSessionWithDeck>> = sessions.map { list ->
-            list.filter { !it.isCompleted }.sortedByDescending { it.updatedAtMillis }.map { it.withDeck() }
+            list.filter { !it.isCompleted && !it.pendingDelete }
+                .sortedByDescending { it.updatedAtMillis }.map { it.withDeck() }
         }
 
         override fun observeSession(sessionId: Long): Flow<PracticeSessionWithDeck?> = sessions.map { list ->
-            list.firstOrNull { it.id == sessionId }?.withDeck()
+            list.firstOrNull { it.id == sessionId && !it.pendingDelete }?.withDeck()
         }
 
         override fun observeLastPracticedByDeck(): Flow<List<DeckLastPracticed>> = sessions.map { list ->
-            list.groupBy { it.deckId }
+            list.filter { !it.pendingDelete }.groupBy { it.deckId }
                 .map { (deckId, rows) -> DeckLastPracticed(deckId, rows.maxOf { it.updatedAtMillis }) }
         }
 
@@ -512,7 +604,14 @@ class PracticeSessionRepositoryTest {
                 .maxByOrNull { it.updatedAtMillis }
 
         override suspend fun getPendingSessions(): List<PracticeSessionEntity> =
-            sessions.value.filter { it.pendingSync }
+            sessions.value.filter { it.pendingSync && !it.pendingDelete }
+
+        override suspend fun getPendingDeleteSessions(): List<PracticeSessionEntity> =
+            sessions.value.filter { it.pendingDelete }
+
+        override suspend fun markPendingDelete(id: Long) {
+            sessions.value = sessions.value.map { if (it.id == id) it.copy(pendingDelete = true) else it }
+        }
 
         override suspend fun minSessionId(): Long? = sessions.value.minOfOrNull { it.id }
 
