@@ -22,19 +22,19 @@ enum PracticeState {
 
 /// How a practice run is launched (maps to the shared `PracticeEntry`).
 enum PracticeEntry {
-    /// Start or resume a session for a deck in a given mode (Library "Practice" + Home "Practice").
-    case deck(Int64, mode: String)
-    /// Resume an existing session (Home "Continue practice"); the mode comes from the session.
+    /// Start or resume a session for a deck in a given mode + shuffle choice (Library "Practice").
+    case deck(Int64, mode: String, shuffle: Bool)
+    /// Resume an existing session (Home "Continue practice"); the mode + order come from the session.
     case session(Int64)
     /// Guest mode (FLA-104): practice a public catalog deck in memory — no session, no persistence.
     case guestDeck(Int64, mode: String)
 
     var shared: Shared.PracticeEntry {
         switch self {
-        // shuffle: false keeps today's saved order (Kotlin default args don't bridge, so it's explicit);
-        // the shuffle toggle wiring lands in FLA-204.
-        case let .deck(id, mode): Shared.PracticeEntry.Deck(deckId: id, mode: mode, shuffle: false)
+        // Kotlin default args don't bridge, so shuffle is always passed explicitly (FLA-200).
+        case let .deck(id, mode, shuffle): Shared.PracticeEntry.Deck(deckId: id, mode: mode, shuffle: shuffle)
         case let .session(id): Shared.PracticeEntry.Session(sessionId: id)
+        // Guest quick-practice has no config picker; keep the saved order.
         case let .guestDeck(id, mode): Shared.PracticeEntry.GuestDeck(deckId: id, mode: mode, shuffle: false)
         }
     }

@@ -15,4 +15,13 @@ extension PracticeMode: @retroactive Identifiable {
         default: "Classic"
         }
     }
+
+    /// One-line description shown in the practice-config picker (FLA-200), mirroring web/Android copy.
+    var summary: String {
+        switch self {
+        case .test: "Type the answer."
+        case .multiplechoice: "Pick the answer from four options."
+        default: "Flip the card and mark whether you knew it."
+        }
+    }
 }

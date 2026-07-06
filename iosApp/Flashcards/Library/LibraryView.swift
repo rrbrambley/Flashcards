@@ -32,8 +32,18 @@ struct LibraryView: View {
     private struct PracticingDeck: Identifiable {
         let id: Int64
         let mode: String
+        let shuffle: Bool
     }
     @State private var practicing: PracticingDeck?
+
+    /// The deck being configured before practice (presents the mode + Shuffle sheet, FLA-200).
+    private struct ConfiguringDeck: Identifiable {
+        let id: Int64
+        let title: String
+    }
+    @State private var configuring: ConfiguringDeck?
+    // Deferred until the config sheet finishes dismissing, so the full-screen run presents cleanly.
+    @State private var pendingStart: PracticingDeck?
 
     init(
         flashcardRepository: FlashcardRepository,
@@ -65,10 +75,23 @@ struct LibraryView: View {
                 PracticeView(
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
-                    entry: .deck(item.id, mode: item.mode),
+                    entry: .deck(item.id, mode: item.mode, shuffle: item.shuffle),
                     featureFlagStore: featureFlagStore,
                     apiClient: apiClient
                 )
+            }
+            // Configure the run (mode + Shuffle) before launching it (FLA-200). Present the full-screen
+            // run only after this sheet has fully dismissed, via onDismiss + pendingStart.
+            .sheet(item: $configuring, onDismiss: {
+                if let pendingStart {
+                    practicing = pendingStart
+                    self.pendingStart = nil
+                }
+            }) { item in
+                PracticeConfigView(deckTitle: item.title) { mode, shuffle in
+                    pendingStart = PracticingDeck(id: item.id, mode: mode, shuffle: shuffle)
+                    configuring = nil
+                }
             }
             // Deck-actions sheet on tap (parity with Android): Practice / Edit / Delete. Edit opens
             // the (read-only for the global deck) edit screen; Delete is owned-decks only.
@@ -78,12 +101,11 @@ struct LibraryView: View {
                 titleVisibility: .visible,
                 presenting: selectedDeck
             ) { selected in
-                // One button per mode (the iOS take on the Android mode chooser).
+                // "Practice" opens the configure sheet (mode + Shuffle); a confirmationDialog can't
+                // host a toggle, so the choices moved into PracticeConfigView (FLA-200).
                 if !selected.deck.flashcards.isEmpty {
-                    ForEach(PracticeMode.entries) { mode in
-                        Button("Practice (\(mode.label))") {
-                            practicing = PracticingDeck(id: selected.deck.id, mode: mode.key)
-                        }
+                    Button("Practice") {
+                        configuring = ConfiguringDeck(id: selected.deck.id, title: selected.deck.title)
                     }
                 }
                 Button("Edit deck") { editing = EditingDeck(id: selected.deck.id) }
@@ -170,9 +192,10 @@ struct LibraryView: View {
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: Spacing.xs, leading: Spacing.md, bottom: Spacing.xs, trailing: Spacing.md))
                 .swipeActions(edge: .leading) {
-                    // Quick swipe-to-practice uses Classic; tap the deck to choose another mode.
+                    // Quick swipe-to-practice uses Classic + saved order; tap the deck to configure
+                    // the mode + Shuffle (FLA-200).
                     Button {
-                        practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.key)
+                        practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.key, shuffle: false)
                     } label: {
                         Label("Practice", systemImage: "play.fill")
                     }
