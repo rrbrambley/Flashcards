@@ -142,6 +142,22 @@ class PracticeSessionRepositoryImpl(
         }
     }
 
+    override suspend fun deleteSession(sessionId: Long) {
+        // Offline-minted (negative id) sessions never reached the server — just drop the local row.
+        if (sessionId < 0) {
+            practiceSessionDao.deleteSessionById(sessionId)
+            return
+        }
+        // Server-owned: try to delete now and hard-remove on success. Offline / failure → tombstone it
+        // (pendingDelete) so the card disappears immediately; syncPendingSessions flushes the DELETE
+        // on reconnect. A tombstoned row is skipped by cache(), so the background pull can't resurrect it.
+        if (runCatching { apiClient.deleteSession(sessionId) }.isSuccess) {
+            practiceSessionDao.deleteSessionById(sessionId)
+        } else {
+            practiceSessionDao.markPendingDelete(sessionId)
+        }
+    }
+
     @OptIn(ExperimentalUuidApi::class)
     override suspend fun recordAnswer(sessionId: Long, cardUid: String, correct: Boolean, submittedText: String?) {
         // Persist locally first (durable, flagged for sync). Sequence = next play-order slot; answerUid
@@ -192,6 +208,14 @@ class PracticeSessionRepositoryImpl(
      * on, so the next reconnect retries. Single-flighted via [syncMutex].
      */
     override suspend fun syncPendingSessions() = syncMutex.withLock {
+        // Flush user-requested removals first (FLA-205): hard-delete on the server, then drop the local
+        // tombstone. On failure the row stays pendingDelete (still hidden) and the next reconnect retries.
+        for (row in practiceSessionDao.getPendingDeleteSessions()) {
+            runCatching {
+                apiClient.deleteSession(row.id)
+                practiceSessionDao.deleteSessionById(row.id)
+            }
+        }
         for (row in practiceSessionDao.getPendingSessions().sortedByDescending { it.isCompleted }) {
             runCatching {
                 if (row.id < 0) syncMintedSession(row) else pushServerSession(row)
@@ -254,6 +278,9 @@ class PracticeSessionRepositoryImpl(
     private fun newShuffleSeed(): Long = Random.nextInt(1, Int.MAX_VALUE).toLong()
 
     private suspend fun cache(session: PracticeSessionDto) {
+        // Don't resurrect a session the user removed locally (FLA-205): a background getAllSessions
+        // pull would otherwise re-upsert it (clearing pendingDelete) before the DELETE is flushed.
+        if (practiceSessionDao.getSessionById(session.id)?.pendingDelete == true) return
         // Ensure the session's deck exists locally (FK + relation) before caching the session.
         flashcardDao.insertDeckIfAbsent(session.toDeckStubEntity())
         practiceSessionDao.upsertSession(session.toEntity())

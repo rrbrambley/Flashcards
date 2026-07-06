@@ -107,6 +107,13 @@ val MIGRATION_12_13 = object : Migration(12, 13) {
     }
 }
 
+/** v13 → v14: add the `pendingDelete` local tombstone to practice_sessions (session removal, FLA-205). */
+val MIGRATION_13_14 = object : Migration(13, 14) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `practice_sessions` ADD COLUMN `pendingDelete` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
     arrayOf(
@@ -120,4 +127,5 @@ val ALL_MIGRATIONS =
         MIGRATION_10_11,
         MIGRATION_11_12,
         MIGRATION_12_13,
+        MIGRATION_13_14,
     )

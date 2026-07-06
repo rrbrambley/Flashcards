@@ -19,6 +19,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.less
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.batchInsert
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
@@ -136,6 +137,14 @@ object SessionRepository {
 
     suspend fun getSession(userId: Long, sessionId: Long): PracticeSessionDto = dbQuery {
         fetchSession(userId, sessionId) ?: throw NotFoundException("Session $sessionId not found")
+    }
+
+    /** Discards an in-progress session the caller owns (FLA-205); the FK cascade drops its answers. */
+    suspend fun delete(userId: Long, sessionId: Long): Unit = dbQuery {
+        val deleted = PracticeSessions.deleteWhere {
+            (PracticeSessions.id eq sessionId) and (PracticeSessions.userId eq userId)
+        }
+        if (deleted == 0) throw NotFoundException("Session $sessionId not found")
     }
 
     suspend fun updateProgress(userId: Long, sessionId: Long, request: UpdateProgressRequest): PracticeSessionDto =

@@ -279,4 +279,32 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals(0, cursor.getInt(2))
         }
     }
+
+    @Test
+    fun migrate13To14_preservesSessionsAndAddsPendingDeleteColumn() {
+        // Seed a v13 database with a session (no pendingDelete column yet).
+        helper.createDatabase(testDb, 13).apply {
+            execSQL(
+                "INSERT INTO flashcard_decks (id, title, editable, tags, discussionEnabled, isGlobal) " +
+                    "VALUES (1, 'Spanish basics', 1, '[]', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, mode, " +
+                    "shuffle, shuffleSeed, pendingSync, createdAtMillis, updatedAtMillis) " +
+                    "VALUES (1, 1, 2, 1, 0, 0, 'test', 0, 0, 0, 1000, 1000)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_13_14 and validate against the exported v14 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 14, true, MIGRATION_13_14)
+
+        // The existing row survived and got the default (not pending-delete).
+        db.query("SELECT currentCardIndex, pendingDelete FROM practice_sessions WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+            assertEquals(0, cursor.getInt(1))
+        }
+    }
 }

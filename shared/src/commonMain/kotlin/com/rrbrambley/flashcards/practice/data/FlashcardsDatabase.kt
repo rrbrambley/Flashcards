@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
         PracticeSessionEntity::class,
         PracticeAnswerEntity::class,
     ],
-    version = 13,
+    version = 14,
     exportSchema = true,
 )
 @ConstructedBy(FlashcardsDatabaseConstructor::class)

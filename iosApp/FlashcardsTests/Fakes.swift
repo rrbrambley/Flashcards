@@ -122,6 +122,9 @@ final class FakePracticeSessionRepository: PracticeSessionRepository {
 
     func completeSession(sessionId: Int64) async throws { completedSessionId = sessionId }
 
+    private(set) var deletedSessionId: Int64?
+    func deleteSession(sessionId: Int64) async throws { deletedSessionId = sessionId }
+
     // recordAnswer fires from fire-and-forget Tasks that hop off the main actor, so guard the array
     // (the real repository is thread-safe; this fake isn't otherwise).
     private let answersLock = NSLock()
