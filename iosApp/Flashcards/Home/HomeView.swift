@@ -16,6 +16,13 @@ struct HomeView: View {
     @State private var practice: PracticePresentation?
     @State private var showProfile = false
 
+    /// The in-progress session the user is confirming removal of (FLA-205), or nil.
+    private struct RemovingSession: Identifiable {
+        let id: Int64
+        let title: String
+    }
+    @State private var pendingRemoval: RemovingSession?
+
     init(repository: HomeRepository, apiClient: FlashcardApiClient, onCreateDeck: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: HomeViewModel(repository: repository, apiClient: apiClient))
         self.onCreateDeck = onCreateDeck
@@ -39,6 +46,20 @@ struct HomeView: View {
                     service: container.profileService,
                     avatarSelectionEnabled: container.featureFlagStore.isEnabled(FeatureFlag.avatarSelection)
                 )
+            }
+            // Confirm before discarding an in-progress session (FLA-205). The feed re-derives from the
+            // repo, so the card drops on its own once the delete tombstones the session.
+            .alert(
+                "Remove practice session?",
+                isPresented: Binding(get: { pendingRemoval != nil }, set: { if !$0 { pendingRemoval = nil } }),
+                presenting: pendingRemoval
+            ) { session in
+                Button("Remove", role: .destructive) {
+                    Task { try? await container.practiceSessionRepository.deleteSession(sessionId: session.id) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { session in
+                Text("Your progress on “\(session.title)” will be lost.")
             }
             .task { await viewModel.observe() }
             .task { await viewModel.loadStreak() }
@@ -81,7 +102,11 @@ struct HomeView: View {
                                 .foregroundStyle(.secondary)
                         }
                         ForEach(Array(group.items.enumerated()), id: \.offset) { _, item in
-                            FeedCard(item: item) { action in handle(action) }
+                            FeedCard(
+                                item: item,
+                                onAction: { action in handle(action) },
+                                onRemove: { sessionId in pendingRemoval = RemovingSession(id: sessionId, title: item.title) }
+                            )
                         }
                     }
                 }
@@ -121,15 +146,35 @@ struct HomeView: View {
 }
 
 /// A single home-feed card: a title, optional in-progress session detail, and an action button.
+/// In-progress "continue" cards also get a "×" to discard the session (FLA-205).
 private struct FeedCard: View {
     let item: HomeData
     let onAction: (HomeButtonAction) -> Void
+    let onRemove: (Int64) -> Void
+
+    /// The session id if this is a "continue practice" card, else nil (only those are removable).
+    private var removableSessionId: Int64? {
+        (item.button?.action as? HomeButtonActionContinuePractice)?.sessionId
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
-            Text(item.title)
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(alignment: .top) {
+                Text(item.title)
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if let sessionId = removableSessionId {
+                    Button {
+                        onRemove(sessionId)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.footnote.weight(.semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Remove practice session")
+                }
+            }
             if let session = item.session {
                 SessionDetail(session: session)
             }
