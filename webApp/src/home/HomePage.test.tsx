@@ -7,7 +7,7 @@ import { api } from '../api/client';
 import type { HomeData } from '../api/types';
 
 vi.mock('../api/client', () => ({
-  api: { getHome: vi.fn(), getSession: vi.fn(), getAllDecks: vi.fn(), getStreaks: vi.fn() },
+  api: { getHome: vi.fn(), getSession: vi.fn(), deleteSession: vi.fn(), getAllDecks: vi.fn(), getStreaks: vi.fn() },
 }));
 vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn() }) }));
 
@@ -98,6 +98,44 @@ describe('HomePage', () => {
 
     expect(api.getSession).toHaveBeenCalledWith(7);
     expect(await screen.findByText('practice-3')).toBeInTheDocument();
+  });
+
+  it('shows the remove "×" only on in-progress session cards', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([continueItem, practiceItem, createItem]);
+    renderHome();
+
+    await screen.findByText('Spanish');
+    // One removable card (the continue tile); the featured/create cards have no ×.
+    expect(screen.getAllByRole('button', { name: 'Remove practice session' })).toHaveLength(1);
+  });
+
+  it('removes a session after confirming, and deletes it via the api', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([continueItemWithSession, createItem]);
+    vi.mocked(api.deleteSession).mockResolvedValue(undefined as never);
+    renderHome();
+
+    await screen.findByText('Spanish');
+    await userEvent.click(screen.getByRole('button', { name: 'Remove practice session' }));
+    // Confirm dialog, then Remove.
+    expect(await screen.findByText('Remove practice session?')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Remove' }));
+
+    expect(api.deleteSession).toHaveBeenCalledWith(7);
+    // The card is gone; the create card remains.
+    expect(screen.queryByText('Spanish')).not.toBeInTheDocument();
+    expect(screen.getByText('Create a new flashcard set')).toBeInTheDocument();
+  });
+
+  it('cancelling the confirm keeps the session and calls nothing', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([continueItemWithSession]);
+    renderHome();
+
+    await screen.findByText('Spanish');
+    await userEvent.click(screen.getByRole('button', { name: 'Remove practice session' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+    expect(api.deleteSession).not.toHaveBeenCalled();
+    expect(screen.getByText('Spanish')).toBeInTheDocument();
   });
 
   it('practice tile routes to the deck id in the action', async () => {

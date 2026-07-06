@@ -223,6 +223,8 @@ export const api = {
   createSession: (deckId: number, mode = 'flashcards', shuffle = false) =>
     request<PracticeSessionDto>('/sessions', { method: 'POST', body: { deckId, mode, shuffle }, auth: true }),
   getSession: (id: number) => request<PracticeSessionDto>(`/sessions/${id}`, { auth: true }),
+  // Discard an in-progress session (the home "×" action, FLA-205); the backend cascades its answers.
+  deleteSession: (id: number) => request<void>(`/sessions/${id}`, { method: 'DELETE', auth: true }),
   // Every session across all pages (active + completed) — used to derive per-deck last-practiced time.
   getAllSessions: () => fetchAllPages((cursor) => getSessionsPage(cursor)),
   updateProgress: (id: number, progress: UpdateProgressRequest) =>
