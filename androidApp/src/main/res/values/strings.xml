@@ -65,6 +65,12 @@
     <string name="home_session_correct">✓ %1$d</string>
     <string name="home_session_incorrect">✗ %1$d</string>
     <string name="home_session_progress">%1$d of %2$d</string>
+    <!-- Remove an in-progress session from the home feed (FLA-205) -->
+    <string name="home_remove_session_cd">Remove practice session</string>
+    <string name="home_remove_session_title">Remove practice session?</string>
+    <string name="home_remove_session_message">Your progress on \"%1$s\" will be lost.</string>
+    <string name="home_remove_session_confirm">Remove</string>
+    <string name="home_remove_session_error">Couldn\'t remove the session. Check your connection and try again.</string>
 
     <!-- Library -->
     <string name="library_load_error">Couldn\'t load your decks. Check your connection.</string>

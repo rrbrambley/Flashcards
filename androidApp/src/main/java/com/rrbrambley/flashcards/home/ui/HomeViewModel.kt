@@ -8,6 +8,7 @@ import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,6 +26,7 @@ import javax.inject.Inject
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val homeRepository: HomeRepository,
+    private val practiceSessionRepository: PracticeSessionRepository,
     private val apiClient: FlashcardApiClient,
     private val stringProvider: StringProvider,
     private val featureFlagRepository: FeatureFlagRepository,
@@ -94,6 +96,18 @@ class HomeViewModel @Inject constructor(
                     _uiState.update { HomeUiState.ShowHome(homeData) }
                     _isRefreshing.value = false
                 }
+        }
+    }
+
+    /**
+     * Discards an in-progress session (the home "×" action, FLA-205). Offline-first: the shared repo
+     * tombstones the session locally (so its card drops immediately) and flushes the backend DELETE on
+     * reconnect. On an unexpected failure we surface a snackbar; the observe flow refreshes the feed.
+     */
+    fun removeSession(sessionId: Long) {
+        viewModelScope.launch {
+            runCatching { practiceSessionRepository.deleteSession(sessionId) }
+                .onFailure { _userMessages.tryEmit(stringProvider.getString(R.string.home_remove_session_error)) }
         }
     }
 

@@ -9,6 +9,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -69,6 +77,9 @@ fun HomeScreen(
         homeViewModel.userMessages.collect { snackbarHostState.showSnackbar(it) }
     }
 
+    // The in-progress session (id + title) the user is confirming removal of (FLA-205), or null.
+    var pendingRemoval by remember { mutableStateOf<Pair<Long, String>?>(null) }
+
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -82,11 +93,39 @@ fun HomeScreen(
                     cards = state.cards,
                     streak = streak,
                     onButtonAction = onButtonAction,
+                    onRequestRemove = { sessionId, title -> pendingRemoval = sessionId to title },
                 )
             }
         }
         SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }
+
+    pendingRemoval?.let { (sessionId, title) ->
+        RemoveSessionDialog(
+            deckTitle = title,
+            onConfirm = {
+                homeViewModel.removeSession(sessionId)
+                pendingRemoval = null
+            },
+            onDismiss = { pendingRemoval = null },
+        )
+    }
+}
+
+/** Confirm dialog for discarding an in-progress practice session from the home feed (FLA-205). */
+@Composable
+private fun RemoveSessionDialog(deckTitle: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.home_remove_session_title)) },
+        text = { Text(stringResource(R.string.home_remove_session_message, deckTitle)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.home_remove_session_confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+        },
+    )
 }
 
 @Composable
@@ -122,6 +161,7 @@ private fun HomeScreenContent(
     cards: List<HomeData>,
     streak: Int?,
     onButtonAction: (HomeButtonAction) -> Unit,
+    onRequestRemove: (Long, String) -> Unit = { _, _ -> },
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -139,6 +179,7 @@ private fun HomeScreenContent(
                 HomeCard(
                     card = card,
                     onButtonAction = onButtonAction,
+                    onRequestRemove = onRequestRemove,
                 )
             }
         }
@@ -178,7 +219,10 @@ private fun SectionHeader(text: String) {
 fun HomeCard(
     card: HomeData,
     onButtonAction: (HomeButtonAction) -> Unit = {},
+    onRequestRemove: (Long, String) -> Unit = { _, _ -> },
 ) {
+    // In-progress "continue" cards can be discarded (FLA-205); other cards have no session to remove.
+    val removableSessionId = (card.button?.action as? HomeButtonAction.ContinuePractice)?.sessionId
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -192,13 +236,27 @@ fun HomeCard(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.Start,
         ) {
-            Text(
-                text = card.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = card.title,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (removableSessionId != null) {
+                    IconButton(onClick = { onRequestRemove(removableSessionId, card.title) }) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.home_remove_session_cd),
+                        )
+                    }
+                }
+            }
             card.session?.let { SessionDetail(it) }
             card.button?.let {
                 Button(
