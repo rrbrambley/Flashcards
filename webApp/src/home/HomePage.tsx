@@ -13,6 +13,9 @@ export function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  // The in-progress session the user is confirming removal of (FLA-205), or null.
+  const [confirmRemove, setConfirmRemove] = useState<{ sessionId: number; title: string } | null>(null);
+  const [removing, setRemoving] = useState(false);
   // Overall practice streak (FLA-106); null until loaded, 0 when there is no active streak.
   const [streak, setStreak] = useState<number | null>(null);
 
@@ -63,6 +66,25 @@ export function HomePage() {
     }
   };
 
+  // Discards the confirmed in-progress session (FLA-205): drop the card optimistically, then delete.
+  const handleRemove = async () => {
+    if (!confirmRemove) return;
+    const { sessionId } = confirmRemove;
+    setRemoving(true);
+    setActionError(null);
+    try {
+      await api.deleteSession(sessionId);
+      setItems((prev) => prev.filter((it) => continueSessionId(it) !== sessionId));
+      setConfirmRemove(null);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Could not remove the session. Please try again.');
+      setConfirmRemove(null);
+      loadHome(); // resync so the card reflects the true state
+    } finally {
+      setRemoving(false);
+    }
+  };
+
   return (
     <div className="app">
       <header className="app-header">
@@ -96,22 +118,57 @@ export function HomePage() {
             <section key={groupIndex} className="home-section">
               {group.section && <h2 className="home-section-header">{group.section}</h2>}
               <ul className="home-list">
-                {group.items.map((item, index) => (
-                  <li key={index} className="home-card">
-                    <span className="home-card-title">{item.title}</span>
-                    {item.session && <SessionDetail session={item.session} />}
-                    {item.button && (
-                      <button onClick={() => runAction(item.button!.action)}>{item.button.message}</button>
-                    )}
-                  </li>
-                ))}
+                {group.items.map((item, index) => {
+                  const sessionId = continueSessionId(item);
+                  return (
+                    <li key={index} className="home-card">
+                      {sessionId != null && (
+                        <button
+                          className="home-card-remove"
+                          aria-label="Remove practice session"
+                          title="Remove"
+                          onClick={() => setConfirmRemove({ sessionId, title: item.title })}
+                        >
+                          ×
+                        </button>
+                      )}
+                      <span className="home-card-title">{item.title}</span>
+                      {item.session && <SessionDetail session={item.session} />}
+                      {item.button && (
+                        <button onClick={() => runAction(item.button!.action)}>{item.button.message}</button>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ))
         )}
       </main>
+
+      {confirmRemove && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Remove practice session">
+          <div className="modal-card">
+            <h2>Remove practice session?</h2>
+            <p className="muted">Your progress on “{confirmRemove.title}” will be lost.</p>
+            <div className="modal-actions">
+              <button onClick={handleRemove} disabled={removing}>
+                {removing ? '…' : 'Remove'}
+              </button>
+              <button className="link-btn" onClick={() => setConfirmRemove(null)} disabled={removing}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+/** The session id of an in-progress "continue practice" card (FLA-205), or null for other cards. */
+function continueSessionId(item: HomeData): number | null {
+  return item.button?.action.type === 'continue_practice' ? item.button.action.sessionId : null;
 }
 
 /**
