@@ -9,6 +9,7 @@ import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import com.rrbrambley.flashcards.shared.domain.HomeButton
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.HomeFeed
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
@@ -93,8 +94,8 @@ class HomeViewModelTest {
     @Test
     fun refreshFailure_afterShowingData_keepsDataAndWarns() = runTest(testDispatcher) {
         val homeData = listOf(HomeData(title = "Practice", button = null))
-        // Offline-first repo: emits the cached feed, then the backend fetch throws.
-        val repository = FakeHomeRepository(homeData = homeData, throwAfterFirstEmit = true)
+        // Offline-first repo: emits the local feed, then a refreshFailed feed (backend unreachable).
+        val repository = FakeHomeRepository(homeData = homeData, refreshFailsAfterFirstEmit = true)
         val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
 
         // Subscribe to the one-shot messages before the failing flow runs (UNDISPATCHED so the
@@ -109,6 +110,24 @@ class HomeViewModelTest {
         assertEquals(HomeUiState.ShowHome(homeData), viewModel.uiState.value)
         assertEquals(listOf("string:${R.string.home_refresh_error}"), messages)
         collectJob.cancel()
+    }
+
+    @Test
+    fun feedKeepsUpdating_afterARefreshFailure() = runTest(testDispatcher) {
+        val first = listOf(HomeData(title = "One", button = null))
+        val second = listOf(HomeData(title = "Two", button = null))
+        // The stream stays alive through a refreshFailed emission and delivers a later update (FLA-210).
+        val repository = object : HomeRepository {
+            override fun observeHomeData() = flow {
+                emit(HomeFeed(first))
+                emit(HomeFeed(first, refreshFailed = true))
+                emit(HomeFeed(second))
+            }
+        }
+        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(HomeUiState.ShowHome(second), viewModel.uiState.value)
     }
 
     @Test
@@ -180,15 +199,16 @@ class HomeViewModelTest {
     private class FakeHomeRepository(
         private val homeData: List<HomeData>,
         private var failFirstSubscription: Boolean = false,
-        private val throwAfterFirstEmit: Boolean = false,
+        private val refreshFailsAfterFirstEmit: Boolean = false,
     ) : HomeRepository {
-        override fun observeHomeData(): Flow<List<HomeData>> = flow {
+        override fun observeHomeData(): Flow<HomeFeed> = flow {
             if (failFirstSubscription) {
                 failFirstSubscription = false
-                throw RuntimeException("home load failed")
+                throw RuntimeException("home load failed") // fatal (nothing cached) → LoadingFailed
             }
-            emit(homeData)
-            if (throwAfterFirstEmit) throw RuntimeException("backend unreachable")
+            emit(HomeFeed(homeData))
+            // A failed backend refresh is a normal emission now, not a thrown exception (FLA-210).
+            if (refreshFailsAfterFirstEmit) emit(HomeFeed(homeData, refreshFailed = true))
         }
     }
 

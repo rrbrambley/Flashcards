@@ -8,6 +8,14 @@ data class HomeData(
     val section: String? = null,
 )
 
+/**
+ * The home feed plus whether the last backend refresh failed (FLA-210). Offline-first: [cards] are
+ * always served from the local cache/Room, so a backend outage never blanks the feed or tears down
+ * the observe stream — [refreshFailed] just drives an unobtrusive "couldn't refresh" banner while
+ * local changes (a removed session, updated progress) keep flowing through.
+ */
+data class HomeFeed(val cards: List<HomeData>, val refreshFailed: Boolean = false)
+
 /** Per-session detail for a "continue practice" home item: mode, score so far, and progress. */
 data class HomeSessionInfo(
     val mode: String,
