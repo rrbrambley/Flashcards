@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/auth-context';
 import { BackHeader } from '../decks/BackHeader';
 import { PRACTICE_MODES } from './modes';
+import { exitTarget, fromState } from './exitTarget';
 
 /**
  * Configures a practice run before it starts: pick a mode (the primary decision), adjust settings
@@ -13,8 +14,12 @@ import { PRACTICE_MODES } from './modes';
  */
 export function ModeChooser({ deckId }: { deckId: number }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { token } = useAuth();
   const isGuest = !token;
+  // Carry the practice referrer (FLA-168) through the chooser so the runner exits to it too.
+  const from = fromState(location.state);
+  const exit = exitTarget(from, isGuest);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [shuffle, setShuffle] = useState(true);
   const [deckTitle, setDeckTitle] = useState<string | null>(null);
@@ -35,15 +40,15 @@ export function ModeChooser({ deckId }: { deckId: number }) {
 
   const start = () => {
     if (!selectedMode) return;
-    navigate(`/decks/${deckId}/practice?mode=${selectedMode}&shuffle=${shuffle ? 1 : 0}`);
+    navigate(`/decks/${deckId}/practice?mode=${selectedMode}&shuffle=${shuffle ? 1 : 0}`, { state: { from } });
   };
 
   return (
     <div className="app">
       <BackHeader
         title={deckTitle ? `Practice ${deckTitle}` : 'Practice'}
-        backTo={isGuest ? '/' : '/library'}
-        backLabel={isGuest ? 'Catalog' : 'Library'}
+        backTo={exit.to}
+        backLabel={exit.label}
       />
       <main className="container">
         <h2 className="section-heading">Choose a mode</h2>
