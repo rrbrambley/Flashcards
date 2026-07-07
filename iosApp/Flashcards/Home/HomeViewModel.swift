@@ -27,14 +27,16 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
-    /// The offline-first feed emits the cached data first, then the backend feed. If the backend
-    /// fetch fails after we've shown cached data we keep it and flag a failed refresh; a failure with
-    /// nothing cached is a hard error.
+    /// The offline-first feed emits the local (cached) data first, then the backend feed. The stream
+    /// stays alive through a backend outage (FLA-210): a failed refresh arrives as
+    /// `HomeFeed.refreshFailed` (→ banner) with the local feed intact, so local changes keep flowing.
+    /// `catch` only fires on a truly fatal stream error.
     func observe() async {
         do {
-            for try await items in asyncThrowingStream(BridgingKt.homeAdapter(repository)) {
-                refreshFailed = false
-                state = .loaded((items as? [HomeData]) ?? [])
+            for try await feed in asyncThrowingStream(BridgingKt.homeAdapter(repository)) {
+                guard let feed = feed as? HomeFeed else { continue }
+                state = .loaded(feed.cards)
+                refreshFailed = feed.refreshFailed
             }
         } catch {
             markRefreshFailed()
@@ -46,9 +48,10 @@ final class HomeViewModel: ObservableObject {
     func refresh() async {
         do {
             var emissions = 0
-            for try await items in asyncThrowingStream(BridgingKt.homeAdapter(repository)) {
-                refreshFailed = false
-                state = .loaded((items as? [HomeData]) ?? [])
+            for try await feed in asyncThrowingStream(BridgingKt.homeAdapter(repository)) {
+                guard let feed = feed as? HomeFeed else { continue }
+                state = .loaded(feed.cards)
+                refreshFailed = feed.refreshFailed
                 emissions += 1
                 // First emission is the cache, second is the backend feed — stop once refreshed.
                 if emissions >= 2 { return }

@@ -76,9 +76,10 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * (Re)subscribes to the offline-first home feed: the repository emits cached data first, then
-     * the backend feed. If the backend fetch fails after we've already shown cached data, we keep
-     * it on screen and warn via a snackbar; only a failure with nothing cached is a hard error.
+     * (Re)subscribes to the offline-first home feed: the repository emits the local (cached) feed
+     * first, then the backend feed. The stream stays alive through a backend outage (FLA-210) —
+     * a failed refresh arrives as `HomeFeed.refreshFailed` (→ snackbar) with the local feed intact,
+     * so local changes keep flowing. `.catch` only fires on a truly fatal stream error.
      */
     private fun observeHome() {
         observeJob?.cancel()
@@ -86,15 +87,16 @@ class HomeViewModel @Inject constructor(
             homeRepository.observeHomeData()
                 .catch {
                     _isRefreshing.value = false
-                    if (_uiState.value is HomeUiState.ShowHome) {
-                        _userMessages.tryEmit(stringProvider.getString(R.string.home_refresh_error))
-                    } else {
+                    if (_uiState.value !is HomeUiState.ShowHome) {
                         _uiState.update { HomeUiState.LoadingFailed }
                     }
                 }
-                .collect { homeData ->
-                    _uiState.update { HomeUiState.ShowHome(homeData) }
+                .collect { feed ->
+                    _uiState.update { HomeUiState.ShowHome(feed.cards) }
                     _isRefreshing.value = false
+                    if (feed.refreshFailed) {
+                        _userMessages.tryEmit(stringProvider.getString(R.string.home_refresh_error))
+                    }
                 }
         }
     }

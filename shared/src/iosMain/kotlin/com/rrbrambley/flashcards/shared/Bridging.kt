@@ -5,7 +5,7 @@ import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.GuestSaveState
-import com.rrbrambley.flashcards.shared.domain.HomeData
+import com.rrbrambley.flashcards.shared.domain.HomeFeed
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeAnswer
 import com.rrbrambley.flashcards.shared.domain.PracticeEntry
@@ -70,4 +70,4 @@ fun PracticeSessionController.stateAdapter(): FlowAdapter<PracticeUiState> = Flo
 fun PracticeSessionController.saveStateAdapter(): FlowAdapter<GuestSaveState> = FlowAdapter(saveState)
 
 /** The home feed (backend GET /home, offline fallback from cached sessions + static items). */
-fun HomeRepository.homeAdapter(): FlowAdapter<List<HomeData>> = FlowAdapter(observeHomeData())
+fun HomeRepository.homeAdapter(): FlowAdapter<HomeFeed> = FlowAdapter(observeHomeData())
