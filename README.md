@@ -458,8 +458,16 @@ also works.
 
 ## Contributing & security
 
+Found a bug or have an idea? Open a
+[GitHub issue](https://github.com/rrbrambley/Flashcards/issues/new/choose) and pick the **Bug** or
+**Feature / improvement** template. Because this is a KMP monorepo, note which surfaces are affected
+(backend, `:shared`, web, Android, iOS) — larger multi-surface features are usually tracked as an
+**epic issue with a per-platform checklist**. Roadmap and known work live in
+[Issues](https://github.com/rrbrambley/Flashcards/issues).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions and the pre-PR checklist, and
-[SECURITY.md](SECURITY.md) for how secrets are handled and how to report a vulnerability.
+[SECURITY.md](SECURITY.md) for how secrets are handled and how to report a vulnerability (please
+**don't** file security issues as public GitHub issues).
 
 ## License
 

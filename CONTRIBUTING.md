@@ -13,6 +13,20 @@ optional Google/AWS configuration.
 3. Google Sign-In and image uploads are **optional** — the app runs fully without them.
    If you want them, configure your **own** OAuth client and AWS resources (README).
 
+## Reporting issues
+
+Bugs and feature ideas go in [GitHub Issues](https://github.com/rrbrambley/Flashcards/issues) —
+use the **Bug** or **Feature / improvement** template (`New issue` → choose a template). A few things
+that make an issue easy to pick up:
+
+- **Say which surfaces are affected** — backend, `:shared` / `:shared:api`, `webApp`, `androidApp`,
+  `iosApp`. A change in the shared layer usually ripples to more than one client.
+- **For a bug,** include repro steps and, if you found it, the root cause (file/function).
+- **For a multi-surface feature,** it's usually filed as an **epic issue with a per-platform
+  checklist** (shared/backend groundwork first, then the client UIs) — mirror the templates.
+
+Please **don't** file security vulnerabilities as public issues — see [SECURITY.md](SECURITY.md).
+
 ## Project conventions
 
 - **Single source for dependencies:** add/upgrade libraries in `gradle/libs.versions.toml`,
