@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../auth/auth-context';
 import type { FlashcardDeckDto, FlashcardDto, PracticeAnswer, PracticeSessionDto } from '../api/types';
@@ -12,6 +12,7 @@ import { SavePrompt } from './SavePrompt';
 import { DiscussionPanel } from './DiscussionPanel';
 import { initPractice, practiceReducer } from './practiceReducer';
 import { orderCards } from './shuffle';
+import { exitTarget, fromState } from './exitTarget';
 
 // Resolves the practice mode from the `?mode=` query param. When the deck has only one registered
 // mode we run it directly (preserving the one-click classic flow); with several modes and none
@@ -142,7 +143,10 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
     return () => window.removeEventListener('beforeunload', handler);
   }, [guestHasUnsaved]);
 
-  const leaveTo = isGuest ? '/' : '/library';
+  // "Back" returns to where practice was launched from (FLA-168): the referrer is passed in router
+  // state by the entry points (Home / Library), so the exit mirrors the native back-stack.
+  const location = useLocation();
+  const exit = exitTarget(fromState(location.state), isGuest);
 
   const requestExit = () => {
     const { progress, status } = progressRef.current;
@@ -150,7 +154,7 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
     if (isGuest && status === 'practicing' && touched) {
       setSavePromptProgress(progress);
     } else {
-      navigate(leaveTo);
+      navigate(exit.to);
     }
   };
 
@@ -158,7 +162,7 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
     <div className="app">
       <BackHeader
         title={(!loading && data?.deckTitle) || 'Practice'}
-        backLabel={isGuest ? 'Catalog' : 'Library'}
+        backLabel={exit.label}
         onBack={requestExit}
         right={<ShareButton deckId={deckId} title={data?.deckTitle} className="link-btn" />}
       />
@@ -184,7 +188,7 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
             canModerate={can('manage_discussions')}
             onProgress={onProgress}
             onAgain={() => setReloadToken((t) => t + 1)}
-            onExit={() => navigate(leaveTo)}
+            onExit={() => navigate(exit.to)}
           />
         )}
       </main>
@@ -196,7 +200,7 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
           shuffle={shuffle}
           progress={savePromptProgress}
           onCancel={() => setSavePromptProgress(null)}
-          onLeave={() => navigate(leaveTo)}
+          onLeave={() => navigate(exit.to)}
         />
       )}
     </div>

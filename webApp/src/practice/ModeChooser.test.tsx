@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes, useSearchParams } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { ModeChooser } from './ModeChooser';
 import { PRACTICE_MODES } from './modes';
 import { api } from '../api/client';
@@ -17,17 +17,19 @@ vi.mock('../auth/auth-context', () => ({
 
 function RunnerStub() {
   const [params] = useSearchParams();
+  const from = (useLocation().state as { from?: string } | null)?.from;
   return (
     <div>
       <span>mode={params.get('mode')}</span>
       <span>shuffle={params.get('shuffle')}</span>
+      <span>from={from ?? ''}</span>
     </div>
   );
 }
 
-function renderChooser() {
+function renderChooser(from?: string) {
   render(
-    <MemoryRouter initialEntries={['/decks/5/practice/choose']}>
+    <MemoryRouter initialEntries={[{ pathname: '/decks/5/practice/choose', state: from ? { from } : undefined }]}>
       <Routes>
         <Route path="/decks/:id/practice/choose" element={<ModeChooser deckId={5} />} />
         <Route path="/decks/:id/practice" element={<RunnerStub />} />
@@ -81,5 +83,15 @@ describe('ModeChooser', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
 
     expect(await screen.findByText('shuffle=0')).toBeInTheDocument();
+  });
+
+  it('forwards the practice origin to the runner so "back" returns there (FLA-168)', async () => {
+    renderChooser('/library');
+    await screen.findByText('Practice Spanish');
+
+    await userEvent.click(screen.getByRole('radio', { name: new RegExp(PRACTICE_MODES[0].label) }));
+    await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
+
+    expect(await screen.findByText('from=/library')).toBeInTheDocument();
   });
 });

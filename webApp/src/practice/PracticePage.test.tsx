@@ -340,6 +340,50 @@ describe('PracticePage', () => {
     expect(screen.queryByRole('button', { name: /Discuss this card/ })).toBeNull();
   });
 
+  describe('back destination (FLA-168)', () => {
+    function renderFrom(from: string | undefined) {
+      vi.mocked(api.createSession).mockResolvedValue(session());
+      vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: threeCards });
+      vi.mocked(api.updateProgress).mockResolvedValue(session());
+      vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 0, longest: 0 }, decks: [] });
+      render(
+        <MemoryRouter
+          initialEntries={[{ pathname: '/decks/5/practice', search: '?mode=flashcards', state: from ? { from } : undefined }]}
+        >
+          <Routes>
+            <Route path="/decks/:id/practice" element={<PracticePage />} />
+            <Route path="/" element={<div>home page</div>} />
+            <Route path="/library" element={<div>library page</div>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    }
+
+    it('returns to Home when practice was launched from Home', async () => {
+      renderFrom('/');
+      await screen.findByText('Q1');
+
+      await userEvent.click(screen.getByRole('button', { name: /Home/ }));
+      expect(await screen.findByText('home page')).toBeInTheDocument();
+    });
+
+    it('returns to Library when practice was launched from Library', async () => {
+      renderFrom('/library');
+      await screen.findByText('Q1');
+
+      await userEvent.click(screen.getByRole('button', { name: /Library/ }));
+      expect(await screen.findByText('library page')).toBeInTheDocument();
+    });
+
+    it('falls back to Home for a deep link with no origin', async () => {
+      renderFrom(undefined);
+      await screen.findByText('Q1');
+
+      await userEvent.click(screen.getByRole('button', { name: /Home/ }));
+      expect(await screen.findByText('home page')).toBeInTheDocument();
+    });
+  });
+
   describe('guest mode (no account)', () => {
     function guestSetup(cards: FlashcardDto[]) {
       mockToken = null;

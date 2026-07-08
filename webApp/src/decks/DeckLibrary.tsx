@@ -154,7 +154,10 @@ export function DeckLibrary({
                 </span>
               </button>
               {showPractice && deck.flashcards.length > 0 && (
-                <button className="secondary deck-practice" onClick={() => navigate(`/decks/${deck.id}/practice`)}>
+                <button
+                  className="secondary deck-practice"
+                  onClick={() => navigate(`/decks/${deck.id}/practice`, { state: { from: origin } })}
+                >
                   Practice
                 </button>
               )}

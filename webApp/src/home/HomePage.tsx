@@ -52,12 +52,13 @@ export function HomePage() {
         case 'continue_practice': {
           // Resume the session in its own mode; createSession on (deck, mode) resumes the active one.
           const session = await api.getSession(action.sessionId);
-          navigate(`/decks/${session.deckId}/practice?mode=${session.mode}`);
+          // Pass the origin so practice "back" returns here to Home (FLA-168).
+          navigate(`/decks/${session.deckId}/practice?mode=${session.mode}`, { state: { from: '/' } });
           break;
         }
         case 'navigate_to_practice': {
           // The backend resolves which deck (the featured global deck) and sends its id.
-          navigate(`/decks/${action.deckId}/practice`);
+          navigate(`/decks/${action.deckId}/practice`, { state: { from: '/' } });
           break;
         }
       }
