@@ -983,7 +983,9 @@ class ApplicationFlowTest {
     @Test
     fun deleting_a_session_removes_it_and_is_owner_scoped() = runApp { client ->
         val auth = client.register("discarder", "password1")
-        val other = client.register("intruder", "password1")
+        // Distinct name: the DB is shared across the class with no per-test reset, so a name reused by
+        // another test would 409 on whichever runs second (JUnit method order isn't guaranteed).
+        val other = client.register("trespasser", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<Page<FlashcardDeckDto>>().items.first().id
         val session = client.createSession(auth.accessToken, deckId)

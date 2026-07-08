@@ -53,7 +53,7 @@ class HomeViewModelTest {
     fun uiState_startsAsLoading() {
         val repository = FakeHomeRepository(homeData = emptyList())
 
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
+        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), readyApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
 
         assertEquals(HomeUiState.Loading, viewModel.uiState.value)
     }
@@ -71,8 +71,7 @@ class HomeViewModelTest {
         )
         val repository = FakeHomeRepository(homeData = homeData)
 
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = homeViewModel(repository)
 
         assertEquals(HomeUiState.ShowHome(homeData), viewModel.uiState.value)
     }
@@ -81,8 +80,7 @@ class HomeViewModelTest {
     fun retry_afterFailure_reloadsHomeData() = runTest(testDispatcher) {
         val homeData = listOf(HomeData(title = "Practice", button = null))
         val repository = FakeHomeRepository(homeData = homeData, failFirstSubscription = true)
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = homeViewModel(repository)
         assertEquals(HomeUiState.LoadingFailed, viewModel.uiState.value)
 
         viewModel.retry()
@@ -96,7 +94,9 @@ class HomeViewModelTest {
         val homeData = listOf(HomeData(title = "Practice", button = null))
         // Offline-first repo: emits the local feed, then a refreshFailed feed (backend unreachable).
         val repository = FakeHomeRepository(homeData = homeData, refreshFailsAfterFirstEmit = true)
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
+        // Constructed directly (not via homeViewModel()) so the userMessages collector can subscribe
+        // *before* the feed emits — the snackbar message is one-shot (no replay).
+        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), readyApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
 
         // Subscribe to the one-shot messages before the failing flow runs (UNDISPATCHED so the
         // collector registers before advanceUntilIdle drives the emission).
@@ -110,6 +110,7 @@ class HomeViewModelTest {
         assertEquals(HomeUiState.ShowHome(homeData), viewModel.uiState.value)
         assertEquals(listOf("string:${R.string.home_refresh_error}"), messages)
         collectJob.cancel()
+        viewModel.streak.first { it != null } // join the off-scheduler streak fetch before teardown
     }
 
     @Test
@@ -124,8 +125,7 @@ class HomeViewModelTest {
                 emit(HomeFeed(second))
             }
         }
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = homeViewModel(repository)
 
         assertEquals(HomeUiState.ShowHome(second), viewModel.uiState.value)
     }
@@ -146,8 +146,7 @@ class HomeViewModelTest {
         val repository = FakeHomeRepository(homeData = emptyList())
         val flags = FakeFeatureFlagRepository(mapOf(FeatureFlags.STREAK_CALENDAR to true))
 
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), flags)
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = homeViewModel(repository, featureFlags = flags)
 
         assertEquals(true, viewModel.streakCalendarEnabled.value)
     }
@@ -156,8 +155,7 @@ class HomeViewModelTest {
     fun streakCalendarFlag_defaultsOff_whenAbsent() = runTest(testDispatcher) {
         val repository = FakeHomeRepository(homeData = emptyList())
 
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), unavailableApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
-        testDispatcher.scheduler.advanceUntilIdle()
+        val viewModel = homeViewModel(repository)
 
         assertEquals(false, viewModel.streakCalendarEnabled.value)
     }
@@ -166,13 +164,7 @@ class HomeViewModelTest {
     fun removeSession_discardsThroughThePracticeRepository() = runTest(testDispatcher) {
         val repository = FakeHomeRepository(homeData = emptyList())
         val sessionRepository = FakePracticeSessionRepository()
-        val viewModel = HomeViewModel(
-            repository,
-            sessionRepository,
-            unavailableApiClient(),
-            FakeStringProvider(),
-            FakeFeatureFlagRepository(),
-        )
+        val viewModel = homeViewModel(repository, sessionRepository = sessionRepository)
 
         viewModel.removeSession(sessionId = 42L)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -180,18 +172,34 @@ class HomeViewModelTest {
         assertEquals(42L, sessionRepository.deletedSessionId)
     }
 
-    /** A client whose /streaks call fails — streak stays null, for tests that don't care about it. */
-    private fun unavailableApiClient(): FlashcardApiClient =
-        apiClient(streaksJson = null)
+    /**
+     * Builds the ViewModel and deterministically joins its init coroutines before returning.
+     *
+     * The streak fetch (`loadStreak`) runs over a real Ktor [MockEngine], which executes on a
+     * background dispatcher *outside* the test scheduler — so `advanceUntilIdle()` alone doesn't wait
+     * for it. Awaiting its [HomeViewModel.streak] StateFlow joins that coroutine, so it can't resume
+     * onto Main after `resetMain()` and intermittently crash teardown with `IllegalStateException`.
+     */
+    private suspend fun homeViewModel(
+        homeRepository: HomeRepository,
+        sessionRepository: PracticeSessionRepository = FakePracticeSessionRepository(),
+        apiClient: FlashcardApiClient = readyApiClient(),
+        featureFlags: FeatureFlagRepository = FakeFeatureFlagRepository(),
+    ): HomeViewModel {
+        val viewModel = HomeViewModel(homeRepository, sessionRepository, apiClient, FakeStringProvider(), featureFlags)
+        viewModel.streak.first { it != null } // join the off-scheduler streak fetch (see above)
+        testDispatcher.scheduler.advanceUntilIdle() // drain the feed + flag coroutines
+        return viewModel
+    }
+
+    /** A client whose /streaks call returns a real (non-null) streak, for tests that don't assert on it. */
+    private fun readyApiClient(): FlashcardApiClient =
+        apiClient(streaksJson = """{"overall":{"current":0,"longest":0},"decks":[]}""")
 
     /** Builds a real [FlashcardApiClient] over a MockEngine; responds to any request with [streaksJson]. */
-    private fun apiClient(streaksJson: String?): FlashcardApiClient {
+    private fun apiClient(streaksJson: String): FlashcardApiClient {
         val engine = MockEngine {
-            if (streaksJson != null) {
-                respond(streaksJson, HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
-            } else {
-                respond("unavailable", HttpStatusCode.ServiceUnavailable)
-            }
+            respond(streaksJson, HttpStatusCode.OK, headersOf("Content-Type", "application/json"))
         }
         return FlashcardApiClient(createFlashcardHttpClient(engine), baseUrl = "http://localhost") { null }
     }
