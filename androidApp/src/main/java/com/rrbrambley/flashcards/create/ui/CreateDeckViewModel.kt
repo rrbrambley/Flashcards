@@ -142,10 +142,7 @@ class CreateDeckViewModel @Inject constructor(
         _uiState.update { it.copy(deckSaved = false) }
     }
 
-    private fun updateCard(
-        cardId: Long,
-        update: (DeckFlashcardDraft) -> DeckFlashcardDraft,
-    ) {
+    private fun updateCard(cardId: Long, update: (DeckFlashcardDraft) -> DeckFlashcardDraft) {
         _uiState.update { state ->
             state.copy(
                 cards = state.cards.map { card -> if (card.id == cardId) update(card) else card },

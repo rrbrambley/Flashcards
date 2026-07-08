@@ -1,7 +1,6 @@
 package com.rrbrambley.flashcards.library.ui
 
 import com.rrbrambley.flashcards.core.FakeStringProvider
-
 import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
@@ -301,10 +300,9 @@ class LibraryViewModelTest {
             emit(decks)
         }
 
-        override fun observeDeckRefreshFailures(): Flow<Boolean> =
-            if (refreshFails) flowOf(true) else emptyFlow()
+        override fun observeDeckRefreshFailures(): Flow<Boolean> = if (refreshFails) flowOf(true) else emptyFlow()
 
-        override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(decks.firstOrNull { it.id == deckId })
+        override fun observeFlashcardDeck(deckId: Long): Flow<FlashcardDeck?> = flowOf(decks.find { it.id == deckId })
 
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) = Unit
 

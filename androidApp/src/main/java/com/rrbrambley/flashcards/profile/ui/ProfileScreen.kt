@@ -1,7 +1,7 @@
 package com.rrbrambley.flashcards.profile.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -37,10 +37,7 @@ import com.rrbrambley.flashcards.ui.Avatar
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ProfileScreen(
-    modifier: Modifier = Modifier,
-    viewModel: ProfileViewModel = hiltViewModel(),
-) {
+fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     if (uiState.loading) {
@@ -144,12 +141,7 @@ fun ProfileScreen(
 
 /** One tappable avatar in the picker grid, ringed when it's the current selection. */
 @Composable
-private fun AvatarOption(
-    option: AvatarDto,
-    selected: Boolean,
-    enabled: Boolean,
-    onSelect: () -> Unit,
-) {
+private fun AvatarOption(option: AvatarDto, selected: Boolean, enabled: Boolean, onSelect: () -> Unit) {
     val ring = if (selected) {
         Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
     } else {

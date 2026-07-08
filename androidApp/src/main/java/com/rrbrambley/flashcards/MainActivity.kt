@@ -5,10 +5,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -27,6 +28,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -37,13 +39,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.annotation.StringRes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.auth.AuthState
 import com.rrbrambley.flashcards.auth.AuthViewModel
@@ -52,14 +53,13 @@ import com.rrbrambley.flashcards.create.ui.CreateDeckScreen
 import com.rrbrambley.flashcards.create.ui.CreateDeckViewModel
 import com.rrbrambley.flashcards.edit.ui.EditDeckActivity
 import com.rrbrambley.flashcards.guest.ui.GuestCatalogScreen
-import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.library.ui.LibraryScreen
 import com.rrbrambley.flashcards.practice.ui.FlashcardsActivity
-import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.profile.ui.ProfileActivity
+import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
-import androidx.compose.material3.TextButton
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -153,10 +153,7 @@ private fun GuestScaffolding(onSignIn: () -> Unit) {
     }
 }
 
-private enum class BottomDestination(
-    @StringRes val labelRes: Int,
-    val icon: ImageVector,
-) {
+private enum class BottomDestination(@StringRes val labelRes: Int, val icon: ImageVector) {
     Home(R.string.nav_home, Icons.Default.Home),
     New(R.string.nav_new, Icons.Default.Add),
     Library(R.string.nav_library, Icons.Default.Menu),

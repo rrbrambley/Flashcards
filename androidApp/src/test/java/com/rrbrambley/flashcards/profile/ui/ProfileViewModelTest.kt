@@ -176,7 +176,8 @@ class ProfileViewModelTest {
         }
     }
 
-    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) : FeatureFlagRepository {
+    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) :
+        FeatureFlagRepository {
         override suspend fun flags(): Map<String, Boolean> = flags
     }
 }

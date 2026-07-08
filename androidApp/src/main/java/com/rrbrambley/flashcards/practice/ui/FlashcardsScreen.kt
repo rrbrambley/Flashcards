@@ -1,10 +1,4 @@
 package com.rrbrambley.flashcards.practice.ui
-import com.rrbrambley.flashcards.shared.domain.GuestSaveState
-import com.rrbrambley.flashcards.shared.domain.InSessionStreak
-import com.rrbrambley.flashcards.shared.domain.PracticeUiState
-import com.rrbrambley.flashcards.shared.domain.ReviewItem
-import com.rrbrambley.flashcards.shared.domain.PracticeMode
-
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
@@ -13,8 +7,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -58,18 +52,23 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import com.rrbrambley.flashcards.BuildConfig
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.rrbrambley.flashcards.BuildConfig
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussionSheet
 import com.rrbrambley.flashcards.shared.domain.Flashcard
+import com.rrbrambley.flashcards.shared.domain.GuestSaveState
+import com.rrbrambley.flashcards.shared.domain.InSessionStreak
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
+import com.rrbrambley.flashcards.shared.domain.PracticeUiState
+import com.rrbrambley.flashcards.shared.domain.ReviewItem
 
 /**
  * The mode-agnostic practice runner. The Scaffold + score row + loading/completion states are shared;
@@ -384,11 +383,7 @@ private fun ScoreChip(label: String, color: Color) {
 }
 
 @Composable
-private fun FlashcardsCompletionContent(
-    streak: Int?,
-    review: List<ReviewItem>,
-    modifier: Modifier = Modifier,
-) {
+private fun FlashcardsCompletionContent(streak: Int?, review: List<ReviewItem>, modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),

@@ -75,7 +75,8 @@ class PermissionsRepositoryTest {
                 headersOf("Content-Type", "application/json"),
             )
         }
-        val apiClient = FlashcardApiClient(createFlashcardHttpClient(engine), "http://localhost", { tokenStoreToken(tokenStore) })
+        val apiClient =
+            FlashcardApiClient(createFlashcardHttpClient(engine), "http://localhost", { tokenStoreToken(tokenStore) })
         return DefaultPermissionsRepository(apiClient, tokenStore)
     }
 
@@ -86,8 +87,14 @@ class PermissionsRepositoryTest {
         override fun tokenFlow(): Flow<String?> = token
         override suspend fun currentToken(): String? = token.value
         override suspend fun currentRefreshToken(): String? = null
-        override suspend fun setToken(token: String) { this.token.value = token }
-        override suspend fun setTokens(accessToken: String, refreshToken: String) { token.value = accessToken }
-        override suspend fun clearToken() { token.value = null }
+        override suspend fun setToken(token: String) {
+            this.token.value = token
+        }
+        override suspend fun setTokens(accessToken: String, refreshToken: String) {
+            token.value = accessToken
+        }
+        override suspend fun clearToken() {
+            token.value = null
+        }
     }
 }

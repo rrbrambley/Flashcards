@@ -6,9 +6,7 @@ import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import javax.inject.Inject
 
 /** Android [HomeFeedStrings] backed by localizable string resources via [StringProvider]. */
-class AndroidHomeFeedStrings @Inject constructor(
-    private val stringProvider: StringProvider,
-) : HomeFeedStrings {
+class AndroidHomeFeedStrings @Inject constructor(private val stringProvider: StringProvider) : HomeFeedStrings {
     override val continueStudyingSection: String
         get() = stringProvider.getString(R.string.home_section_continue_studying)
 

@@ -65,7 +65,8 @@ class FlashcardsViewModel @Inject constructor(
         )
         controller = c
         viewModelScope.launch {
-            discussionsFlag = runCatching { featureFlagRepository.isEnabled(FeatureFlags.DISCUSSIONS) }.getOrDefault(false)
+            discussionsFlag =
+                runCatching { featureFlagRepository.isEnabled(FeatureFlags.DISCUSSIONS) }.getOrDefault(false)
             launch { c.state.collect { state -> _uiState.value = applyDiscussionsFlag(state, c) } }
             launch { c.saveState.collect { _saveState.value = it } }
             c.start()

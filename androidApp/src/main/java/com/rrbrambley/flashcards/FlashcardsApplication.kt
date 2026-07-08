@@ -7,7 +7,8 @@ import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
-class FlashcardsApplication : Application(),
+class FlashcardsApplication :
+    Application(),
     SingletonImageLoader.Factory by FlashcardsImageLoaderFactory {
 
     // Starts the connectivity-driven offline practice-session sync for the app's lifetime (FLA-91).

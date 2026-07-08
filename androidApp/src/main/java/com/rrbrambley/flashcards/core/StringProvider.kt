@@ -16,9 +16,7 @@ interface StringProvider {
 }
 
 /** [StringProvider] backed by the application [Context]. */
-class AndroidStringProvider @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : StringProvider {
+class AndroidStringProvider @Inject constructor(@ApplicationContext private val context: Context) : StringProvider {
     override fun getString(resId: Int): String = context.getString(resId)
 
     override fun getString(resId: Int, vararg formatArgs: Any): String = context.getString(resId, *formatArgs)

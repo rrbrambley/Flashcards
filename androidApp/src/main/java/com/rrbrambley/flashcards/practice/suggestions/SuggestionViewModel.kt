@@ -101,5 +101,4 @@ class SuggestionViewModel @Inject constructor(
             }
         }
     }
-
 }

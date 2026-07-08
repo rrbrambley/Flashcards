@@ -1,7 +1,5 @@
 package com.rrbrambley.flashcards.practice.discussions
 
-import com.rrbrambley.flashcards.shared.domain.ActionError
-
 import com.rrbrambley.flashcards.auth.Permissions
 import com.rrbrambley.flashcards.auth.PermissionsRepository
 import com.rrbrambley.flashcards.shared.AuthService
@@ -12,6 +10,7 @@ import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.Page
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import com.rrbrambley.flashcards.shared.domain.ActionError
 import com.rrbrambley.flashcards.shared.domain.LocalDataStore
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -320,9 +319,15 @@ class DiscussionViewModelTest {
         override fun tokenFlow(): Flow<String?> = token
         override suspend fun currentToken(): String? = token.value
         override suspend fun currentRefreshToken(): String? = null
-        override suspend fun setToken(token: String) { this.token.value = token }
-        override suspend fun setTokens(accessToken: String, refreshToken: String) { token.value = accessToken }
-        override suspend fun clearToken() { token.value = null }
+        override suspend fun setToken(token: String) {
+            this.token.value = token
+        }
+        override suspend fun setTokens(accessToken: String, refreshToken: String) {
+            token.value = accessToken
+        }
+        override suspend fun clearToken() {
+            token.value = null
+        }
     }
 
     private class FakeLocalDataStore : LocalDataStore {

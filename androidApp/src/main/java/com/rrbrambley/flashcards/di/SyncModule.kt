@@ -29,7 +29,6 @@ object SyncModule {
     fun providePracticeSyncManager(
         connectivityMonitor: ConnectivityMonitor,
         syncer: PracticeSessionSyncer,
-    ): PracticeSyncManager =
-        // App-lifetime scope for the sync loop; matches the DB's Dispatchers.Default.
+    ): PracticeSyncManager = // App-lifetime scope for the sync loop; matches the DB's Dispatchers.Default.
         PracticeSyncManager(connectivityMonitor, syncer, CoroutineScope(SupervisorJob() + Dispatchers.Default))
 }
