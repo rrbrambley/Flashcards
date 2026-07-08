@@ -2,22 +2,10 @@ name: CI
 
 on:
   pull_request:
-    # `labeled` is included so adding the ci:android / ci:ios / ci:native opt-in label re-triggers CI
-    # (the default event types don't include it). See the android-instrumented / ios job gates below.
-    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [ main ]
-  # Manually run the opt-in native jobs from the Actions tab (they otherwise require a PR label).
+  # Manually trigger a full run (incl. the native jobs) from the Actions tab.
   workflow_dispatch:
-    inputs:
-      run_android:
-        description: 'Run the Android instrumented tests'
-        type: boolean
-        default: false
-      run_ios:
-        description: 'Run the iOS build + tests'
-        type: boolean
-        default: false
 
 # Least privilege by default; the jvm job widens to post the coverage comment.
 permissions:
@@ -29,10 +17,10 @@ concurrency:
 
 jobs:
   # Detect which areas a PR touches so each job runs only when relevant code changed (FLA-60).
-  # Runs in a few seconds on Linux. `main` isn't branch-protected, so a skipped job is simply
-  # absent from the checks (no aggregator gate needed; add one if protection is enabled later).
-  # The two expensive native jobs (android-instrumented, ios) additionally require an opt-in label
-  # or a manual dispatch — see their `if:` gates (FLA-72).
+  # Runs in a few seconds on Linux. The `ci-passed` aggregator (bottom) fans these in so branch
+  # protection can require a single check even when some jobs are path-skipped. GitHub Actions is
+  # free for public repos on standard runners (incl. macOS), so the native jobs run automatically
+  # on relevant changes rather than behind an opt-in label.
   changes:
     name: Detect changed paths
     runs-on: ubuntu-latest
@@ -274,16 +262,12 @@ jobs:
 
   android-instrumented:
     name: Android instrumented tests
-    # Opt-in (FLA-72): this boots an emulator, so it runs only when android code changed AND the PR
-    # carries the `ci:android` (or `ci:native`) label — or when manually dispatched with run_android.
-    # A trivial change won't spend an emulator boot unless you opt in.
+    # Runs whenever Android/shared code changed (free on public repos). On push to main it warms the
+    # AVD + Gradle caches into main's cache scope (so PRs restore them) without running the emulator
+    # test — see the per-step `push` guards below.
     needs: changes
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_android == 'true') ||
-      (github.event_name == 'pull_request' &&
-       needs.changes.outputs.android == 'true' &&
-       (contains(github.event.pull_request.labels.*.name, 'ci:android') ||
-        contains(github.event.pull_request.labels.*.name, 'ci:native')))
+      github.event_name == 'workflow_dispatch' || needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -317,7 +301,8 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       # Cache the generated AVD + its warm snapshot so most runs boot from snapshot instead of
-      # cold-creating the emulator (the slowest part).
+      # cold-creating the emulator (the slowest part). Running this job on push to main saves the
+      # snapshot into main's cache scope, which is what PRs restore from (FLA-143).
       - name: Cache AVD
         uses: actions/cache@v4
         id: avd-cache
@@ -340,6 +325,7 @@ jobs:
           script: echo "Generated AVD snapshot."
 
       - name: Instrumented tests (connectedDebugAndroidTest)
+        if: ${{ github.event_name != 'push' }}
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -349,6 +335,12 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: ./gradlew :androidApp:connectedDebugAndroidTest --stacktrace
+
+      # On push to main: compile the instrumented test APK (no emulator) to warm the Gradle cache;
+      # the AVD snapshot above is already saved to main's cache scope for PRs to restore.
+      - name: Warm instrumented build (compile only)
+        if: ${{ github.event_name == 'push' }}
+        run: ./gradlew :androidApp:assembleDebugAndroidTest --stacktrace
 
       - name: Upload instrumented test results
         if: ${{ !cancelled() }}
@@ -361,15 +353,12 @@ jobs:
 
   ios:
     name: iOS (build + shared iOS tests)
-    # Opt-in (FLA-72): the macOS runner is 10×-billed, so it runs only when iOS code changed AND the PR
-    # carries the `ci:ios` (or `ci:native`) label — or when manually dispatched with run_ios.
+    # Runs whenever iOS/shared code changed. Free on public repos (standard macOS runner), so it's
+    # automatic rather than opt-in. On push to main it warms the konan + Xcode DerivedData caches
+    # (into main's scope, for PRs to restore) via a build-only pass — see the `push` guards below.
     needs: changes
     if: >-
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.run_ios == 'true') ||
-      (github.event_name == 'pull_request' &&
-       needs.changes.outputs.ios == 'true' &&
-       (contains(github.event.pull_request.labels.*.name, 'ci:ios') ||
-        contains(github.event.pull_request.labels.*.name, 'ci:native')))
+      github.event_name == 'workflow_dispatch' || needs.changes.outputs.ios == 'true'
     # Apple-silicon macOS runner: matches the iosSimulatorArm64 target + has Xcode/simulators
     # preinstalled. The iosApp/ Xcode project is generated by XcodeGen (it's gitignored).
     runs-on: macos-latest
@@ -395,7 +384,7 @@ jobs:
           build-scan-terms-of-use-agree: "yes"
 
       # Cache the Kotlin/Native compiler + dependencies (~1 GB) keyed on the version catalog,
-      # so most runs skip the konan download.
+      # so most runs skip the konan download. Warmed on push to main (into main's cache scope).
       - name: Cache Kotlin/Native
         uses: actions/cache@v4
         with:
@@ -424,14 +413,14 @@ jobs:
       # The shared module's iOS tests compile + run the Kotlin/Native test binary on a
       # simulator: the transparent-refresh + auth + repository tests on the actual iOS target.
       # Skipped on a Swift-only PR (iosApp/** with no shared/gradle change) — the Kotlin/Native
-      # side is unaffected, so we don't pay for the extra KN compile + sim run (FLA-141). A manual
-      # dispatch always runs it.
+      # side is unaffected (FLA-141) — and on push to main, where the framework build below already
+      # warms konan without paying for the extra KN compile + sim run. A manual dispatch runs it.
       - name: Shared iOS tests
-        if: ${{ needs.changes.outputs.ios_kmp == 'true' || github.event_name == 'workflow_dispatch' }}
+        if: ${{ github.event_name != 'push' && (needs.changes.outputs.ios_kmp == 'true' || github.event_name == 'workflow_dispatch') }}
         run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
 
       # HOMEBREW_NO_AUTO_UPDATE skips the formula-index refresh (the slow part), saving ~30–60s on
-      # the 10×-billed macOS runner for a tool that rarely changes (FLA-142).
+      # the macOS runner for a tool that rarely changes (FLA-142).
       - name: Install XcodeGen
         run: HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen
 
@@ -439,23 +428,32 @@ jobs:
         working-directory: iosApp
         run: xcodegen generate
 
-      # Build + run the Swift view-model unit tests (FLA-54) on a booted simulator. `test` needs a
-      # concrete device (not a generic destination), so pick the first available iPhone simulator —
-      # model/runtime-agnostic across runner images. The "Compile Kotlin Framework" build phase runs
-      # embedAndSignAppleFrameworkForXcode (JAVA_HOME comes from setup-java).
+      # On a PR (or dispatch): full `test` on a booted simulator (FLA-54). On push to main:
+      # `build-for-testing` only — it builds the shared framework (warms konan) + SwiftPM deps
+      # (warms DerivedData) into main's cache scope for PRs to restore, without re-running the tests
+      # the PR already passed. `test` needs a concrete device; the warm build uses a generic one.
+      # The "Compile Kotlin Framework" build phase runs embedAndSignAppleFrameworkForXcode
+      # (JAVA_HOME comes from setup-java).
       - name: Build + test iOS app (simulator)
         working-directory: iosApp
         run: |
-          UDID=$(xcrun simctl list devices available --json \
-            | python3 -c "import sys,json; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for v in d.values() for x in v if 'iPhone' in x['name']))")
-          echo "Using simulator $UDID"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            ACTION=build-for-testing
+            DEST="generic/platform=iOS Simulator"
+          else
+            UDID=$(xcrun simctl list devices available --json \
+              | python3 -c "import sys,json; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for v in d.values() for x in v if 'iPhone' in x['name']))")
+            echo "Using simulator $UDID"
+            ACTION=test
+            DEST="id=$UDID"
+          fi
           xcodebuild \
             -project Flashcards.xcodeproj \
             -scheme Flashcards \
             -configuration Debug \
-            -destination "id=$UDID" \
+            -destination "$DEST" \
             CODE_SIGNING_ALLOWED=NO \
-            test
+            "$ACTION"
 
       - name: Upload iOS test results
         if: ${{ !cancelled() }}
@@ -465,3 +463,23 @@ jobs:
           path: shared/build/reports/tests/
           if-no-files-found: ignore
           retention-days: 7
+
+  # Fan-in so branch protection can require ONE check ("CI passed") even when some jobs are
+  # path-skipped: green iff every job that ran passed (skipped counts as OK). Always runs so it
+  # reports a status even when the jobs it needs were skipped.
+  ci-passed:
+    name: CI passed
+    if: ${{ always() }}
+    needs: [changes, kotlin-lint, jvm, web, android-instrumented, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify no required job failed
+        run: |
+          echo "Job results: ${{ join(needs.*.result, ', ') }}"
+          for r in ${{ join(needs.*.result, ' ') }}; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then
+              echo "::error::A required CI job did not pass (result: $r)."
+              exit 1
+            fi
+          done
+          echo "All jobs passed or were skipped."

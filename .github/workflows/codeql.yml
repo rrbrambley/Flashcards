@@ -1,0 +1,45 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 6 * * 1'  # weekly, Monday 06:00 UTC
+
+# Not wired into the CI "ci-passed" aggregator — CodeQL surfaces security alerts (informational),
+# it doesn't gate merges. Runs on Linux with build-mode: none (source extraction, no Gradle build),
+# so the KMP build complexity can't break it. Free for public repos.
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # upload results to the Security tab
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: java-kotlin           # backend + :shared + androidApp (Kotlin/Java)
+            build-mode: none
+          - language: javascript-typescript # webApp
+            build-mode: none
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
