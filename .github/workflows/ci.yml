@@ -197,7 +197,7 @@ jobs:
 
       - name: Coverage PR comment
         if: ${{ github.event_name == 'pull_request' && !cancelled() }}
-        uses: madrapps/jacoco-report@v1.7.1
+        uses: madrapps/jacoco-report@v1.8.0
         with:
           paths: |
             ${{ github.workspace }}/backend/build/reports/jacoco/test/jacocoTestReport.xml
