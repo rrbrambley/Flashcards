@@ -1,0 +1,30 @@
+version: 2
+updates:
+  # Gradle — the version catalog (gradle/libs.versions.toml) drives every Kotlin module.
+  - package-ecosystem: gradle
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+    groups:
+      gradle-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # Web app (npm).
+  - package-ecosystem: npm
+    directory: "/webApp"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    labels: ["dependencies"]
+    groups:
+      npm-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # The GitHub Actions used by the workflows.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels: ["dependencies"]
