@@ -9,26 +9,60 @@ on:
     - cron: '0 6 * * 1'  # weekly, Monday 06:00 UTC
 
 # Not wired into the CI "ci-passed" aggregator — CodeQL surfaces security alerts (informational),
-# it doesn't gate merges. Runs on Linux with build-mode: none (source extraction, no Gradle build),
-# so the KMP build complexity can't break it. Free for public repos.
+# it doesn't gate merges. Free for public repos.
 permissions:
   contents: read
 
 jobs:
-  analyze:
-    name: Analyze (${{ matrix.language }})
+  # Kotlin can't be extracted with build-mode: none (that only handles Java), so we do a manual,
+  # traced build. The Gradle daemon + build/configuration caches are disabled so the Kotlin compile
+  # actually runs in the foreground process CodeQL is tracing — otherwise it sees "no source code"
+  # (https://gh.io/troubleshooting-code-scanning/no-source-code-seen-during-build). We compile the
+  # JVM Kotlin (backend + the shared JVM target, incl. :shared:api as a dependency) — the
+  # security-relevant server + shared logic. The Kotlin/Native (iOS) side isn't covered by CodeQL.
+  analyze-kotlin:
+    name: Analyze (java-kotlin)
     runs-on: ubuntu-latest
     permissions:
       security-events: write   # upload results to the Security tab
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - language: java-kotlin           # backend + :shared + androidApp (Kotlin/Java)
-            build-mode: none
-          - language: javascript-typescript # webApp
-            build-mode: none
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # The root build configures :androidApp, which needs the Android SDK even to compile :backend.
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          build-mode: manual
+
+      - name: Compile Kotlin (traced by CodeQL)
+        run: >-
+          ./gradlew :backend:compileKotlin :shared:compileKotlinJvm
+          --no-daemon --no-build-cache --no-configuration-cache --stacktrace
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java-kotlin"
+
+  # TypeScript/JavaScript needs no build — source extraction only.
+  analyze-web:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,10 +70,10 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
+          languages: javascript-typescript
+          build-mode: none
 
       - name: Analyze
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{ matrix.language }}"
+          category: "/language:javascript-typescript"
