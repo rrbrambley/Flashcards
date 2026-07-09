@@ -4,7 +4,7 @@
  * `flashcards.kmp.library` (the KMP libraries).
  */
 object FlashcardsSdk {
-    const val COMPILE = 36
+    const val COMPILE = 37
     const val MIN = 26
     const val TARGET = 36
 }
