@@ -38,7 +38,7 @@ jobs:
 
       # The root build configures :androidApp, which needs the Android SDK even to compile :backend.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4

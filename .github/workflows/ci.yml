@@ -101,7 +101,7 @@ jobs:
       # ktlintCheck spans all modules, including the Android app, whose configuration
       # needs the SDK.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -141,7 +141,7 @@ jobs:
           java-version: '21'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -280,7 +280,7 @@ jobs:
           java-version: '21'
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
