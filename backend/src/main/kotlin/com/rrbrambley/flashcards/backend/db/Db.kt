@@ -1,7 +1,7 @@
 package com.rrbrambley.flashcards.backend.db
 
 import kotlinx.coroutines.Dispatchers
-import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
+import org.jetbrains.exposed.v1.jdbc.transactions.experimental.newSuspendedTransaction
 
 /** Runs Exposed DB work off the request thread; use in all suspend route handlers. */
 suspend fun <T> dbQuery(block: suspend () -> T): T = newSuspendedTransaction(Dispatchers.IO) { block() }

@@ -1,8 +1,8 @@
 package com.rrbrambley.flashcards.backend.db
 
-import org.jetbrains.exposed.dao.id.LongIdTable
-import org.jetbrains.exposed.sql.ReferenceOption
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.v1.core.ReferenceOption
+import org.jetbrains.exposed.v1.core.Table
+import org.jetbrains.exposed.v1.core.dao.id.LongIdTable
 
 object Users : LongIdTable("users") {
     val email = varchar("email", 255).uniqueIndex()

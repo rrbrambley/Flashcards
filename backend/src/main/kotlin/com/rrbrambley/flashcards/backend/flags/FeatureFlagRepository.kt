@@ -7,13 +7,13 @@ import com.rrbrambley.flashcards.backend.db.Roles
 import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.NotFoundException
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.innerJoin
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.innerJoin
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
+import org.jetbrains.exposed.v1.jdbc.insert
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.update
 
 /**
  * Admin management of feature flags (FLA-175): list the catalog with each flag's global state +
@@ -88,7 +88,7 @@ object FeatureFlagRepository {
     private fun adminFlagDto(flagId: Long): AdminFlagDto =
         FeatureFlags.selectAll().where { FeatureFlags.id eq flagId }.first().toAdminFlagDto()
 
-    private fun org.jetbrains.exposed.sql.ResultRow.toAdminFlagDto(): AdminFlagDto {
+    private fun org.jetbrains.exposed.v1.core.ResultRow.toAdminFlagDto(): AdminFlagDto {
         val flagId = this[FeatureFlags.id].value
         val userOverrides = (FeatureFlagUserOverrides innerJoin Users)
             .selectAll()

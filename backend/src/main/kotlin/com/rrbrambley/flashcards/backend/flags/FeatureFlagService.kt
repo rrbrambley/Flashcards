@@ -5,8 +5,9 @@ import com.rrbrambley.flashcards.backend.db.FeatureFlagUserOverrides
 import com.rrbrambley.flashcards.backend.db.FeatureFlags
 import com.rrbrambley.flashcards.backend.db.UserRoles
 import com.rrbrambley.flashcards.backend.db.dbQuery
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
 
 /**
  * Resolves a caller's feature flags (FLA-174). Every catalog flag is resolved to a boolean with

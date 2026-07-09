@@ -3,7 +3,8 @@ package com.rrbrambley.flashcards.backend.cli
 import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.flags.FeatureFlagRepository
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
 
 /** `flag list` — lists feature flags with their global state and override counts. */
 object FlagListCommand : AdminCommand {
