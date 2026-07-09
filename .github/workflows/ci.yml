@@ -93,7 +93,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -135,7 +135,7 @@ jobs:
       # Gradle 9.4.1 runs on a modern JDK; the build's jvmToolchain(11) is provisioned
       # separately by the foojay resolver in settings.gradle.kts.
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -274,7 +274,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -369,7 +369,7 @@ jobs:
       # JDK + Gradle to build the shared Kotlin/Native framework (jvmToolchain(11) is
       # provisioned separately by the foojay resolver).
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
