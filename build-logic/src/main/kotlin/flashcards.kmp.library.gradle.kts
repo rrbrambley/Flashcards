@@ -1,4 +1,4 @@
-// Convention: a Kotlin Multiplatform library's shared baseline — SDK levels, JVM toolchain 11, and
+// Convention: a Kotlin Multiplatform library's shared baseline — SDK levels, JVM toolchain 17, and
 // the expect/actual-classes opt-in (Room-KMP uses an expect object whose actual is KSP-generated).
 // The module declares its own namespace, targets (jvm/iOS), framework, source sets, and Room/KSP.
 plugins {
@@ -7,7 +7,7 @@ plugins {
 }
 
 kotlin {
-    jvmToolchain(11)
+    jvmToolchain(17)
 
     compilerOptions {
         freeCompilerArgs.add("-Xexpect-actual-classes")
