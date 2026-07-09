@@ -174,7 +174,7 @@ jobs:
 
       - name: Upload coverage reports
         if: ${{ github.event_name == 'pull_request' && !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-reports
           path: |
@@ -185,7 +185,7 @@ jobs:
 
       - name: Upload test results
         if: ${{ github.event_name == 'pull_request' && !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: |
@@ -253,7 +253,7 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: web-coverage
           path: webApp/coverage/
@@ -344,7 +344,7 @@ jobs:
 
       - name: Upload instrumented test results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: instrumented-test-results
           path: androidApp/build/reports/androidTests/
@@ -457,7 +457,7 @@ jobs:
 
       - name: Upload iOS test results
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios-test-results
           path: shared/build/reports/tests/
