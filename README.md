@@ -59,7 +59,7 @@ apps — iOS gets a one-call `createIosFlashcardSdk(...)` factory and links it a
 
 ## Tech stack
 
-- **Language:** Kotlin 2.2.10 (JVM toolchain 11), Kotlin Multiplatform
+- **Language:** Kotlin 2.2.10 (JVM toolchain 17), Kotlin Multiplatform
 - **Android:** Jetpack Compose, Hilt (DI), Room-KMP (offline cache), Ktor client (OkHttp),
   DataStore, Coil (images), Credential Manager (Google sign-in)
 - **iOS:** SwiftUI, the shared `Shared` Kotlin/Native framework (Room-KMP offline cache, Darwin
@@ -73,7 +73,7 @@ apps — iOS gets a one-call `createIosFlashcardSdk(...)` factory and links it a
 
 ## Prerequisites
 
-- **JDK 11+** and the Android SDK (easiest via [Android Studio](https://developer.android.com/studio)).
+- **JDK 17+** and the Android SDK (easiest via [Android Studio](https://developer.android.com/studio)).
   Create `local.properties` with `sdk.dir=/path/to/Android/sdk` (gitignored) if Studio doesn't.
 - **Docker** for Postgres and the backend's Testcontainers tests — via
   [Colima](https://github.com/abiosoft/colima) (`brew install colima docker docker-compose`)
