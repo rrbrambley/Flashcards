@@ -30,6 +30,12 @@ updates:
     groups:
       npm-minor-patch:
         update-types: ["minor", "patch"]
+    ignore:
+      # typescript-eslint (our linter, latest 8.63.0) peers `typescript <6.1.0`, so the whole lint
+      # toolchain can't run against TS 6.1+/7.x yet — adopting them breaks `npm run lint` (ERESOLVE).
+      # Revisit when typescript-eslint ships TS 7 support.
+      - dependency-name: "typescript"
+        versions: [">=6.1.0"]
 
   # The GitHub Actions used by the workflows.
   - package-ecosystem: github-actions
