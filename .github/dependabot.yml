@@ -10,6 +10,15 @@ updates:
     groups:
       gradle-minor-patch:
         update-types: ["minor", "patch"]
+    ignore:
+      # These bumps require a newer Kotlin than our pinned 2.2.10 (which is held back for the
+      # Kotlin/Native iOS klibs + the Ktor 3.2.x pin — see CLAUDE.md). Coil 3.5 is built against
+      # Kotlin 2.4, and kotlinx-serialization 1.11 produces KN klibs our 2.2.10 compiler can't
+      # consume. Revisit (remove these) when Kotlin is upgraded.
+      - dependency-name: "io.coil-kt.coil3:*"
+        versions: [">=3.5.0"]
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-serialization-json"
+        versions: [">=1.10.0"]
 
   # Web app (npm).
   - package-ecosystem: npm
