@@ -11,13 +11,21 @@ updates:
       gradle-minor-patch:
         update-types: ["minor", "patch"]
     ignore:
-      # These bumps require a newer Kotlin than our pinned 2.2.10 (which is held back for the
-      # Kotlin/Native iOS klibs + the Ktor 3.2.x pin — see CLAUDE.md). Coil 3.5 is built against
-      # Kotlin 2.4, and kotlinx-serialization 1.11 produces KN klibs our 2.2.10 compiler can't
-      # consume. Revisit (remove these) when Kotlin is upgraded.
-      - dependency-name: "io.coil-kt.coil3:*"
+      # All of these are held back by our pinned Kotlin 2.2.10 (kept for the Kotlin/Native iOS klibs
+      # + the Ktor 3.2.x pin — see CLAUDE.md). Each is built against / emits KN klibs for a newer
+      # Kotlin (2.3.20–2.4.0) that our 2.2.10 compiler can't consume. Remove these together when
+      # Kotlin is upgraded (tracked in #243).
+      - dependency-name: "org.jetbrains.kotlin*"      # kotlin-test, plugins — bumping = bumping Kotlin
+        versions: [">=2.3.0"]
+      - dependency-name: "io.ktor:*"                  # Ktor 3.3+ breaks the KN 2.2.10 iOS klibs
+        versions: [">=3.3.0"]
+      - dependency-name: "aws.sdk.kotlin:*"           # AWS SDK 1.7+ pulls kotlin-stdlib 2.4
+        versions: [">=1.7.0"]
+      - dependency-name: "androidx.sqlite:*"          # sqlite-framework 2.7 KN klib is Kotlin 2.3.20
+        versions: [">=2.7.0"]
+      - dependency-name: "io.coil-kt.coil3:*"         # Coil 3.5 is built against Kotlin 2.4
         versions: [">=3.5.0"]
-      - dependency-name: "org.jetbrains.kotlinx:kotlinx-serialization-json"
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-serialization-json"  # 1.11 KN klib is Kotlin 2.3.20
         versions: [">=1.10.0"]
 
   # Web app (npm).
