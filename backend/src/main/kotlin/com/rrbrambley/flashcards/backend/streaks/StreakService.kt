@@ -6,7 +6,10 @@ import com.rrbrambley.flashcards.shared.api.DeckStreakDto
 import com.rrbrambley.flashcards.shared.api.StreakCalendarResponse
 import com.rrbrambley.flashcards.shared.api.StreakDto
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
-import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.jdbc.select
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth

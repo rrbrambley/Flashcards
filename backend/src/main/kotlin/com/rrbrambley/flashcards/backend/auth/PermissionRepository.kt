@@ -5,8 +5,9 @@ import com.rrbrambley.flashcards.backend.db.RolePermissions
 import com.rrbrambley.flashcards.backend.db.Roles
 import com.rrbrambley.flashcards.backend.db.UserRoles
 import com.rrbrambley.flashcards.backend.db.dbQuery
-import org.jetbrains.exposed.sql.JoinType
-import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.v1.core.JoinType
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.jdbc.selectAll
 
 object PermissionRepository {
 
