@@ -2,7 +2,6 @@ package com.rrbrambley.flashcards.edit.ui
 
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.FakeStringProvider
-
 import com.rrbrambley.flashcards.create.ui.DeckFlashcardDraft
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.shared.domain.Flashcard
@@ -116,7 +115,12 @@ class EditDeckViewModelTest {
 
     @Test
     fun removeCard_onReadOnlyDeck_isIgnored() = runTest(testDispatcher) {
-        val viewModel = EditDeckViewModel(FakeFlashcardRepository(testDeck(editable = false)), NoOpImageUploader, FakeStringProvider())
+        val viewModel =
+            EditDeckViewModel(
+                FakeFlashcardRepository(testDeck(editable = false)),
+                NoOpImageUploader,
+                FakeStringProvider(),
+            )
         viewModel.loadDeck(42L)
         testDispatcher.scheduler.advanceUntilIdle()
         val cardsBefore = viewModel.uiState.value.cards
@@ -279,10 +283,8 @@ class EditDeckViewModelTest {
         tags = tags,
     )
 
-    private class FakeFlashcardRepository(
-        private val deck: FlashcardDeck,
-        private val failUpdate: Boolean = false,
-    ) : FlashcardRepository {
+    private class FakeFlashcardRepository(private val deck: FlashcardDeck, private val failUpdate: Boolean = false) :
+        FlashcardRepository {
         var updatedDeck: FlashcardDeck? = null
         var updateCount: Int = 0
 

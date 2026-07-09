@@ -149,16 +149,23 @@ class FlashcardsViewModelTest {
         override fun tokenFlow(): Flow<String?> = token
         override suspend fun currentToken(): String? = token.value
         override suspend fun currentRefreshToken(): String? = null
-        override suspend fun setToken(token: String) { this.token.value = token }
-        override suspend fun setTokens(accessToken: String, refreshToken: String) { token.value = accessToken }
-        override suspend fun clearToken() { token.value = null }
+        override suspend fun setToken(token: String) {
+            this.token.value = token
+        }
+        override suspend fun setTokens(accessToken: String, refreshToken: String) {
+            token.value = accessToken
+        }
+        override suspend fun clearToken() {
+            token.value = null
+        }
     }
 
     private class FakeLocalDataStore : LocalDataStore {
         override suspend fun clearAll() = Unit
     }
 
-    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) : FeatureFlagRepository {
+    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) :
+        FeatureFlagRepository {
         override suspend fun flags(): Map<String, Boolean> = flags
     }
 
@@ -193,13 +200,19 @@ class FlashcardsViewModelTest {
         override suspend fun deleteFlashcardDeck(deckId: Long) = Unit
     }
 
-    private class FakePracticeSessionRepository(
-        private val session: PracticeSession? = null,
-    ) : PracticeSessionRepository {
-        override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long = session?.id ?: 0L
-        override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(session?.let { listOf(it) }.orEmpty())
-        override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(session?.takeIf { it.id == sessionId })
-        override suspend fun updateProgress(sessionId: Long, currentCardIndex: Int, numCorrect: Int, numIncorrect: Int) = Unit
+    private class FakePracticeSessionRepository(private val session: PracticeSession? = null) :
+        PracticeSessionRepository {
+        override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long =
+            session?.id ?: 0L
+        override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(listOfNotNull(session))
+        override fun observeSession(sessionId: Long): Flow<PracticeSession?> =
+            flowOf(session?.takeIf { it.id == sessionId })
+        override suspend fun updateProgress(
+            sessionId: Long,
+            currentCardIndex: Int,
+            numCorrect: Int,
+            numIncorrect: Int,
+        ) = Unit
         override suspend fun completeSession(sessionId: Long) = Unit
 
         private val answersFlow = MutableStateFlow<List<PracticeAnswer>>(emptyList())

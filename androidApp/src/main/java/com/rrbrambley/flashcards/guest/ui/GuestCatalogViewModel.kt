@@ -21,9 +21,7 @@ sealed interface GuestCatalogUiState {
 }
 
 @HiltViewModel
-class GuestCatalogViewModel @Inject constructor(
-    private val apiClient: FlashcardApiClient,
-) : ViewModel() {
+class GuestCatalogViewModel @Inject constructor(private val apiClient: FlashcardApiClient) : ViewModel() {
     private val _uiState = MutableStateFlow<GuestCatalogUiState>(GuestCatalogUiState.Loading)
     val uiState: StateFlow<GuestCatalogUiState> = _uiState.asStateFlow()
 

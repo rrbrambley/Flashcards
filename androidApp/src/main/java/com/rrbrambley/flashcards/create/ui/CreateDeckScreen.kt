@@ -9,10 +9,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -51,7 +51,7 @@ import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.shared.domain.DeckForm
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
-private const val MinimumCompleteCardCount = 1
+private const val MINIMUM_COMPLETE_CARD_COUNT = 1
 
 data class DeckFlashcardDraft(
     val id: Long,
@@ -74,10 +74,7 @@ fun DeckFlashcardDraft.isComplete(): Boolean = DeckForm.isCardComplete(term, def
 fun DeckFlashcardDraft.isStarted(): Boolean = DeckForm.isCardStarted(term, definition, imageUrl != null)
 
 @Composable
-fun CreateDeckScreen(
-    modifier: Modifier = Modifier,
-    createDeckViewModel: CreateDeckViewModel = hiltViewModel(),
-) {
+fun CreateDeckScreen(modifier: Modifier = Modifier, createDeckViewModel: CreateDeckViewModel = hiltViewModel()) {
     val uiState by createDeckViewModel.uiState.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -129,7 +126,7 @@ fun CreateDeckContent(
     val completeCardCount = cards.count { it.isComplete() }
     val hasIncompleteStartedCard = cards.any { it.isStarted() && !it.isComplete() }
     val showDeckTitleError = showValidationErrors && deckTitle.isBlank()
-    val showCardCountError = showValidationErrors && completeCardCount < MinimumCompleteCardCount
+    val showCardCountError = showValidationErrors && completeCardCount < MINIMUM_COMPLETE_CARD_COUNT
     val showIncompleteCardError = showValidationErrors && hasIncompleteStartedCard
 
     LazyColumn(

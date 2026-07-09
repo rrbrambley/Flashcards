@@ -68,7 +68,9 @@ class AuthViewModel @Inject constructor(
     private inline fun submitWithCredentials(crossinline call: suspend (AuthFormState) -> AuthOutcome) {
         val current = _formState.value
         if (!credentialsProvided(current.email, current.password)) {
-            _formState.update { it.copy(errorMessage = stringProvider.getString(R.string.auth_error_enter_credentials)) }
+            _formState.update {
+                it.copy(errorMessage = stringProvider.getString(R.string.auth_error_enter_credentials))
+            }
             return
         }
         runAuth { call(current) }

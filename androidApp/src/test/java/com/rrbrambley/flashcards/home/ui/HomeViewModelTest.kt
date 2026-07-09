@@ -53,7 +53,14 @@ class HomeViewModelTest {
     fun uiState_startsAsLoading() {
         val repository = FakeHomeRepository(homeData = emptyList())
 
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), readyApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
+        val viewModel =
+            HomeViewModel(
+                repository,
+                FakePracticeSessionRepository(),
+                readyApiClient(),
+                FakeStringProvider(),
+                FakeFeatureFlagRepository(),
+            )
 
         assertEquals(HomeUiState.Loading, viewModel.uiState.value)
     }
@@ -96,7 +103,14 @@ class HomeViewModelTest {
         val repository = FakeHomeRepository(homeData = homeData, refreshFailsAfterFirstEmit = true)
         // Constructed directly (not via homeViewModel()) so the userMessages collector can subscribe
         // *before* the feed emits — the snackbar message is one-shot (no replay).
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), readyApiClient(), FakeStringProvider(), FakeFeatureFlagRepository())
+        val viewModel =
+            HomeViewModel(
+                repository,
+                FakePracticeSessionRepository(),
+                readyApiClient(),
+                FakeStringProvider(),
+                FakeFeatureFlagRepository(),
+            )
 
         // Subscribe to the one-shot messages before the failing flow runs (UNDISPATCHED so the
         // collector registers before advanceUntilIdle drives the emission).
@@ -135,7 +149,14 @@ class HomeViewModelTest {
         val repository = FakeHomeRepository(homeData = emptyList())
         val client = apiClient("""{"overall":{"current":7,"longest":12},"decks":[]}""")
 
-        val viewModel = HomeViewModel(repository, FakePracticeSessionRepository(), client, FakeStringProvider(), FakeFeatureFlagRepository())
+        val viewModel =
+            HomeViewModel(
+                repository,
+                FakePracticeSessionRepository(),
+                client,
+                FakeStringProvider(),
+                FakeFeatureFlagRepository(),
+            )
 
         // The streak fetch runs over a real client/MockEngine, so await the StateFlow.
         assertEquals(7, viewModel.streak.first { it != null })
@@ -220,7 +241,8 @@ class HomeViewModelTest {
         }
     }
 
-    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) : FeatureFlagRepository {
+    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) :
+        FeatureFlagRepository {
         override suspend fun flags(): Map<String, Boolean> = flags
     }
 
@@ -230,7 +252,12 @@ class HomeViewModelTest {
         override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long = 0L
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(emptyList())
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(null)
-        override suspend fun updateProgress(sessionId: Long, currentCardIndex: Int, numCorrect: Int, numIncorrect: Int) {}
+        override suspend fun updateProgress(
+            sessionId: Long,
+            currentCardIndex: Int,
+            numCorrect: Int,
+            numIncorrect: Int,
+        ) {}
         override suspend fun completeSession(sessionId: Long) {}
         override suspend fun deleteSession(sessionId: Long) {
             deletedSessionId = sessionId

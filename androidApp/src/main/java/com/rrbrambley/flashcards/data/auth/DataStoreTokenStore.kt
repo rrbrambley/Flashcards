@@ -18,9 +18,7 @@ private val Context.authDataStore: DataStore<Preferences> by preferencesDataStor
 
 /** Android [TokenStore] backed by DataStore; the shared refresh flow drives it. */
 @Singleton
-class DataStoreTokenStore @Inject constructor(
-    @ApplicationContext private val context: Context,
-) : TokenStore {
+class DataStoreTokenStore @Inject constructor(@ApplicationContext private val context: Context) : TokenStore {
     private val tokenKey = stringPreferencesKey("bearer_token")
     private val refreshTokenKey = stringPreferencesKey("refresh_token")
 
@@ -28,8 +26,7 @@ class DataStoreTokenStore @Inject constructor(
 
     override suspend fun currentToken(): String? = tokenFlow().first()
 
-    override suspend fun currentRefreshToken(): String? =
-        context.authDataStore.data.map { it[refreshTokenKey] }.first()
+    override suspend fun currentRefreshToken(): String? = context.authDataStore.data.map { it[refreshTokenKey] }.first()
 
     override suspend fun setToken(token: String) {
         context.authDataStore.edit { it[tokenKey] = token }

@@ -70,5 +70,4 @@ fun Avatar(
 }
 
 /** A stable, pleasant background color derived from [name] — the shared [Monogram] hue as HSV. */
-private fun monogramColor(name: String?): Color =
-    Color.hsv(Monogram.hue(name).toFloat(), 0.45f, 0.55f)
+private fun monogramColor(name: String?): Color = Color.hsv(Monogram.hue(name).toFloat(), 0.45f, 0.55f)

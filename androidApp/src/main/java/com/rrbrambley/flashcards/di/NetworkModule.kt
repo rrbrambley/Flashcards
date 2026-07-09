@@ -19,10 +19,9 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideHttpClient(tokenStore: TokenStore): HttpClient =
-        createFlashcardHttpClient(OkHttp.create()) {
-            installTokenRefreshAuth(tokenStore, BuildConfig.BACKEND_BASE_URL)
-        }
+    fun provideHttpClient(tokenStore: TokenStore): HttpClient = createFlashcardHttpClient(OkHttp.create()) {
+        installTokenRefreshAuth(tokenStore, BuildConfig.BACKEND_BASE_URL)
+    }
 
     @Provides
     @Singleton

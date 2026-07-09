@@ -46,11 +46,7 @@ import kotlinx.coroutines.launch
 private enum class AuthScreen { Login, Register }
 
 @Composable
-fun AuthHost(
-    authViewModel: AuthViewModel,
-    modifier: Modifier = Modifier,
-    onBrowseAsGuest: () -> Unit = {},
-) {
+fun AuthHost(authViewModel: AuthViewModel, modifier: Modifier = Modifier, onBrowseAsGuest: () -> Unit = {}) {
     var screen by rememberSaveable { mutableStateOf(AuthScreen.Login) }
     val form by authViewModel.formState.collectAsState()
 

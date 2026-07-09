@@ -2,7 +2,6 @@ package com.rrbrambley.flashcards.create.ui
 
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.core.FakeStringProvider
-
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck

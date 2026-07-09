@@ -236,5 +236,4 @@ class DiscussionViewModel @Inject constructor(
             }
         }
     }
-
 }

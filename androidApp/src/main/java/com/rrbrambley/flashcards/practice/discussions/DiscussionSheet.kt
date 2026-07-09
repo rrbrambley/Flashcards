@@ -1,6 +1,4 @@
 package com.rrbrambley.flashcards.practice.discussions
-import com.rrbrambley.flashcards.shared.domain.ActionError
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.shared.api.DiscussionMessageDto
+import com.rrbrambley.flashcards.shared.domain.ActionError
 import com.rrbrambley.flashcards.ui.Avatar
 
 /** The 💬 control each mode shows once a card's answer is revealed, opening its discussion (FLA-122). */

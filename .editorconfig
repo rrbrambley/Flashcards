@@ -8,6 +8,10 @@ max_line_length = 120
 # DTO/request files are grouped by purpose (e.g. *Dto.kt) rather than named after their
 # single class, so don't enforce filename == class name.
 ktlint_standard_filename = disabled
+# @Composable functions are PascalCase by convention (HomeScreen, FlashcardsApp, …); exempt them
+# from the function-naming rule. (ktlint-gradle 14's engine no longer applies this exemption
+# automatically the way 12 did, so it's declared explicitly.)
+ktlint_function_naming_ignore_when_annotated_with = Composable
 
 # Don't lint generated code. Room's KSP output is registered as a source directory in the KMP
 # source sets (:shared), so ktlint would otherwise flag the generated *_Impl.kt files.

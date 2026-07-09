@@ -1,6 +1,4 @@
 package com.rrbrambley.flashcards.practice.suggestions
-import com.rrbrambley.flashcards.shared.domain.ActionError
-
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.shared.domain.ActionError
 
 /**
  * The Test-mode "this should be correct" action (FLA-134), shown on a global-deck card after the

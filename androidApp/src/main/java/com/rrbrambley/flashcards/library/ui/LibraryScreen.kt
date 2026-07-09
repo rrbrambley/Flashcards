@@ -1,7 +1,4 @@
 package com.rrbrambley.flashcards.library.ui
-import com.rrbrambley.flashcards.practice.ui.labelRes
-import com.rrbrambley.flashcards.practice.ui.descriptionRes
-
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -56,10 +53,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
-import com.rrbrambley.flashcards.shared.domain.PracticeMode
+import com.rrbrambley.flashcards.practice.ui.descriptionRes
+import com.rrbrambley.flashcards.practice.ui.labelRes
 import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.ui.theme.FlashcardsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -215,11 +214,7 @@ fun LibraryContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DeckSearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun DeckSearchField(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
@@ -304,11 +299,7 @@ private fun EmptyLibraryMessage(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun LibraryDeckCard(
-    deck: FlashcardDeck,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit = {},
-) {
+private fun LibraryDeckCard(deck: FlashcardDeck, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -514,11 +505,7 @@ private fun ShuffleSettingRow(checked: Boolean, onCheckedChange: (Boolean) -> Un
 }
 
 @Composable
-private fun DeleteDeckConfirmationDialog(
-    deck: FlashcardDeck,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
+private fun DeleteDeckConfirmationDialog(deck: FlashcardDeck, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.library_delete_dialog_title)) },

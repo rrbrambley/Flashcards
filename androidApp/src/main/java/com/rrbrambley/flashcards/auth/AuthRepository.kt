@@ -27,9 +27,7 @@ interface AuthRepository {
  * same logic iOS uses). Kept behind [AuthRepository] so the ViewModel stays unit-testable with a
  * synchronous fake; maps the shared sealed [AuthResult] to the Android [AuthOutcome].
  */
-class DefaultAuthRepository @Inject constructor(
-    private val authService: AuthService,
-) : AuthRepository {
+class DefaultAuthRepository @Inject constructor(private val authService: AuthService) : AuthRepository {
     override suspend fun register(email: String, password: String): AuthOutcome =
         authService.register(email, password).toOutcome()
 

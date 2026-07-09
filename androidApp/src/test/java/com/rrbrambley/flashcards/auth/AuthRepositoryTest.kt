@@ -139,18 +139,17 @@ class AuthRepositoryTest {
 
     // --- Helpers ---
 
-    private fun repository(tokenStore: TokenStore, engine: MockEngine): AuthRepository =
-        DefaultAuthRepository(
-            AuthService(
-                apiClient = FlashcardApiClient(
-                    client = createFlashcardHttpClient(engine),
-                    baseUrl = "http://localhost",
-                    tokenProvider = { tokenStore.currentToken() },
-                ),
-                tokenStore = tokenStore,
-                localDataStore = FakeLocalDataStore(),
+    private fun repository(tokenStore: TokenStore, engine: MockEngine): AuthRepository = DefaultAuthRepository(
+        AuthService(
+            apiClient = FlashcardApiClient(
+                client = createFlashcardHttpClient(engine),
+                baseUrl = "http://localhost",
+                tokenProvider = { tokenStore.currentToken() },
             ),
-        )
+            tokenStore = tokenStore,
+            localDataStore = FakeLocalDataStore(),
+        ),
+    )
 
     private fun jsonEngine(status: HttpStatusCode, body: String = "{}") = MockEngine {
         respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))

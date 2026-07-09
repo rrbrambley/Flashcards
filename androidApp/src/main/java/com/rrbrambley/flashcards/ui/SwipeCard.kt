@@ -33,7 +33,7 @@ fun SwipeCard(
     val density = LocalDensity.current
 
     BoxWithConstraints(
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         val maxWidthPx = with(density) { maxWidth.toPx() }
         val swipeThreshold = maxWidthPx * swipeThresholdRatio
@@ -45,7 +45,7 @@ fun SwipeCard(
                 .offset {
                     IntOffset(
                         x = offsetX.value.roundToInt(),
-                        y = offsetY.value.roundToInt()
+                        y = offsetY.value.roundToInt(),
                     )
                 }
                 .fillMaxWidth()
@@ -63,7 +63,7 @@ fun SwipeCard(
                                     offsetX.value > swipeThreshold -> {
                                         offsetX.animateTo(
                                             targetValue = maxWidthPx * 1.5f,
-                                            animationSpec = spring(stiffness = 300f)
+                                            animationSpec = spring(stiffness = 300f),
                                         )
                                         onSwipedRight()
                                         offsetX.snapTo(0f)
@@ -73,7 +73,7 @@ fun SwipeCard(
                                     offsetX.value < -swipeThreshold -> {
                                         offsetX.animateTo(
                                             targetValue = -maxWidthPx * 1.5f,
-                                            animationSpec = spring(stiffness = 300f)
+                                            animationSpec = spring(stiffness = 300f),
                                         )
                                         onSwipedLeft()
                                         offsetX.snapTo(0f)
@@ -86,13 +86,13 @@ fun SwipeCard(
                                     }
                                 }
                             }
-                        }
+                        },
                     )
                 }
                 .graphicsLayer {
                     val normalized = (offsetX.value / maxWidthPx).coerceIn(-1f, 1f)
                     rotationZ = normalized * maxRotationDegrees
-                }
+                },
         ) {
             content()
         }
