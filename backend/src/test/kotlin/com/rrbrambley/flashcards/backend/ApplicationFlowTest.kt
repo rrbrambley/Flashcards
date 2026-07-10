@@ -10,6 +10,9 @@ import com.rrbrambley.flashcards.backend.auth.Role
 import com.rrbrambley.flashcards.backend.auth.TokenService
 import com.rrbrambley.flashcards.backend.cli.AdminArgs
 import com.rrbrambley.flashcards.backend.cli.AdminError
+import com.rrbrambley.flashcards.backend.cli.FlagClearCommand
+import com.rrbrambley.flashcards.backend.cli.FlagOverrideCommand
+import com.rrbrambley.flashcards.backend.cli.FlagSetCommand
 import com.rrbrambley.flashcards.backend.cli.RoleGrantCommand
 import com.rrbrambley.flashcards.backend.cli.RoleRevokeCommand
 import com.rrbrambley.flashcards.backend.cli.UserCreateCommand
@@ -440,6 +443,108 @@ class ApplicationFlowTest {
                 AdminArgs(listOf("--email", "not-an-email", "--password", "password1")),
                 StringBuilder(),
             )
+        }
+    }
+
+    @Test
+    fun adminCli_flagCommands_reject_bad_args() = runApp {
+        // --enabled must parse as a strict boolean.
+        assertFailsWith<AdminError> {
+            FlagSetCommand.run(AdminArgs(listOf("--key", "discussions", "--enabled", "yes-please")), StringBuilder())
+        }
+        // override/clear require exactly one of --email / --role — not both...
+        assertFailsWith<AdminError> {
+            FlagOverrideCommand.run(
+                AdminArgs(listOf("--key", "discussions", "--enabled", "true", "--email", "a@b.com", "--role", "admin")),
+                StringBuilder(),
+            )
+        }
+        assertFailsWith<AdminError> {
+            FlagClearCommand.run(
+                AdminArgs(listOf("--key", "discussions", "--email", "a@b.com", "--role", "admin")),
+                StringBuilder(),
+            )
+        }
+        // ...and not neither.
+        assertFailsWith<AdminError> {
+            FlagOverrideCommand.run(AdminArgs(listOf("--key", "discussions", "--enabled", "true")), StringBuilder())
+        }
+        assertFailsWith<AdminError> {
+            FlagClearCommand.run(AdminArgs(listOf("--key", "discussions")), StringBuilder())
+        }
+        // An override targeting an email that doesn't exist is an error.
+        assertFailsWith<AdminError> {
+            FlagOverrideCommand.run(
+                AdminArgs(listOf("--key", "discussions", "--enabled", "true", "--email", "ghost@nowhere.test")),
+                StringBuilder(),
+            )
+        }
+    }
+
+    @Test
+    fun adminCli_flag_override_then_clear_for_a_user() = runApp { client ->
+        client.register("flagcli", "password1")
+        val overrideOut = StringBuilder()
+        FlagOverrideCommand.run(
+            AdminArgs(listOf("--key", "discussions", "--enabled", "false", "--email", "flagcli@example.com")),
+            overrideOut,
+        )
+        assertTrue(overrideOut.toString().contains("override for flagcli@example.com"))
+        // Clearing removes the override again, leaving no per-user state on the shared test DB.
+        val clearOut = StringBuilder()
+        FlagClearCommand.run(
+            AdminArgs(listOf("--key", "discussions", "--email", "flagcli@example.com")),
+            clearOut,
+        )
+        assertTrue(clearOut.toString().contains("Cleared 'discussions' override for flagcli@example.com"))
+    }
+
+    @Test
+    fun moderation_reportStatus_rejects_bad_status_missing_report_and_non_admin() = runApp { client ->
+        val admin = client.register("moderr_admin", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+        val poster = client.register("moderr_poster", "password1")
+        val msg = client.postMessage(poster.accessToken, cardUid, "reportable").decode<DiscussionMessageDto>()
+        val reporter = client.register("moderr_reporter", "password1")
+        client.reportMessage(reporter.accessToken, msg.id, "spam")
+        val report = client.get("/admin/discussions/reports") { bearerAuth(admin.accessToken) }
+            .decode<Page<ReportedMessageDto>>().items.single { it.messageId == msg.id }
+
+        suspend fun patchStatus(token: String, reportId: Long, status: String) =
+            client.patch("/admin/discussions/reports/$reportId") {
+                bearerAuth(token)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(UpdateReportRequest(status)))
+            }
+
+        // A non-admin can't resolve a report.
+        assertEquals(HttpStatusCode.Forbidden, patchStatus(poster.accessToken, report.reportId, "resolved").status)
+        // Only "resolved"/"dismissed" are accepted — anything else is a 400.
+        assertEquals(HttpStatusCode.BadRequest, patchStatus(admin.accessToken, report.reportId, "banana").status)
+        // A missing report id is a 404.
+        assertEquals(HttpStatusCode.NotFound, patchStatus(admin.accessToken, 999_999, "resolved").status)
+        // The "resolved" transition (the valid status the existing tests don't cover) clears the queue.
+        assertEquals(HttpStatusCode.NoContent, patchStatus(admin.accessToken, report.reportId, "resolved").status)
+        assertFalse(
+            client.get("/admin/discussions/reports") { bearerAuth(admin.accessToken) }
+                .decode<Page<ReportedMessageDto>>().items.any { it.reportId == report.reportId },
+        )
+    }
+
+    @Test
+    fun image_upload_is_503_when_storage_is_unconfigured() = runApp { client ->
+        val auth = client.register("imgunconfigured", "password1")
+        val saved = Storage.service
+        Storage.service = null // simulate S3/CDN not configured on this server
+        try {
+            val response = client.post("/images") {
+                bearerAuth(auth.accessToken)
+                setBody(multipart("photo.png", "image/png", ByteArray(16) { 1 }))
+            }
+            assertEquals(HttpStatusCode.ServiceUnavailable, response.status)
+        } finally {
+            Storage.service = saved
         }
     }
 
