@@ -159,7 +159,18 @@ final class FakePracticeSessionRepository: PracticeSessionRepository {
 
 final class FakeHomeRepository: HomeRepository {
     var homeData: [HomeData] = []
-    func observeHomeData() -> any Kotlinx_coroutines_coreFlow { FlowTestSupportKt.oneShotFlow(value: homeData) }
+    /// Mirrors the offline-first `HomeFeed.refreshFailed` flag (FLA-210) so tests can exercise the banner.
+    var refreshFailed = false
+    // observeHomeData returns Flow<HomeFeed> — the view model casts each emission to HomeFeed, so the
+    // fake must wrap the cards in a HomeFeed (not emit the raw [HomeData]).
+    func observeHomeData() -> any Kotlinx_coroutines_coreFlow {
+        FlowTestSupportKt.oneShotFlow(value: HomeFeed(cards: homeData, refreshFailed: refreshFailed))
+    }
+}
+
+/** A home-feed card for tests (Kotlin default args don't bridge, so pass them all). */
+func makeHomeData(_ title: String, button: HomeButton? = nil, section: String? = nil) -> HomeData {
+    HomeData(title: title, button: button, session: nil, section: section)
 }
 
 // MARK: - Service fakes
