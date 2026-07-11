@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.backend.home
 
 import com.rrbrambley.flashcards.backend.db.Decks
 import com.rrbrambley.flashcards.backend.db.Flashcards
+import com.rrbrambley.flashcards.backend.db.PracticeAnswers
 import com.rrbrambley.flashcards.backend.db.PracticeSessions
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.mapping.toPracticeSessionDto
@@ -43,6 +44,21 @@ object HomeService {
                 .associate { it[Flashcards.deckId].value to it[cardCount].toInt() }
         }
 
+        // In-session streak per active session (FLA-99): the trailing run of consecutive-correct
+        // answers in the session's log. One batched query, ordered by sequence so each session's
+        // answers arrive in play order; 0 for a session with no log or one ending on a miss.
+        val sessionIds = sessions.map { it.id }.toSet()
+        val streakBySession: Map<Long, Int> = if (sessionIds.isEmpty()) {
+            emptyMap()
+        } else {
+            PracticeAnswers.select(PracticeAnswers.sessionId, PracticeAnswers.correct, PracticeAnswers.sequence)
+                .where { PracticeAnswers.sessionId inList sessionIds }
+                .orderBy(PracticeAnswers.sequence to SortOrder.ASC)
+                .map { it[PracticeAnswers.sessionId].value to it[PracticeAnswers.correct] }
+                .groupBy({ it.first }, { it.second })
+                .mapValues { (_, corrects) -> corrects.takeLastWhile { it }.size }
+        }
+
         val continueItems = sessions.map { session ->
             HomeDataDto(
                 // FLA-96: title is just the deck name; "Continue studying" is the section header.
@@ -58,6 +74,7 @@ object HomeService {
                     numIncorrect = session.numIncorrect,
                     currentCardIndex = session.currentCardIndex,
                     totalCards = cardCountsByDeck[session.deckId] ?: 0,
+                    streak = streakBySession[session.id] ?: 0,
                 ),
             )
         }

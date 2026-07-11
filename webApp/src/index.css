@@ -286,6 +286,11 @@ button.danger:hover:not(:disabled) {
   color: #cf222e;
   font-weight: 600;
 }
+/* Home-card in-session streak (FLA-99): a compact flame + count, inline with the ✓/✗ score. */
+.session-streak-count {
+  color: #c2410c;
+  font-weight: 600;
+}
 .badge {
   display: inline-block;
   padding: 0.15rem 0.5rem;

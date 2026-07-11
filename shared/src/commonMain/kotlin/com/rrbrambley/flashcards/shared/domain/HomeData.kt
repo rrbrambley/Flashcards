@@ -16,13 +16,15 @@ data class HomeData(
  */
 data class HomeFeed(val cards: List<HomeData>, val refreshFailed: Boolean = false)
 
-/** Per-session detail for a "continue practice" home item: mode, score so far, and progress. */
+/** Per-session detail for a "continue practice" home item: mode, score so far, streak, and progress. */
 data class HomeSessionInfo(
     val mode: String,
     val numCorrect: Int,
     val numIncorrect: Int,
     val currentCardIndex: Int,
     val totalCards: Int,
+    // Current in-session streak (FLA-99) — the trailing consecutive-correct run; 0 = none (hidden).
+    val streak: Int = 0,
 )
 
 sealed interface HomeButtonAction {

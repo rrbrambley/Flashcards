@@ -206,6 +206,12 @@ private struct SessionDetail: View {
                     .padding(.vertical, 2)
                     .background(Color.accentColor.opacity(0.15), in: Capsule())
                     .foregroundStyle(Color.accentColor)
+                // In-session streak (FLA-99): a flame + count immediately before the ✓, hidden at 0.
+                if session.streak > 0 {
+                    Text("🔥 \(session.streak)")
+                        .font(.caption).fontWeight(.medium)
+                        .foregroundStyle(Color(red: 194 / 255, green: 65 / 255, blue: 12 / 255))
+                }
                 Text("✓ \(session.numCorrect)").font(.caption).fontWeight(.medium).foregroundStyle(.green)
                 Text("✗ \(session.numIncorrect)").font(.caption).fontWeight(.medium).foregroundStyle(.red)
                 if total > 0 {

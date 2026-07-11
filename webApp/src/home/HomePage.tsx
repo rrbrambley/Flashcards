@@ -190,13 +190,16 @@ function groupBySection(items: HomeData[]): { section: string | null; items: Hom
 /** Mode + score + a progress bar for an in-progress session, shown on its "continue" home card. */
 function SessionDetail({ session }: { session: HomeSessionInfo }) {
   const modeLabel = findMode(session.mode)?.label ?? session.mode;
-  const { totalCards, currentCardIndex, numCorrect, numIncorrect } = session;
+  const { totalCards, currentCardIndex, numCorrect, numIncorrect, streak } = session;
   const progressPct = totalCards > 0 ? Math.round((currentCardIndex / totalCards) * 100) : 0;
 
   return (
     <div className="home-card-session">
       <div className="home-card-session-meta">
         <span className="badge">{modeLabel}</span>
+        {streak > 0 && (
+          <span className="session-streak-count" aria-label={`${streak} correct in a row`}>🔥 {streak}</span>
+        )}
         <span className="session-correct">✓ {numCorrect}</span>
         <span className="session-incorrect">✗ {numIncorrect}</span>
         {totalCards > 0 && (

@@ -50,7 +50,7 @@ fun HomeDataDto.toDomain(): HomeData =
     HomeData(title = title, button = button?.toDomain(), session = session?.toDomain(), section = section)
 
 private fun HomeSessionInfoDto.toDomain(): HomeSessionInfo =
-    HomeSessionInfo(mode, numCorrect, numIncorrect, currentCardIndex, totalCards)
+    HomeSessionInfo(mode, numCorrect, numIncorrect, currentCardIndex, totalCards, streak)
 
 private fun HomeButtonDto.toDomain(): HomeButton = HomeButton(message = message, action = action.toDomain())
 

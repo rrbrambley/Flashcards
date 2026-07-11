@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.home.data
 
 import com.rrbrambley.flashcards.data.mapping.toDomain
+import com.rrbrambley.flashcards.practice.grading.trailingCorrectStreak
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -46,9 +48,17 @@ class HomeRepositoryImpl(
         ) { activeSessions, decks -> activeSessions to decks }
             .distinctUntilChanged()
             .collectLatest { (activeSessions, decks) ->
+                // In-session streak (FLA-99) per active session, from the cached answer log — the
+                // trailing consecutive-correct run — so the offline card matches the backend's value.
+                val streaks = activeSessions.associate { session ->
+                    val correctByOrder = practiceSessionRepository.observeAnswers(session.id).first()
+                        .sortedBy { it.sequence }.map { it.correct }
+                    session.id to trailingCorrectStreak(correctByOrder)
+                }
                 // Offline-first: show the local (Room-derived) feed instantly, so this cache change
                 // (e.g. a removed session) is reflected immediately even with the backend unreachable.
-                val localFeed = activeSessions.map { it.toContinueItem(decks) } + offlineItems(decks)
+                val localFeed =
+                    activeSessions.map { it.toContinueItem(decks, streaks[it.id] ?: 0) } + offlineItems(decks)
                 send(HomeFeed(cards = localFeed))
                 // Best-effort backend refresh. A failure keeps the local feed and just flags the
                 // banner — it must NOT terminate this flow, or later cache changes would stop
@@ -62,7 +72,7 @@ class HomeRepositoryImpl(
             }
     }
 
-    private fun PracticeSession.toContinueItem(decks: List<FlashcardDeck>): HomeData = HomeData(
+    private fun PracticeSession.toContinueItem(decks: List<FlashcardDeck>, streak: Int): HomeData = HomeData(
         // FLA-96: the card title is just the deck name; "Continue studying" is the section header.
         title = deckTitle,
         section = strings.continueStudyingSection,
@@ -77,6 +87,7 @@ class HomeRepositoryImpl(
             numIncorrect = numIncorrect,
             currentCardIndex = currentCardIndex,
             totalCards = decks.firstOrNull { it.id == deckId }?.flashcards?.size ?: 0,
+            streak = streak,
         ),
     )
 

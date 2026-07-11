@@ -38,7 +38,7 @@ const continueItemWithSession: HomeData = {
   title: 'Spanish',
   section: 'Continue studying',
   button: { message: 'Resume', action: { type: 'continue_practice', sessionId: 7 } },
-  session: { mode: 'multiple_choice', numCorrect: 3, numIncorrect: 1, currentCardIndex: 4, totalCards: 10 },
+  session: { mode: 'multiple_choice', numCorrect: 3, numIncorrect: 1, currentCardIndex: 4, totalCards: 10, streak: 0 },
 };
 const practiceItem: HomeData = {
   title: 'Practice Flags of the World',
@@ -85,8 +85,22 @@ describe('HomePage', () => {
     expect(screen.getByText('✓ 3')).toBeInTheDocument();
     expect(screen.getByText('✗ 1')).toBeInTheDocument();
     expect(screen.getByText('5 of 10')).toBeInTheDocument();
+    // No streak → no flame.
+    expect(screen.queryByText(/🔥/)).not.toBeInTheDocument();
     // 4 of 10 cards reached → 40%.
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
+  });
+
+  it('shows a flame with the in-session streak count, before the score (FLA-99)', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([
+      { ...continueItemWithSession, session: { ...continueItemWithSession.session!, streak: 4 } },
+    ]);
+    renderHome();
+
+    const flame = await screen.findByText('🔥 4');
+    const check = screen.getByText('✓ 3');
+    // The flame sits immediately before the green check.
+    expect(flame.compareDocumentPosition(check) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('continue tile resumes the session via its deck', async () => {

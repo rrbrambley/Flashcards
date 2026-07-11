@@ -1428,6 +1428,37 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun home_feed_reports_the_in_session_streak_from_the_answer_log() = runApp { client ->
+        val auth = client.register("streaker", "password1")
+        val deckId = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.single { it.title == "Flags of the World" }.id
+        val session = client.createSession(auth.accessToken, deckId)
+
+        // Log answers whose tail is a run of two corrects → the continue card's streak is 2 (FLA-99).
+        client.post("/sessions/${session.id}/answers") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    RecordAnswersRequest(
+                        listOf(
+                            PracticeAnswerDto("h-0", "card-1", correct = true, sequence = 0, answeredAtMillis = 0),
+                            PracticeAnswerDto("h-1", "card-2", correct = false, sequence = 1, answeredAtMillis = 0),
+                            PracticeAnswerDto("h-2", "card-3", correct = true, sequence = 2, answeredAtMillis = 0),
+                            PracticeAnswerDto("h-3", "card-4", correct = true, sequence = 3, answeredAtMillis = 0),
+                        ),
+                    ),
+                ),
+            )
+        }
+
+        val continueSession = client.get("/home") { bearerAuth(auth.accessToken) }
+            .decode<List<HomeDataDto>>().first { it.session != null }.session
+        assertNotNull(continueSession)
+        assertEquals(2, continueSession.streak)
+    }
+
+    @Test
     fun progress_then_complete_updates_state_and_home_feed() = runApp { client ->
         val auth = client.register("erin", "password1")
         // Practice the featured global deck (Flags) so the continue + featured-practice items match.
@@ -1465,6 +1496,7 @@ class ApplicationFlowTest {
         assertEquals(0, continueSession.numIncorrect)
         assertEquals(2, continueSession.currentCardIndex)
         assertTrue(continueSession.totalCards > 0)
+        assertEquals(0, continueSession.streak) // no answer log recorded → no in-session streak
         // Static items (Practice / Create) have no session detail.
         assertNull(homeBefore.last().session)
 
