@@ -40,7 +40,8 @@ final class ApiErrorBridgingTests: XCTestCase {
             _ = try await repo.startOrResumeSession(deckId: 1, mode: "flashcards", shuffle: false)
             XCTFail("expected the unreachable backend to throw")
         } catch {
-            // Caught (not crashed). ✅
+            // Caught (not crashed). ✅  (Offline the local-session mint hits a FOREIGN KEY failure
+            // for this never-cached deck, which bridges to a catchable Swift error — the point here.)
         }
     }
 
