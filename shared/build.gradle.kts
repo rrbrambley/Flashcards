@@ -15,7 +15,9 @@ kotlin {
 
     val xcfName = "Shared"
     listOf(
-        iosX64(),
+        // iosX64 (Intel-Mac simulator) dropped: androidx.sqlite:sqlite-bundled 2.7+ (pulled by the
+        // Kotlin 2.4 bump) no longer publishes an ios_x64 variant. Apple Silicon uses
+        // iosSimulatorArm64; devices use iosArm64; CI is ARM — so Intel-sim support is moot.
         iosArm64(),
         iosSimulatorArm64(),
     ).forEach { iosTarget ->
@@ -74,7 +76,6 @@ ksp {
 dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspJvm", libs.androidx.room.compiler)
-    add("kspIosX64", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
 }
