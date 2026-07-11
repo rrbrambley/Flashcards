@@ -121,7 +121,27 @@ class PracticeSessionControllerTest {
         assertEquals(1, s.numIncorrect)
         assertEquals(PracticeMode.Test.key, s.mode)
         assertTrue(s.canGoBack)
-        assertEquals(0, s.streak) // resumed session starts the in-session streak fresh
+        assertEquals(0, s.streak) // empty answer log → the in-session streak restores to 0
+    }
+
+    @Test
+    fun sessionEntry_restoresInSessionStreakFromAnswerLog() = runTest {
+        val sessions = FakeSessionRepo(session(deckId = 1, index = 2, correct = 3, incorrect = 1))
+        // The answer log ends in a run of two corrects, so the in-session streak (FLA-99) resumes at
+        // 2 rather than resetting to 0.
+        sessions.answers.value = listOf(
+            PracticeAnswer("a1", "a", correct = true, sequence = 0, answeredAtMillis = 0),
+            PracticeAnswer("a2", "b", correct = false, sequence = 1, answeredAtMillis = 0),
+            PracticeAnswer("a3", "c", correct = true, sequence = 2, answeredAtMillis = 0),
+            PracticeAnswer("a4", "d", correct = true, sequence = 3, answeredAtMillis = 0),
+        )
+        val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"), card("c"), card("d"))))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks)
+
+        c.start()
+        advanceUntilIdle()
+
+        assertEquals(2, show(c.state.value).streak)
     }
 
     @Test

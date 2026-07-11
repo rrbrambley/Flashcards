@@ -23,6 +23,9 @@ export type PracticeAction = { type: 'GRADE'; correct: boolean } | { type: 'ADVA
 export function initPractice(
   cards: FlashcardDto[],
   session: Pick<PracticeSessionDto, 'currentCardIndex' | 'numCorrect' | 'numIncorrect'>,
+  // The in-session streak (FLA-99) restored from the answer log on resume — a derived value, not a
+  // persisted one (see grading/streak.ts). Defaults to 0 for a fresh session / empty log.
+  initialStreak = 0,
 ): PracticeState {
   const lastIndex = Math.max(0, cards.length - 1);
   return {
@@ -30,8 +33,7 @@ export function initPractice(
     index: Math.min(Math.max(session.currentCardIndex, 0), lastIndex),
     numCorrect: session.numCorrect,
     numIncorrect: session.numIncorrect,
-    // The in-session streak is ephemeral per run: a resumed session starts fresh at 0.
-    streak: 0,
+    streak: initialStreak,
     status: 'practicing',
   };
 }

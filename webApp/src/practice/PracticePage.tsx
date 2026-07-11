@@ -11,6 +11,7 @@ import { ShareButton } from './ShareButton';
 import { SavePrompt } from './SavePrompt';
 import { DiscussionPanel } from './DiscussionPanel';
 import { initPractice, practiceReducer } from './practiceReducer';
+import { trailingCorrectStreak } from './grading/streak';
 import { orderCards } from './shuffle';
 import { exitTarget, fromState } from './exitTarget';
 
@@ -43,6 +44,8 @@ interface LoadedPractice {
   deckTitle: string;
   cards: FlashcardDto[];
   progress: Progress;
+  // The in-session streak (FLA-99) restored from the answer log on resume; 0 for a fresh session.
+  initialStreak: number;
   // Whether per-card discussions are available on this deck (FLA-116) — global deck + enabled.
   discussionsEnabled: boolean;
   // Whether this is a global (catalog) deck (FLA-120) — gates Test-mode answer suggestions (FLA-130).
@@ -95,18 +98,28 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
       loadRef.current = { key, promise };
     }
     loadRef.current.promise
-      .then(([session, deck, effectiveShuffle, effectiveSeed]) => {
+      .then(async ([session, deck, effectiveShuffle, effectiveSeed]) => {
         if (!active) return;
         if (deck.flashcards.length === 0) {
           setError('This deck has no cards to practice.');
         } else {
           setError(null);
+          // On resume (a signed-in session that already has progress), restore the in-session streak
+          // from the answer log — the trailing run of consecutive corrects (FLA-99). A fresh session
+          // has no log, so it stays at 0.
+          let initialStreak = 0;
+          if (session != null && (session.currentCardIndex > 0 || session.numCorrect > 0 || session.numIncorrect > 0)) {
+            const answers = await api.getAnswers(session.id).catch(() => []);
+            initialStreak = trailingCorrectStreak([...answers].sort((a, b) => a.sequence - b.sequence).map((a) => a.correct));
+          }
+          if (!active) return;
           setData({
             sessionId: session?.id ?? null,
             deckTitle: deck.title,
             // Apply the (stable) shuffle order once at load; downstream matches cards by cardUid.
             cards: orderCards(deck.flashcards, effectiveShuffle, effectiveSeed),
             progress: session ?? ZERO_PROGRESS,
+            initialStreak,
             discussionsEnabled: deck.discussionsEnabled ?? false,
             isGlobal: deck.isGlobal ?? false,
           });
@@ -179,6 +192,7 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
             sessionId={data.sessionId}
             cards={data.cards}
             progress={data.progress}
+            initialStreak={data.initialStreak}
             mode={mode}
             // Gate the discuss surface on the `discussions` feature flag (FLA-180). Guests carry no
             // flags, so keep their (read-only) discussions unflagged rather than hiding them.
@@ -211,6 +225,7 @@ interface PracticeRunnerProps {
   sessionId: number | null;
   cards: FlashcardDto[];
   progress: Progress;
+  initialStreak: number;
   mode: PracticeMode;
   discussionsEnabled: boolean;
   isGlobal: boolean;
@@ -227,6 +242,7 @@ function PracticeRunner({
   sessionId,
   cards,
   progress,
+  initialStreak,
   mode,
   discussionsEnabled,
   isGlobal,
@@ -236,7 +252,7 @@ function PracticeRunner({
   onAgain,
   onExit,
 }: PracticeRunnerProps) {
-  const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, progress));
+  const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, progress, initialStreak));
   // Overall streak after this completion (FLA-106); null until loaded / for guests (no session).
   const [streak, setStreak] = useState<number | null>(null);
   // The session's answer log for the end-of-session review (FLA-149); null until the session

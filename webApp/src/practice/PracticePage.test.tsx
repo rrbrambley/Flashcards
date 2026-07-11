@@ -151,6 +151,29 @@ describe('PracticePage', () => {
     expect(screen.queryByText(/in a row/)).not.toBeInTheDocument();
   });
 
+  it('resumes the in-session streak from the answer log (FLA-99)', async () => {
+    // Resume mid-session (index 1) whose answer log ends in two corrects.
+    setup(
+      [
+        { question: 'Q1', answer: 'A1', cardUid: 'c1' },
+        { question: 'Q2', answer: 'A2', cardUid: 'c2' },
+        { question: 'Q3', answer: 'A3', cardUid: 'c3' },
+      ],
+      { currentCardIndex: 1, numCorrect: 2, numIncorrect: 0 },
+    );
+    vi.mocked(api.getAnswers).mockResolvedValue([
+      { answerUid: 'a1', cardUid: 'c1', correct: true, sequence: 0, answeredAtMillis: 0, submittedText: null },
+      { answerUid: 'a2', cardUid: 'c2', correct: true, sequence: 1, answeredAtMillis: 0, submittedText: null },
+    ]);
+
+    // Resumes at Q2. Answering it correctly continues the streak to 3 — proving it restored from the
+    // log (a fresh reset would leave it at 1, which doesn't even surface the badge).
+    await screen.findByText('Q2');
+    await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+
+    expect(await screen.findByText(/3 in a row/)).toBeInTheDocument();
+  });
+
   it('the right arrow key marks correct', async () => {
     setup(threeCards);
     await screen.findByText('Q1');
