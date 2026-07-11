@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.shared.domain
 
+import com.rrbrambley.flashcards.practice.grading.trailingCorrectStreak
 import com.rrbrambley.flashcards.shared.AuthResult
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
@@ -129,8 +130,11 @@ class PracticeSessionController(
         index = session.currentCardIndex.coerceIn(0, cards.lastIndex)
         numCorrect = session.numCorrect
         numIncorrect = session.numIncorrect
-        // The in-session streak is ephemeral per run: a resumed session starts fresh at 0.
-        answerStreak = 0
+        // Restore the in-session streak (FLA-99) from the answer log — the trailing run of consecutive
+        // corrects — so resuming a session doesn't reset it. It's derived (every grade is logged), not
+        // persisted; a fresh/empty log yields 0.
+        val loggedAnswers = runCatching { sessionRepository.observeAnswers(session.id).first() }.getOrNull().orEmpty()
+        answerStreak = trailingCorrectStreak(loggedAnswers.sortedBy { it.sequence }.map { it.correct })
         updateState()
     }
 
