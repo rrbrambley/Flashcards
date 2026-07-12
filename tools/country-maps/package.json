@@ -1,0 +1,14 @@
+{
+  "name": "country-maps-generator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Generates country locator maps for the Maps of the World seed deck (FLA-211).",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "d3-geo": "^3.1.1"
+  }
+}
