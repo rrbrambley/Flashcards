@@ -141,6 +141,7 @@ object DatabaseFactory {
         // The geography catalog decks carry a starter "Geography" category so the tag UI has
         // something to group/filter on out of the box.
         seedGlobalDeck(demoUserId, now, FLAGS_TITLE, flagSeedCards(), tags = listOf(GEOGRAPHY_TAG))
+        seedGlobalDeck(demoUserId, now, MAPS_TITLE, mapSeedCards(), tags = listOf(GEOGRAPHY_TAG))
         seedGlobalDeck(
             demoUserId,
             now,
@@ -291,11 +292,15 @@ object DatabaseFactory {
 
     /** Titles of the seeded global catalog decks. Public so clients/tests can resolve them by name. */
     const val FLAGS_TITLE = "Flags of the World"
+    const val MAPS_TITLE = "Maps of the World"
     const val NATIONAL_CAPITALS_TITLE = "National Capitals"
     const val US_STATE_CAPITALS_TITLE = "U.S. State Capitals"
     const val WORLD_CURRENCIES_TITLE = "World Currencies"
     private const val LEGACY_FLAGS_TITLE = "Country Flags"
     private const val GEOGRAPHY_TAG = "Geography"
+
+    /** jsDelivr serves the checked-in locator maps (`tools/country-maps/maps/`) straight from GitHub. */
+    private const val MAPS_CDN_BASE = "https://cdn.jsdelivr.net/gh/rrbrambley/Flashcards@main/tools/country-maps/maps"
 
     private data class SeedCard(val question: String, val answer: String, val imageUrl: String?)
 
@@ -315,6 +320,25 @@ object DatabaseFactory {
             val code = obj.getValue("code").jsonPrimitive.content
             val name = obj.getValue("name").jsonPrimitive.content
             SeedCard(question = "", answer = name, imageUrl = "https://flagcdn.com/$code.svg")
+        }
+    }
+
+    /**
+     * Builds the Maps of the World cards from the checked-in `seed/maps.json` (ISO 3166-1 alpha-2
+     * `code` → `name`, a subset of `flags.json` — the countries that have map geometry). Front is a
+     * locator-map image only (empty question); back is the country name. The maps are generated from
+     * public-domain Natural Earth data (see `tools/country-maps/`) and served — like the flags — by
+     * URL, here from this repo via the jsDelivr CDN (no upload to our storage needed).
+     */
+    private fun mapSeedCards(): List<SeedCard> {
+        val text = DatabaseFactory::class.java.getResourceAsStream("/seed/maps.json")
+            ?.bufferedReader()?.use { it.readText() }
+            ?: error("Missing seed resource: /seed/maps.json")
+        return Json.parseToJsonElement(text).jsonArray.map { element ->
+            val obj = element.jsonObject
+            val code = obj.getValue("code").jsonPrimitive.content
+            val name = obj.getValue("name").jsonPrimitive.content
+            SeedCard(question = "", answer = name, imageUrl = "$MAPS_CDN_BASE/$code.png")
         }
     }
 

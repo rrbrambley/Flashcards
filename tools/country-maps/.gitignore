@@ -1,0 +1,4 @@
+node_modules/
+package-lock.json
+# Natural Earth source data — fetched on run, not committed (3 MB).
+ne_50m_admin_0_countries.geojson
