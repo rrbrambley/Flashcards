@@ -32,8 +32,9 @@ https://cdn.jsdelivr.net/gh/rrbrambley/Flashcards@main/tools/country-maps/maps/{
   identify. This drops the invisible micro-states and scattered ocean specks (Vatican, Monaco, Nauru,
   Tuvalu, … all render at 0px²) while keeping small-but-visible coastal nations (Bahrain, Antigua, …).
   They all remain in the Flags deck. Tune `MIN_VISIBLE_PX` to include/exclude more of the small ones.
-- **Colours:** a clear medium-blue ocean so the light-grey land visibly sits above the water, crisp
-  white coastlines, and a burnt-orange target that pops against both.
+- **Colours:** a clear medium-blue ocean, a **medium-grey land** (dark enough that the white
+  coastlines *and* the internal country borders both read against it — a lighter grey washes the white
+  out), and a burnt-orange target that pops against both.
 - **Output:** PNG at 960px wide (2× the 480×360 canvas) — crisp on retina, universally decodable by
   every client's image loader (SDWebImage / Coil / `<img>`), and small for these flat-color maps.
 

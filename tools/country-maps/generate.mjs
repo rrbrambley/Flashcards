@@ -33,12 +33,14 @@ const MIN_VIEW_DEG = 34; // ...but never zooms in past a 34° view, so tiny coun
 // coastal nations (Singapore, Antigua, …) while dropping the invisible micro-states and scattered
 // ocean specks (Vatican/Monaco/Nauru/Tuvalu render at 0px²) — all of which remain in the Flags deck.
 const MIN_VISIBLE_PX = 8;
-// Ocean is a clear medium blue so the (light) land visibly sits above the water; white coastlines keep
-// their crisp edge and the burnt-orange target pops against both.
+// Ocean is a clear medium blue; land a medium grey (dark enough that the white coastlines AND the
+// internal country borders both read against it — a lighter grey washes the white borders out); the
+// burnt-orange target pops against both.
 const OCEAN = '#7fb2df';
-const LAND = '#e8eaed';
+const LAND = '#c1c9d2';
 const TARGET = '#c2410c';
 const BORDER = '#ffffff';
+const BORDER_WIDTH = 0.6;
 
 async function ensureNaturalEarth() {
   if (fs.existsSync(NE_FILE)) return;
@@ -100,7 +102,7 @@ function locatorSvg(all, target) {
     const d = path2(f);
     if (!d) continue;
     const fill = f === target ? TARGET : LAND;
-    parts.push(`<path d="${d}" fill="${fill}" stroke="${BORDER}" stroke-width="0.5" stroke-linejoin="round"/>`);
+    parts.push(`<path d="${d}" fill="${fill}" stroke="${BORDER}" stroke-width="${BORDER_WIDTH}" stroke-linejoin="round"/>`);
   }
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
