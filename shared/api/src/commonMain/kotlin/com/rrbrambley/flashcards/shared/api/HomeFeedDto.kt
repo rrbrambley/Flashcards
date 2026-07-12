@@ -28,6 +28,9 @@ data class HomeSessionInfoDto(
     val numIncorrect: Int,
     val currentCardIndex: Int,
     val totalCards: Int,
+    // Current in-session streak (FLA-99): the trailing run of consecutive-correct answers. Appended
+    // last + defaulted so older clients ignore it. 0 = no streak (hidden on the home card).
+    val streak: Int = 0,
 )
 
 @Serializable

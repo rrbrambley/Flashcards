@@ -271,6 +271,8 @@ export interface HomeSessionInfo {
   numIncorrect: number;
   currentCardIndex: number;
   totalCards: number;
+  // Current in-session streak (FLA-99) — the trailing consecutive-correct run; 0 = none (flame hidden).
+  streak: number;
 }
 
 export interface HomeData {

@@ -62,6 +62,7 @@
     <!-- Home -->
     <string name="home_load_error">Couldn\'t load your home feed. Check your connection.</string>
     <string name="home_refresh_error">Couldn\'t refresh. Showing your saved home feed.</string>
+    <string name="home_session_streak">🔥 %1$d</string>
     <string name="home_session_correct">✓ %1$d</string>
     <string name="home_session_incorrect">✗ %1$d</string>
     <string name="home_session_progress">%1$d of %2$d</string>

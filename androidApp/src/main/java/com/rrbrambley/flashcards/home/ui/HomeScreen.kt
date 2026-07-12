@@ -283,6 +283,15 @@ private fun SessionDetail(session: HomeSessionInfo) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             modeLabel?.let { ModeBadge(text = stringResource(it)) }
+            // In-session streak (FLA-99): a flame + count immediately before the ✓, hidden at 0.
+            if (session.streak > 0) {
+                Text(
+                    text = stringResource(R.string.home_session_streak, session.streak),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFFC2410C),
+                )
+            }
             Text(
                 text = stringResource(R.string.home_session_correct, session.numCorrect),
                 style = MaterialTheme.typography.bodySmall,
