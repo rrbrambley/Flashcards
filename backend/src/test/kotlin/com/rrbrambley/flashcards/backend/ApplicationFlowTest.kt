@@ -918,15 +918,15 @@ class ApplicationFlowTest {
     }
 
     @Test
-    fun decks_returns_seeded_maps_of_the_world_deck() = runApp { client ->
+    fun decks_returns_seeded_countries_of_the_world_deck() = runApp { client ->
         val auth = client.register("mapfan", "password1")
         val response = client.get("/decks") { bearerAuth(auth.accessToken) }
         assertEquals(HttpStatusCode.OK, response.status)
         val decks = response.decode<Page<FlashcardDeckDto>>().items
 
-        val maps = decks.single { it.title == "Maps of the World" }
-        // Seeded from the flag countries that have Natural Earth map geometry (a couple hundred).
-        assertTrue(maps.flashcards.size >= 200)
+        val maps = decks.single { it.title == "Countries of the World" }
+        // Seeded from the flag countries whose map renders a visible landmass (a couple hundred).
+        assertTrue(maps.flashcards.size >= 150)
         // Each card is image-only: empty front, a country name on the back, a jsDelivr locator-map image.
         assertTrue(maps.flashcards.all { it.question.isEmpty() })
         assertTrue(maps.flashcards.all { it.answer.isNotBlank() })

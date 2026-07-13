@@ -138,10 +138,16 @@ object DatabaseFactory {
             it[isGlobal] = true
         }
 
+        // FLA-212: the map-image country deck shipped briefly as "Maps of the World" with a larger card
+        // set (before dropping the countries that render as an invisible dot). Drop any existing copy so
+        // it's rebuilt below under the current title with the trimmed set, rather than lingering with
+        // now-removed cards whose images 404. (Cascades to its cards + sessions — see Tables.kt.)
+        Decks.deleteWhere { (Decks.isGlobal eq true) and (Decks.title eq LEGACY_COUNTRIES_TITLE) }
+
         // The geography catalog decks carry a starter "Geography" category so the tag UI has
         // something to group/filter on out of the box.
         seedGlobalDeck(demoUserId, now, FLAGS_TITLE, flagSeedCards(), tags = listOf(GEOGRAPHY_TAG))
-        seedGlobalDeck(demoUserId, now, MAPS_TITLE, mapSeedCards(), tags = listOf(GEOGRAPHY_TAG))
+        seedGlobalDeck(demoUserId, now, COUNTRIES_TITLE, mapSeedCards(), tags = listOf(GEOGRAPHY_TAG))
         seedGlobalDeck(
             demoUserId,
             now,
@@ -292,11 +298,14 @@ object DatabaseFactory {
 
     /** Titles of the seeded global catalog decks. Public so clients/tests can resolve them by name. */
     const val FLAGS_TITLE = "Flags of the World"
-    const val MAPS_TITLE = "Maps of the World"
+
+    /** The map-image country-identification deck: named for the goal (name the country), not the medium. */
+    const val COUNTRIES_TITLE = "Countries of the World"
     const val NATIONAL_CAPITALS_TITLE = "National Capitals"
     const val US_STATE_CAPITALS_TITLE = "U.S. State Capitals"
     const val WORLD_CURRENCIES_TITLE = "World Currencies"
     private const val LEGACY_FLAGS_TITLE = "Country Flags"
+    private const val LEGACY_COUNTRIES_TITLE = "Maps of the World"
     private const val GEOGRAPHY_TAG = "Geography"
 
     /** jsDelivr serves the checked-in locator maps (`tools/country-maps/maps/`) straight from GitHub. */

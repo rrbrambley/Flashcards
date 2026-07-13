@@ -28,10 +28,19 @@ const H = 360;
 const RENDER_WIDTH = 960;
 const FILL = 0.42; // target country fills ~42% of the frame...
 const MIN_VIEW_DEG = 34; // ...but never zooms in past a 34° view, so tiny countries stay placeable.
-const OCEAN = '#dbeafe';
-const LAND = '#e5e7eb';
+// Skip countries whose highlight renders smaller than this (projected px² on the 480×360 canvas):
+// below it the target is a near-zero-pixel dot with nothing to identify. ~8 keeps small-but-visible
+// coastal nations (Singapore, Antigua, …) while dropping the invisible micro-states and scattered
+// ocean specks (Vatican/Monaco/Nauru/Tuvalu render at 0px²) — all of which remain in the Flags deck.
+const MIN_VISIBLE_PX = 8;
+// Ocean is a clear medium blue; land a medium grey (dark enough that the white coastlines AND the
+// internal country borders both read against it — a lighter grey washes the white borders out); the
+// burnt-orange target pops against both.
+const OCEAN = '#7fb2df';
+const LAND = '#c1c9d2';
 const TARGET = '#c2410c';
 const BORDER = '#ffffff';
+const BORDER_WIDTH = 0.6;
 
 async function ensureNaturalEarth() {
   if (fs.existsSync(NE_FILE)) return;
@@ -93,12 +102,13 @@ function locatorSvg(all, target) {
     const d = path2(f);
     if (!d) continue;
     const fill = f === target ? TARGET : LAND;
-    parts.push(`<path d="${d}" fill="${fill}" stroke="${BORDER}" stroke-width="0.5" stroke-linejoin="round"/>`);
+    parts.push(`<path d="${d}" fill="${fill}" stroke="${BORDER}" stroke-width="${BORDER_WIDTH}" stroke-linejoin="round"/>`);
   }
-  return (
+  const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
-    `<rect width="${W}" height="${H}" fill="${OCEAN}"/>${parts.join('')}</svg>`
-  );
+    `<rect width="${W}" height="${H}" fill="${OCEAN}"/>${parts.join('')}</svg>`;
+  // Projected area of the highlighted country, in canvas px² — how visible the target actually is.
+  return { svg, targetPx: Math.abs(path2.area(target)) };
 }
 
 // Index NE features by ISO-3166 alpha-2, keeping the LARGEST feature per code so a country's mainland
@@ -132,14 +142,20 @@ async function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
   const manifest = [];
-  const skipped = [];
+  const noGeometry = [];
+  const tooSmall = [];
   for (const { code, name } of flags) {
     const feature = byIso.get(code) || byName.get(name.toLowerCase());
     if (!feature) {
-      skipped.push(name);
+      noGeometry.push(name);
       continue;
     }
-    const svg = locatorSvg(all, feature);
+    const { svg, targetPx } = locatorSvg(all, feature);
+    // Drop countries that render as an invisible dot — no identifiable landmass to quiz on.
+    if (targetPx < MIN_VISIBLE_PX) {
+      tooSmall.push(`${name} (${Math.round(targetPx)}px²)`);
+      continue;
+    }
     const png = new Resvg(svg, { fitTo: { mode: 'width', value: RENDER_WIDTH } }).render().asPng();
     fs.writeFileSync(path.join(OUT_DIR, `${code}.png`), png);
     manifest.push({ code, name });
@@ -148,7 +164,8 @@ async function main() {
   fs.writeFileSync(MAPS_JSON, JSON.stringify(manifest, null, 2) + '\n');
   console.log(`Rendered ${manifest.length} maps → ${path.relative(REPO, OUT_DIR)}/`);
   console.log(`Wrote manifest → ${path.relative(REPO, MAPS_JSON)}`);
-  console.log(`Skipped ${skipped.length} with no Natural Earth geometry: ${skipped.join(', ')}`);
+  console.log(`Skipped ${noGeometry.length} with no Natural Earth geometry: ${noGeometry.join(', ')}`);
+  console.log(`Skipped ${tooSmall.length} too small to identify (<${MIN_VISIBLE_PX}px²): ${tooSmall.join(', ')}`);
 }
 
 main().catch((err) => {
