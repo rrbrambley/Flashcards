@@ -12,18 +12,21 @@ export const PRACTICE_MODES: PracticeMode[] = [
     key: 'flashcards',
     label: 'Classic',
     description: 'Flip the card and mark whether you knew it.',
+    flagKey: 'practice_mode_classic',
     Component: ClassicMode,
   },
   {
     key: 'test',
     label: 'Test',
     description: 'Type the answer.',
+    flagKey: 'practice_mode_test',
     Component: TestMode,
   },
   {
     key: 'multiple_choice',
     label: 'Multiple Choice',
     description: 'Pick the answer from four options.',
+    flagKey: 'practice_mode_multiple_choice',
     Component: MultipleChoiceMode,
   },
 ];

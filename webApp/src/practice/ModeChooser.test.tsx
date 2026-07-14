@@ -11,8 +11,10 @@ vi.mock('../api/client', () => ({
 }));
 
 let mockToken: string | null = 'test-token';
+// Practice-mode flags default on (like a fresh signed-in user); a test opts a mode out by setting false.
+let mockFlags: Record<string, boolean> = {};
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ token: mockToken }),
+  useAuth: () => ({ token: mockToken, isEnabled: (key: string) => mockFlags[key] !== false }),
 }));
 
 function RunnerStub() {
@@ -42,6 +44,7 @@ describe('ModeChooser', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockToken = 'test-token';
+    mockFlags = {};
     vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: [] });
     vi.mocked(api.getCatalogDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: false, flashcards: [] });
   });
@@ -83,6 +86,37 @@ describe('ModeChooser', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
 
     expect(await screen.findByText('shuffle=0')).toBeInTheDocument();
+  });
+
+  it('hides a mode whose feature flag is disabled (FLA-213)', async () => {
+    mockFlags = { practice_mode_test: false };
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    expect(screen.queryByText('Test')).not.toBeInTheDocument();
+    expect(screen.getByText('Classic')).toBeInTheDocument();
+    expect(screen.getByText('Multiple Choice')).toBeInTheDocument();
+  });
+
+  it('shows every mode to a guest, who carries no flags (FLA-213)', async () => {
+    mockToken = null;
+    mockFlags = { practice_mode_test: false }; // ignored for guests
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    for (const mode of PRACTICE_MODES) {
+      expect(screen.getByText(mode.label)).toBeInTheDocument();
+    }
+  });
+
+  it('shows an empty note and keeps Start disabled when all modes are disabled (FLA-213)', async () => {
+    mockFlags = { practice_mode_classic: false, practice_mode_test: false, practice_mode_multiple_choice: false };
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    expect(screen.getByText('No practice modes are available right now.')).toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start practice' })).toBeDisabled();
   });
 
   it('forwards the practice origin to the runner so "back" returns there (FLA-168)', async () => {

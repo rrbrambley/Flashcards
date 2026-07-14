@@ -15,4 +15,9 @@ enum class FeatureFlag(val key: String, val description: String, val defaultEnab
     // Kill switches for shipped features — default ON, flipped off (or targeted) to hide/experiment.
     DISCUSSIONS("discussions", "Show card discussions", true),
     AVATAR_SELECTION("avatar_selection", "Allow choosing a profile avatar", true),
+
+    // Per-practice-mode availability (FLA-213) — a disabled mode is hidden from the mode chooser.
+    PRACTICE_MODE_CLASSIC("practice_mode_classic", "Offer the Classic (flip) practice mode", true),
+    PRACTICE_MODE_TEST("practice_mode_test", "Offer the Test (type the answer) practice mode", true),
+    PRACTICE_MODE_MULTIPLE_CHOICE("practice_mode_multiple_choice", "Offer the Multiple Choice practice mode", true),
 }

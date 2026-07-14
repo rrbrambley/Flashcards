@@ -1347,9 +1347,14 @@ class ApplicationFlowTest {
         val flags = client.get("/flags") { bearerAuth(user.accessToken) }.decode<Map<String, Boolean>>()
         assertEquals(true, flags["discussions"])
         assertEquals(true, flags["avatar_selection"])
+        // The per-practice-mode kill switches (FLA-213) are likewise seeded default-on.
+        assertEquals(true, flags["practice_mode_classic"])
+        assertEquals(true, flags["practice_mode_test"])
+        assertEquals(true, flags["practice_mode_multiple_choice"])
         val me = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(true, me.flags["discussions"])
         assertEquals(true, me.flags["avatar_selection"])
+        assertEquals(true, me.flags["practice_mode_test"])
     }
 
     @Test
