@@ -24,4 +24,11 @@ extension PracticeMode: @retroactive Identifiable {
         default: "Flip the card and mark whether you knew it."
         }
     }
+
+    /// The modes offered in the chooser given the caller's resolved feature flags (FLA-213). Fail-open,
+    /// matching Android: a mode shows unless its flag is explicitly `false`, so an offline/failed flag
+    /// fetch (empty map) still offers every mode rather than locking the user out of practice.
+    static func available(flags: [String: Bool]) -> [PracticeMode] {
+        entries.filter { flags[$0.flagKey] != false }
+    }
 }

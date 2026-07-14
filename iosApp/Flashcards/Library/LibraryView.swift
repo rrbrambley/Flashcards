@@ -88,7 +88,10 @@ struct LibraryView: View {
                     self.pendingStart = nil
                 }
             }) { item in
-                PracticeConfigView(deckTitle: item.title) { mode, shuffle in
+                PracticeConfigView(
+                    deckTitle: item.title,
+                    availableModes: PracticeMode.available(flags: featureFlagStore.flags)
+                ) { mode, shuffle in
                     pendingStart = PracticingDeck(id: item.id, mode: mode, shuffle: shuffle)
                     configuring = nil
                 }

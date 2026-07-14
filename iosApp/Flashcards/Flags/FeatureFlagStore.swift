@@ -7,6 +7,9 @@ enum FeatureFlag {
     // Kill switches for shipped features — default ON, flipped off (or targeted) to hide/experiment.
     static let discussions = "discussions"
     static let avatarSelection = "avatar_selection"
+    static let practiceModeClassic = "practice_mode_classic"
+    static let practiceModeTest = "practice_mode_test"
+    static let practiceModeMultipleChoice = "practice_mode_multiple_choice"
 }
 
 /// Holds the caller's resolved feature flags (FLA-174) so SwiftUI can hide/reveal features. iOS has
