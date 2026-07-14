@@ -72,12 +72,14 @@ fun LibraryScreen(
     val uiState by libraryViewModel.uiState.collectAsState()
     val searchQuery by libraryViewModel.searchQuery.collectAsState()
     val sortOrder by libraryViewModel.sortOrder.collectAsState()
+    val availableModes by libraryViewModel.availableModes.collectAsState()
     var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
     var deckPendingDeletion by remember { mutableStateOf<FlashcardDeck?>(null) }
 
     selectedDeck?.let { deck ->
         LibraryDeckActionsSheet(
             deck = deck,
+            availableModes = availableModes,
             onDismissRequest = { selectedDeck = null },
             onPracticeWithMode = { mode, shuffle ->
                 selectedDeck = null
@@ -352,6 +354,7 @@ private fun LibraryDeckCard(deck: FlashcardDeck, modifier: Modifier = Modifier, 
 @Composable
 private fun LibraryDeckActionsSheet(
     deck: FlashcardDeck,
+    availableModes: List<PracticeMode>,
     onDismissRequest: () -> Unit,
     onPracticeWithMode: (PracticeMode, Boolean) -> Unit,
     onEditClick: () -> Unit,
@@ -381,7 +384,14 @@ private fun LibraryDeckActionsSheet(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                PracticeMode.entries.forEach { mode ->
+                if (availableModes.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.practice_no_modes_available),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                availableModes.forEach { mode ->
                     PracticeModeOption(
                         mode = mode,
                         selected = selectedMode == mode,

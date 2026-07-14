@@ -1,10 +1,13 @@
 package com.rrbrambley.flashcards.library.ui
 
+import com.rrbrambley.flashcards.auth.FeatureFlagRepository
+import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.FakeStringProvider
 import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +47,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList()),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
 
@@ -62,6 +66,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(decks),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
 
@@ -75,6 +80,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList()),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
 
@@ -93,6 +99,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(decks),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
@@ -120,6 +127,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(decks),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
@@ -142,6 +150,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(decks),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
@@ -162,6 +171,7 @@ class LibraryViewModelTest {
             flashcardRepository = FakeFlashcardRepository(decks),
             // Deck 2 practiced most recently, deck 1 earlier, deck 3 never.
             practiceSessionRepository = FakePracticeSessionRepository(lastPracticed = mapOf(1L to 100L, 2L to 500L)),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
@@ -181,6 +191,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList()),
             practiceSessionRepository = practiceSessionRepository,
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
 
@@ -199,6 +210,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList()),
             practiceSessionRepository = FakePracticeSessionRepository(startShouldFail = true),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
         val messages = mutableListOf<String>()
@@ -215,11 +227,40 @@ class LibraryViewModelTest {
     }
 
     @Test
+    fun availableModes_excludesAModeWhoseFlagIsDisabled() = runTest(testDispatcher) {
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(emptyList()),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(mapOf(FeatureFlags.PRACTICE_MODE_TEST to false)),
+            stringProvider = FakeStringProvider(),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(PracticeMode.Classic, PracticeMode.MultipleChoice), viewModel.availableModes.value)
+    }
+
+    @Test
+    fun availableModes_failsOpenWhenNoFlagsAreLoaded() = runTest(testDispatcher) {
+        // Offline / guest / failed fetch → no flags. Every mode stays available (fail-open) so the user
+        // isn't locked out of practicing cached decks.
+        val viewModel = LibraryViewModel(
+            flashcardRepository = FakeFlashcardRepository(emptyList()),
+            practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(emptyMap()),
+            stringProvider = FakeStringProvider(),
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(PracticeMode.entries.toList(), viewModel.availableModes.value)
+    }
+
+    @Test
     fun deleteDeck_delegatesToRepository() = runTest(testDispatcher) {
         val flashcardRepository = FakeFlashcardRepository(emptyList())
         val viewModel = LibraryViewModel(
             flashcardRepository = flashcardRepository,
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
 
@@ -234,6 +275,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList(), deleteShouldFail = true),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
         val messages = mutableListOf<String>()
@@ -253,6 +295,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(emptyList(), refreshFails = true),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
         val messages = mutableListOf<String>()
@@ -273,6 +316,7 @@ class LibraryViewModelTest {
         val viewModel = LibraryViewModel(
             flashcardRepository = FakeFlashcardRepository(decks, failFirstSubscription = true),
             practiceSessionRepository = FakePracticeSessionRepository(),
+            featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
@@ -282,6 +326,11 @@ class LibraryViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(LibraryUiState.ShowDecks(decks), viewModel.uiState.value)
+    }
+
+    private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) :
+        FeatureFlagRepository {
+        override suspend fun flags(): Map<String, Boolean> = flags
     }
 
     private class FakeFlashcardRepository(

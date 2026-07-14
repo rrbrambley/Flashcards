@@ -3,10 +3,12 @@ package com.rrbrambley.flashcards.library.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
+import com.rrbrambley.flashcards.auth.FeatureFlagRepository
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.shared.domain.DeckLibrary
 import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
+import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -26,10 +28,17 @@ import javax.inject.Inject
 class LibraryViewModel @Inject constructor(
     private val flashcardRepository: FlashcardRepository,
     private val practiceSessionRepository: PracticeSessionRepository,
+    private val featureFlagRepository: FeatureFlagRepository,
     private val stringProvider: StringProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val uiState = _uiState.asStateFlow()
+
+    // Practice modes offered in the chooser, gated by their feature flag (FLA-213). Fail-open: a mode
+    // shows unless its flag is explicitly off, so an offline user (no flags loaded) still sees them all
+    // rather than being locked out of practicing cached decks. Starts as every mode until flags load.
+    private val _availableModes = MutableStateFlow(PracticeMode.entries.toList())
+    val availableModes: StateFlow<List<PracticeMode>> = _availableModes.asStateFlow()
 
     // One-shot user-facing messages (e.g. a failed delete), surfaced as a snackbar.
     private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
@@ -51,6 +60,19 @@ class LibraryViewModel @Inject constructor(
     init {
         observeDecks()
         observeRefreshFailures()
+        loadAvailableModes()
+    }
+
+    /**
+     * Resolves which practice modes the chooser offers from their feature flags (FLA-213). Fail-open:
+     * only a mode whose flag is explicitly `false` is dropped (so an offline/failed flag fetch shows
+     * every mode). An admin's toggle takes effect on the next flag-cache refresh (token rotation).
+     */
+    private fun loadAvailableModes() {
+        viewModelScope.launch {
+            val flags = runCatching { featureFlagRepository.flags() }.getOrDefault(emptyMap())
+            _availableModes.value = PracticeMode.entries.filter { flags[it.flagKey] != false }
+        }
     }
 
     /**
