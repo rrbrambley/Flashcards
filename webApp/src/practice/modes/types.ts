@@ -44,5 +44,7 @@ export interface PracticeMode {
   key: string;
   label: string;
   description: string;
+  /** Feature flag gating this mode's availability in the chooser (FLA-213). */
+  flagKey: string;
   Component: ComponentType<PracticeModeProps>;
 }

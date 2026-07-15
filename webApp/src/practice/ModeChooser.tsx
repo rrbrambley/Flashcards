@@ -15,8 +15,11 @@ import { exitTarget, fromState } from './exitTarget';
 export function ModeChooser({ deckId }: { deckId: number }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { token } = useAuth();
+  const { token, isEnabled } = useAuth();
   const isGuest = !token;
+  // A mode is offered only when its feature flag is on (FLA-213). Guests carry no flags (the flag
+  // endpoints are authed), so — like the discussions kill switch — they see every mode.
+  const modes = PRACTICE_MODES.filter((mode) => isGuest || isEnabled(mode.flagKey));
   // Carry the practice referrer (FLA-168) through the chooser so the runner exits to it too.
   const from = fromState(location.state);
   const exit = exitTarget(from, isGuest);
@@ -52,8 +55,9 @@ export function ModeChooser({ deckId }: { deckId: number }) {
       />
       <main className="container">
         <h2 className="section-heading">Choose a mode</h2>
+        {modes.length === 0 && <p className="muted">No practice modes are available right now.</p>}
         <ul className="mode-list" role="radiogroup" aria-label="Practice mode">
-          {PRACTICE_MODES.map((mode) => (
+          {modes.map((mode) => (
             <li key={mode.key}>
               <button
                 type="button"
