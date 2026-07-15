@@ -7,6 +7,8 @@ import SwiftUI
 /// back to the caller, which launches the run.
 struct PracticeConfigView: View {
     let deckTitle: String
+    /// Modes offered, already filtered by their feature flags (FLA-213) by the presenter.
+    let availableModes: [PracticeMode]
     let onStart: (_ modeKey: String, _ shuffle: Bool) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -17,7 +19,12 @@ struct PracticeConfigView: View {
         NavigationStack {
             Form {
                 Section("Choose a mode") {
-                    ForEach(PracticeMode.entries) { mode in
+                    if availableModes.isEmpty {
+                        Text("No practice modes are available right now.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(availableModes) { mode in
                         Button {
                             selectedMode = mode.key
                         } label: {
