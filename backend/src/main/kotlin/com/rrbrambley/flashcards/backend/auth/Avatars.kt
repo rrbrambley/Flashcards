@@ -13,6 +13,9 @@ object Avatars {
     val keys: List<String> = listOf(
         "dragon", "yeti", "kraken", "phoenix", "unicorn",
         "griffin", "nessie", "minotaur", "cerberus", "pegasus",
+        // Second wave (FLA-218).
+        "kitsune", "cyclops", "mermaid", "fairy", "genie",
+        "golem", "sphinx", "werewolf", "chimera", "basilisk",
     )
     private val keySet = keys.toSet()
 

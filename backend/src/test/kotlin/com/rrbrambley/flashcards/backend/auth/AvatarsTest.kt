@@ -34,7 +34,9 @@ class AvatarsTest {
     fun validatesKeys() {
         assertTrue(Avatars.isValid("dragon"))
         assertTrue(Avatars.isValid("pegasus"))
+        assertTrue(Avatars.isValid("kitsune"))
+        assertTrue(Avatars.isValid("basilisk"))
         assertFalse(Avatars.isValid("wyvern"))
-        assertEquals(10, Avatars.keys.size)
+        assertEquals(20, Avatars.keys.size)
     }
 }
