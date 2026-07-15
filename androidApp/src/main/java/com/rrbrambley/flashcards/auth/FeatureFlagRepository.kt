@@ -12,6 +12,9 @@ object FeatureFlags {
     const val STREAK_CALENDAR = "streak_calendar"
     const val DISCUSSIONS = "discussions"
     const val AVATAR_SELECTION = "avatar_selection"
+    const val PRACTICE_MODE_CLASSIC = "practice_mode_classic"
+    const val PRACTICE_MODE_TEST = "practice_mode_test"
+    const val PRACTICE_MODE_MULTIPLE_CHOICE = "practice_mode_multiple_choice"
 }
 
 /**
