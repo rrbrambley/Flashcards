@@ -249,7 +249,12 @@ class HomeViewModelTest {
     /** Records the discarded session id; only the abstract members are overridden (rest are defaults). */
     private class FakePracticeSessionRepository : PracticeSessionRepository {
         var deletedSessionId: Long? = null
-        override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long = 0L
+        override suspend fun startOrResumeSession(
+            deckId: Long,
+            mode: String,
+            shuffle: Boolean,
+            questionCount: Int?,
+        ): Long = 0L
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(emptyList())
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(null)
         override suspend fun updateProgress(

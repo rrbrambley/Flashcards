@@ -7,7 +7,13 @@ interface PracticeSessionRepository {
     // @Throws so failures bridge to catchable Swift errors on iOS instead of crashing; no effect on
     // Kotlin (JVM/Android) callers. See FLA-57.
     @Throws(Exception::class)
-    suspend fun startOrResumeSession(deckId: Long, mode: String = "flashcards", shuffle: Boolean = false): Long
+    suspend fun startOrResumeSession(
+        deckId: Long,
+        mode: String = "flashcards",
+        shuffle: Boolean = false,
+        // A subset of the deck to practice (FLA-219); null = the whole deck. Fixed at creation.
+        questionCount: Int? = null,
+    ): Long
     fun observeActiveSessions(): Flow<List<PracticeSession>>
     fun observeSession(sessionId: Long): Flow<PracticeSession?>
 

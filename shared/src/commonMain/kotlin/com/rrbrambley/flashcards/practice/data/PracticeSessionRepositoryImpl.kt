@@ -45,23 +45,24 @@ class PracticeSessionRepositoryImpl(
     private val syncMutex = Mutex()
 
     @Throws(Exception::class)
-    override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long = try {
-        // Start-or-resume is the backend's job (it keys on user+deck+mode); we cache the result.
-        val session = apiClient.createSession(deckId, mode, shuffle)
-        cache(session)
-        session.id
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        // Offline: resume the cached active session for this deck + mode, or mint a brand-new local
-        // session (negative id, pendingSync) so a never-practiced deck is still startable offline.
-        // The deck is already cached (offline practice is only offered on cached decks), so its row
-        // satisfies the FK. syncPendingSessions reconciles the minted session on reconnect.
-        practiceSessionDao.findActiveByDeckAndMode(deckId, mode)?.id
-            ?: mintLocalSession(deckId, mode, shuffle)
-    }
+    override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean, questionCount: Int?): Long =
+        try {
+            // Start-or-resume is the backend's job (it keys on user+deck+mode); we cache the result.
+            val session = apiClient.createSession(deckId, mode, shuffle, questionCount)
+            cache(session)
+            session.id
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Offline: resume the cached active session for this deck + mode, or mint a brand-new local
+            // session (negative id, pendingSync) so a never-practiced deck is still startable offline.
+            // The deck is already cached (offline practice is only offered on cached decks), so its row
+            // satisfies the FK. syncPendingSessions reconciles the minted session on reconnect.
+            practiceSessionDao.findActiveByDeckAndMode(deckId, mode)?.id
+                ?: mintLocalSession(deckId, mode, shuffle, questionCount)
+        }
 
-    private suspend fun mintLocalSession(deckId: Long, mode: String, shuffle: Boolean): Long {
+    private suspend fun mintLocalSession(deckId: Long, mode: String, shuffle: Boolean, questionCount: Int?): Long {
         val timestamp = now()
         return practiceSessionDao.insertLocalSession(
             PracticeSessionEntity(
@@ -71,6 +72,7 @@ class PracticeSessionRepositoryImpl(
                 // the server mints its own authoritative seed (see syncMintedSession). 0 when unshuffled.
                 shuffle = shuffle,
                 shuffleSeed = if (shuffle) newShuffleSeed() else 0L,
+                questionCount = questionCount,
                 pendingSync = true,
                 createdAtMillis = timestamp,
                 updatedAtMillis = timestamp,
@@ -244,7 +246,7 @@ class PracticeSessionRepositoryImpl(
         // createSession returns the existing active server session for this deck+mode, or a fresh one.
         // Carry the shuffle flag so a fresh server session shuffles too; the server mints its own seed
         // (authoritative), which cache() then writes over the local one — the live run keeps its order.
-        val server = apiClient.createSession(row.deckId, row.mode, row.shuffle)
+        val server = apiClient.createSession(row.deckId, row.mode, row.shuffle, row.questionCount)
         // Furthest-progress wins: a fresh server session is index 0, so local progress is pushed; a
         // server session strictly further along (e.g. another device) is kept as-is.
         var state = server

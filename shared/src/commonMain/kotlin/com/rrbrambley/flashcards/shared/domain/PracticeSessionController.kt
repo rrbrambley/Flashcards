@@ -122,7 +122,9 @@ class PracticeSessionController(
         // Apply the session's stored shuffle order (FLA-200); the seed makes it stable across resume.
         shuffle = session.shuffle
         shuffleSeed = session.shuffleSeed
+        // Order, then take the subset (FLA-219): questionCount cards, or the whole deck when null.
         cards = SessionOrdering.order(deckCards, session.shuffle, session.shuffleSeed)
+            .let { ordered -> session.questionCount?.let(ordered::take) ?: ordered }
         mode = session.mode
         // The discussions + global flags travel with the cached deck (FLA-122/134), available offline.
         discussionsEnabled = deck?.discussionsEnabled ?: false

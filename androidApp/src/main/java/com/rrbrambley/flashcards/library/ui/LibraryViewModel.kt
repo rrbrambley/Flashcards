@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.auth.FeatureFlagRepository
+import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.shared.domain.DeckLibrary
 import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
@@ -40,6 +41,11 @@ class LibraryViewModel @Inject constructor(
     private val _availableModes = MutableStateFlow(PracticeMode.entries.toList())
     val availableModes: StateFlow<List<PracticeMode>> = _availableModes.asStateFlow()
 
+    // Whether the "Questions" subset field is offered in the config sheet (FLA-219). Fail-open like the
+    // mode flags: enabled unless the flag is explicitly off, so an offline user still gets it.
+    private val _questionCountEnabled = MutableStateFlow(true)
+    val questionCountEnabled: StateFlow<Boolean> = _questionCountEnabled.asStateFlow()
+
     // One-shot user-facing messages (e.g. a failed delete), surfaced as a snackbar.
     private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val userMessages: SharedFlow<String> = _userMessages.asSharedFlow()
@@ -60,18 +66,19 @@ class LibraryViewModel @Inject constructor(
     init {
         observeDecks()
         observeRefreshFailures()
-        loadAvailableModes()
+        loadFeatureFlags()
     }
 
     /**
-     * Resolves which practice modes the chooser offers from their feature flags (FLA-213). Fail-open:
-     * only a mode whose flag is explicitly `false` is dropped (so an offline/failed flag fetch shows
-     * every mode). An admin's toggle takes effect on the next flag-cache refresh (token rotation).
+     * Resolves the practice-config feature flags (FLA-213/219). Fail-open: a flag counts as on unless
+     * it's explicitly `false` (so an offline/failed flag fetch shows everything). An admin's toggle
+     * takes effect on the next flag-cache refresh (token rotation).
      */
-    private fun loadAvailableModes() {
+    private fun loadFeatureFlags() {
         viewModelScope.launch {
             val flags = runCatching { featureFlagRepository.flags() }.getOrDefault(emptyMap())
             _availableModes.value = PracticeMode.entries.filter { flags[it.flagKey] != false }
+            _questionCountEnabled.value = flags[FeatureFlags.PRACTICE_QUESTION_COUNT] != false
         }
     }
 
@@ -135,13 +142,19 @@ class LibraryViewModel @Inject constructor(
         observeDecks()
     }
 
-    fun startPractice(deckId: Long, mode: String, shuffle: Boolean, onSessionStarted: (Long) -> Unit) {
+    fun startPractice(
+        deckId: Long,
+        mode: String,
+        shuffle: Boolean,
+        questionCount: Int?,
+        onSessionStarted: (Long) -> Unit,
+    ) {
         viewModelScope.launch {
             // Backend-first; offline (and no cached session to resume) it throws — catch it so an
             // uncaught failure here can't crash the app, and tell the user why nothing opened. The
-            // session is created with the shuffle choice (FLA-200); the runner resumes it by id and
-            // applies the stored order.
-            runCatching { practiceSessionRepository.startOrResumeSession(deckId, mode, shuffle) }
+            // session is created with the shuffle + question-count choices (FLA-200/219); the runner
+            // resumes it by id and applies the stored order + subset.
+            runCatching { practiceSessionRepository.startOrResumeSession(deckId, mode, shuffle, questionCount) }
                 .onSuccess { onSessionStarted(it) }
                 .onFailure { _userMessages.tryEmit(stringProvider.getString(R.string.library_practice_start_error)) }
         }

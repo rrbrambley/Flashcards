@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -47,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -73,6 +75,7 @@ fun LibraryScreen(
     val searchQuery by libraryViewModel.searchQuery.collectAsState()
     val sortOrder by libraryViewModel.sortOrder.collectAsState()
     val availableModes by libraryViewModel.availableModes.collectAsState()
+    val questionCountEnabled by libraryViewModel.questionCountEnabled.collectAsState()
     var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
     var deckPendingDeletion by remember { mutableStateOf<FlashcardDeck?>(null) }
 
@@ -80,10 +83,11 @@ fun LibraryScreen(
         LibraryDeckActionsSheet(
             deck = deck,
             availableModes = availableModes,
+            questionCountEnabled = questionCountEnabled,
             onDismissRequest = { selectedDeck = null },
-            onPracticeWithMode = { mode, shuffle ->
+            onPracticeWithMode = { mode, shuffle, questionCount ->
                 selectedDeck = null
-                libraryViewModel.startPractice(deck.id, mode.key, shuffle, onPracticeDeck)
+                libraryViewModel.startPractice(deck.id, mode.key, shuffle, questionCount, onPracticeDeck)
             },
             onEditClick = {
                 selectedDeck = null
@@ -355,16 +359,20 @@ private fun LibraryDeckCard(deck: FlashcardDeck, modifier: Modifier = Modifier, 
 private fun LibraryDeckActionsSheet(
     deck: FlashcardDeck,
     availableModes: List<PracticeMode>,
+    questionCountEnabled: Boolean,
     onDismissRequest: () -> Unit,
-    onPracticeWithMode: (PracticeMode, Boolean) -> Unit,
+    onPracticeWithMode: (PracticeMode, Boolean, Int?) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
-    // Tapping "Practice" swaps the sheet to a configure step: pick a mode, adjust settings (Shuffle,
-    // default On — FLA-200), then Start. Selecting a mode marks it rather than launching immediately.
+    // Tapping "Practice" swaps the sheet to a configure step: pick a mode, adjust settings (Questions +
+    // Shuffle — FLA-200/219), then Start. Selecting a mode marks it rather than launching immediately.
     var choosingMode by remember { mutableStateOf(false) }
     var selectedMode by remember { mutableStateOf<PracticeMode?>(null) }
     var shuffle by remember { mutableStateOf(true) }
+    // The deck's card count = the max; the field defaults to it (practice the whole deck). FLA-219.
+    val maxQuestions = deck.flashcards.size
+    var questionsText by remember { mutableStateOf(maxQuestions.toString()) }
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
         Column(
             modifier = Modifier
@@ -403,9 +411,26 @@ private fun LibraryDeckActionsSheet(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (questionCountEnabled && maxQuestions > 0) {
+                    OutlinedTextField(
+                        value = questionsText,
+                        onValueChange = { new -> questionsText = new.filter { it.isDigit() }.take(6) },
+                        label = { Text(stringResource(R.string.practice_questions_label, maxQuestions)) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 ShuffleSettingRow(checked = shuffle, onCheckedChange = { shuffle = it })
                 Button(
-                    onClick = { selectedMode?.let { onPracticeWithMode(it, shuffle) } },
+                    onClick = {
+                        selectedMode?.let { mode ->
+                            // Clamp to 1..max; a real subset (< the whole deck) sends a count, else null.
+                            val n = questionsText.toIntOrNull()?.coerceIn(1, maxQuestions) ?: maxQuestions
+                            val count = if (questionCountEnabled && n < maxQuestions) n else null
+                            onPracticeWithMode(mode, shuffle, count)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = selectedMode != null,
                 ) {
