@@ -85,12 +85,6 @@ export function ModeChooser({ deckId }: { deckId: number }) {
         </ul>
 
         <h2 className="section-heading">Settings</h2>
-        <label className="shuffle-toggle">
-          <input type="checkbox" checked={shuffle} onChange={(e) => setShuffle(e.target.checked)} />
-          <span className="shuffle-toggle-label">Shuffle cards</span>
-          <span className="muted">Practice in a random order</span>
-        </label>
-
         {questionsEnabled && maxQuestions > 0 && (
           <label className="questions-field">
             <span className="questions-field-label">Questions (max {maxQuestions})</span>
@@ -112,6 +106,12 @@ export function ModeChooser({ deckId }: { deckId: number }) {
             />
           </label>
         )}
+
+        <label className="shuffle-toggle">
+          <input type="checkbox" checked={shuffle} onChange={(e) => setShuffle(e.target.checked)} />
+          <span className="shuffle-toggle-label">Shuffle cards</span>
+          <span className="muted">Practice in a random order</span>
+        </label>
 
         <button type="button" className="start-practice" onClick={start} disabled={!selectedMode}>
           Start practice
