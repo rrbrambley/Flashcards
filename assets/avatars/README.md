@@ -20,6 +20,16 @@ resolves `${CDN_BASE_URL}/avatars/<key>.png`; clients render that URL and pick f
 | `minotaur` | Minotaur |
 | `cerberus` | Cerberus |
 | `pegasus` | Pegasus |
+| `kitsune` | Kitsune (nine-tailed fox) |
+| `cyclops` | Cyclops |
+| `mermaid` | Mermaid |
+| `fairy` | Fairy |
+| `genie` | Genie (djinn) |
+| `golem` | Golem |
+| `sphinx` | Sphinx |
+| `werewolf` | Werewolf |
+| `chimera` | Chimera |
+| `basilisk` | Basilisk |
 
 ## Deploy
 
