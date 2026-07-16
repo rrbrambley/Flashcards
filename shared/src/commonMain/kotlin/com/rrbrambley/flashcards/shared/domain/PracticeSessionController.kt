@@ -63,6 +63,9 @@ class PracticeSessionController(
     private var mode: String = PracticeMode.Classic.key
     private var shuffle = false
     private var shuffleSeed = 0L
+
+    // Guest-run subset size (FLA-219); a signed-in run reads it from the stored session instead.
+    private var questionCount: Int? = null
     private var discussionsEnabled = false
     private var isGlobal = false
     private var answerStreak = 0
@@ -80,7 +83,7 @@ class PracticeSessionController(
         when (val e = entry) {
             is PracticeEntry.Deck -> {
                 val sid = runCatching {
-                    sessionRepository.startOrResumeSession(e.deckId, e.mode, e.shuffle)
+                    sessionRepository.startOrResumeSession(e.deckId, e.mode, e.shuffle, e.questionCount)
                 }.getOrNull()
                 if (sid == null) {
                     _state.update { PracticeUiState.Failed }
@@ -100,6 +103,7 @@ class PracticeSessionController(
                 // No session persists a guest seed, so mint one here (once per run) for a stable order.
                 shuffle = e.shuffle
                 shuffleSeed = if (e.shuffle) Random.nextInt(1, Int.MAX_VALUE).toLong() else 0L
+                questionCount = e.questionCount
                 loadGuestDeck(e.deckId)
             }
         }
@@ -153,7 +157,9 @@ class PracticeSessionController(
         discussionsEnabled = deck.discussionsEnabled
         isGlobal = deck.isGlobal
         // Guests have no persisted session; the seed minted in start() keeps this order stable per run.
+        // Take the subset (FLA-219) after ordering, or the whole deck when null.
         cards = SessionOrdering.order(deckCards, shuffle, shuffleSeed)
+            .let { ordered -> questionCount?.let(ordered::take) ?: ordered }
         index = 0
         numCorrect = 0
         numIncorrect = 0

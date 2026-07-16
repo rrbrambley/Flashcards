@@ -65,11 +65,22 @@ sealed class PracticeEntry {
      * is created (resume keeps the existing session's stored order); defaulted false so the data layer
      * stays backward-compatible — the picker UIs pass the user's choice (default On). See FLA-200.
      */
-    data class Deck(val deckId: Long, val mode: String, val shuffle: Boolean = false) : PracticeEntry()
+    data class Deck(
+        val deckId: Long,
+        val mode: String,
+        val shuffle: Boolean = false,
+        // A subset of the deck to practice (FLA-219); null = the whole deck. Applies to a new session.
+        val questionCount: Int? = null,
+    ) : PracticeEntry()
 
     /** Resume an existing session; the mode + shuffle order come from the session. */
     data class Session(val sessionId: Long) : PracticeEntry()
 
     /** Guest mode (FLA-104): practice a public catalog deck in memory — no session, no persistence. */
-    data class GuestDeck(val deckId: Long, val mode: String, val shuffle: Boolean = false) : PracticeEntry()
+    data class GuestDeck(
+        val deckId: Long,
+        val mode: String,
+        val shuffle: Boolean = false,
+        val questionCount: Int? = null,
+    ) : PracticeEntry()
 }
