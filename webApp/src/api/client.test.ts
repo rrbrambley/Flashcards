@@ -170,7 +170,7 @@ describe('api client', () => {
     expect(url).toContain('/sessions');
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBe('Bearer tok');
-    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3, mode: 'test', shuffle: true });
+    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3, mode: 'test', shuffle: true, questionCount: null });
   });
 
   it('createSession defaults the mode to flashcards and shuffle off', async () => {
@@ -180,7 +180,12 @@ describe('api client', () => {
     await api.createSession(3);
 
     const { init } = lastCall(fetchMock);
-    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3, mode: 'flashcards', shuffle: false });
+    expect(JSON.parse(init.body as string)).toEqual({
+      deckId: 3,
+      mode: 'flashcards',
+      shuffle: false,
+      questionCount: null,
+    });
   });
 
   it('updateProgress PATCHes the session with progress', async () => {

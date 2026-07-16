@@ -12,6 +12,10 @@ data class CreateSessionRequest(
      *  older clients keep the deck's saved order; the backend mints [PracticeSessionDto.shuffleSeed]
      *  once when this is true. Ignored when resuming an existing session (its stored value wins). */
     val shuffle: Boolean = false,
+    /** How many cards this session practices — a subset of the deck (FLA-219), applied client-side as
+     *  `order(...).take(questionCount)`. Null = the whole deck. Fixed at creation like [shuffle], so
+     *  resume keeps it; the backend rejects values < 1. Defaulted so older/mobile clients omit it. */
+    val questionCount: Int? = null,
 )
 
 @Serializable

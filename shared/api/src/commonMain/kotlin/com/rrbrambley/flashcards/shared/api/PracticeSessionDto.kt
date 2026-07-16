@@ -23,4 +23,8 @@ data class PracticeSessionDto(
      *  stable across resume so the order reproduces (see `SessionOrdering`). 0 when unshuffled.
      *  Kept in a JS-safe range (< 2^31) so it round-trips through the web app's JSON numbers. */
     val shuffleSeed: Long = 0,
+    /** How many cards this session practices — a subset of the deck (FLA-219), applied client-side as
+     *  `order(...).take(questionCount)`. Null = the whole deck. Minted once at creation (stable across
+     *  resume). Defaulted so the Room mapper and older/mobile clients that omit it practice the deck. */
+    val questionCount: Int? = null,
 )

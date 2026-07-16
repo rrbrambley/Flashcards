@@ -41,12 +41,14 @@ const sessionDto: PracticeSessionDto = {
   updatedAtMillis: 0,
   shuffle: true,
   shuffleSeed: 0,
+  questionCount: null,
 };
 
 const props = {
   deckId: 5,
   mode: 'flashcards',
   shuffle: true,
+  questionCount: null,
   progress: { currentCardIndex: 3, numCorrect: 2, numIncorrect: 1 },
   onCancel: vi.fn(),
   onLeave: vi.fn(),
@@ -76,7 +78,7 @@ describe('SavePrompt', () => {
 
     expect(api.register).toHaveBeenCalledWith('new@example.com', 'password1'); // email trimmed
     expect(setTokens).toHaveBeenCalledWith('a', 'r'); // bearer set before the authed calls
-    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true); // deckId / mode / shuffle
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true, null); // deckId / mode / shuffle / count
     expect(api.updateProgress).toHaveBeenCalledWith(42, props.progress);
     expect(applyAuth).toHaveBeenCalledWith(auth); // in-memory auth flips only after persistence
     expect(navigate).toHaveBeenCalledWith('/');

@@ -33,8 +33,17 @@ object SessionRepository {
      * means a user can have concurrent in-progress sessions on the same deck in different modes (e.g.
      * classic + test), each resuming to its own mode.
      */
-    suspend fun startOrResume(userId: Long, deckId: Long, mode: String, shuffle: Boolean): PracticeSessionDto =
-        dbQuery {
+    suspend fun startOrResume(
+        userId: Long,
+        deckId: Long,
+        mode: String,
+        shuffle: Boolean,
+        questionCount: Int? = null,
+    ): PracticeSessionDto {
+        // A subset session (FLA-219) must ask for at least one card; null = the whole deck. The upper
+        // bound is left to the client (it has the deck) — clients take(count), which clamps naturally.
+        require(questionCount == null || questionCount >= 1) { "questionCount must be at least 1" }
+        return dbQuery {
             val deckTitle = visibleDeckTitle(userId, deckId)
                 ?: throw NotFoundException("Deck $deckId not found")
 
@@ -60,6 +69,7 @@ object SessionRepository {
                 it[PracticeSessions.mode] = mode
                 it[PracticeSessions.shuffle] = shuffle
                 it[shuffleSeed] = seed
+                it[PracticeSessions.questionCount] = questionCount
                 it[createdAtMillis] = now
                 it[updatedAtMillis] = now
             }.value
@@ -76,8 +86,10 @@ object SessionRepository {
                 updatedAtMillis = now,
                 shuffle = shuffle,
                 shuffleSeed = seed,
+                questionCount = questionCount,
             )
         }
+    }
 
     /**
      * One page of the user's sessions (optionally only active ones), most-recently-updated first.

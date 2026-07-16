@@ -20,4 +20,7 @@ enum class FeatureFlag(val key: String, val description: String, val defaultEnab
     PRACTICE_MODE_CLASSIC("practice_mode_classic", "Offer the Classic (flip) practice mode", true),
     PRACTICE_MODE_TEST("practice_mode_test", "Offer the Test (type the answer) practice mode", true),
     PRACTICE_MODE_MULTIPLE_CHOICE("practice_mode_multiple_choice", "Offer the Multiple Choice practice mode", true),
+
+    // Offer the "Questions" field to practice a subset of a deck's cards (FLA-219).
+    PRACTICE_QUESTION_COUNT("practice_question_count", "Offer choosing how many questions a session has", true),
 }

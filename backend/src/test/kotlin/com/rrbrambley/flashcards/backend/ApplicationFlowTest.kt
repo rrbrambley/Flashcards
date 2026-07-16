@@ -1164,6 +1164,38 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun session_create_with_question_count_persists_validates_and_bounds_home_total() = runApp { client ->
+        val auth = client.register("subsetter", "password1")
+        // The Flags catalog deck has a couple hundred cards — plenty to take a subset of.
+        val flags = client.get("/decks?limit=100") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.single { it.title == "Flags of the World" }
+
+        // A questionCount is stored and kept across resume (like the shuffle seed).
+        val created = client.createSession(auth.accessToken, flags.id, mode = "test", questionCount = 5)
+        assertEquals(5, created.questionCount)
+        val resumed = client.createSession(auth.accessToken, flags.id, mode = "test", questionCount = 20)
+        assertEquals(created.id, resumed.id)
+        assertEquals(5, resumed.questionCount, "resume keeps the original count")
+
+        // Omitting it means the whole deck (null).
+        val whole = client.createSession(auth.accessToken, flags.id, mode = "flashcards")
+        assertNull(whole.questionCount)
+
+        // The home feed's "X of Y" total reflects the subset, not the full deck.
+        val home = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
+        val subsetCard = home.first { it.session?.let { s -> s.totalCards == 5 } == true }
+        assertEquals(5, subsetCard.session?.totalCards)
+
+        // Fewer than one card is rejected.
+        val bad = client.post("/sessions") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateSessionRequest(flags.id, "multiple_choice", false, 0)))
+        }
+        assertEquals(HttpStatusCode.BadRequest, bad.status)
+    }
+
+    @Test
     fun complete_records_completion_time_and_timezone() = runApp { client ->
         fun completion(sessionId: Long): Pair<Long?, String?> = transaction {
             PracticeSessions.selectAll().where { PracticeSessions.id eq sessionId }.first()
@@ -1351,6 +1383,8 @@ class ApplicationFlowTest {
         assertEquals(true, flags["practice_mode_classic"])
         assertEquals(true, flags["practice_mode_test"])
         assertEquals(true, flags["practice_mode_multiple_choice"])
+        // The question-count field (FLA-219) is seeded default-on too.
+        assertEquals(true, flags["practice_question_count"])
         val me = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(true, me.flags["discussions"])
         assertEquals(true, me.flags["avatar_selection"])
@@ -2739,10 +2773,11 @@ class ApplicationFlowTest {
         deckId: Long,
         mode: String = "flashcards",
         shuffle: Boolean = false,
+        questionCount: Int? = null,
     ): PracticeSessionDto = post("/sessions") {
         bearerAuth(token)
         contentType(ContentType.Application.Json)
-        setBody(json.encodeToString(CreateSessionRequest(deckId, mode, shuffle)))
+        setBody(json.encodeToString(CreateSessionRequest(deckId, mode, shuffle, questionCount)))
     }.decode()
 
     /** Grants the seeded `admin` role to [userId] (bootstraps an admin for a test). */

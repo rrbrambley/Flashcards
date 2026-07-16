@@ -20,20 +20,28 @@ export function ModeChooser({ deckId }: { deckId: number }) {
   // A mode is offered only when its feature flag is on (FLA-213). Guests carry no flags (the flag
   // endpoints are authed), so — like the discussions kill switch — they see every mode.
   const modes = PRACTICE_MODES.filter((mode) => isGuest || isEnabled(mode.flagKey));
+  // Offer the "Questions" subset field only when its flag is on (FLA-219); guests carry no flags → shown.
+  const questionsEnabled = isGuest || isEnabled('practice_question_count');
   // Carry the practice referrer (FLA-168) through the chooser so the runner exits to it too.
   const from = fromState(location.state);
   const exit = exitTarget(from, isGuest);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [shuffle, setShuffle] = useState(true);
   const [deckTitle, setDeckTitle] = useState<string | null>(null);
+  // The deck's card count = the max questions; the field defaults to it (practice the whole deck).
+  const [maxQuestions, setMaxQuestions] = useState(0);
+  const [questions, setQuestions] = useState<number | null>(null);
 
-  // Fetch the deck title for the header ("Practice <deck>"); guests read the public catalog. Best
-  // effort — the header falls back to "Practice" until (or if) it loads.
+  // Fetch the deck for its title (header) + card count (the Questions max); guests read the public
+  // catalog. Best effort — the header falls back to "Practice" until (or if) it loads.
   useEffect(() => {
     let active = true;
     (isGuest ? api.getCatalogDeck(deckId) : api.getDeck(deckId))
       .then((deck) => {
-        if (active) setDeckTitle(deck.title);
+        if (!active) return;
+        setDeckTitle(deck.title);
+        setMaxQuestions(deck.flashcards.length);
+        setQuestions(deck.flashcards.length);
       })
       .catch(() => {});
     return () => {
@@ -43,7 +51,10 @@ export function ModeChooser({ deckId }: { deckId: number }) {
 
   const start = () => {
     if (!selectedMode) return;
-    navigate(`/decks/${deckId}/practice?mode=${selectedMode}&shuffle=${shuffle ? 1 : 0}`, { state: { from } });
+    let url = `/decks/${deckId}/practice?mode=${selectedMode}&shuffle=${shuffle ? 1 : 0}`;
+    // Only a real subset (< the whole deck) needs the param; the runner treats its absence as "all".
+    if (questionsEnabled && questions != null && questions < maxQuestions) url += `&questions=${questions}`;
+    navigate(url, { state: { from } });
   };
 
   return (
@@ -79,6 +90,28 @@ export function ModeChooser({ deckId }: { deckId: number }) {
           <span className="shuffle-toggle-label">Shuffle cards</span>
           <span className="muted">Practice in a random order</span>
         </label>
+
+        {questionsEnabled && maxQuestions > 0 && (
+          <label className="questions-field">
+            <span className="questions-field-label">Questions (max {maxQuestions})</span>
+            <input
+              type="number"
+              min={1}
+              max={maxQuestions}
+              value={questions ?? ''}
+              aria-label={`Questions (max ${maxQuestions})`}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === '') {
+                  setQuestions(null);
+                  return;
+                }
+                // Clamp to 1..max so the field can't request more cards than the deck has, or fewer than one.
+                setQuestions(Math.max(1, Math.min(maxQuestions, Math.floor(Number(raw)))));
+              }}
+            />
+          </label>
+        )}
 
         <button type="button" className="start-practice" onClick={start} disabled={!selectedMode}>
           Start practice

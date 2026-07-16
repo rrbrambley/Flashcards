@@ -10,6 +10,8 @@ interface SavePromptProps {
   // The guest's shuffle choice, carried onto the saved session so it stays shuffled (FLA-200). The
   // server mints its own seed, so the resumed order may differ; progress (index) is preserved.
   shuffle: boolean;
+  // The guest's question-count subset (FLA-219), carried onto the saved session; null = whole deck.
+  questionCount: number | null;
   progress: { currentCardIndex: number; numCorrect: number; numIncorrect: number };
   onCancel: () => void;
   onLeave: () => void;
@@ -21,7 +23,7 @@ interface SavePromptProps {
  * to the backend *before* flipping auth state, so the save is durable; then we land on the logged-in
  * home where the session appears under "Continue studying".
  */
-export function SavePrompt({ deckId, mode, shuffle, progress, onCancel, onLeave }: SavePromptProps) {
+export function SavePrompt({ deckId, mode, shuffle, questionCount, progress, onCancel, onLeave }: SavePromptProps) {
   const { applyAuth } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -42,7 +44,7 @@ export function SavePrompt({ deckId, mode, shuffle, progress, onCancel, onLeave 
       // state flips and swaps the route tree — avoids a race with a re-mounted practice page.
       const auth = await api.register(email.trim(), password);
       setTokens(auth.accessToken, auth.refreshToken); // the next two calls need the bearer
-      const session = await api.createSession(deckId, mode, shuffle);
+      const session = await api.createSession(deckId, mode, shuffle, questionCount);
       await api.updateProgress(session.id, progress);
       applyAuth(auth); // now flip the in-memory auth state…
       navigate('/'); // …and land on the logged-in home (session shows under "Continue studying")

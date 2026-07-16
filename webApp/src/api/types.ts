@@ -145,6 +145,9 @@ export interface PracticeSessionDto {
   // (FLA-200). Applied client-side by `orderCards`. Defaulted server-side (unshuffled, seed 0).
   shuffle: boolean;
   shuffleSeed: number;
+  // How many cards this session practices — a subset of the deck (FLA-219), applied client-side as
+  // `orderCards(...).slice(0, questionCount)`. Null = the whole deck. Fixed at creation.
+  questionCount: number | null;
 }
 
 export interface CreateSessionRequest {
@@ -153,6 +156,8 @@ export interface CreateSessionRequest {
   // Randomize card order for a newly-created session (FLA-200); ignored when resuming (the stored
   // order wins). The server mints `shuffleSeed` once when true.
   shuffle?: boolean;
+  // Practice a subset of the deck (FLA-219); null/omitted = the whole deck. Fixed at creation.
+  questionCount?: number | null;
 }
 
 export interface UpdateProgressRequest {

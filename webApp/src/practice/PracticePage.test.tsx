@@ -48,6 +48,7 @@ const session = (over: Partial<PracticeSessionDto> = {}): PracticeSessionDto => 
   updatedAtMillis: 0,
   shuffle: false,
   shuffleSeed: 0,
+  questionCount: null,
   ...over,
 });
 
@@ -87,7 +88,7 @@ describe('PracticePage', () => {
     setup(threeCards, { currentCardIndex: 1 });
     expect(await screen.findByText('Q2')).toBeInTheDocument();
     // No `shuffle=` in the route → the toggle defaults On (FLA-200), so the new session is created shuffled.
-    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true, null);
   });
 
   it('clicking the card flips it', async () => {
@@ -197,6 +198,36 @@ describe('PracticePage', () => {
     expect(api.getStreaks).toHaveBeenCalledWith(expect.any(String));
   });
 
+  it('limits the run to the question count and passes it to createSession (FLA-219)', async () => {
+    vi.mocked(api.createSession).mockResolvedValue(session({ questionCount: 2 }));
+    vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: threeCards });
+    vi.mocked(api.updateProgress).mockResolvedValue(session());
+    vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
+    vi.mocked(api.recordAnswers).mockResolvedValue(session());
+    vi.mocked(api.getAnswers).mockResolvedValue([]);
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 3, longest: 5 }, decks: [] });
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=flashcards&shuffle=0&questions=2']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+          <Route path="/" element={<div>library</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('Q1');
+    // The URL count is sent to the server (resume-authoritative for the subset).
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', false, 2);
+
+    // Only 2 of the 3 cards play: answering both completes the run and Q3 never appears.
+    await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+    await screen.findByText('Q2');
+    await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
+
+    expect(await screen.findByText('Practice complete')).toBeInTheDocument();
+    expect(screen.queryByText('Q3')).not.toBeInTheDocument();
+  });
+
   it('shows a per-card review of the run on completion (FLA-149)', async () => {
     setup([
       { question: 'Q1', answer: 'A1', cardUid: 'c1' },
@@ -254,7 +285,7 @@ describe('PracticePage', () => {
     );
 
     await screen.findByText('Q1');
-    expect(api.createSession).toHaveBeenCalledWith(5, 'test', true);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'test', true, null);
 
     await userEvent.type(screen.getByLabelText('Your answer'), 'A1');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
@@ -277,7 +308,7 @@ describe('PracticePage', () => {
     );
 
     await screen.findByText('Q1');
-    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice', true);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice', true, null);
 
     await userEvent.click(screen.getByRole('button', { name: /A1/ })); // the correct option
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
@@ -497,7 +528,7 @@ describe('PracticePage', () => {
 
       await vi.waitFor(() => expect(api.register).toHaveBeenCalledWith('new@user.com', 'password1'));
       // Guest route carried shuffle=0, so the saved session is created unshuffled.
-      expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', false);
+      expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', false, null);
       expect(api.updateProgress).toHaveBeenCalledWith(99, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
       expect(applyAuth).toHaveBeenCalled();
     });

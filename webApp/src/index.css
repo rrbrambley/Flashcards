@@ -944,6 +944,34 @@ button.danger:hover:not(:disabled) {
   font-size: 0.85rem;
 }
 
+/* Questions subset field (FLA-219) — sits under the Shuffle toggle in the practice config. */
+.questions-field {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.questions-field-label {
+  font-weight: 600;
+}
+
+.questions-field input {
+  width: 5rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+  text-align: right;
+}
+
 .mode-list {
   list-style: none;
   margin: 0;

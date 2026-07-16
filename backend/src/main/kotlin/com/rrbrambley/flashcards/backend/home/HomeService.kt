@@ -73,7 +73,10 @@ object HomeService {
                     numCorrect = session.numCorrect,
                     numIncorrect = session.numIncorrect,
                     currentCardIndex = session.currentCardIndex,
-                    totalCards = cardCountsByDeck[session.deckId] ?: 0,
+                    // A subset session (FLA-219) practices only questionCount of the deck's cards.
+                    totalCards = (cardCountsByDeck[session.deckId] ?: 0).let { deckCount ->
+                        session.questionCount?.coerceAtMost(deckCount) ?: deckCount
+                    },
                     streak = streakBySession[session.id] ?: 0,
                 ),
             )

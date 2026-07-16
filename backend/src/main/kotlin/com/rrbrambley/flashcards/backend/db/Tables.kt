@@ -178,6 +178,11 @@ object PracticeSessions : LongIdTable("practice_sessions") {
     val shuffle = bool("shuffle").default(false)
     val shuffleSeed = long("shuffle_seed").default(0)
 
+    // How many cards this session practices — a subset of the deck (FLA-219), applied client-side as
+    // SessionOrdering.order(...).take(questionCount). Nullable: null = the whole deck (also backfills
+    // old rows). Fixed at creation like the seed.
+    val questionCount = integer("question_count").nullable()
+
     val createdAtMillis = long("created_at_millis")
     val updatedAtMillis = long("updated_at_millis")
 
