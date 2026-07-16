@@ -20,4 +20,7 @@ data class PracticeSession(
     // order reproducible across resume/devices (FLA-200). Applied by SessionOrdering at load.
     val shuffle: Boolean = false,
     val shuffleSeed: Long = 0L,
+    // How many cards this session practices — a subset of the deck (FLA-219); null = the whole deck.
+    // Applied after ordering (take) at load; fixed at creation.
+    val questionCount: Int? = null,
 )

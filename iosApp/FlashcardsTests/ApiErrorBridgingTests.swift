@@ -37,7 +37,7 @@ final class ApiErrorBridgingTests: XCTestCase {
     func test_startOrResumeSession_failure_isCatchable() async {
         let repo = unreachableSdk().practiceSessionRepository
         do {
-            _ = try await repo.startOrResumeSession(deckId: 1, mode: "flashcards", shuffle: false)
+            _ = try await repo.startOrResumeSession(deckId: 1, mode: "flashcards", shuffle: false, questionCount: nil)
             XCTFail("expected the unreachable backend to throw")
         } catch {
             // Caught (not crashed). ✅  (Offline the local-session mint hits a FOREIGN KEY failure

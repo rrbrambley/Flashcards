@@ -114,6 +114,15 @@ val MIGRATION_13_14 = object : Migration(13, 14) {
     }
 }
 
+/** v14 → v15: add the nullable `questionCount` subset size to practice_sessions (FLA-219). No DEFAULT
+ *  clause — a nullable ADD COLUMN backfills existing rows with NULL, matching the exported schema
+ *  (the entity's `= null` is a Kotlin default, not a SQL one, so Room records no column default). */
+val MIGRATION_14_15 = object : Migration(14, 15) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `practice_sessions` ADD COLUMN `questionCount` INTEGER")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
     arrayOf(
@@ -128,4 +137,5 @@ val ALL_MIGRATIONS =
         MIGRATION_11_12,
         MIGRATION_12_13,
         MIGRATION_13_14,
+        MIGRATION_14_15,
     )

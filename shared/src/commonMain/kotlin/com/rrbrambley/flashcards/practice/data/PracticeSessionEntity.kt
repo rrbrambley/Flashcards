@@ -37,6 +37,9 @@ data class PracticeSessionEntity(
     // restart (FLA-200; applied by SessionOrdering). Defaults keep old rows unshuffled. See MIGRATION_12_13.
     val shuffle: Boolean = false,
     val shuffleSeed: Long = 0L,
+    // How many cards this session practices — a subset of the deck (FLA-219; applied after ordering by
+    // take at load). Nullable: null = the whole deck (also backfills old rows). See MIGRATION_14_15.
+    val questionCount: Int? = null,
     // True when this row has local writes not yet confirmed by the backend (offline create/progress/
     // complete); the sync routine flushes these on reconnect and clears it once the server confirms.
     // Distinct from a negative [id], which means "offline-minted, no server id yet". See MIGRATION_6_7.

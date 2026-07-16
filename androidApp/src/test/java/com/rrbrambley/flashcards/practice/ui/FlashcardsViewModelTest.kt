@@ -202,8 +202,12 @@ class FlashcardsViewModelTest {
 
     private class FakePracticeSessionRepository(private val session: PracticeSession? = null) :
         PracticeSessionRepository {
-        override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long =
-            session?.id ?: 0L
+        override suspend fun startOrResumeSession(
+            deckId: Long,
+            mode: String,
+            shuffle: Boolean,
+            questionCount: Int?,
+        ): Long = session?.id ?: 0L
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(listOfNotNull(session))
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> =
             flowOf(session?.takeIf { it.id == sessionId })

@@ -307,4 +307,32 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals(0, cursor.getInt(1))
         }
     }
+
+    @Test
+    fun migrate14To15_preservesSessionsAndAddsNullableQuestionCountColumn() {
+        // Seed a v14 database with a session (no questionCount column yet).
+        helper.createDatabase(testDb, 14).apply {
+            execSQL(
+                "INSERT INTO flashcard_decks (id, title, editable, tags, discussionEnabled, isGlobal) " +
+                    "VALUES (1, 'Spanish basics', 1, '[]', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, mode, " +
+                    "shuffle, shuffleSeed, pendingSync, pendingDelete, createdAtMillis, updatedAtMillis) " +
+                    "VALUES (1, 1, 2, 1, 0, 0, 'test', 0, 0, 0, 0, 1000, 1000)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_14_15 and validate against the exported v15 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 15, true, MIGRATION_14_15)
+
+        // The existing row survived; questionCount backfilled to NULL (= the whole deck).
+        db.query("SELECT currentCardIndex, questionCount FROM practice_sessions WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+            assertTrue(cursor.isNull(1))
+        }
+    }
 }

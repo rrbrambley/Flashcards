@@ -135,7 +135,12 @@ class HomeRepositoryTest {
             offlineApiClient(),
             FakeFlashcardRepository(listOf(GLOBAL_DECK)),
             object : PracticeSessionRepository {
-                override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean) = 0L
+                override suspend fun startOrResumeSession(
+                    deckId: Long,
+                    mode: String,
+                    shuffle: Boolean,
+                    questionCount: Int?,
+                ) = 0L
                 override fun observeActiveSessions(): Flow<List<PracticeSession>> = sessions
                 override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(null)
                 override suspend fun updateProgress(
@@ -194,7 +199,12 @@ class HomeRepositoryTest {
 
     private class FakePracticeSessionRepository(private val activeSessions: List<PracticeSession>) :
         PracticeSessionRepository {
-        override suspend fun startOrResumeSession(deckId: Long, mode: String, shuffle: Boolean): Long = 0L
+        override suspend fun startOrResumeSession(
+            deckId: Long,
+            mode: String,
+            shuffle: Boolean,
+            questionCount: Int?,
+        ): Long = 0L
 
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(activeSessions)
 

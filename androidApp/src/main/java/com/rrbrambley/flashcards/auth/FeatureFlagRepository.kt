@@ -15,6 +15,7 @@ object FeatureFlags {
     const val PRACTICE_MODE_CLASSIC = "practice_mode_classic"
     const val PRACTICE_MODE_TEST = "practice_mode_test"
     const val PRACTICE_MODE_MULTIPLE_CHOICE = "practice_mode_multiple_choice"
+    const val PRACTICE_QUESTION_COUNT = "practice_question_count"
 }
 
 /**
