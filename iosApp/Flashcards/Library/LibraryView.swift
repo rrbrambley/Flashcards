@@ -33,13 +33,15 @@ struct LibraryView: View {
         let id: Int64
         let mode: String
         let shuffle: Bool
+        let questionCount: Int32?
     }
     @State private var practicing: PracticingDeck?
 
-    /// The deck being configured before practice (presents the mode + Shuffle sheet, FLA-200).
+    /// The deck being configured before practice (presents the mode + Questions + Shuffle sheet).
     private struct ConfiguringDeck: Identifiable {
         let id: Int64
         let title: String
+        let cardCount: Int
     }
     @State private var configuring: ConfiguringDeck?
     // Deferred until the config sheet finishes dismissing, so the full-screen run presents cleanly.
@@ -75,13 +77,13 @@ struct LibraryView: View {
                 PracticeView(
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
-                    entry: .deck(item.id, mode: item.mode, shuffle: item.shuffle),
+                    entry: .deck(item.id, mode: item.mode, shuffle: item.shuffle, questionCount: item.questionCount),
                     featureFlagStore: featureFlagStore,
                     apiClient: apiClient
                 )
             }
-            // Configure the run (mode + Shuffle) before launching it (FLA-200). Present the full-screen
-            // run only after this sheet has fully dismissed, via onDismiss + pendingStart.
+            // Configure the run (mode + Questions + Shuffle) before launching it (FLA-200/219). Present
+            // the full-screen run only after this sheet has fully dismissed, via onDismiss + pendingStart.
             .sheet(item: $configuring, onDismiss: {
                 if let pendingStart {
                     practicing = pendingStart
@@ -90,9 +92,12 @@ struct LibraryView: View {
             }) { item in
                 PracticeConfigView(
                     deckTitle: item.title,
-                    availableModes: PracticeMode.available(flags: featureFlagStore.flags)
-                ) { mode, shuffle in
-                    pendingStart = PracticingDeck(id: item.id, mode: mode, shuffle: shuffle)
+                    availableModes: PracticeMode.available(flags: featureFlagStore.flags),
+                    maxQuestions: item.cardCount,
+                    // Fail-open like the mode gating: offered unless the flag is explicitly off.
+                    questionCountEnabled: featureFlagStore.flags[FeatureFlag.practiceQuestionCount] != false
+                ) { mode, shuffle, questionCount in
+                    pendingStart = PracticingDeck(id: item.id, mode: mode, shuffle: shuffle, questionCount: questionCount)
                     configuring = nil
                 }
             }
@@ -108,7 +113,11 @@ struct LibraryView: View {
                 // host a toggle, so the choices moved into PracticeConfigView (FLA-200).
                 if !selected.deck.flashcards.isEmpty {
                     Button("Practice") {
-                        configuring = ConfiguringDeck(id: selected.deck.id, title: selected.deck.title)
+                        configuring = ConfiguringDeck(
+                            id: selected.deck.id,
+                            title: selected.deck.title,
+                            cardCount: selected.deck.flashcards.count
+                        )
                     }
                 }
                 Button("Edit deck") { editing = EditingDeck(id: selected.deck.id) }
@@ -198,7 +207,7 @@ struct LibraryView: View {
                     // Quick swipe-to-practice uses Classic + saved order; tap the deck to configure
                     // the mode + Shuffle (FLA-200).
                     Button {
-                        practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.key, shuffle: false)
+                        practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.key, shuffle: false, questionCount: nil)
                     } label: {
                         Label("Practice", systemImage: "play.fill")
                     }

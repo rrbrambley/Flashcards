@@ -125,7 +125,9 @@ struct HomeView: View {
             // The backend/offline layer resolves which deck (the featured global deck) and its id.
             // Featured practice from Home uses Classic + saved order; the Library offers the mode +
             // shuffle chooser (FLA-200).
-            practice = PracticePresentation(entry: .deck(practiceDeck.deckId, mode: PracticeMode.classic.key, shuffle: false))
+            practice = PracticePresentation(
+                entry: .deck(practiceDeck.deckId, mode: PracticeMode.classic.key, shuffle: false, questionCount: nil)
+            )
         }
     }
 
