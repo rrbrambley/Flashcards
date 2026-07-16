@@ -220,8 +220,12 @@ export const api = {
     request<FlashcardDeckDto>(`/decks/${deckId}/global`, { method: 'PATCH', body: { global }, auth: true }),
 
   // Practice sessions
-  createSession: (deckId: number, mode = 'flashcards', shuffle = false) =>
-    request<PracticeSessionDto>('/sessions', { method: 'POST', body: { deckId, mode, shuffle }, auth: true }),
+  createSession: (deckId: number, mode = 'flashcards', shuffle = false, questionCount: number | null = null) =>
+    request<PracticeSessionDto>('/sessions', {
+      method: 'POST',
+      body: { deckId, mode, shuffle, questionCount },
+      auth: true,
+    }),
   getSession: (id: number) => request<PracticeSessionDto>(`/sessions/${id}`, { auth: true }),
   // Discard an in-progress session (the home "×" action, FLA-205); the backend cascades its answers.
   deleteSession: (id: number) => request<void>(`/sessions/${id}`, { method: 'DELETE', auth: true }),

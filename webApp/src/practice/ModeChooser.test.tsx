@@ -24,6 +24,7 @@ function RunnerStub() {
     <div>
       <span>mode={params.get('mode')}</span>
       <span>shuffle={params.get('shuffle')}</span>
+      <span>questions={params.get('questions') ?? ''}</span>
       <span>from={from ?? ''}</span>
     </div>
   );
@@ -86,6 +87,61 @@ describe('ModeChooser', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
 
     expect(await screen.findByText('shuffle=0')).toBeInTheDocument();
+  });
+
+  it('shows the Questions field with the deck max and routes a subset (FLA-219)', async () => {
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Spanish',
+      editable: true,
+      flashcards: Array.from({ length: 10 }, () => ({ question: 'q', answer: 'a' })),
+    } as never);
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    // Defaults to the deck's card count (practice everything) with the max in the label.
+    const field = screen.getByLabelText('Questions (max 10)');
+    expect(field).toHaveValue(10);
+
+    // Ask for a subset of 4, pick a mode, and start.
+    await userEvent.clear(field);
+    await userEvent.type(field, '4');
+    await userEvent.click(screen.getByRole('radio', { name: new RegExp(PRACTICE_MODES[0].label) }));
+    await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
+
+    expect(await screen.findByText('questions=4')).toBeInTheDocument();
+  });
+
+  it('omits the questions param when the whole deck is chosen (FLA-219)', async () => {
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Spanish',
+      editable: true,
+      flashcards: Array.from({ length: 10 }, () => ({ question: 'q', answer: 'a' })),
+    } as never);
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    // Leave the field at its max (10) → no subset → no questions param.
+    await userEvent.click(screen.getByRole('radio', { name: new RegExp(PRACTICE_MODES[0].label) }));
+    await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
+
+    expect(await screen.findByText(`mode=${PRACTICE_MODES[0].key}`)).toBeInTheDocument();
+    expect(screen.getByText('questions=')).toBeInTheDocument(); // empty → absent
+  });
+
+  it('hides the Questions field when its flag is disabled (FLA-219)', async () => {
+    mockFlags = { practice_question_count: false };
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Spanish',
+      editable: true,
+      flashcards: Array.from({ length: 10 }, () => ({ question: 'q', answer: 'a' })),
+    } as never);
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    expect(screen.queryByLabelText(/Questions/)).not.toBeInTheDocument();
   });
 
   it('hides a mode whose feature flag is disabled (FLA-213)', async () => {

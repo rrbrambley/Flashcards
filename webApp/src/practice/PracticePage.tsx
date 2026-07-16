@@ -25,9 +25,14 @@ export function PracticePage() {
   const mode = findMode(searchParams.get('mode')) ?? (PRACTICE_MODES.length === 1 ? DEFAULT_MODE : undefined);
   // Shuffle defaults On (FLA-200): only an explicit `shuffle=0` opts into the deck's saved order.
   const shuffle = searchParams.get('shuffle') !== '0';
+  // Practice a subset of the deck (FLA-219): `?questions=N` limits the run to N cards; absent = all.
+  const questionsParam = Number(searchParams.get('questions'));
+  const questionCount = Number.isFinite(questionsParam) && questionsParam >= 1 ? Math.floor(questionsParam) : null;
 
   if (!mode) return <ModeChooser deckId={deckId} />;
-  return <PracticeSession key={mode.key} deckId={deckId} mode={mode} shuffle={shuffle} />;
+  return (
+    <PracticeSession key={mode.key} deckId={deckId} mode={mode} shuffle={shuffle} questionCount={questionCount} />
+  );
 }
 
 // A positive, JS-safe (< 2^31) seed for a guest's in-memory shuffle (signed-in runs use the server's
@@ -54,7 +59,17 @@ interface LoadedPractice {
 
 const ZERO_PROGRESS: Progress = { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 };
 
-function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: PracticeMode; shuffle: boolean }) {
+function PracticeSession({
+  deckId,
+  mode,
+  shuffle,
+  questionCount,
+}: {
+  deckId: number;
+  mode: PracticeMode;
+  shuffle: boolean;
+  questionCount: number | null;
+}) {
   const navigate = useNavigate();
   const { token, can, isEnabled } = useAuth();
   const isGuest = !token;
@@ -67,7 +82,8 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
   // stored shuffle/seed (resume-authoritative); guests use the URL choice + a seed minted once here.
   const loadRef = useRef<{
     key: string;
-    promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto, boolean, number]>;
+    // ...plus the effective question count (subset size), null = the whole deck (FLA-219).
+    promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null]>;
   } | null>(null);
 
   // Latest in-memory progress, mirrored here so the back/close guard can read it without re-rendering.
@@ -81,24 +97,22 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
 
   useEffect(() => {
     let active = true;
-    const key = `${deckId}:${mode.key}:${reloadToken}:${isGuest}:${shuffle}`;
+    const key = `${deckId}:${mode.key}:${reloadToken}:${isGuest}:${shuffle}:${questionCount}`;
     if (loadRef.current?.key !== key) {
       // Guests load the deck from the public catalog and never create a session; signed-in users
       // create/resume a server session (which carries any existing progress for this deck + mode).
       // A guest's shuffle seed is minted once here (in the cached promise) so re-renders don't re-roll
       // the order (the FLA-159 lesson); signed-in runs use the server's stored, resume-stable seed.
-      const promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto, boolean, number]> = isGuest
-        ? api.getCatalogDeck(deckId).then((deck) => [null, deck, shuffle, shuffle ? newGuestSeed() : 0])
-        : Promise.all([api.createSession(deckId, mode.key, shuffle), api.getDeck(deckId)]).then(([session, deck]) => [
-            session,
-            deck,
-            session.shuffle,
-            session.shuffleSeed,
-          ]);
+      const promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null]> = isGuest
+        ? api.getCatalogDeck(deckId).then((deck) => [null, deck, shuffle, shuffle ? newGuestSeed() : 0, questionCount])
+        : Promise.all([api.createSession(deckId, mode.key, shuffle, questionCount), api.getDeck(deckId)]).then(
+            // Resume-authoritative: the server's stored count wins over the URL (an old link can't grow a run).
+            ([session, deck]) => [session, deck, session.shuffle, session.shuffleSeed, session.questionCount],
+          );
       loadRef.current = { key, promise };
     }
     loadRef.current.promise
-      .then(async ([session, deck, effectiveShuffle, effectiveSeed]) => {
+      .then(async ([session, deck, effectiveShuffle, effectiveSeed, effectiveCount]) => {
         if (!active) return;
         if (deck.flashcards.length === 0) {
           setError('This deck has no cards to practice.');
@@ -116,8 +130,9 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
           setData({
             sessionId: session?.id ?? null,
             deckTitle: deck.title,
-            // Apply the (stable) shuffle order once at load; downstream matches cards by cardUid.
-            cards: orderCards(deck.flashcards, effectiveShuffle, effectiveSeed),
+            // Apply the (stable) shuffle order once at load, then take the subset (FLA-219); downstream
+            // matches cards by cardUid. `?? length` avoids slice(0, null) → []; slice clamps if count > size.
+            cards: orderCards(deck.flashcards, effectiveShuffle, effectiveSeed).slice(0, effectiveCount ?? deck.flashcards.length),
             progress: session ?? ZERO_PROGRESS,
             initialStreak,
             discussionsEnabled: deck.discussionsEnabled ?? false,
@@ -134,7 +149,7 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
     return () => {
       active = false;
     };
-  }, [deckId, mode.key, reloadToken, isGuest, shuffle]);
+  }, [deckId, mode.key, reloadToken, isGuest, shuffle, questionCount]);
 
   const onProgress = useCallback(
     (progress: Progress, status: 'practicing' | 'completed') => {
@@ -212,6 +227,7 @@ function PracticeSession({ deckId, mode, shuffle }: { deckId: number; mode: Prac
           deckId={deckId}
           mode={mode.key}
           shuffle={shuffle}
+          questionCount={questionCount}
           progress={savePromptProgress}
           onCancel={() => setSavePromptProgress(null)}
           onLeave={() => navigate(exit.to)}
