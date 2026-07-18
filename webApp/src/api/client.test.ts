@@ -170,7 +170,13 @@ describe('api client', () => {
     expect(url).toContain('/sessions');
     expect(init.method).toBe('POST');
     expect(init.headers.Authorization).toBe('Bearer tok');
-    expect(JSON.parse(init.body as string)).toEqual({ deckId: 3, mode: 'test', shuffle: true, questionCount: null });
+    expect(JSON.parse(init.body as string)).toEqual({
+      deckId: 3,
+      mode: 'test',
+      shuffle: true,
+      questionCount: null,
+      gradeAtEnd: false,
+    });
   });
 
   it('createSession defaults the mode to flashcards and shuffle off', async () => {
@@ -185,6 +191,7 @@ describe('api client', () => {
       mode: 'flashcards',
       shuffle: false,
       questionCount: null,
+      gradeAtEnd: false,
     });
   });
 

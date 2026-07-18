@@ -1196,6 +1196,23 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun session_create_with_grade_at_end_persists_and_resumes() = runApp { client ->
+        val auth = client.register("batchgrader", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // gradeAtEnd is stored and kept across resume; a plain create defaults it off.
+        val created = client.createSession(auth.accessToken, deckId, mode = "test", gradeAtEnd = true)
+        assertTrue(created.gradeAtEnd)
+        val resumed = client.createSession(auth.accessToken, deckId, mode = "test", gradeAtEnd = false)
+        assertEquals(created.id, resumed.id)
+        assertTrue(resumed.gradeAtEnd, "resume keeps the original grade-at-end choice")
+
+        val plain = client.createSession(auth.accessToken, deckId, mode = "multiple_choice")
+        assertFalse(plain.gradeAtEnd)
+    }
+
+    @Test
     fun complete_records_completion_time_and_timezone() = runApp { client ->
         fun completion(sessionId: Long): Pair<Long?, String?> = transaction {
             PracticeSessions.selectAll().where { PracticeSessions.id eq sessionId }.first()
@@ -1385,6 +1402,8 @@ class ApplicationFlowTest {
         assertEquals(true, flags["practice_mode_multiple_choice"])
         // The question-count field (FLA-219) is seeded default-on too.
         assertEquals(true, flags["practice_question_count"])
+        // The grade-at-the-end toggle (#293) is seeded default-on too.
+        assertEquals(true, flags["practice_grade_at_end"])
         val me = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(true, me.flags["discussions"])
         assertEquals(true, me.flags["avatar_selection"])
@@ -2774,10 +2793,11 @@ class ApplicationFlowTest {
         mode: String = "flashcards",
         shuffle: Boolean = false,
         questionCount: Int? = null,
+        gradeAtEnd: Boolean = false,
     ): PracticeSessionDto = post("/sessions") {
         bearerAuth(token)
         contentType(ContentType.Application.Json)
-        setBody(json.encodeToString(CreateSessionRequest(deckId, mode, shuffle, questionCount)))
+        setBody(json.encodeToString(CreateSessionRequest(deckId, mode, shuffle, questionCount, gradeAtEnd)))
     }.decode()
 
     /** Grants the seeded `admin` role to [userId] (bootstraps an admin for a test). */

@@ -834,6 +834,85 @@ button.danger:hover:not(:disabled) {
   padding: 2rem 0;
 }
 
+/* Grade-at-the-end batch runner (#293): all cards in a scrollable list, graded on submit. */
+.batch-practice {
+  padding-bottom: 5rem; /* room for the sticky submit bar */
+}
+.batch-score {
+  text-align: center;
+  padding: 1rem 0 1.5rem;
+}
+.batch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.batch-item {
+  padding: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.batch-item.correct {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, var(--panel));
+}
+.batch-item.incorrect {
+  border-color: var(--error);
+  background: color-mix(in srgb, var(--error) 10%, var(--panel));
+}
+.batch-prompt {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.batch-number {
+  flex: none;
+  font-weight: 700;
+  color: var(--muted);
+}
+.batch-question {
+  font-weight: 600;
+}
+.batch-image {
+  max-width: 50%;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.batch-input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1rem;
+}
+.batch-result {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.batch-correct-answer {
+  font-weight: 600;
+}
+.batch-submit-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 1rem 0;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+.batch-submit {
+  width: 100%;
+}
+
 /* End-of-session per-card review (FLA-149): each logged answer in play order. */
 .review {
   width: 100%;

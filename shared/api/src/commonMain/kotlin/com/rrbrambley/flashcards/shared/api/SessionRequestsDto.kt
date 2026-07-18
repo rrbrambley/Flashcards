@@ -16,6 +16,9 @@ data class CreateSessionRequest(
      *  `order(...).take(questionCount)`. Null = the whole deck. Fixed at creation like [shuffle], so
      *  resume keeps it; the backend rejects values < 1. Defaulted so older/mobile clients omit it. */
     val questionCount: Int? = null,
+    /** Grade the whole session at the end instead of per-card (#293): the client shows all cards in a
+     *  scrollable list and grades on submit. Fixed at creation. Defaulted so older/mobile clients omit it. */
+    val gradeAtEnd: Boolean = false,
 )
 
 @Serializable

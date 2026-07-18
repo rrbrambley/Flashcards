@@ -31,6 +31,7 @@ fun Route.sessionRoutes() {
                     request.mode,
                     request.shuffle,
                     request.questionCount,
+                    request.gradeAtEnd,
                 ),
             )
         }

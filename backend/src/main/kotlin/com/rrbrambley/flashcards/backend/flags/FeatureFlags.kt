@@ -23,4 +23,7 @@ enum class FeatureFlag(val key: String, val description: String, val defaultEnab
 
     // Offer the "Questions" field to practice a subset of a deck's cards (FLA-219).
     PRACTICE_QUESTION_COUNT("practice_question_count", "Offer choosing how many questions a session has", true),
+
+    // Offer the "Grade at the end" toggle — answer all cards in a list, then submit to grade (#293).
+    PRACTICE_GRADE_AT_END("practice_grade_at_end", "Offer grading the whole session at the end", true),
 }

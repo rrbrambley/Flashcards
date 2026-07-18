@@ -148,6 +148,9 @@ export interface PracticeSessionDto {
   // How many cards this session practices — a subset of the deck (FLA-219), applied client-side as
   // `orderCards(...).slice(0, questionCount)`. Null = the whole deck. Fixed at creation.
   questionCount: number | null;
+  // Grade the whole session at the end instead of per-card (#293): all cards in a scrollable list,
+  // graded on submit. Fixed at creation.
+  gradeAtEnd: boolean;
 }
 
 export interface CreateSessionRequest {
@@ -158,6 +161,8 @@ export interface CreateSessionRequest {
   shuffle?: boolean;
   // Practice a subset of the deck (FLA-219); null/omitted = the whole deck. Fixed at creation.
   questionCount?: number | null;
+  // Grade the whole session at the end instead of per-card (#293). Fixed at creation.
+  gradeAtEnd?: boolean;
 }
 
 export interface UpdateProgressRequest {

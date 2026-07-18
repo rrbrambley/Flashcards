@@ -5,6 +5,7 @@ import { useAuth } from '../auth/auth-context';
 import type { FlashcardDeckDto, FlashcardDto, PracticeAnswer, PracticeSessionDto } from '../api/types';
 import { BackHeader } from '../decks/BackHeader';
 import { ModeChooser } from './ModeChooser';
+import { BatchPracticeRunner } from './BatchPracticeRunner';
 import { DEFAULT_MODE, findMode, PRACTICE_MODES } from './modes';
 import type { PracticeMode } from './modes/types';
 import { ShareButton } from './ShareButton';
@@ -28,10 +29,20 @@ export function PracticePage() {
   // Practice a subset of the deck (FLA-219): `?questions=N` limits the run to N cards; absent = all.
   const questionsParam = Number(searchParams.get('questions'));
   const questionCount = Number.isFinite(questionsParam) && questionsParam >= 1 ? Math.floor(questionsParam) : null;
+  // Grade the whole session at the end (#293): only Test + Multiple Choice have an objective grade to defer.
+  const gradeAtEnd =
+    searchParams.get('gradeAtEnd') === '1' && (mode?.key === 'test' || mode?.key === 'multiple_choice');
 
   if (!mode) return <ModeChooser deckId={deckId} />;
   return (
-    <PracticeSession key={mode.key} deckId={deckId} mode={mode} shuffle={shuffle} questionCount={questionCount} />
+    <PracticeSession
+      key={mode.key}
+      deckId={deckId}
+      mode={mode}
+      shuffle={shuffle}
+      questionCount={questionCount}
+      gradeAtEnd={gradeAtEnd}
+    />
   );
 }
 
@@ -55,6 +66,8 @@ interface LoadedPractice {
   discussionsEnabled: boolean;
   // Whether this is a global (catalog) deck (FLA-120) — gates Test-mode answer suggestions (FLA-130).
   isGlobal: boolean;
+  // Grade the whole session at the end (#293) — swaps the card-by-card runner for the batch list.
+  gradeAtEnd: boolean;
 }
 
 const ZERO_PROGRESS: Progress = { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 };
@@ -64,11 +77,13 @@ function PracticeSession({
   mode,
   shuffle,
   questionCount,
+  gradeAtEnd,
 }: {
   deckId: number;
   mode: PracticeMode;
   shuffle: boolean;
   questionCount: number | null;
+  gradeAtEnd: boolean;
 }) {
   const navigate = useNavigate();
   const { token, can, isEnabled } = useAuth();
@@ -82,8 +97,8 @@ function PracticeSession({
   // stored shuffle/seed (resume-authoritative); guests use the URL choice + a seed minted once here.
   const loadRef = useRef<{
     key: string;
-    // ...plus the effective question count (subset size), null = the whole deck (FLA-219).
-    promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null]>;
+    // ...plus the effective question count (null = whole deck, FLA-219) and grade-at-end flag (#293).
+    promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null, boolean]>;
   } | null>(null);
 
   // Latest in-memory progress, mirrored here so the back/close guard can read it without re-rendering.
@@ -97,22 +112,36 @@ function PracticeSession({
 
   useEffect(() => {
     let active = true;
-    const key = `${deckId}:${mode.key}:${reloadToken}:${isGuest}:${shuffle}:${questionCount}`;
+    const key = `${deckId}:${mode.key}:${reloadToken}:${isGuest}:${shuffle}:${questionCount}:${gradeAtEnd}`;
     if (loadRef.current?.key !== key) {
       // Guests load the deck from the public catalog and never create a session; signed-in users
       // create/resume a server session (which carries any existing progress for this deck + mode).
       // A guest's shuffle seed is minted once here (in the cached promise) so re-renders don't re-roll
       // the order (the FLA-159 lesson); signed-in runs use the server's stored, resume-stable seed.
-      const promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null]> = isGuest
-        ? api.getCatalogDeck(deckId).then((deck) => [null, deck, shuffle, shuffle ? newGuestSeed() : 0, questionCount])
-        : Promise.all([api.createSession(deckId, mode.key, shuffle, questionCount), api.getDeck(deckId)]).then(
-            // Resume-authoritative: the server's stored count wins over the URL (an old link can't grow a run).
-            ([session, deck]) => [session, deck, session.shuffle, session.shuffleSeed, session.questionCount],
+      const promise: Promise<
+        [PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null, boolean]
+      > = isGuest
+        ? api
+            .getCatalogDeck(deckId)
+            .then((deck) => [null, deck, shuffle, shuffle ? newGuestSeed() : 0, questionCount, gradeAtEnd])
+        : Promise.all([
+            api.createSession(deckId, mode.key, shuffle, questionCount, gradeAtEnd),
+            api.getDeck(deckId),
+          ]).then(
+            // Resume-authoritative: the server's stored choices win over the URL (an old link can't change a run).
+            ([session, deck]) => [
+              session,
+              deck,
+              session.shuffle,
+              session.shuffleSeed,
+              session.questionCount,
+              session.gradeAtEnd,
+            ],
           );
       loadRef.current = { key, promise };
     }
     loadRef.current.promise
-      .then(async ([session, deck, effectiveShuffle, effectiveSeed, effectiveCount]) => {
+      .then(async ([session, deck, effectiveShuffle, effectiveSeed, effectiveCount, effectiveGradeAtEnd]) => {
         if (!active) return;
         if (deck.flashcards.length === 0) {
           setError('This deck has no cards to practice.');
@@ -137,6 +166,7 @@ function PracticeSession({
             initialStreak,
             discussionsEnabled: deck.discussionsEnabled ?? false,
             isGlobal: deck.isGlobal ?? false,
+            gradeAtEnd: effectiveGradeAtEnd,
           });
         }
         setLoadedToken(reloadToken);
@@ -149,7 +179,7 @@ function PracticeSession({
     return () => {
       active = false;
     };
-  }, [deckId, mode.key, reloadToken, isGuest, shuffle, questionCount]);
+  }, [deckId, mode.key, reloadToken, isGuest, shuffle, questionCount, gradeAtEnd]);
 
   const onProgress = useCallback(
     (progress: Progress, status: 'practicing' | 'completed') => {
@@ -201,6 +231,17 @@ function PracticeSession({
           <p className="error">{error}</p>
         ) : !data ? (
           <p className="muted">Loading…</p>
+        ) : data.gradeAtEnd ? (
+          // Grade-at-the-end (#293): answer all cards in a list, then submit to grade. No card-by-card
+          // progress/streak/persistence-per-card — the batch runner records the whole batch on Submit.
+          <BatchPracticeRunner
+            key={reloadToken}
+            sessionId={data.sessionId}
+            cards={data.cards}
+            mode={mode}
+            onAgain={() => setReloadToken((t) => t + 1)}
+            onExit={() => navigate(exit.to)}
+          />
         ) : (
           <PracticeRunner
             key={reloadToken}
