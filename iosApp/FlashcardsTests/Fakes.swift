@@ -54,7 +54,7 @@ func makeSession(
         id: id, deckId: deckId, deckTitle: "Deck", currentCardIndex: index,
         numCorrect: correct, numIncorrect: incorrect, isCompleted: completed, mode: mode,
         createdAtMillis: 0, updatedAtMillis: 0, pendingSync: false, shuffle: false, shuffleSeed: 0,
-        questionCount: nil
+        questionCount: nil, gradeAtEnd: false
     )
 }
 
@@ -101,7 +101,9 @@ final class FakePracticeSessionRepository: PracticeSessionRepository {
     private(set) var completedSessionId: Int64?
     private(set) var startedMode: String?
 
-    func startOrResumeSession(deckId: Int64, mode: String, shuffle: Bool, questionCount: KotlinInt?) async throws -> KotlinLong {
+    func startOrResumeSession(
+        deckId: Int64, mode: String, shuffle: Bool, questionCount: KotlinInt?, gradeAtEnd: Bool
+    ) async throws -> KotlinLong {
         if let startError { throw startError }
         startedMode = mode
         return KotlinLong(longLong: startSessionId)

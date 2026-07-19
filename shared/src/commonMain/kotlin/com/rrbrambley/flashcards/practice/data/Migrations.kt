@@ -123,6 +123,15 @@ val MIGRATION_14_15 = object : Migration(14, 15) {
     }
 }
 
+/** v15 → v16: add the `gradeAtEnd` flag to practice_sessions (#293) — grade the whole session at the
+ *  end vs card-by-card. NOT NULL DEFAULT 0 backfills existing rows to card-by-card, matching the
+ *  entity default (like the `shuffle` boolean column added in MIGRATION_12_13). */
+val MIGRATION_15_16 = object : Migration(15, 16) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `practice_sessions` ADD COLUMN `gradeAtEnd` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
     arrayOf(
@@ -138,4 +147,5 @@ val ALL_MIGRATIONS =
         MIGRATION_12_13,
         MIGRATION_13_14,
         MIGRATION_14_15,
+        MIGRATION_15_16,
     )

@@ -83,7 +83,7 @@ class PracticeSessionController(
         when (val e = entry) {
             is PracticeEntry.Deck -> {
                 val sid = runCatching {
-                    sessionRepository.startOrResumeSession(e.deckId, e.mode, e.shuffle, e.questionCount)
+                    sessionRepository.startOrResumeSession(e.deckId, e.mode, e.shuffle, e.questionCount, e.gradeAtEnd)
                 }.getOrNull()
                 if (sid == null) {
                     _state.update { PracticeUiState.Failed }

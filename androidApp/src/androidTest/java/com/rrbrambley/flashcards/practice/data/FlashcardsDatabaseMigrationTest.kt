@@ -335,4 +335,33 @@ class FlashcardsDatabaseMigrationTest {
             assertTrue(cursor.isNull(1))
         }
     }
+
+    @Test
+    fun migrate15To16_preservesSessionsAndAddsGradeAtEndColumn() {
+        // Seed a v15 database with a session (no gradeAtEnd column yet).
+        helper.createDatabase(testDb, 15).apply {
+            execSQL(
+                "INSERT INTO flashcard_decks (id, title, editable, tags, discussionEnabled, isGlobal) " +
+                    "VALUES (1, 'Spanish basics', 1, '[]', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, mode, " +
+                    "shuffle, shuffleSeed, questionCount, pendingSync, pendingDelete, " +
+                    "createdAtMillis, updatedAtMillis) " +
+                    "VALUES (1, 1, 2, 1, 0, 0, 'test', 0, 0, NULL, 0, 0, 1000, 1000)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_15_16 and validate against the exported v16 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 16, true, MIGRATION_15_16)
+
+        // The existing row survived; gradeAtEnd backfilled to 0 (= card-by-card).
+        db.query("SELECT currentCardIndex, gradeAtEnd FROM practice_sessions WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+            assertEquals(0, cursor.getInt(1))
+        }
+    }
 }
