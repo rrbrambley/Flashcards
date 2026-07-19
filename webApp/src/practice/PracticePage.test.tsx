@@ -49,6 +49,7 @@ const session = (over: Partial<PracticeSessionDto> = {}): PracticeSessionDto => 
   shuffle: false,
   shuffleSeed: 0,
   questionCount: null,
+  gradeAtEnd: false,
   ...over,
 });
 
@@ -88,7 +89,7 @@ describe('PracticePage', () => {
     setup(threeCards, { currentCardIndex: 1 });
     expect(await screen.findByText('Q2')).toBeInTheDocument();
     // No `shuffle=` in the route → the toggle defaults On (FLA-200), so the new session is created shuffled.
-    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true, null);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true, null, false);
   });
 
   it('clicking the card flips it', async () => {
@@ -217,7 +218,7 @@ describe('PracticePage', () => {
 
     await screen.findByText('Q1');
     // The URL count is sent to the server (resume-authoritative for the subset).
-    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', false, 2);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', false, 2, false);
 
     // Only 2 of the 3 cards play: answering both completes the run and Q3 never appears.
     await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
@@ -285,7 +286,7 @@ describe('PracticePage', () => {
     );
 
     await screen.findByText('Q1');
-    expect(api.createSession).toHaveBeenCalledWith(5, 'test', true, null);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'test', true, null, false);
 
     await userEvent.type(screen.getByLabelText('Your answer'), 'A1');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
@@ -308,13 +309,51 @@ describe('PracticePage', () => {
     );
 
     await screen.findByText('Q1');
-    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice', true, null);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice', true, null, false);
 
     await userEvent.click(screen.getByRole('button', { name: /A1/ })); // the correct option
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
 
     expect(await screen.findByText('Q2')).toBeInTheDocument();
     expect(api.updateProgress).toHaveBeenCalledWith(1, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
+  });
+
+  it('grade-at-the-end shows all cards at once, then grades on submit (#293)', async () => {
+    vi.mocked(api.createSession).mockResolvedValue(session({ mode: 'test', gradeAtEnd: true }));
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Spanish',
+      editable: true,
+      flashcards: [
+        { question: 'Q1', answer: 'A1', cardUid: 'c1' },
+        { question: 'Q2', answer: 'A2', cardUid: 'c2' },
+      ],
+    });
+    vi.mocked(api.recordAnswers).mockResolvedValue(session());
+    vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=test&shuffle=0&gradeAtEnd=1']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+          <Route path="/" element={<div>library</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // The whole session is created grade-at-end, and every card shows at once (not one at a time).
+    expect(await screen.findByText('Q1')).toBeInTheDocument();
+    expect(screen.getByText('Q2')).toBeInTheDocument();
+    expect(api.createSession).toHaveBeenCalledWith(5, 'test', false, null, true);
+
+    // Answer Q1 right and Q2 wrong, then submit.
+    await userEvent.type(screen.getByLabelText('Answer for question 1'), 'A1');
+    await userEvent.type(screen.getByLabelText('Answer for question 2'), 'nope');
+    await userEvent.click(screen.getByRole('button', { name: /Submit/ }));
+
+    // Score revealed; the whole batch was logged and the session completed.
+    expect(await screen.findByText('You got 1 of 2')).toBeInTheDocument();
+    expect(api.recordAnswers).toHaveBeenCalled();
+    expect(api.completeSession).toHaveBeenCalled();
   });
 
   it('shows an error when the deck has no cards', async () => {

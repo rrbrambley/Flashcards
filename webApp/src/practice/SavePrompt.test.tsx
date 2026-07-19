@@ -42,6 +42,7 @@ const sessionDto: PracticeSessionDto = {
   shuffle: true,
   shuffleSeed: 0,
   questionCount: null,
+  gradeAtEnd: false,
 };
 
 const props = {

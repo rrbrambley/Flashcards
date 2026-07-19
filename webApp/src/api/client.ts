@@ -220,10 +220,16 @@ export const api = {
     request<FlashcardDeckDto>(`/decks/${deckId}/global`, { method: 'PATCH', body: { global }, auth: true }),
 
   // Practice sessions
-  createSession: (deckId: number, mode = 'flashcards', shuffle = false, questionCount: number | null = null) =>
+  createSession: (
+    deckId: number,
+    mode = 'flashcards',
+    shuffle = false,
+    questionCount: number | null = null,
+    gradeAtEnd = false,
+  ) =>
     request<PracticeSessionDto>('/sessions', {
       method: 'POST',
-      body: { deckId, mode, shuffle, questionCount },
+      body: { deckId, mode, shuffle, questionCount, gradeAtEnd },
       auth: true,
     }),
   getSession: (id: number) => request<PracticeSessionDto>(`/sessions/${id}`, { auth: true }),

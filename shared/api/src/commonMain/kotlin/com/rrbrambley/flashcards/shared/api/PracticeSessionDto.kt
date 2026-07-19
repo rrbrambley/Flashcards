@@ -27,4 +27,7 @@ data class PracticeSessionDto(
      *  `order(...).take(questionCount)`. Null = the whole deck. Minted once at creation (stable across
      *  resume). Defaulted so the Room mapper and older/mobile clients that omit it practice the deck. */
     val questionCount: Int? = null,
+    /** Grade the whole session at the end instead of per-card (#293). Fixed at creation. Defaulted so
+     *  the Room mapper and older/mobile clients that omit it keep grading per card. */
+    val gradeAtEnd: Boolean = false,
 )

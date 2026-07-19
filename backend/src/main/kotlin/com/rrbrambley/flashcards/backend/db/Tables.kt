@@ -183,6 +183,10 @@ object PracticeSessions : LongIdTable("practice_sessions") {
     // old rows). Fixed at creation like the seed.
     val questionCount = integer("question_count").nullable()
 
+    // Grade the whole session at the end instead of per-card (#293) — the client shows all cards in a
+    // scrollable list and grades on submit. Default false (backfills old rows) so it's opt-in per session.
+    val gradeAtEnd = bool("grade_at_end").default(false)
+
     val createdAtMillis = long("created_at_millis")
     val updatedAtMillis = long("updated_at_millis")
 

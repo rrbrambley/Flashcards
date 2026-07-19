@@ -25,6 +25,7 @@ function RunnerStub() {
       <span>mode={params.get('mode')}</span>
       <span>shuffle={params.get('shuffle')}</span>
       <span>questions={params.get('questions') ?? ''}</span>
+      <span>gradeAtEnd={params.get('gradeAtEnd') ?? ''}</span>
       <span>from={from ?? ''}</span>
     </div>
   );
@@ -142,6 +143,40 @@ describe('ModeChooser', () => {
     await screen.findByText('Practice Spanish');
 
     expect(screen.queryByLabelText(/Questions/)).not.toBeInTheDocument();
+  });
+
+  it('offers Grade-at-the-end for Test/Multiple Choice and routes gradeAtEnd=1 (#293)', async () => {
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    // Always visible, but disabled until a gradeable mode is picked.
+    const toggle = screen.getByRole('checkbox', { name: /Grade at the end/ });
+    expect(toggle).toBeDisabled();
+    await userEvent.click(screen.getByRole('radio', { name: /Test/ }));
+    expect(toggle).toBeEnabled();
+
+    await userEvent.click(toggle);
+    await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
+
+    expect(await screen.findByText('gradeAtEnd=1')).toBeInTheDocument();
+  });
+
+  it('disables Grade-at-the-end for Classic mode (#293)', async () => {
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    await userEvent.click(screen.getByRole('radio', { name: /Classic/ }));
+    // Shown but disabled — Classic is a self-graded flip.
+    expect(screen.getByRole('checkbox', { name: /Grade at the end/ })).toBeDisabled();
+  });
+
+  it('hides Grade-at-the-end when its flag is disabled (#293)', async () => {
+    mockFlags = { practice_grade_at_end: false };
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    await userEvent.click(screen.getByRole('radio', { name: /Test/ }));
+    expect(screen.queryByRole('checkbox', { name: /Grade at the end/ })).not.toBeInTheDocument();
   });
 
   it('hides a mode whose feature flag is disabled (FLA-213)', async () => {

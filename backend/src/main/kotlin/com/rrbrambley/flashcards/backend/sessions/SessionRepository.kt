@@ -39,6 +39,7 @@ object SessionRepository {
         mode: String,
         shuffle: Boolean,
         questionCount: Int? = null,
+        gradeAtEnd: Boolean = false,
     ): PracticeSessionDto {
         // A subset session (FLA-219) must ask for at least one card; null = the whole deck. The upper
         // bound is left to the client (it has the deck) — clients take(count), which clamps naturally.
@@ -70,6 +71,7 @@ object SessionRepository {
                 it[PracticeSessions.shuffle] = shuffle
                 it[shuffleSeed] = seed
                 it[PracticeSessions.questionCount] = questionCount
+                it[PracticeSessions.gradeAtEnd] = gradeAtEnd
                 it[createdAtMillis] = now
                 it[updatedAtMillis] = now
             }.value
@@ -87,6 +89,7 @@ object SessionRepository {
                 shuffle = shuffle,
                 shuffleSeed = seed,
                 questionCount = questionCount,
+                gradeAtEnd = gradeAtEnd,
             )
         }
     }

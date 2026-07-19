@@ -22,11 +22,14 @@ export function ModeChooser({ deckId }: { deckId: number }) {
   const modes = PRACTICE_MODES.filter((mode) => isGuest || isEnabled(mode.flagKey));
   // Offer the "Questions" subset field only when its flag is on (FLA-219); guests carry no flags → shown.
   const questionsEnabled = isGuest || isEnabled('practice_question_count');
+  // Offer the "Grade at the end" toggle only when its flag is on (#293); guests carry no flags → shown.
+  const gradeAtEndEnabled = isGuest || isEnabled('practice_grade_at_end');
   // Carry the practice referrer (FLA-168) through the chooser so the runner exits to it too.
   const from = fromState(location.state);
   const exit = exitTarget(from, isGuest);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [shuffle, setShuffle] = useState(true);
+  const [gradeAtEnd, setGradeAtEnd] = useState(false);
   const [deckTitle, setDeckTitle] = useState<string | null>(null);
   // The deck's card count = the max questions; the field defaults to it (practice the whole deck).
   const [maxQuestions, setMaxQuestions] = useState(0);
@@ -49,11 +52,15 @@ export function ModeChooser({ deckId }: { deckId: number }) {
     };
   }, [deckId, isGuest]);
 
+  // Grade-at-the-end only applies to the objectively-graded modes (#293) — not Classic's self-graded flip.
+  const canGradeAtEnd = gradeAtEndEnabled && (selectedMode === 'test' || selectedMode === 'multiple_choice');
+
   const start = () => {
     if (!selectedMode) return;
     let url = `/decks/${deckId}/practice?mode=${selectedMode}&shuffle=${shuffle ? 1 : 0}`;
     // Only a real subset (< the whole deck) needs the param; the runner treats its absence as "all".
     if (questionsEnabled && questions != null && questions < maxQuestions) url += `&questions=${questions}`;
+    if (canGradeAtEnd && gradeAtEnd) url += '&gradeAtEnd=1';
     navigate(url, { state: { from } });
   };
 
@@ -112,6 +119,23 @@ export function ModeChooser({ deckId }: { deckId: number }) {
           <span className="shuffle-toggle-label">Shuffle cards</span>
           <span className="muted">Practice in a random order</span>
         </label>
+
+        {/* Always shown (when flagged), but disabled unless a gradeable mode is picked — Classic is a
+            self-graded flip, so there's nothing to defer. */}
+        {gradeAtEndEnabled && (
+          <label className={`shuffle-toggle${canGradeAtEnd ? '' : ' disabled'}`}>
+            <input
+              type="checkbox"
+              checked={canGradeAtEnd && gradeAtEnd}
+              disabled={!canGradeAtEnd}
+              onChange={(e) => setGradeAtEnd(e.target.checked)}
+            />
+            <span className="shuffle-toggle-label">Grade at the end</span>
+            <span className="muted">
+              {canGradeAtEnd ? 'Answer every card, then submit to see your score' : 'Available for Test & Multiple Choice'}
+            </span>
+          </label>
+        )}
 
         <button type="button" className="start-practice" onClick={start} disabled={!selectedMode}>
           Start practice
