@@ -13,6 +13,8 @@ interface PracticeSessionRepository {
         shuffle: Boolean = false,
         // A subset of the deck to practice (FLA-219); null = the whole deck. Fixed at creation.
         questionCount: Int? = null,
+        // Grade the whole session at the end (#293) rather than card-by-card. Fixed at creation.
+        gradeAtEnd: Boolean = false,
     ): Long
     fun observeActiveSessions(): Flow<List<PracticeSession>>
     fun observeSession(sessionId: Long): Flow<PracticeSession?>

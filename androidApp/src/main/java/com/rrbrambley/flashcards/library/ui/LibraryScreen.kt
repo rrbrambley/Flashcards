@@ -76,6 +76,7 @@ fun LibraryScreen(
     val sortOrder by libraryViewModel.sortOrder.collectAsState()
     val availableModes by libraryViewModel.availableModes.collectAsState()
     val questionCountEnabled by libraryViewModel.questionCountEnabled.collectAsState()
+    val gradeAtEndEnabled by libraryViewModel.gradeAtEndEnabled.collectAsState()
     var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
     var deckPendingDeletion by remember { mutableStateOf<FlashcardDeck?>(null) }
 
@@ -84,10 +85,11 @@ fun LibraryScreen(
             deck = deck,
             availableModes = availableModes,
             questionCountEnabled = questionCountEnabled,
+            gradeAtEndEnabled = gradeAtEndEnabled,
             onDismissRequest = { selectedDeck = null },
-            onPracticeWithMode = { mode, shuffle, questionCount ->
+            onPracticeWithMode = { mode, shuffle, questionCount, gradeAtEnd ->
                 selectedDeck = null
-                libraryViewModel.startPractice(deck.id, mode.key, shuffle, questionCount, onPracticeDeck)
+                libraryViewModel.startPractice(deck.id, mode.key, shuffle, questionCount, gradeAtEnd, onPracticeDeck)
             },
             onEditClick = {
                 selectedDeck = null
@@ -360,8 +362,9 @@ private fun LibraryDeckActionsSheet(
     deck: FlashcardDeck,
     availableModes: List<PracticeMode>,
     questionCountEnabled: Boolean,
+    gradeAtEndEnabled: Boolean,
     onDismissRequest: () -> Unit,
-    onPracticeWithMode: (PracticeMode, Boolean, Int?) -> Unit,
+    onPracticeWithMode: (PracticeMode, Boolean, Int?, Boolean) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
@@ -370,9 +373,13 @@ private fun LibraryDeckActionsSheet(
     var choosingMode by remember { mutableStateOf(false) }
     var selectedMode by remember { mutableStateOf<PracticeMode?>(null) }
     var shuffle by remember { mutableStateOf(true) }
+    var gradeAtEnd by remember { mutableStateOf(false) }
     // The deck's card count = the max; the field defaults to it (practice the whole deck). FLA-219.
     val maxQuestions = deck.flashcards.size
     var questionsText by remember { mutableStateOf(maxQuestions.toString()) }
+    // Grade-at-the-end only applies to the objectively-graded modes (#293) — not Classic's self-graded flip.
+    val canGradeAtEnd = gradeAtEndEnabled &&
+        (selectedMode == PracticeMode.Test || selectedMode == PracticeMode.MultipleChoice)
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
         Column(
             modifier = Modifier
@@ -422,13 +429,22 @@ private fun LibraryDeckActionsSheet(
                     )
                 }
                 ShuffleSettingRow(checked = shuffle, onCheckedChange = { shuffle = it })
+                // Grade-at-the-end (#293): always shown when flagged, but disabled unless a gradeable
+                // mode (Test / Multiple Choice) is selected — Classic is a self-graded flip.
+                if (gradeAtEndEnabled) {
+                    GradeAtEndSettingRow(
+                        checked = canGradeAtEnd && gradeAtEnd,
+                        enabled = canGradeAtEnd,
+                        onCheckedChange = { gradeAtEnd = it },
+                    )
+                }
                 Button(
                     onClick = {
                         selectedMode?.let { mode ->
                             // Clamp to 1..max; a real subset (< the whole deck) sends a count, else null.
                             val n = questionsText.toIntOrNull()?.coerceIn(1, maxQuestions) ?: maxQuestions
                             val count = if (questionCountEnabled && n < maxQuestions) n else null
-                            onPracticeWithMode(mode, shuffle, count)
+                            onPracticeWithMode(mode, shuffle, count, canGradeAtEnd && gradeAtEnd)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -536,6 +552,42 @@ private fun ShuffleSettingRow(checked: Boolean, onCheckedChange: (Boolean) -> Un
             )
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+/** "Grade at the end" toggle (#293): grayed + off when [enabled] is false (Classic mode selected). */
+@Composable
+private fun GradeAtEndSettingRow(checked: Boolean, enabled: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    val contentColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = stringResource(R.string.practice_grade_at_end_label),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor,
+            )
+            Text(
+                text = stringResource(
+                    if (enabled) {
+                        R.string.practice_grade_at_end_description
+                    } else {
+                        R.string.practice_grade_at_end_unavailable
+                    },
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else contentColor,
+            )
+        }
+        Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange)
     }
 }
 

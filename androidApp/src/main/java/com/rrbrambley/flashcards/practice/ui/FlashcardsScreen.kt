@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -24,12 +25,15 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -44,6 +48,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +68,8 @@ import coil3.compose.AsyncImage
 import com.rrbrambley.flashcards.BuildConfig
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussionSheet
+import com.rrbrambley.flashcards.practice.grading.buildChoices
+import com.rrbrambley.flashcards.shared.domain.BatchPracticeUiState
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.GuestSaveState
 import com.rrbrambley.flashcards.shared.domain.InSessionStreak
@@ -71,12 +78,10 @@ import com.rrbrambley.flashcards.shared.domain.PracticeUiState
 import com.rrbrambley.flashcards.shared.domain.ReviewItem
 
 /**
- * The mode-agnostic practice runner. The Scaffold + score row + loading/completion states are shared;
- * each card is rendered by the per-mode view chosen from the session's [PracticeUiState.ShowCard.mode]
- * (Classic flip / Test text-entry / Multiple Choice). The ViewModel owns the session loop — index,
- * score, persistence, completion — and every mode reports its outcome via `onResult(correct)`.
+ * The practice runner entry point. Resolves which runner to show from the session's grade-at-the-end
+ * flag (#293): the card-by-card loop ([CardByCardPractice]) or the grade-at-the-end batch list
+ * ([BatchPracticeScreen]). The ViewModel owns the shared controllers and re-exposes their state.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlashcardsScreen(
     sessionId: Long? = null,
@@ -89,7 +94,35 @@ fun FlashcardsScreen(
     LaunchedEffect(sessionId, deckId, isGuest, mode) {
         flashcardsViewModel.load(sessionId, deckId, isGuest, mode)
     }
-    val flashcardsState by flashcardsViewModel.uiState.collectAsState()
+    when (val screen = flashcardsViewModel.screenState.collectAsState().value) {
+        is FlashcardsScreenState.Batch ->
+            BatchPracticeScreen(
+                state = screen.state,
+                onSubmit = flashcardsViewModel::submitBatch,
+                sharedDeck = flashcardsViewModel::sharedDeck,
+                onBack = onBack,
+            )
+        is FlashcardsScreenState.CardByCard ->
+            CardByCardPractice(screen.state, isGuest, flashcardsViewModel, onBack)
+        FlashcardsScreenState.Loading ->
+            CardByCardPractice(PracticeUiState.Loading, isGuest, flashcardsViewModel, onBack)
+    }
+}
+
+/**
+ * The mode-agnostic card-by-card runner. The Scaffold + score row + loading/completion states are
+ * shared; each card is rendered by the per-mode view chosen from the session's
+ * [PracticeUiState.ShowCard.mode] (Classic flip / Test text-entry / Multiple Choice). The ViewModel
+ * owns the session loop — index, score, persistence, completion — and every mode reports its outcome.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CardByCardPractice(
+    flashcardsState: PracticeUiState,
+    isGuest: Boolean,
+    flashcardsViewModel: FlashcardsViewModel,
+    onBack: () -> Unit = {},
+) {
     val saveState by flashcardsViewModel.saveState.collectAsState()
     val context = LocalContext.current
     var showHelpDialog by remember { mutableStateOf(false) }
@@ -561,4 +594,182 @@ internal fun FlashcardText(text: String, modifier: Modifier = Modifier) {
         color = MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center,
     )
+}
+
+/**
+ * The "grade at the end" runner (#293): every card in one scrollable list to answer in any order, then
+ * a Submit that grades the whole set and lands on the same completion recap the card-by-card runner
+ * uses (#298). Test / Multiple Choice only. Driven by the shared [BatchPracticeUiState].
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BatchPracticeScreen(
+    state: BatchPracticeUiState,
+    onSubmit: (List<String?>) -> Unit,
+    sharedDeck: () -> Pair<Long, String>?,
+    onBack: () -> Unit,
+) {
+    val context = LocalContext.current
+    val canShare = state is BatchPracticeUiState.Answering || state is BatchPracticeUiState.Completed
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(stringResource(R.string.flashcards), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary,
+                ),
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
+                    }
+                },
+                actions = {
+                    if (canShare) {
+                        IconButton(onClick = { shareDeck(context, sharedDeck()) }) {
+                            Icon(Icons.Default.Share, contentDescription = stringResource(R.string.practice_cd_share))
+                        }
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+            when (state) {
+                BatchPracticeUiState.Loading, BatchPracticeUiState.Failed ->
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+
+                is BatchPracticeUiState.Answering ->
+                    BatchAnswering(cards = state.cards, mode = state.mode, onSubmit = onSubmit)
+
+                is BatchPracticeUiState.Completed ->
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        ScoreRow(
+                            PracticeUiState.Completed(
+                                numCorrect = state.numCorrect,
+                                numIncorrect = state.numIncorrect,
+                            ),
+                        )
+                        FlashcardsCompletionContent(
+                            streak = state.streak,
+                            review = state.review,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+            }
+        }
+    }
+}
+
+/** The answering phase of a grade-at-the-end run: the card list + a sticky Submit. Owns the entries. */
+@Composable
+private fun BatchAnswering(cards: List<Flashcard>, mode: String, onSubmit: (List<String?>) -> Unit) {
+    val isTest = mode == PracticeMode.Test.key
+    // Multiple-choice options per card, built once so they don't reshuffle on recomposition.
+    val choices = remember(cards) { if (isTest) emptyList() else cards.map { buildChoices(it, cards) } }
+    // Per-card entry: the typed text (Test) or the chosen option index (Multiple Choice; -1 = none).
+    val typed = remember(cards) { cards.map { "" }.toMutableStateList() }
+    val picked = remember(cards) { cards.map { -1 }.toMutableStateList() }
+
+    val answeredCount = if (isTest) typed.count { it.isNotBlank() } else picked.count { it >= 0 }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            itemsIndexed(cards) { i, card ->
+                BatchCardItem(
+                    number = i + 1,
+                    card = card,
+                    isTest = isTest,
+                    options = choices.getOrNull(i).orEmpty(),
+                    typedValue = typed[i],
+                    onType = { typed[i] = it },
+                    pickedIndex = picked[i],
+                    onPick = { picked[i] = it },
+                )
+            }
+        }
+        Surface(shadowElevation = 8.dp) {
+            Button(
+                onClick = {
+                    val answers: List<String?> = if (isTest) {
+                        typed.map { it.ifBlank { null } }
+                    } else {
+                        picked.mapIndexed { i, idx -> idx.takeIf { it >= 0 }?.let { choices[i].getOrNull(it) } }
+                    }
+                    onSubmit(answers)
+                },
+                enabled = answeredCount > 0,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+            ) {
+                Text(stringResource(R.string.practice_batch_submit, answeredCount, cards.size))
+            }
+        }
+    }
+}
+
+/** One card in the grade-at-the-end list: its number + prompt + a text field (Test) or options (MC). */
+@Composable
+private fun BatchCardItem(
+    number: Int,
+    card: Flashcard,
+    isTest: Boolean,
+    options: List<String>,
+    typedValue: String,
+    onType: (String) -> Unit,
+    pickedIndex: Int,
+    onPick: (Int) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = CardDefaults.outlinedCardBorder(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "$number.",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+            )
+            CardPrompt(flashcard = card)
+            if (isTest) {
+                OutlinedTextField(
+                    value = typedValue,
+                    onValueChange = onType,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else {
+                options.forEachIndexed { idx, option ->
+                    val selected = idx == pickedIndex
+                    OutlinedButton(
+                        onClick = { onPick(idx) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = if (selected) {
+                            ButtonDefaults.outlinedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        } else {
+                            ButtonDefaults.outlinedButtonColors()
+                        },
+                    ) {
+                        Text(option, modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            }
+        }
+    }
 }

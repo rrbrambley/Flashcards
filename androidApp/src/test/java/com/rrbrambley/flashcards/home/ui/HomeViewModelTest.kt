@@ -254,6 +254,7 @@ class HomeViewModelTest {
             mode: String,
             shuffle: Boolean,
             questionCount: Int?,
+            gradeAtEnd: Boolean,
         ): Long = 0L
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(emptyList())
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(null)

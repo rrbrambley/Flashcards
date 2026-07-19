@@ -6,6 +6,8 @@ import com.rrbrambley.flashcards.auth.FeatureFlagRepository
 import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.domain.BatchPracticeController
+import com.rrbrambley.flashcards.shared.domain.BatchPracticeUiState
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.GuestSaveState
 import com.rrbrambley.flashcards.shared.domain.PracticeEntry
@@ -17,14 +19,28 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Which practice runner drives the screen — resolved from the session's `gradeAtEnd` flag (#293). */
+sealed interface FlashcardsScreenState {
+    data object Loading : FlashcardsScreenState
+
+    /** The card-by-card loop (Classic / Test / Multiple Choice), driven by [PracticeSessionController]. */
+    data class CardByCard(val state: PracticeUiState) : FlashcardsScreenState
+
+    /** The grade-at-the-end batch list, driven by [BatchPracticeController]. */
+    data class Batch(val state: BatchPracticeUiState) : FlashcardsScreenState
+}
+
 /**
- * Thin Android adapter over the shared [PracticeSessionController] (FLA-197): builds the controller for
- * the requested entry, re-exposes its `state`/`saveState`, and delegates the runner actions. The only
- * platform logic left here is applying the `discussions` feature flag to the shared (raw) opt-in — a
- * guest keeps read-only discussions, a signed-in user needs the flag on (mirrors iOS's view gate).
+ * Thin Android adapter over the shared practice controllers (FLA-197): resolves the session's
+ * `gradeAtEnd` flag (#293), then builds and drives the matching runner — the card-by-card
+ * [PracticeSessionController] or the grade-at-the-end [BatchPracticeController] — re-exposing its state
+ * as a [FlashcardsScreenState] and delegating the runner actions. The only platform logic left here is
+ * applying the `discussions` feature flag to the shared (raw) opt-in — a guest keeps read-only
+ * discussions, a signed-in user needs the flag on (mirrors iOS's view gate).
  */
 @HiltViewModel
 class FlashcardsViewModel @Inject constructor(
@@ -34,13 +50,14 @@ class FlashcardsViewModel @Inject constructor(
     private val authService: AuthService,
     private val featureFlagRepository: FeatureFlagRepository,
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<PracticeUiState>(PracticeUiState.Loading)
-    val uiState: StateFlow<PracticeUiState> = _uiState.asStateFlow()
+    private val _screenState = MutableStateFlow<FlashcardsScreenState>(FlashcardsScreenState.Loading)
+    val screenState: StateFlow<FlashcardsScreenState> = _screenState.asStateFlow()
 
     private val _saveState = MutableStateFlow<GuestSaveState>(GuestSaveState.Idle)
     val saveState: StateFlow<GuestSaveState> = _saveState.asStateFlow()
 
     private var controller: PracticeSessionController? = null
+    private var batchController: BatchPracticeController? = null
     private var loaded = false
     private var discussionsFlag = false
 
@@ -52,10 +69,32 @@ class FlashcardsViewModel @Inject constructor(
             sessionId != null -> PracticeEntry.Session(sessionId)
             deckId != null -> PracticeEntry.Deck(deckId, mode)
             else -> {
-                _uiState.value = PracticeUiState.Failed
+                _screenState.value = FlashcardsScreenState.CardByCard(PracticeUiState.Failed)
                 return
             }
         }
+        viewModelScope.launch {
+            discussionsFlag =
+                runCatching { featureFlagRepository.isEnabled(FeatureFlags.DISCUSSIONS) }.getOrDefault(false)
+            // Resolve the grading mode: a stored session is authoritative (resume keeps its choice),
+            // a deck/guest entry carries the picker's choice. Then drive the matching shared controller.
+            if (resolveGradeAtEnd(entry)) {
+                startBatch(entry)
+            } else {
+                startCardByCard(entry)
+            }
+        }
+    }
+
+    private suspend fun resolveGradeAtEnd(entry: PracticeEntry): Boolean = when (entry) {
+        is PracticeEntry.Session ->
+            runCatching { practiceSessionRepository.observeSession(entry.sessionId).first()?.gradeAtEnd }
+                .getOrNull() ?: false
+        is PracticeEntry.Deck -> entry.gradeAtEnd
+        is PracticeEntry.GuestDeck -> entry.gradeAtEnd
+    }
+
+    private fun startCardByCard(entry: PracticeEntry) {
         val c = PracticeSessionController(
             flashcardRepository,
             practiceSessionRepository,
@@ -65,16 +104,28 @@ class FlashcardsViewModel @Inject constructor(
         )
         controller = c
         viewModelScope.launch {
-            discussionsFlag =
-                runCatching { featureFlagRepository.isEnabled(FeatureFlags.DISCUSSIONS) }.getOrDefault(false)
-            launch { c.state.collect { state -> _uiState.value = applyDiscussionsFlag(state, c) } }
+            launch {
+                c.state.collect { state ->
+                    _screenState.value = FlashcardsScreenState.CardByCard(applyDiscussionsFlag(state, c))
+                }
+            }
             launch { c.saveState.collect { _saveState.value = it } }
+            c.start()
+        }
+    }
+
+    private fun startBatch(entry: PracticeEntry) {
+        val c = BatchPracticeController(flashcardRepository, practiceSessionRepository, apiClient, entry)
+        batchController = c
+        viewModelScope.launch {
+            launch { c.state.collect { _screenState.value = FlashcardsScreenState.Batch(it) } }
             c.start()
         }
     }
 
     /** The deck being practiced (id + title), for the Share action; null until loaded. */
     fun sharedDeck(): Pair<Long, String>? = controller?.let { c -> c.deckId?.let { it to c.deckTitle } }
+        ?: batchController?.let { c -> c.deckId?.let { it to c.deckTitle } }
 
     fun onResult(correct: Boolean, submittedText: String? = null) {
         controller?.onResult(correct, submittedText)
@@ -90,6 +141,11 @@ class FlashcardsViewModel @Inject constructor(
 
     fun goForward() {
         controller?.goForward()
+    }
+
+    /** Grade the whole batch (#293): [answers] align with the list order (typed text / chosen option). */
+    fun submitBatch(answers: List<String?>) {
+        batchController?.submit(answers)
     }
 
     fun shouldPromptSave(): Boolean = controller?.shouldPromptSave ?: false
@@ -110,6 +166,7 @@ class FlashcardsViewModel @Inject constructor(
 
     override fun onCleared() {
         controller?.close()
+        batchController?.close()
         super.onCleared()
     }
 }

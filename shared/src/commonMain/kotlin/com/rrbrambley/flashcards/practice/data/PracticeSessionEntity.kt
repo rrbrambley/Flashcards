@@ -50,4 +50,7 @@ data class PracticeSessionEntity(
     val pendingDelete: Boolean = false,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
+    // Whether the whole session is graded at the end (#293) rather than card-by-card — Test / Multiple
+    // Choice only. Defaults keep old rows card-by-card (also backfills old rows). See MIGRATION_15_16.
+    val gradeAtEnd: Boolean = false,
 )

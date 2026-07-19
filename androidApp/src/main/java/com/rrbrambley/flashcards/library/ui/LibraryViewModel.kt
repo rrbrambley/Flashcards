@@ -46,6 +46,10 @@ class LibraryViewModel @Inject constructor(
     private val _questionCountEnabled = MutableStateFlow(true)
     val questionCountEnabled: StateFlow<Boolean> = _questionCountEnabled.asStateFlow()
 
+    // Whether the "Grade at the end" toggle is offered in the config sheet (#293). Fail-open too.
+    private val _gradeAtEndEnabled = MutableStateFlow(true)
+    val gradeAtEndEnabled: StateFlow<Boolean> = _gradeAtEndEnabled.asStateFlow()
+
     // One-shot user-facing messages (e.g. a failed delete), surfaced as a snackbar.
     private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val userMessages: SharedFlow<String> = _userMessages.asSharedFlow()
@@ -79,6 +83,7 @@ class LibraryViewModel @Inject constructor(
             val flags = runCatching { featureFlagRepository.flags() }.getOrDefault(emptyMap())
             _availableModes.value = PracticeMode.entries.filter { flags[it.flagKey] != false }
             _questionCountEnabled.value = flags[FeatureFlags.PRACTICE_QUESTION_COUNT] != false
+            _gradeAtEndEnabled.value = flags[FeatureFlags.PRACTICE_GRADE_AT_END] != false
         }
     }
 
@@ -147,14 +152,17 @@ class LibraryViewModel @Inject constructor(
         mode: String,
         shuffle: Boolean,
         questionCount: Int?,
+        gradeAtEnd: Boolean,
         onSessionStarted: (Long) -> Unit,
     ) {
         viewModelScope.launch {
             // Backend-first; offline (and no cached session to resume) it throws — catch it so an
             // uncaught failure here can't crash the app, and tell the user why nothing opened. The
-            // session is created with the shuffle + question-count choices (FLA-200/219); the runner
-            // resumes it by id and applies the stored order + subset.
-            runCatching { practiceSessionRepository.startOrResumeSession(deckId, mode, shuffle, questionCount) }
+            // session is created with the shuffle + question-count + grade-at-end choices (FLA-200/219,
+            // #293); the runner resumes it by id and applies the stored order + subset + grading mode.
+            runCatching {
+                practiceSessionRepository.startOrResumeSession(deckId, mode, shuffle, questionCount, gradeAtEnd)
+            }
                 .onSuccess { onSessionStarted(it) }
                 .onFailure { _userMessages.tryEmit(stringProvider.getString(R.string.library_practice_start_error)) }
         }

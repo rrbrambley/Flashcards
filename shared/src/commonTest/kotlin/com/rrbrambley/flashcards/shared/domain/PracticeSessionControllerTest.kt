@@ -306,6 +306,7 @@ class PracticeSessionControllerTest {
             mode: String,
             shuffle: Boolean,
             questionCount: Int?,
+            gradeAtEnd: Boolean,
         ): Long = SESSION_ID
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = MutableStateFlow(listOfNotNull(session))
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> = MutableStateFlow(session)

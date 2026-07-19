@@ -43,6 +43,7 @@ fun PracticeSessionDto.toEntity(): PracticeSessionEntity = PracticeSessionEntity
     shuffle = shuffle,
     shuffleSeed = shuffleSeed,
     questionCount = questionCount,
+    gradeAtEnd = gradeAtEnd,
     // A row sourced from the backend is, by definition, in sync.
     pendingSync = false,
     createdAtMillis = createdAtMillis,
@@ -81,6 +82,7 @@ fun PracticeSessionWithDeck.toDomain(): PracticeSession = PracticeSession(
     shuffle = session.shuffle,
     shuffleSeed = session.shuffleSeed,
     questionCount = session.questionCount,
+    gradeAtEnd = session.gradeAtEnd,
 )
 
 // --- Practice answers (FLA-99) ---

@@ -23,4 +23,7 @@ data class PracticeSession(
     // How many cards this session practices — a subset of the deck (FLA-219); null = the whole deck.
     // Applied after ordering (take) at load; fixed at creation.
     val questionCount: Int? = null,
+    // Whether the whole session is graded at the end (#293) — all cards answered in a list, then
+    // submitted — instead of card-by-card. Only Test / Multiple Choice; fixed at creation.
+    val gradeAtEnd: Boolean = false,
 )

@@ -53,9 +53,13 @@ class FlashcardsViewModelTest {
         Dispatchers.resetMain()
     }
 
+    /** Unwraps the current card-by-card [PracticeUiState.ShowCard] from the screen state (#293). */
+    private fun FlashcardsViewModel.showCard(): PracticeUiState.ShowCard =
+        (screenState.value as FlashcardsScreenState.CardByCard).state as PracticeUiState.ShowCard
+
     @Test
     fun uiState_startsAsLoading() {
-        assertEquals(PracticeUiState.Loading, createViewModel(testFlashcards()).uiState.value)
+        assertEquals(FlashcardsScreenState.Loading, createViewModel(testFlashcards()).screenState.value)
     }
 
     @Test
@@ -69,7 +73,7 @@ class FlashcardsViewModelTest {
         viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = viewModel.uiState.value as PracticeUiState.ShowCard
+        val state = viewModel.showCard()
         assertEquals("Question 2", state.card.question) // restored to index 1
         assertEquals(2, state.numCorrect)
         assertEquals(1, state.numIncorrect)
@@ -85,7 +89,7 @@ class FlashcardsViewModelTest {
         viewModel.onResult(correct = true)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = viewModel.uiState.value as PracticeUiState.ShowCard
+        val state = viewModel.showCard()
         assertEquals(1, state.position)
         assertEquals(1, state.numCorrect)
     }
@@ -96,7 +100,7 @@ class FlashcardsViewModelTest {
         viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue((viewModel.uiState.value as PracticeUiState.ShowCard).discussionsEnabled)
+        assertTrue(viewModel.showCard().discussionsEnabled)
     }
 
     @Test
@@ -106,7 +110,7 @@ class FlashcardsViewModelTest {
         viewModel.load(sessionId = SESSION_ID, deckId = null)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertFalse((viewModel.uiState.value as PracticeUiState.ShowCard).discussionsEnabled)
+        assertFalse(viewModel.showCard().discussionsEnabled)
     }
 
     private fun createViewModel(
@@ -207,6 +211,7 @@ class FlashcardsViewModelTest {
             mode: String,
             shuffle: Boolean,
             questionCount: Int?,
+            gradeAtEnd: Boolean,
         ): Long = session?.id ?: 0L
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(listOfNotNull(session))
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> =

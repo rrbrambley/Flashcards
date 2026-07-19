@@ -39,6 +39,33 @@ sealed class PracticeUiState {
     data object Failed : PracticeUiState()
 }
 
+/**
+ * What the "grade at the end" batch runner shows (#293), produced by [BatchPracticeController] and
+ * shared by Android + iOS. Every card is answered in one scrollable list, then graded together on
+ * submit — which lands on the same completion recap the card-by-card runner uses (#298).
+ */
+sealed class BatchPracticeUiState {
+    data object Loading : BatchPracticeUiState()
+
+    /** The answering phase: every card at once. The view owns the per-card entries locally. */
+    data class Answering(
+        val cards: List<Flashcard>,
+        /** The session's mode key — test or multiple_choice (Classic can't defer grading). */
+        val mode: String,
+    ) : BatchPracticeUiState()
+
+    /** After submit: the graded recap, mirroring [PracticeUiState.Completed]. */
+    data class Completed(
+        val numCorrect: Int,
+        val numIncorrect: Int,
+        /** Overall practice streak after this completion (FLA-106); null until read / 0 = none. */
+        val streak: Int? = null,
+        val review: List<ReviewItem> = emptyList(),
+    ) : BatchPracticeUiState()
+
+    data object Failed : BatchPracticeUiState()
+}
+
 /** One graded card in the end-of-session recap (FLA-149) — an answer joined to its deck card. */
 data class ReviewItem(
     val answerUid: String,
@@ -71,6 +98,8 @@ sealed class PracticeEntry {
         val shuffle: Boolean = false,
         // A subset of the deck to practice (FLA-219); null = the whole deck. Applies to a new session.
         val questionCount: Int? = null,
+        // Grade the whole session at the end (#293) rather than card-by-card. Applies to a new session.
+        val gradeAtEnd: Boolean = false,
     ) : PracticeEntry()
 
     /** Resume an existing session; the mode + shuffle order come from the session. */
@@ -82,5 +111,6 @@ sealed class PracticeEntry {
         val mode: String,
         val shuffle: Boolean = false,
         val questionCount: Int? = null,
+        val gradeAtEnd: Boolean = false,
     ) : PracticeEntry()
 }
