@@ -13,12 +13,20 @@ struct PracticeConfigView: View {
     let maxQuestions: Int
     /// Whether to offer the "Questions" subset field (gated on `practice_question_count`).
     let questionCountEnabled: Bool
-    let onStart: (_ modeKey: String, _ shuffle: Bool, _ questionCount: Int32?) -> Void
+    /// Whether to offer the "Grade at the end" toggle (gated on `practice_grade_at_end`, #293).
+    let gradeAtEndEnabled: Bool
+    let onStart: (_ modeKey: String, _ shuffle: Bool, _ questionCount: Int32?, _ gradeAtEnd: Bool) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var selectedMode: String?
     @State private var shuffle = true
+    @State private var gradeAtEnd = false
     @State private var questionsText = ""
+
+    /// Grade-at-the-end only applies to the objectively-graded modes (#293), not Classic's self-graded flip.
+    private var canGradeAtEnd: Bool {
+        gradeAtEndEnabled && (selectedMode == PracticeMode.test.key || selectedMode == PracticeMode.multiplechoice.key)
+    }
 
     var body: some View {
         NavigationStack {
@@ -61,6 +69,19 @@ struct PracticeConfigView: View {
                         }
                     }
                     Toggle("Shuffle cards", isOn: $shuffle)
+                    // Grade-at-the-end (#293): always shown when flagged, but disabled unless a gradeable
+                    // mode (Test / Multiple Choice) is selected — Classic is a self-graded flip.
+                    if gradeAtEndEnabled {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Toggle("Grade at the end", isOn: $gradeAtEnd)
+                                .disabled(!canGradeAtEnd)
+                            Text(canGradeAtEnd
+                                ? "Answer every card, then submit to see your score"
+                                : "Available for Test & Multiple Choice")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
             }
             .navigationTitle("Practice \(deckTitle)")
@@ -72,7 +93,9 @@ struct PracticeConfigView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Start") {
-                        if let selectedMode { onStart(selectedMode, shuffle, chosenQuestionCount()) }
+                        if let selectedMode {
+                            onStart(selectedMode, shuffle, chosenQuestionCount(), canGradeAtEnd && gradeAtEnd)
+                        }
                     }
                     .disabled(selectedMode == nil)
                 }

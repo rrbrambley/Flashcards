@@ -2,6 +2,8 @@ package com.rrbrambley.flashcards.shared
 
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
+import com.rrbrambley.flashcards.shared.domain.BatchPracticeController
+import com.rrbrambley.flashcards.shared.domain.BatchPracticeUiState
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.GuestSaveState
@@ -68,6 +70,22 @@ fun PracticeSessionController.stateAdapter(): FlowAdapter<PracticeUiState> = Flo
 
 /** The guest "save your progress" flow state. */
 fun PracticeSessionController.saveStateAdapter(): FlowAdapter<GuestSaveState> = FlowAdapter(saveState)
+
+/**
+ * Builds the shared "grade at the end" batch runner (#293) for iOS — supplies the main dispatcher
+ * (Kotlin default args don't bridge). The iOS view model observes [batchStateAdapter], calls [submit]
+ * with the per-card answers, and [BatchPracticeController.close] on teardown.
+ */
+fun createBatchPracticeController(
+    flashcardRepository: FlashcardRepository,
+    sessionRepository: PracticeSessionRepository,
+    apiClient: FlashcardApiClient,
+    entry: PracticeEntry,
+): BatchPracticeController =
+    BatchPracticeController(flashcardRepository, sessionRepository, apiClient, entry, Dispatchers.Main)
+
+/** The batch runner's UI state (Loading / Answering / Completed / Failed). */
+fun BatchPracticeController.batchStateAdapter(): FlowAdapter<BatchPracticeUiState> = FlowAdapter(state)
 
 /** The home feed (backend GET /home, offline fallback from cached sessions + static items). */
 fun HomeRepository.homeAdapter(): FlowAdapter<HomeFeed> = FlowAdapter(observeHomeData())

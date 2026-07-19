@@ -29,7 +29,7 @@ struct GuestHomeView: View {
                     }
                 }
                 .fullScreenCover(item: $practicing) { deck in
-                    PracticeView(
+                    PracticeRunnerView(
                         flashcardRepository: container.flashcardRepository,
                         sessionRepository: container.practiceSessionRepository,
                         entry: .guestDeck(deck.id, mode: deck.mode),
