@@ -1014,6 +1014,12 @@ button.danger:hover:not(:disabled) {
   height: 1.1rem;
 }
 
+/* A setting that isn't applicable to the current mode (e.g. Grade-at-the-end on Classic, #293). */
+.shuffle-toggle.disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .shuffle-toggle-label {
   font-weight: 600;
 }

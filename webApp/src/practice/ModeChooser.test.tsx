@@ -149,23 +149,25 @@ describe('ModeChooser', () => {
     renderChooser();
     await screen.findByText('Practice Spanish');
 
-    // Not shown until a gradeable mode is picked.
-    expect(screen.queryByRole('checkbox', { name: /Grade at the end/ })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('radio', { name: /Test/ }));
-
+    // Always visible, but disabled until a gradeable mode is picked.
     const toggle = screen.getByRole('checkbox', { name: /Grade at the end/ });
+    expect(toggle).toBeDisabled();
+    await userEvent.click(screen.getByRole('radio', { name: /Test/ }));
+    expect(toggle).toBeEnabled();
+
     await userEvent.click(toggle);
     await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
 
     expect(await screen.findByText('gradeAtEnd=1')).toBeInTheDocument();
   });
 
-  it('hides Grade-at-the-end for Classic mode (#293)', async () => {
+  it('disables Grade-at-the-end for Classic mode (#293)', async () => {
     renderChooser();
     await screen.findByText('Practice Spanish');
 
     await userEvent.click(screen.getByRole('radio', { name: /Classic/ }));
-    expect(screen.queryByRole('checkbox', { name: /Grade at the end/ })).not.toBeInTheDocument();
+    // Shown but disabled — Classic is a self-graded flip.
+    expect(screen.getByRole('checkbox', { name: /Grade at the end/ })).toBeDisabled();
   });
 
   it('hides Grade-at-the-end when its flag is disabled (#293)', async () => {

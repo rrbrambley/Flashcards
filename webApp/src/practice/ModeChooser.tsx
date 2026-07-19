@@ -120,11 +120,20 @@ export function ModeChooser({ deckId }: { deckId: number }) {
           <span className="muted">Practice in a random order</span>
         </label>
 
-        {canGradeAtEnd && (
-          <label className="shuffle-toggle">
-            <input type="checkbox" checked={gradeAtEnd} onChange={(e) => setGradeAtEnd(e.target.checked)} />
+        {/* Always shown (when flagged), but disabled unless a gradeable mode is picked — Classic is a
+            self-graded flip, so there's nothing to defer. */}
+        {gradeAtEndEnabled && (
+          <label className={`shuffle-toggle${canGradeAtEnd ? '' : ' disabled'}`}>
+            <input
+              type="checkbox"
+              checked={canGradeAtEnd && gradeAtEnd}
+              disabled={!canGradeAtEnd}
+              onChange={(e) => setGradeAtEnd(e.target.checked)}
+            />
             <span className="shuffle-toggle-label">Grade at the end</span>
-            <span className="muted">Answer every card, then submit to see your score</span>
+            <span className="muted">
+              {canGradeAtEnd ? 'Answer every card, then submit to see your score' : 'Available for Test & Multiple Choice'}
+            </span>
           </label>
         )}
 
