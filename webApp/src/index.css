@@ -834,13 +834,10 @@ button.danger:hover:not(:disabled) {
   padding: 2rem 0;
 }
 
-/* Grade-at-the-end batch runner (#293): all cards in a scrollable list, graded on submit. */
+/* Grade-at-the-end batch runner (#293): all cards in a scrollable list, answered then submitted;
+   Submit swaps in the shared "Practice complete" results screen (#298), so there's no inline grade. */
 .batch-practice {
   padding-bottom: 5rem; /* room for the sticky submit bar */
-}
-.batch-score {
-  text-align: center;
-  padding: 1rem 0 1.5rem;
 }
 .batch-list {
   list-style: none;
@@ -858,14 +855,6 @@ button.danger:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-.batch-item.correct {
-  border-color: var(--success);
-  background: color-mix(in srgb, var(--success) 10%, var(--panel));
-}
-.batch-item.incorrect {
-  border-color: var(--error);
-  background: color-mix(in srgb, var(--error) 10%, var(--panel));
 }
 .batch-prompt {
   display: flex;
@@ -894,14 +883,6 @@ button.danger:hover:not(:disabled) {
   background: var(--bg);
   color: var(--text);
   font-size: 1rem;
-}
-.batch-result {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.batch-correct-answer {
-  font-weight: 600;
 }
 .batch-submit-bar {
   position: sticky;

@@ -350,8 +350,10 @@ describe('PracticePage', () => {
     await userEvent.type(screen.getByLabelText('Answer for question 2'), 'nope');
     await userEvent.click(screen.getByRole('button', { name: /Submit/ }));
 
-    // Score revealed; the whole batch was logged and the session completed.
-    expect(await screen.findByText('You got 1 of 2')).toBeInTheDocument();
+    // Results screen revealed (#298): the shared "Practice complete" recap, not an inline grade;
+    // the whole batch was logged and the session completed.
+    expect(await screen.findByText('Practice complete')).toBeInTheDocument();
+    expect(screen.getByText('You reviewed 2 cards.')).toBeInTheDocument();
     expect(api.recordAnswers).toHaveBeenCalled();
     expect(api.completeSession).toHaveBeenCalled();
   });
