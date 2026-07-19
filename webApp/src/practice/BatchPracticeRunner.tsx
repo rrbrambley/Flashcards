@@ -16,11 +16,21 @@ interface BatchPracticeRunnerProps {
   onExit: () => void;
 }
 
+// A finished card in the results screen: the played card, whether it was graded correct, and what
+// the user actually submitted (null = left blank / skipped).
+interface BatchResult {
+  card: FlashcardDto;
+  correct: boolean;
+  submittedText: string | null;
+}
+
 /**
  * "Grade at the end" runner (#293): shows every card in one scrollable list so the user can answer in
- * any order (and skip back to a hard one), then grades the whole session on Submit and reveals
- * right/wrong inline. Single sitting — answers live in memory; leaving before Submit discards them.
- * Signed-in runs record the answer batch + complete the session on Submit; guests grade locally only.
+ * any order (and skip back to a hard one), then grades the whole session on Submit. Rather than
+ * revealing right/wrong inline (which left the user stranded at the bottom of the list — #298), Submit
+ * swaps in the same "Practice complete" results screen the card-by-card runner uses, scrolled to top.
+ * Single sitting — answers live in memory; leaving before Submit discards them. Signed-in runs record
+ * the answer batch + complete the session on Submit; guests grade locally only.
  */
 export function BatchPracticeRunner({ sessionId, cards, mode, onAgain, onExit }: BatchPracticeRunnerProps) {
   const isTest = mode.key === 'test';
@@ -28,12 +38,11 @@ export function BatchPracticeRunner({ sessionId, cards, mode, onAgain, onExit }:
   const [choices] = useState<string[][]>(() => (isTest ? [] : cards.map((c) => buildChoices(c, cards))));
   // Per-card entry: a typed string (Test) or a selected option index (Multiple Choice); null/'' = unanswered.
   const [entries, setEntries] = useState<(string | number | null)[]>(() => cards.map(() => (isTest ? '' : null)));
-  const [results, setResults] = useState<boolean[] | null>(null);
-  const submitted = results !== null;
+  // Null until Submit; then the per-card grade that drives the results screen.
+  const [results, setResults] = useState<BatchResult[] | null>(null);
 
   const isAnswered = (i: number) => (isTest ? (entries[i] as string).trim() !== '' : entries[i] != null);
   const answeredCount = cards.filter((_, i) => isAnswered(i)).length;
-  const correctCount = results?.filter(Boolean).length ?? 0;
 
   const setEntry = (i: number, value: string | number) =>
     setEntries((prev) => prev.map((e, j) => (j === i ? value : e)));
@@ -51,93 +60,111 @@ export function BatchPracticeRunner({ sessionId, cards, mode, onAgain, onExit }:
   };
 
   const submit = async () => {
-    const graded = cards.map((c, i) => gradeCard(c, i));
+    const graded: BatchResult[] = cards.map((card, i) => ({
+      card,
+      correct: gradeCard(card, i),
+      submittedText: submittedText(i),
+    }));
     setResults(graded);
+    // Swap-to-results changes the page height; land the user at the top of the score (#298).
+    window.scrollTo({ top: 0 });
     // Signed-in: log the whole batch (sequence = list order) and complete the session — best effort,
     // so a network hiccup still shows the local results.
     if (sessionId !== null) {
       const now = Date.now();
-      const batch = cards.map((c, i) => ({
+      const batch = graded.map((g, i) => ({
         answerUid: crypto.randomUUID(),
-        cardUid: c.cardUid ?? '',
-        correct: graded[i],
+        cardUid: g.card.cardUid ?? '',
+        correct: g.correct,
         sequence: i,
         answeredAtMillis: now,
-        submittedText: submittedText(i),
+        submittedText: g.submittedText,
       }));
       await api.recordAnswers(sessionId, batch).catch(() => {});
       await api.completeSession(sessionId, Intl.DateTimeFormat().resolvedOptions().timeZone).catch(() => {});
     }
   };
 
-  return (
-    <div className="batch-practice">
-      {submitted && (
-        <div className="batch-score">
-          <h2>
-            You got {correctCount} of {cards.length}
-          </h2>
-          <div className="practice-actions">
-            <button onClick={onAgain}>Practice again</button>
-            <button className="secondary" onClick={onExit}>
-              Done
-            </button>
-          </div>
+  // Results screen: reuse the card-by-card runner's "Practice complete" layout (#298) so all the
+  // grade-at-the-end feedback lives on one screen at the top, not stranded inline below the list.
+  if (results !== null) {
+    const numCorrect = results.filter((r) => r.correct).length;
+    const numIncorrect = results.length - numCorrect;
+    return (
+      <div className="practice-complete">
+        <h2>Practice complete</h2>
+        <p className="muted">
+          You reviewed {results.length} card{results.length === 1 ? '' : 's'}.
+        </p>
+        <div className="score-row">
+          <span className="score-chip incorrect">{numIncorrect}</span>
+          <span className="score-chip correct">{numCorrect}</span>
         </div>
-      )}
-
-      <ol className="batch-list">
-        {cards.map((card, i) => {
-          const correct = results?.[i];
-          const state = !submitted ? '' : correct ? ' correct' : ' incorrect';
-          const correctIndex = isTest || !submitted ? null : choices[i].indexOf(card.answer.trim());
-          return (
-            <li key={card.cardUid ?? i} className={`batch-item${state}`}>
-              <div className="batch-prompt">
-                <span className="batch-number">{i + 1}</span>
-                {card.question && <span className="batch-question">{card.question}</span>}
-                {card.imageUrl && <img src={card.imageUrl} alt="" className="batch-image" />}
-              </div>
-
-              {isTest ? (
-                <input
-                  type="text"
-                  className="batch-input"
-                  value={entries[i] as string}
-                  disabled={submitted}
-                  aria-label={`Answer for question ${i + 1}`}
-                  onChange={(e) => setEntry(i, e.target.value)}
-                />
-              ) : (
-                <MultipleChoice
-                  options={choices[i]}
-                  onSelect={(idx) => setEntry(i, idx)}
-                  selectedIndex={entries[i] as number | null}
-                  correctIndex={correctIndex}
-                  disabled={submitted}
-                />
-              )}
-
-              {submitted && (
-                <div className="batch-result">
-                  <span className="review-outcome" aria-label={correct ? 'correct' : 'incorrect'}>
-                    {correct ? '✓' : '✗'}
-                  </span>
-                  <span className="batch-correct-answer">{card.answer}</span>
+        <div className="review">
+          <h3 className="review-heading">Review</h3>
+          <ul className="review-list">
+            {results.map((r, i) => (
+              <li key={r.card.cardUid ?? i} className={`review-item ${r.correct ? 'correct' : 'incorrect'}`}>
+                <span className="review-outcome" aria-label={r.correct ? 'correct' : 'incorrect'}>
+                  {r.correct ? '✓' : '✗'}
+                </span>
+                {r.card.imageUrl && <img src={r.card.imageUrl} alt="" className="review-image" />}
+                <div className="review-text">
+                  {r.card.question && <span className="review-prompt">{r.card.question}</span>}
+                  <span className="review-answer">{r.card.answer}</span>
+                  {r.submittedText && <span className="review-submitted">You answered: {r.submittedText}</span>}
                 </div>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-
-      {!submitted && (
-        <div className="batch-submit-bar">
-          <button className="batch-submit" onClick={submit} disabled={answeredCount === 0}>
-            Submit ({answeredCount}/{cards.length})
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="practice-actions">
+          <button onClick={onAgain}>Practice again</button>
+          <button className="secondary" onClick={onExit}>
+            Done
           </button>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="batch-practice">
+      <ol className="batch-list">
+        {cards.map((card, i) => (
+          <li key={card.cardUid ?? i} className="batch-item">
+            <div className="batch-prompt">
+              <span className="batch-number">{i + 1}</span>
+              {card.question && <span className="batch-question">{card.question}</span>}
+              {card.imageUrl && <img src={card.imageUrl} alt="" className="batch-image" />}
+            </div>
+
+            {isTest ? (
+              <input
+                type="text"
+                className="batch-input"
+                value={entries[i] as string}
+                aria-label={`Answer for question ${i + 1}`}
+                onChange={(e) => setEntry(i, e.target.value)}
+              />
+            ) : (
+              <MultipleChoice
+                options={choices[i]}
+                onSelect={(idx) => setEntry(i, idx)}
+                selectedIndex={entries[i] as number | null}
+                correctIndex={null}
+                disabled={false}
+              />
+            )}
+          </li>
+        ))}
+      </ol>
+
+      <div className="batch-submit-bar">
+        <button className="batch-submit" onClick={submit} disabled={answeredCount === 0}>
+          Submit ({answeredCount}/{cards.length})
+        </button>
+      </div>
     </div>
   );
 }
