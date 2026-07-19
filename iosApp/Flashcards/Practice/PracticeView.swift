@@ -261,8 +261,9 @@ private struct SessionStreakBadge: View {
     }
 }
 
-/// End-of-deck summary + the per-card recap of the run (FLA-149).
-private struct CompletionView: View {
+/// End-of-deck summary + the per-card recap of the run (FLA-149). Shared by the card-by-card runner
+/// and the grade-at-the-end batch runner (#293/#298).
+struct CompletionView: View {
     let numCorrect: Int
     let numIncorrect: Int
     let streak: Int?

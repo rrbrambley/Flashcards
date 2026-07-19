@@ -34,6 +34,7 @@ struct LibraryView: View {
         let mode: String
         let shuffle: Bool
         let questionCount: Int32?
+        let gradeAtEnd: Bool
     }
     @State private var practicing: PracticingDeck?
 
@@ -74,10 +75,13 @@ struct LibraryView: View {
                 EditDeckView(repository: flashcardRepository, imageUploader: imageUploader, deckId: item.id)
             }
             .fullScreenCover(item: $practicing) { item in
-                PracticeView(
+                PracticeRunnerView(
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
-                    entry: .deck(item.id, mode: item.mode, shuffle: item.shuffle, questionCount: item.questionCount),
+                    entry: .deck(
+                        item.id, mode: item.mode, shuffle: item.shuffle,
+                        questionCount: item.questionCount, gradeAtEnd: item.gradeAtEnd
+                    ),
                     featureFlagStore: featureFlagStore,
                     apiClient: apiClient
                 )
@@ -95,9 +99,13 @@ struct LibraryView: View {
                     availableModes: PracticeMode.available(flags: featureFlagStore.flags),
                     maxQuestions: item.cardCount,
                     // Fail-open like the mode gating: offered unless the flag is explicitly off.
-                    questionCountEnabled: featureFlagStore.flags[FeatureFlag.practiceQuestionCount] != false
-                ) { mode, shuffle, questionCount in
-                    pendingStart = PracticingDeck(id: item.id, mode: mode, shuffle: shuffle, questionCount: questionCount)
+                    questionCountEnabled: featureFlagStore.flags[FeatureFlag.practiceQuestionCount] != false,
+                    gradeAtEndEnabled: featureFlagStore.flags[FeatureFlag.practiceGradeAtEnd] != false
+                ) { mode, shuffle, questionCount, gradeAtEnd in
+                    pendingStart = PracticingDeck(
+                        id: item.id, mode: mode, shuffle: shuffle,
+                        questionCount: questionCount, gradeAtEnd: gradeAtEnd
+                    )
                     configuring = nil
                 }
             }
@@ -207,7 +215,10 @@ struct LibraryView: View {
                     // Quick swipe-to-practice uses Classic + saved order; tap the deck to configure
                     // the mode + Shuffle (FLA-200).
                     Button {
-                        practicing = PracticingDeck(id: deck.id, mode: PracticeMode.classic.key, shuffle: false, questionCount: nil)
+                        practicing = PracticingDeck(
+                            id: deck.id, mode: PracticeMode.classic.key,
+                            shuffle: false, questionCount: nil, gradeAtEnd: false
+                        )
                     } label: {
                         Label("Practice", systemImage: "play.fill")
                     }

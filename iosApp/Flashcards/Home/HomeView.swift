@@ -33,7 +33,7 @@ struct HomeView: View {
             .navigationTitle("Home")
             .toolbar { accountMenu }
             .fullScreenCover(item: $practice) { presentation in
-                PracticeView(
+                PracticeRunnerView(
                     flashcardRepository: container.flashcardRepository,
                     sessionRepository: container.practiceSessionRepository,
                     entry: presentation.entry,
@@ -126,7 +126,10 @@ struct HomeView: View {
             // Featured practice from Home uses Classic + saved order; the Library offers the mode +
             // shuffle chooser (FLA-200).
             practice = PracticePresentation(
-                entry: .deck(practiceDeck.deckId, mode: PracticeMode.classic.key, shuffle: false, questionCount: nil)
+                entry: .deck(
+                    practiceDeck.deckId, mode: PracticeMode.classic.key,
+                    shuffle: false, questionCount: nil, gradeAtEnd: false
+                )
             )
         }
     }

@@ -22,10 +22,12 @@ enum PracticeState {
 
 /// How a practice run is launched (maps to the shared `PracticeEntry`).
 enum PracticeEntry {
-    /// Start or resume a session for a deck in a given mode + shuffle + question-count choice (Library
-    /// "Practice"). `questionCount` is a subset of the deck (FLA-219); nil = the whole deck.
-    case deck(Int64, mode: String, shuffle: Bool, questionCount: Int32?)
-    /// Resume an existing session (Home "Continue practice"); the mode + order come from the session.
+    /// Start or resume a session for a deck in a given mode + shuffle + question-count + grade-at-end
+    /// choice (Library "Practice"). `questionCount` is a subset of the deck (FLA-219); nil = the whole
+    /// deck. `gradeAtEnd` (#293) runs the whole session in one list, graded on submit.
+    case deck(Int64, mode: String, shuffle: Bool, questionCount: Int32?, gradeAtEnd: Bool)
+    /// Resume an existing session (Home "Continue practice"); the mode + order + grade-at-end come from
+    /// the session.
     case session(Int64)
     /// Guest mode (FLA-104): practice a public catalog deck in memory — no session, no persistence.
     case guestDeck(Int64, mode: String)
@@ -33,17 +35,32 @@ enum PracticeEntry {
     var shared: Shared.PracticeEntry {
         switch self {
         // Kotlin default args don't bridge, so shuffle + questionCount + gradeAtEnd are always passed
-        // (FLA-200/219, #293). Grade-at-the-end has no iOS picker yet (#296), so it's always false here.
-        case let .deck(id, mode, shuffle, questionCount):
+        // (FLA-200/219, #293).
+        case let .deck(id, mode, shuffle, questionCount, gradeAtEnd):
             Shared.PracticeEntry.Deck(
                 deckId: id, mode: mode, shuffle: shuffle,
                 questionCount: questionCount.map { KotlinInt(int: $0) },
-                gradeAtEnd: false
+                gradeAtEnd: gradeAtEnd
             )
         case let .session(id): Shared.PracticeEntry.Session(sessionId: id)
-        // Guest quick-practice has no config picker; keep the saved order + whole deck.
+        // Guest quick-practice has no config picker; keep the saved order + whole deck, card-by-card.
         case let .guestDeck(id, mode):
             Shared.PracticeEntry.GuestDeck(deckId: id, mode: mode, shuffle: false, questionCount: nil, gradeAtEnd: false)
+        }
+    }
+
+    /// Resolves whether this run grades at the end (#293), so the presenter picks the batch or the
+    /// card-by-card runner. A deck/guest entry carries the choice; a resumed session is authoritative,
+    /// so its stored flag is read (mirrors Android's ViewModel peek).
+    func resolveGradeAtEnd(sessionRepository: PracticeSessionRepository) async -> Bool {
+        switch self {
+        case let .deck(_, _, _, _, gradeAtEnd): return gradeAtEnd
+        case .guestDeck: return false
+        case let .session(id):
+            for await session in asyncStream(BridgingKt.sessionAdapter(sessionRepository, sessionId: id)) {
+                if let session { return session.gradeAtEnd }
+            }
+            return false
         }
     }
 }
