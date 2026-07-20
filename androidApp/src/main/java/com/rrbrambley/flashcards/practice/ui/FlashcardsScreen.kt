@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
 import com.rrbrambley.flashcards.BuildConfig
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussionSheet
@@ -556,9 +557,13 @@ internal fun StreakBadge(streak: Int, modifier: Modifier = Modifier) {
     }
 }
 
-/** The card's question text + optional image — the prompt shared by the Test + Multiple-Choice modes. */
+/**
+ * The card's question text + optional image — the prompt shared by the Test + Multiple-Choice modes.
+ * [onImageReady] fires when the prompt image settles (or immediately isn't relevant when there's no
+ * image), so a mode can hold its answering UI until the image is on screen (#302 review).
+ */
 @Composable
-internal fun CardPrompt(flashcard: Flashcard, modifier: Modifier = Modifier) {
+internal fun CardPrompt(flashcard: Flashcard, modifier: Modifier = Modifier, onImageReady: () -> Unit = {}) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -571,6 +576,7 @@ internal fun CardPrompt(flashcard: Flashcard, modifier: Modifier = Modifier) {
             CardImage(
                 model = flashcard.imageUrl,
                 contentDescription = flashcard.question,
+                onResolved = onImageReady,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 240.dp)
@@ -584,9 +590,18 @@ internal fun CardPrompt(flashcard: Flashcard, modifier: Modifier = Modifier) {
  * A card's front-of-card image (#302): a centered spinner while it loads instead of the generic
  * gallery placeholder, and that gallery icon only for a genuinely failed load — so "loading" and
  * "broken" read differently. Shared by the Test/Multiple-Choice prompt + the Classic card face.
+ *
+ * [onResolved] fires once the image settles (loaded OR failed) so the answering modes can hold their
+ * input UI until the prompt image is on screen (#302 review) — firing on failure too, so a broken
+ * image can't permanently hide the controls.
  */
 @Composable
-internal fun CardImage(model: Any?, contentDescription: String?, modifier: Modifier = Modifier) {
+internal fun CardImage(
+    model: Any?,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    onResolved: () -> Unit = {},
+) {
     SubcomposeAsyncImage(
         model = model,
         contentDescription = contentDescription,
@@ -600,7 +615,12 @@ internal fun CardImage(model: Any?, contentDescription: String?, modifier: Modif
                 CircularProgressIndicator()
             }
         },
+        success = {
+            SubcomposeAsyncImageContent()
+            LaunchedEffect(Unit) { onResolved() }
+        },
         error = {
+            LaunchedEffect(Unit) { onResolved() }
             Box(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
                 contentAlignment = Alignment.Center,

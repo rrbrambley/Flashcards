@@ -56,6 +56,9 @@ fun TestMode(
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
     // Guards an accidental empty submit (keyboard Done or Check) from grading it wrong (FLA-190).
     var confirmingBlank by remember(flashcard) { mutableStateOf(false) }
+    // Hold the answer UI until the prompt image is on screen (#302 review); no image → ready at once.
+    val hasImage = !flashcard.imageUrl.isNullOrBlank()
+    var imageReady by remember(flashcard) { mutableStateOf(!hasImage) }
 
     fun grade(value: String) {
         val result = TestGrade(
@@ -85,7 +88,10 @@ fun TestMode(
         verticalArrangement = Arrangement.spacedBy(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CardPrompt(flashcard = flashcard)
+        CardPrompt(flashcard = flashcard, onImageReady = { imageReady = true })
+
+        // Only reveal the answer UI once the prompt image has loaded (#302 review).
+        if (!imageReady) return@Column
 
         val currentGrade = graded
         if (currentGrade == null) {
