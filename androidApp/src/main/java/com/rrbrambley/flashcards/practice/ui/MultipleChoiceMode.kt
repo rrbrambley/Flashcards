@@ -47,6 +47,9 @@ fun MultipleChoiceMode(
     val choices = remember(flashcard) { buildChoices(flashcard, deck) }
     val correctIndex = remember(flashcard) { choices.indexOf(flashcard.answer.trim()) }
     var selected by remember(flashcard) { mutableStateOf<Int?>(null) }
+    // Hold the options until the prompt image is on screen (#302 review); no image → ready at once.
+    val hasImage = !flashcard.imageUrl.isNullOrBlank()
+    var imageReady by remember(flashcard) { mutableStateOf(!hasImage) }
 
     Column(
         modifier = modifier
@@ -56,7 +59,10 @@ fun MultipleChoiceMode(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CardPrompt(flashcard = flashcard)
+        CardPrompt(flashcard = flashcard, onImageReady = { imageReady = true })
+
+        // Only reveal the options once the prompt image has loaded (#302 review).
+        if (!imageReady) return@Column
 
         choices.forEachIndexed { index, option ->
             ChoiceButton(

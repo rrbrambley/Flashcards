@@ -31,13 +31,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.shared.domain.Flashcard
@@ -148,11 +145,9 @@ private fun FlashcardImageQuestionFace(flashcard: Flashcard, modifier: Modifier 
         if (flashcard.question.isNotBlank()) {
             FlashcardText(text = flashcard.question, modifier = Modifier.fillMaxWidth())
         }
-        AsyncImage(
+        CardImage(
             model = flashcard.imageUrl,
             contentDescription = flashcard.question,
-            contentScale = ContentScale.Fit,
-            placeholder = painterResource(id = android.R.drawable.ic_menu_gallery),
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1.2f)
