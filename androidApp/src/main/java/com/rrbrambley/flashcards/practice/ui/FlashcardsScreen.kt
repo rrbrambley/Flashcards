@@ -65,6 +65,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import coil3.compose.SubcomposeAsyncImage
 import com.rrbrambley.flashcards.BuildConfig
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussionSheet
@@ -567,11 +568,9 @@ internal fun CardPrompt(flashcard: Flashcard, modifier: Modifier = Modifier) {
             FlashcardText(text = flashcard.question, modifier = Modifier.fillMaxWidth())
         }
         if (!flashcard.imageUrl.isNullOrBlank()) {
-            AsyncImage(
+            CardImage(
                 model = flashcard.imageUrl,
                 contentDescription = flashcard.question,
-                contentScale = ContentScale.Fit,
-                placeholder = painterResource(id = android.R.drawable.ic_menu_gallery),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 240.dp)
@@ -579,6 +578,41 @@ internal fun CardPrompt(flashcard: Flashcard, modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+/**
+ * A card's front-of-card image (#302): a centered spinner while it loads instead of the generic
+ * gallery placeholder, and that gallery icon only for a genuinely failed load — so "loading" and
+ * "broken" read differently. Shared by the Test/Multiple-Choice prompt + the Classic card face.
+ */
+@Composable
+internal fun CardImage(model: Any?, contentDescription: String?, modifier: Modifier = Modifier) {
+    SubcomposeAsyncImage(
+        model = model,
+        contentDescription = contentDescription,
+        contentScale = ContentScale.Fit,
+        modifier = modifier,
+        loading = {
+            Box(
+                modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        },
+        error = {
+            Box(
+                modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(id = android.R.drawable.ic_menu_gallery),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+    )
 }
 
 /** The serif, centered card text shared by every mode. */
