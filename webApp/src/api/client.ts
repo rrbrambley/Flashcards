@@ -226,10 +226,11 @@ export const api = {
     shuffle = false,
     questionCount: number | null = null,
     gradeAtEnd = false,
+    timeLimitSeconds: number | null = null,
   ) =>
     request<PracticeSessionDto>('/sessions', {
       method: 'POST',
-      body: { deckId, mode, shuffle, questionCount, gradeAtEnd },
+      body: { deckId, mode, shuffle, questionCount, gradeAtEnd, timeLimitSeconds },
       auth: true,
     }),
   getSession: (id: number) => request<PracticeSessionDto>(`/sessions/${id}`, { auth: true }),

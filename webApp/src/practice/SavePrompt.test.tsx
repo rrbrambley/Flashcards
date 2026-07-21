@@ -43,6 +43,7 @@ const sessionDto: PracticeSessionDto = {
   shuffleSeed: 0,
   questionCount: null,
   gradeAtEnd: false,
+  timeLimitSeconds: null,
 };
 
 const props = {

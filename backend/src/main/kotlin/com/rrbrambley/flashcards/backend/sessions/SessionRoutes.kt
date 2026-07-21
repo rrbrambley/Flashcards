@@ -32,6 +32,7 @@ fun Route.sessionRoutes() {
                     request.shuffle,
                     request.questionCount,
                     request.gradeAtEnd,
+                    request.timeLimitSeconds,
                 ),
             )
         }

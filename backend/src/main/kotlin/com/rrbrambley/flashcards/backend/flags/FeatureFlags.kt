@@ -26,4 +26,7 @@ enum class FeatureFlag(val key: String, val description: String, val defaultEnab
 
     // Offer the "Grade at the end" toggle — answer all cards in a list, then submit to grade (#293).
     PRACTICE_GRADE_AT_END("practice_grade_at_end", "Offer grading the whole session at the end", true),
+
+    // Offer the "Timed" toggle — an optional per-session countdown that auto-completes on expiry (#289).
+    PRACTICE_TIMER("practice_timer", "Offer setting a per-session time limit", true),
 }

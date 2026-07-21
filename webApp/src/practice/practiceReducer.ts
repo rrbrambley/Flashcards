@@ -16,8 +16,8 @@ export interface PracticeState {
 // GRADE scores the current card (and the in-session streak) without moving on, so the streak badge
 // surfaces on the revealed answer; ADVANCE moves to the next card (or completes). Classic dispatches
 // both together (its swipe grades and advances at once); Test/Multiple-Choice GRADE on the verdict,
-// then ADVANCE on Next.
-export type PracticeAction = { type: 'GRADE'; correct: boolean } | { type: 'ADVANCE' };
+// then ADVANCE on Next. EXPIRE ends the run wherever it is — the timed-session countdown hitting 0 (#289).
+export type PracticeAction = { type: 'GRADE'; correct: boolean } | { type: 'ADVANCE' } | { type: 'EXPIRE' };
 
 /** Seeds state from a deck's cards and a session (resumes at currentCardIndex with its counts). */
 export function initPractice(
@@ -40,6 +40,8 @@ export function initPractice(
 
 export function practiceReducer(state: PracticeState, action: PracticeAction): PracticeState {
   if (state.status === 'completed') return state;
+  // The timed-session countdown expired (#289): end the run wherever it is, keeping the score so far.
+  if (action.type === 'EXPIRE') return { ...state, status: 'completed' };
   if (action.type === 'GRADE') {
     // Score + streak, staying on the current card so the badge shows on the revealed answer.
     return {

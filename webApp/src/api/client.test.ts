@@ -176,6 +176,7 @@ describe('api client', () => {
       shuffle: true,
       questionCount: null,
       gradeAtEnd: false,
+      timeLimitSeconds: null,
     });
   });
 
@@ -192,6 +193,7 @@ describe('api client', () => {
       shuffle: false,
       questionCount: null,
       gradeAtEnd: false,
+      timeLimitSeconds: null,
     });
   });
 

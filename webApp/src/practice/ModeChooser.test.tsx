@@ -26,6 +26,7 @@ function RunnerStub() {
       <span>shuffle={params.get('shuffle')}</span>
       <span>questions={params.get('questions') ?? ''}</span>
       <span>gradeAtEnd={params.get('gradeAtEnd') ?? ''}</span>
+      <span>timeLimit={params.get('timeLimit') ?? ''}</span>
       <span>from={from ?? ''}</span>
     </div>
   );
@@ -177,6 +178,35 @@ describe('ModeChooser', () => {
 
     await userEvent.click(screen.getByRole('radio', { name: /Test/ }));
     expect(screen.queryByRole('checkbox', { name: /Grade at the end/ })).not.toBeInTheDocument();
+  });
+
+  it('offers a Timed toggle + mm:ss field and routes timeLimit=N (#289)', async () => {
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+    await userEvent.click(screen.getByRole('radio', { name: new RegExp(PRACTICE_MODES[0].label) }));
+
+    // The mm:ss field is revealed only once Timed is on.
+    expect(screen.queryByLabelText('Minutes')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('checkbox', { name: /Timed/ }));
+
+    const minutes = screen.getByLabelText('Minutes');
+    const seconds = screen.getByLabelText('Seconds');
+    await userEvent.clear(minutes);
+    await userEvent.type(minutes, '1');
+    await userEvent.clear(seconds);
+    await userEvent.type(seconds, '30');
+    await userEvent.click(screen.getByRole('button', { name: 'Start practice' }));
+
+    // 1:30 → 90 total seconds.
+    expect(await screen.findByText('timeLimit=90')).toBeInTheDocument();
+  });
+
+  it('hides the Timed toggle when its flag is disabled (#289)', async () => {
+    mockFlags = { practice_timer: false };
+    renderChooser();
+    await screen.findByText('Practice Spanish');
+
+    expect(screen.queryByRole('checkbox', { name: /Timed/ })).not.toBeInTheDocument();
   });
 
   it('hides a mode whose feature flag is disabled (FLA-213)', async () => {

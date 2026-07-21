@@ -19,6 +19,10 @@ data class CreateSessionRequest(
     /** Grade the whole session at the end instead of per-card (#293): the client shows all cards in a
      *  scrollable list and grades on submit. Fixed at creation. Defaulted so older/mobile clients omit it. */
     val gradeAtEnd: Boolean = false,
+    /** Optional per-session time limit in seconds (#289): the client counts down from
+     *  `createdAtMillis + timeLimitSeconds*1000` and auto-completes at expiry. Null = untimed. Fixed at
+     *  creation like [questionCount]; the backend rejects values < 1. Defaulted so older clients omit it. */
+    val timeLimitSeconds: Int? = null,
 )
 
 @Serializable

@@ -195,8 +195,9 @@ class FlashcardApiClient(
         shuffle: Boolean = false,
         questionCount: Int? = null,
         gradeAtEnd: Boolean = false,
+        timeLimitSeconds: Int? = null,
     ): PracticeSessionDto = client.post(url("/sessions")) {
-        jsonBody(CreateSessionRequest(deckId, mode, shuffle, questionCount, gradeAtEnd))
+        jsonBody(CreateSessionRequest(deckId, mode, shuffle, questionCount, gradeAtEnd, timeLimitSeconds))
     }.body()
 
     /** Deletes (discards) a practice session the user owns; the backend cascades to its answer log. */

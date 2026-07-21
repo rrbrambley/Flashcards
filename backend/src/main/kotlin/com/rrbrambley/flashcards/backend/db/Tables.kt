@@ -187,6 +187,11 @@ object PracticeSessions : LongIdTable("practice_sessions") {
     // scrollable list and grades on submit. Default false (backfills old rows) so it's opt-in per session.
     val gradeAtEnd = bool("grade_at_end").default(false)
 
+    // Optional per-session time limit in seconds (#289) — the client counts down from
+    // createdAtMillis + timeLimitSeconds*1000 and auto-completes at expiry. Nullable: null = untimed
+    // (also backfills old rows). Fixed at creation; expiry is client-driven (no server enforcement).
+    val timeLimitSeconds = integer("time_limit_seconds").nullable()
+
     val createdAtMillis = long("created_at_millis")
     val updatedAtMillis = long("updated_at_millis")
 
