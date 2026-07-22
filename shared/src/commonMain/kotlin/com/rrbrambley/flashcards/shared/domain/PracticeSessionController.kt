@@ -5,6 +5,7 @@ import com.rrbrambley.flashcards.shared.AuthResult
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
+import com.rrbrambley.flashcards.shared.nowMillis
 import com.rrbrambley.flashcards.shared.systemTimeZoneId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +40,8 @@ class PracticeSessionController(
     private val authService: AuthService?,
     private val entry: PracticeEntry,
     dispatcher: CoroutineDispatcher = Dispatchers.Main,
+    // Injectable clock (millis) so tests can drive the timed countdown deterministically.
+    private val now: () -> Long = ::nowMillis,
 ) {
     // The controller owns its scope so it's independent of any caller's lifetime; [close] cancels it.
     private val scope = CoroutineScope(dispatcher + SupervisorJob())
@@ -47,6 +51,11 @@ class PracticeSessionController(
 
     private val _saveState = MutableStateFlow<GuestSaveState>(GuestSaveState.Idle)
     val saveState: StateFlow<GuestSaveState> = _saveState.asStateFlow()
+
+    // Remaining seconds for a timed session (#289); null = untimed. Ticks ~1×/sec from the deadline
+    // (createdAt + timeLimit); the run auto-completes at 0. Platforms show it as a m:ss countdown.
+    private val _remainingSeconds = MutableStateFlow<Int?>(null)
+    val remainingSeconds: StateFlow<Int?> = _remainingSeconds.asStateFlow()
 
     private var sessionId: Long? = null
     var deckId: Long? = null
@@ -66,10 +75,14 @@ class PracticeSessionController(
 
     // Guest-run subset size (FLA-219); a signed-in run reads it from the stored session instead.
     private var questionCount: Int? = null
+
+    // Guest-run time limit (#289); a signed-in run reads it from the stored session instead.
+    private var timeLimitSeconds: Int? = null
     private var discussionsEnabled = false
     private var isGlobal = false
     private var answerStreak = 0
     private var reviewJob: Job? = null
+    private var timerJob: Job? = null
 
     /** Whether leaving now should prompt a guest to save: guest, mid-session, with some progress. */
     val shouldPromptSave: Boolean
@@ -83,7 +96,14 @@ class PracticeSessionController(
         when (val e = entry) {
             is PracticeEntry.Deck -> {
                 val sid = runCatching {
-                    sessionRepository.startOrResumeSession(e.deckId, e.mode, e.shuffle, e.questionCount, e.gradeAtEnd)
+                    sessionRepository.startOrResumeSession(
+                        e.deckId,
+                        e.mode,
+                        e.shuffle,
+                        e.questionCount,
+                        e.gradeAtEnd,
+                        e.timeLimitSeconds,
+                    )
                 }.getOrNull()
                 if (sid == null) {
                     _state.update { PracticeUiState.Failed }
@@ -104,6 +124,7 @@ class PracticeSessionController(
                 shuffle = e.shuffle
                 shuffleSeed = if (e.shuffle) Random.nextInt(1, Int.MAX_VALUE).toLong() else 0L
                 questionCount = e.questionCount
+                timeLimitSeconds = e.timeLimitSeconds
                 loadGuestDeck(e.deckId)
             }
         }
@@ -142,6 +163,8 @@ class PracticeSessionController(
         val loggedAnswers = runCatching { sessionRepository.observeAnswers(session.id).first() }.getOrNull().orEmpty()
         answerStreak = trailingCorrectStreak(loggedAnswers.sortedBy { it.sequence }.map { it.correct })
         updateState()
+        // Timed session (#289): the deadline is wall-clock from creation, so it keeps running while away.
+        startTimer(session.timeLimitSeconds?.let { session.createdAtMillis + it * 1000L })
     }
 
     private suspend fun loadGuestDeck(deckId: Long) {
@@ -165,6 +188,8 @@ class PracticeSessionController(
         numIncorrect = 0
         answerStreak = 0
         updateState()
+        // Guests have no persisted createdAt, so the timed deadline is minted here (once) from now().
+        startTimer(timeLimitSeconds?.let { now() + it * 1000L })
     }
 
     /**
@@ -209,8 +234,37 @@ class PracticeSessionController(
             updateState()
             persist()
         } else {
-            _state.update { PracticeUiState.Completed(numCorrect = numCorrect, numIncorrect = numIncorrect) }
-            complete()
+            completeRun()
+        }
+    }
+
+    /** Ends the run wherever it is — the last card finishing, or the timed countdown hitting 0 (#289). */
+    private fun completeRun() {
+        timerJob?.cancel()
+        _state.update { PracticeUiState.Completed(numCorrect = numCorrect, numIncorrect = numIncorrect) }
+        complete()
+    }
+
+    /**
+     * Runs the timed countdown (#289) to [deadline] (epoch millis; null = untimed → no timer). Ticks the
+     * remaining seconds ~1×/sec and auto-completes the run at expiry. Wall-clock, so a deadline already
+     * past at load completes immediately (resuming after time ran out lands on "complete").
+     */
+    private fun startTimer(deadline: Long?) {
+        timerJob?.cancel()
+        if (deadline == null) return
+        timerJob = scope.launch {
+            while (true) {
+                val remainingMs = deadline - now()
+                if (remainingMs <= 0) {
+                    _remainingSeconds.value = 0
+                    if (_state.value is PracticeUiState.ShowCard) completeRun()
+                    break
+                }
+                // Ceil so the clock reads 1 until it truly hits 0 (matches the web's formatRemaining).
+                _remainingSeconds.value = ((remainingMs + 999) / 1000).toInt()
+                delay(1000)
+            }
         }
     }
 

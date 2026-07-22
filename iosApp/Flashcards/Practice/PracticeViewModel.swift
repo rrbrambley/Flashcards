@@ -34,18 +34,21 @@ enum PracticeEntry {
 
     var shared: Shared.PracticeEntry {
         switch self {
-        // Kotlin default args don't bridge, so shuffle + questionCount + gradeAtEnd are always passed
-        // (FLA-200/219, #293).
+        // Kotlin default args don't bridge, so shuffle + questionCount + gradeAtEnd + timeLimitSeconds
+        // are always passed (FLA-200/219, #293/#289). No iOS timer picker yet (#292) → always nil here.
         case let .deck(id, mode, shuffle, questionCount, gradeAtEnd):
             Shared.PracticeEntry.Deck(
                 deckId: id, mode: mode, shuffle: shuffle,
                 questionCount: questionCount.map { KotlinInt(int: $0) },
-                gradeAtEnd: gradeAtEnd
+                gradeAtEnd: gradeAtEnd,
+                timeLimitSeconds: nil
             )
         case let .session(id): Shared.PracticeEntry.Session(sessionId: id)
         // Guest quick-practice has no config picker; keep the saved order + whole deck, card-by-card.
         case let .guestDeck(id, mode):
-            Shared.PracticeEntry.GuestDeck(deckId: id, mode: mode, shuffle: false, questionCount: nil, gradeAtEnd: false)
+            Shared.PracticeEntry.GuestDeck(
+                deckId: id, mode: mode, shuffle: false, questionCount: nil, gradeAtEnd: false, timeLimitSeconds: nil
+            )
         }
     }
 

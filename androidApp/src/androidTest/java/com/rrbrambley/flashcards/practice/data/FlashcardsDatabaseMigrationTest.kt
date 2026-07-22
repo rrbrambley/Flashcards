@@ -364,4 +364,33 @@ class FlashcardsDatabaseMigrationTest {
             assertEquals(0, cursor.getInt(1))
         }
     }
+
+    @Test
+    fun migrate16To17_preservesSessionsAndAddsNullableTimeLimitColumn() {
+        // Seed a v16 database with a session (no timeLimitSeconds column yet).
+        helper.createDatabase(testDb, 16).apply {
+            execSQL(
+                "INSERT INTO flashcard_decks (id, title, editable, tags, discussionEnabled, isGlobal) " +
+                    "VALUES (1, 'Spanish basics', 1, '[]', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, mode, " +
+                    "shuffle, shuffleSeed, questionCount, gradeAtEnd, pendingSync, pendingDelete, " +
+                    "createdAtMillis, updatedAtMillis) " +
+                    "VALUES (1, 1, 2, 1, 0, 0, 'test', 0, 0, NULL, 0, 0, 0, 1000, 1000)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_16_17 and validate against the exported v17 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 17, true, MIGRATION_16_17)
+
+        // The existing row survived; timeLimitSeconds backfilled to NULL (= untimed).
+        db.query("SELECT currentCardIndex, timeLimitSeconds FROM practice_sessions WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(2, cursor.getInt(0))
+            assertTrue(cursor.isNull(1))
+        }
+    }
 }

@@ -53,4 +53,8 @@ data class PracticeSessionEntity(
     // Whether the whole session is graded at the end (#293) rather than card-by-card — Test / Multiple
     // Choice only. Defaults keep old rows card-by-card (also backfills old rows). See MIGRATION_15_16.
     val gradeAtEnd: Boolean = false,
+    // Optional per-session time limit in seconds (#289); the controller counts down from
+    // createdAtMillis + timeLimitSeconds*1000 and auto-completes at expiry. Nullable: null = untimed
+    // (also backfills old rows). See MIGRATION_16_17.
+    val timeLimitSeconds: Int? = null,
 )

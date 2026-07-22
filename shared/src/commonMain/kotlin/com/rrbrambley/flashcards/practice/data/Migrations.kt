@@ -132,6 +132,15 @@ val MIGRATION_15_16 = object : Migration(15, 16) {
     }
 }
 
+/** v16 → v17: add the nullable `timeLimitSeconds` per-session time limit to practice_sessions (#289).
+ *  No DEFAULT clause — a nullable ADD COLUMN backfills existing rows with NULL (= untimed), matching
+ *  the exported schema (like `questionCount` in MIGRATION_14_15). */
+val MIGRATION_16_17 = object : Migration(16, 17) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL("ALTER TABLE `practice_sessions` ADD COLUMN `timeLimitSeconds` INTEGER")
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
     arrayOf(
@@ -148,4 +157,5 @@ val ALL_MIGRATIONS =
         MIGRATION_13_14,
         MIGRATION_14_15,
         MIGRATION_15_16,
+        MIGRATION_16_17,
     )

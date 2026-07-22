@@ -100,6 +100,8 @@ sealed class PracticeEntry {
         val questionCount: Int? = null,
         // Grade the whole session at the end (#293) rather than card-by-card. Applies to a new session.
         val gradeAtEnd: Boolean = false,
+        // Optional per-session time limit in seconds (#289); null = untimed. Applies to a new session.
+        val timeLimitSeconds: Int? = null,
     ) : PracticeEntry()
 
     /** Resume an existing session; the mode + shuffle order come from the session. */
@@ -112,5 +114,6 @@ sealed class PracticeEntry {
         val shuffle: Boolean = false,
         val questionCount: Int? = null,
         val gradeAtEnd: Boolean = false,
+        val timeLimitSeconds: Int? = null,
     ) : PracticeEntry()
 }

@@ -26,4 +26,8 @@ data class PracticeSession(
     // Whether the whole session is graded at the end (#293) — all cards answered in a list, then
     // submitted — instead of card-by-card. Only Test / Multiple Choice; fixed at creation.
     val gradeAtEnd: Boolean = false,
+    // Optional per-session time limit in seconds (#289); the controller counts down from
+    // createdAtMillis + timeLimitSeconds*1000 and auto-completes at expiry. Null = untimed. Fixed at
+    // creation. Timed runs are single-sitting (like gradeAtEnd) — they never resume (#306).
+    val timeLimitSeconds: Int? = null,
 )

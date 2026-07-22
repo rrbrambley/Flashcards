@@ -38,7 +38,8 @@ final class ApiErrorBridgingTests: XCTestCase {
         let repo = unreachableSdk().practiceSessionRepository
         do {
             _ = try await repo.startOrResumeSession(
-                deckId: 1, mode: "flashcards", shuffle: false, questionCount: nil, gradeAtEnd: false
+                deckId: 1, mode: "flashcards", shuffle: false, questionCount: nil, gradeAtEnd: false,
+                timeLimitSeconds: nil
             )
             XCTFail("expected the unreachable backend to throw")
         } catch {

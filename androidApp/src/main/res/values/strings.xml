@@ -144,6 +144,17 @@
     <string name="practice_grade_at_end_label">Grade at the end</string>
     <string name="practice_grade_at_end_description">Answer every card, then submit to see your score</string>
     <string name="practice_grade_at_end_unavailable">Available for Test &amp; Multiple Choice</string>
+    <string name="practice_single_sitting_subheader">Complete in a single session</string>
+    <string name="practice_timed_label">Timed</string>
+    <string name="practice_timed_description">Auto-submit when the clock runs out</string>
+    <string name="practice_time_limit_label">Time limit</string>
+    <string name="practice_time_minutes">min</string>
+    <string name="practice_time_seconds">sec</string>
+    <string name="practice_timer_remaining">%1$s left</string>
+    <string name="practice_leave_title">Leave this session?</string>
+    <string name="practice_leave_message">This session runs in one sitting — if you leave, your progress won\'t be saved.</string>
+    <string name="practice_leave_confirm">Leave</string>
+    <string name="practice_leave_cancel">Keep practicing</string>
     <string name="practice_batch_submit">Submit (%1$d/%2$d)</string>
     <string name="practice_start">Start practice</string>
     <string name="practice_mode_classic">Classic</string>

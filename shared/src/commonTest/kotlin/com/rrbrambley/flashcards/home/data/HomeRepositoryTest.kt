@@ -141,6 +141,7 @@ class HomeRepositoryTest {
                     shuffle: Boolean,
                     questionCount: Int?,
                     gradeAtEnd: Boolean,
+                    timeLimitSeconds: Int?,
                 ) = 0L
                 override fun observeActiveSessions(): Flow<List<PracticeSession>> = sessions
                 override fun observeSession(sessionId: Long): Flow<PracticeSession?> = flowOf(null)
@@ -206,6 +207,7 @@ class HomeRepositoryTest {
             shuffle: Boolean,
             questionCount: Int?,
             gradeAtEnd: Boolean,
+            timeLimitSeconds: Int?,
         ): Long = 0L
 
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(activeSessions)
