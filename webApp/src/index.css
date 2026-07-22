@@ -1058,6 +1058,13 @@ button.danger:hover:not(:disabled) {
   font-weight: 600;
 }
 
+/* "min" / "sec" unit labels so the two fields aren't read as an ambiguous "1:0" (#290 review). */
+.mmss-unit {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
 .mmss-input input {
   width: 3.5rem;
   padding: 0.4rem 0.5rem;

@@ -169,7 +169,7 @@ export function ModeChooser({ deckId }: { deckId: number }) {
                     aria-label="Minutes"
                     onChange={(e) => setMinutes(e.target.value.replace(/\D/g, ''))}
                   />
-                  <span aria-hidden="true">:</span>
+                  <span className="mmss-unit">min</span>
                   <input
                     type="number"
                     min={0}
@@ -182,6 +182,7 @@ export function ModeChooser({ deckId }: { deckId: number }) {
                       setSeconds(n === '' ? '' : String(Math.min(59, Number(n))));
                     }}
                   />
+                  <span className="mmss-unit">sec</span>
                 </div>
               </div>
             )}
