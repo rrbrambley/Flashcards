@@ -24,12 +24,19 @@ export function ModeChooser({ deckId }: { deckId: number }) {
   const questionsEnabled = isGuest || isEnabled('practice_question_count');
   // Offer the "Grade at the end" toggle only when its flag is on (#293); guests carry no flags → shown.
   const gradeAtEndEnabled = isGuest || isEnabled('practice_grade_at_end');
+  // Offer the "Timed" toggle only when its flag is on (#289); guests carry no flags → shown.
+  const timerEnabled = isGuest || isEnabled('practice_timer');
   // Carry the practice referrer (FLA-168) through the chooser so the runner exits to it too.
   const from = fromState(location.state);
   const exit = exitTarget(from, isGuest);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [shuffle, setShuffle] = useState(true);
   const [gradeAtEnd, setGradeAtEnd] = useState(false);
+  // A per-session time limit as mm:ss (#289); default 1:00. Kept as strings so the fields can be blank
+  // mid-edit, parsed to total seconds on Start.
+  const [timed, setTimed] = useState(false);
+  const [minutes, setMinutes] = useState('1');
+  const [seconds, setSeconds] = useState('0');
   const [deckTitle, setDeckTitle] = useState<string | null>(null);
   // The deck's card count = the max questions; the field defaults to it (practice the whole deck).
   const [maxQuestions, setMaxQuestions] = useState(0);
@@ -55,12 +62,19 @@ export function ModeChooser({ deckId }: { deckId: number }) {
   // Grade-at-the-end only applies to the objectively-graded modes (#293) — not Classic's self-graded flip.
   const canGradeAtEnd = gradeAtEndEnabled && (selectedMode === 'test' || selectedMode === 'multiple_choice');
 
+  // Total seconds from the mm:ss fields (#289), at least 1 (the backend rejects < 1); null when off.
+  const timeLimitSeconds =
+    timerEnabled && timed
+      ? Math.max(1, (parseInt(minutes, 10) || 0) * 60 + (parseInt(seconds, 10) || 0))
+      : null;
+
   const start = () => {
     if (!selectedMode) return;
     let url = `/decks/${deckId}/practice?mode=${selectedMode}&shuffle=${shuffle ? 1 : 0}`;
     // Only a real subset (< the whole deck) needs the param; the runner treats its absence as "all".
     if (questionsEnabled && questions != null && questions < maxQuestions) url += `&questions=${questions}`;
     if (canGradeAtEnd && gradeAtEnd) url += '&gradeAtEnd=1';
+    if (timeLimitSeconds != null) url += `&timeLimit=${timeLimitSeconds}`;
     navigate(url, { state: { from } });
   };
 
@@ -135,6 +149,44 @@ export function ModeChooser({ deckId }: { deckId: number }) {
               {canGradeAtEnd ? 'Answer every card, then submit to see your score' : 'Available for Test & Multiple Choice'}
             </span>
           </label>
+        )}
+
+        {timerEnabled && (
+          <>
+            <label className="shuffle-toggle">
+              <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
+              <span className="shuffle-toggle-label">Timed</span>
+              <span className="muted">Auto-submit when the clock runs out</span>
+            </label>
+            {timed && (
+              <div className="timed-field">
+                <span className="questions-field-label">Time limit</span>
+                <div className="mmss-input">
+                  <input
+                    type="number"
+                    min={0}
+                    value={minutes}
+                    aria-label="Minutes"
+                    onChange={(e) => setMinutes(e.target.value.replace(/\D/g, ''))}
+                  />
+                  <span className="mmss-unit">min</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={59}
+                    value={seconds}
+                    aria-label="Seconds"
+                    onChange={(e) => {
+                      const n = e.target.value.replace(/\D/g, '');
+                      // Clamp seconds to 0–59 so mm:ss stays well-formed; blank is allowed mid-edit.
+                      setSeconds(n === '' ? '' : String(Math.min(59, Number(n))));
+                    }}
+                  />
+                  <span className="mmss-unit">sec</span>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         <button type="button" className="start-practice" onClick={start} disabled={!selectedMode}>

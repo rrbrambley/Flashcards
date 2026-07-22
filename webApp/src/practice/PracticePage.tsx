@@ -15,6 +15,7 @@ import { initPractice, practiceReducer } from './practiceReducer';
 import { trailingCorrectStreak } from './grading/streak';
 import { orderCards } from './shuffle';
 import { exitTarget, fromState } from './exitTarget';
+import { formatRemaining, useCountdown } from './useCountdown';
 
 // Resolves the practice mode from the `?mode=` query param. When the deck has only one registered
 // mode we run it directly (preserving the one-click classic flow); with several modes and none
@@ -32,6 +33,9 @@ export function PracticePage() {
   // Grade the whole session at the end (#293): only Test + Multiple Choice have an objective grade to defer.
   const gradeAtEnd =
     searchParams.get('gradeAtEnd') === '1' && (mode?.key === 'test' || mode?.key === 'multiple_choice');
+  // Optional per-session time limit in seconds (#289): `?timeLimit=N`; absent/<1 = untimed.
+  const timeLimitParam = Number(searchParams.get('timeLimit'));
+  const timeLimit = Number.isFinite(timeLimitParam) && timeLimitParam >= 1 ? Math.floor(timeLimitParam) : null;
 
   if (!mode) return <ModeChooser deckId={deckId} />;
   return (
@@ -42,6 +46,7 @@ export function PracticePage() {
       shuffle={shuffle}
       questionCount={questionCount}
       gradeAtEnd={gradeAtEnd}
+      timeLimit={timeLimit}
     />
   );
 }
@@ -68,6 +73,9 @@ interface LoadedPractice {
   isGlobal: boolean;
   // Grade the whole session at the end (#293) — swaps the card-by-card runner for the batch list.
   gradeAtEnd: boolean;
+  // Wall-clock deadline (epoch millis) for a timed session (#289), or null when untimed. Derived once
+  // from the session's `createdAt + timeLimitSeconds` (signed-in) / mint time (guest) so it's stable.
+  deadline: number | null;
 }
 
 const ZERO_PROGRESS: Progress = { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 };
@@ -78,12 +86,14 @@ function PracticeSession({
   shuffle,
   questionCount,
   gradeAtEnd,
+  timeLimit,
 }: {
   deckId: number;
   mode: PracticeMode;
   shuffle: boolean;
   questionCount: number | null;
   gradeAtEnd: boolean;
+  timeLimit: number | null;
 }) {
   const navigate = useNavigate();
   const { token, can, isEnabled } = useAuth();
@@ -97,8 +107,11 @@ function PracticeSession({
   // stored shuffle/seed (resume-authoritative); guests use the URL choice + a seed minted once here.
   const loadRef = useRef<{
     key: string;
-    // ...plus the effective question count (null = whole deck, FLA-219) and grade-at-end flag (#293).
-    promise: Promise<[PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null, boolean]>;
+    // ...plus the effective question count (null = whole deck, FLA-219), grade-at-end flag (#293), and
+    // timed deadline (epoch millis, null = untimed, #289).
+    promise: Promise<
+      [PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null, boolean, number | null]
+    >;
   } | null>(null);
 
   // Latest in-memory progress, mirrored here so the back/close guard can read it without re-rendering.
@@ -112,20 +125,30 @@ function PracticeSession({
 
   useEffect(() => {
     let active = true;
-    const key = `${deckId}:${mode.key}:${reloadToken}:${isGuest}:${shuffle}:${questionCount}:${gradeAtEnd}`;
+    const key = `${deckId}:${mode.key}:${reloadToken}:${isGuest}:${shuffle}:${questionCount}:${gradeAtEnd}:${timeLimit}`;
     if (loadRef.current?.key !== key) {
       // Guests load the deck from the public catalog and never create a session; signed-in users
       // create/resume a server session (which carries any existing progress for this deck + mode).
       // A guest's shuffle seed is minted once here (in the cached promise) so re-renders don't re-roll
       // the order (the FLA-159 lesson); signed-in runs use the server's stored, resume-stable seed.
+      // The timed deadline (#289) is likewise fixed once: a guest's from the mint time, a signed-in
+      // run's from the session's stored createdAt (resume-stable — the clock keeps running while away).
       const promise: Promise<
-        [PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null, boolean]
+        [PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null, boolean, number | null]
       > = isGuest
         ? api
             .getCatalogDeck(deckId)
-            .then((deck) => [null, deck, shuffle, shuffle ? newGuestSeed() : 0, questionCount, gradeAtEnd])
+            .then((deck) => [
+              null,
+              deck,
+              shuffle,
+              shuffle ? newGuestSeed() : 0,
+              questionCount,
+              gradeAtEnd,
+              timeLimit != null ? Date.now() + timeLimit * 1000 : null,
+            ])
         : Promise.all([
-            api.createSession(deckId, mode.key, shuffle, questionCount, gradeAtEnd),
+            api.createSession(deckId, mode.key, shuffle, questionCount, gradeAtEnd, timeLimit),
             api.getDeck(deckId),
           ]).then(
             // Resume-authoritative: the server's stored choices win over the URL (an old link can't change a run).
@@ -136,12 +159,13 @@ function PracticeSession({
               session.shuffleSeed,
               session.questionCount,
               session.gradeAtEnd,
+              session.timeLimitSeconds != null ? session.createdAtMillis + session.timeLimitSeconds * 1000 : null,
             ],
           );
       loadRef.current = { key, promise };
     }
     loadRef.current.promise
-      .then(async ([session, deck, effectiveShuffle, effectiveSeed, effectiveCount, effectiveGradeAtEnd]) => {
+      .then(async ([session, deck, effectiveShuffle, effectiveSeed, effectiveCount, effectiveGradeAtEnd, effectiveDeadline]) => {
         if (!active) return;
         if (deck.flashcards.length === 0) {
           setError('This deck has no cards to practice.');
@@ -167,6 +191,7 @@ function PracticeSession({
             discussionsEnabled: deck.discussionsEnabled ?? false,
             isGlobal: deck.isGlobal ?? false,
             gradeAtEnd: effectiveGradeAtEnd,
+            deadline: effectiveDeadline,
           });
         }
         setLoadedToken(reloadToken);
@@ -179,7 +204,7 @@ function PracticeSession({
     return () => {
       active = false;
     };
-  }, [deckId, mode.key, reloadToken, isGuest, shuffle, questionCount, gradeAtEnd]);
+  }, [deckId, mode.key, reloadToken, isGuest, shuffle, questionCount, gradeAtEnd, timeLimit]);
 
   const onProgress = useCallback(
     (progress: Progress, status: 'practicing' | 'completed') => {
@@ -239,6 +264,7 @@ function PracticeSession({
             sessionId={data.sessionId}
             cards={data.cards}
             mode={mode}
+            deadline={data.deadline}
             onAgain={() => setReloadToken((t) => t + 1)}
             onExit={() => navigate(exit.to)}
           />
@@ -256,6 +282,7 @@ function PracticeSession({
             isGlobal={data.isGlobal}
             isGuest={isGuest}
             canModerate={can('manage_discussions')}
+            deadline={data.deadline}
             onProgress={onProgress}
             onAgain={() => setReloadToken((t) => t + 1)}
             onExit={() => navigate(exit.to)}
@@ -288,6 +315,8 @@ interface PracticeRunnerProps {
   isGlobal: boolean;
   isGuest: boolean;
   canModerate: boolean;
+  // Wall-clock deadline (epoch millis) for a timed session (#289), or null when untimed.
+  deadline: number | null;
   onProgress: (progress: Progress, status: 'practicing' | 'completed') => void;
   onAgain: () => void;
   onExit: () => void;
@@ -305,11 +334,14 @@ function PracticeRunner({
   isGlobal,
   isGuest,
   canModerate,
+  deadline,
   onProgress,
   onAgain,
   onExit,
 }: PracticeRunnerProps) {
   const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, progress, initialStreak));
+  // Timed session (#289): count down to the deadline; on expiry, end the run wherever it is.
+  const { remainingMs, expired } = useCountdown(deadline);
   // Overall streak after this completion (FLA-106); null until loaded / for guests (no session).
   const [streak, setStreak] = useState<number | null>(null);
   // The session's answer log for the end-of-session review (FLA-149); null until the session
@@ -344,29 +376,43 @@ function PracticeRunner({
     [state, sessionId],
   );
 
-  // Persist the session aggregate after a card is finished — or complete it (then read the daily
-  // streak) on the last card. Best-effort; never blocks the UI.
+  // Complete the session, then read the daily streak + the answer log only after completion lands —
+  // so the streak reflects the day just earned and the review includes the final answer (FLA-149).
+  // Used both when the last card finishes and when a timed run expires mid-session (#289). Best-effort.
+  const completeNow = useCallback(() => {
+    if (sessionId == null) return;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    api
+      .completeSession(sessionId, tz)
+      .then(() => Promise.all([api.getStreaks(tz), api.getAnswers(sessionId)]))
+      .then(([s, answers]) => {
+        setStreak(s.overall.current);
+        setReview(answers);
+      })
+      .catch(() => {});
+  }, [sessionId]);
+
+  // Persist the session aggregate after a card is finished — or complete it on the last card.
+  // Best-effort; never blocks the UI.
   const persistProgress = useCallback(
     (wasLast: boolean, nextIndex: number, numCorrect: number, numIncorrect: number) => {
       if (sessionId == null) return;
       if (wasLast) {
-        // Read the streak + the answer log only after completion lands — so the streak reflects the
-        // day just earned and the review includes the final card's (just-recorded) answer (FLA-149).
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        api
-          .completeSession(sessionId, tz)
-          .then(() => Promise.all([api.getStreaks(tz), api.getAnswers(sessionId)]))
-          .then(([s, answers]) => {
-            setStreak(s.overall.current);
-            setReview(answers);
-          })
-          .catch(() => {});
+        completeNow();
       } else {
         api.updateProgress(sessionId, { currentCardIndex: nextIndex, numCorrect, numIncorrect }).catch(() => {});
       }
     },
-    [sessionId],
+    [sessionId, completeNow],
   );
+
+  // Timed session (#289): when the countdown expires, end the run wherever it is + complete it.
+  useEffect(() => {
+    if (expired && state.status === 'practicing') {
+      dispatch({ type: 'EXPIRE' });
+      completeNow();
+    }
+  }, [expired, state.status, completeNow]);
 
   // Classic: grade + advance in one motion (its swipe has no verdict to dwell on). State is stale
   // this tick, so the persisted score is computed from `correct`.
@@ -464,6 +510,17 @@ function PracticeRunner({
   const canDiscuss = discussionsEnabled && !!currentCard.cardUid;
   return (
     <div className="practice">
+      {/* Timed session (#289): a live m:ss countdown, urgent styling in the last 10s. */}
+      {deadline != null && (
+        <div className="practice-timer-row">
+          <span
+            className={`practice-timer${remainingMs <= 10000 ? ' urgent' : ''}`}
+            aria-label="time remaining"
+          >
+            ⏱ {formatRemaining(remainingMs)}
+          </span>
+        </div>
+      )}
       <div className="score-row">
         <span className="score-chip incorrect" aria-label="incorrect count">
           {state.numIncorrect}

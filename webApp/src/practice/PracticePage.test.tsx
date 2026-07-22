@@ -50,6 +50,7 @@ const session = (over: Partial<PracticeSessionDto> = {}): PracticeSessionDto => 
   shuffleSeed: 0,
   questionCount: null,
   gradeAtEnd: false,
+  timeLimitSeconds: null,
   ...over,
 });
 
@@ -89,7 +90,7 @@ describe('PracticePage', () => {
     setup(threeCards, { currentCardIndex: 1 });
     expect(await screen.findByText('Q2')).toBeInTheDocument();
     // No `shuffle=` in the route → the toggle defaults On (FLA-200), so the new session is created shuffled.
-    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true, null, false);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', true, null, false, null);
   });
 
   it('clicking the card flips it', async () => {
@@ -218,7 +219,7 @@ describe('PracticePage', () => {
 
     await screen.findByText('Q1');
     // The URL count is sent to the server (resume-authoritative for the subset).
-    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', false, 2, false);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'flashcards', false, 2, false, null);
 
     // Only 2 of the 3 cards play: answering both completes the run and Q3 never appears.
     await userEvent.click(screen.getByRole('button', { name: /Got it/ }));
@@ -286,7 +287,7 @@ describe('PracticePage', () => {
     );
 
     await screen.findByText('Q1');
-    expect(api.createSession).toHaveBeenCalledWith(5, 'test', true, null, false);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'test', true, null, false, null);
 
     await userEvent.type(screen.getByLabelText('Your answer'), 'A1');
     await userEvent.click(screen.getByRole('button', { name: 'Check' }));
@@ -309,7 +310,7 @@ describe('PracticePage', () => {
     );
 
     await screen.findByText('Q1');
-    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice', true, null, false);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'multiple_choice', true, null, false, null);
 
     await userEvent.click(screen.getByRole('button', { name: /A1/ })); // the correct option
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
@@ -343,7 +344,7 @@ describe('PracticePage', () => {
     // The whole session is created grade-at-end, and every card shows at once (not one at a time).
     expect(await screen.findByText('Q1')).toBeInTheDocument();
     expect(screen.getByText('Q2')).toBeInTheDocument();
-    expect(api.createSession).toHaveBeenCalledWith(5, 'test', false, null, true);
+    expect(api.createSession).toHaveBeenCalledWith(5, 'test', false, null, true, null);
 
     // Answer Q1 right and Q2 wrong, then submit.
     await userEvent.type(screen.getByLabelText('Answer for question 1'), 'A1');
@@ -355,6 +356,30 @@ describe('PracticePage', () => {
     expect(await screen.findByText('Practice complete')).toBeInTheDocument();
     expect(screen.getByText('You reviewed 2 cards.')).toBeInTheDocument();
     expect(api.recordAnswers).toHaveBeenCalled();
+    expect(api.completeSession).toHaveBeenCalled();
+  });
+
+  it('auto-completes a timed session whose deadline has already passed (#289)', async () => {
+    // Created at epoch 0 with a 1s limit → deadline is in 1970, so it's expired the moment it loads.
+    vi.mocked(api.createSession).mockResolvedValue(
+      session({ mode: 'test', createdAtMillis: 0, timeLimitSeconds: 1 }),
+    );
+    vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: threeCards });
+    vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
+    vi.mocked(api.getAnswers).mockResolvedValue([]);
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 3, longest: 5 }, decks: [] });
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=test&timeLimit=1']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+          <Route path="/" element={<div>library</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // The expired countdown ends the run at once → the completion screen, and the session is completed.
+    expect(await screen.findByText('Practice complete')).toBeInTheDocument();
+    expect(api.createSession).toHaveBeenCalledWith(5, 'test', true, null, false, 1);
     expect(api.completeSession).toHaveBeenCalled();
   });
 

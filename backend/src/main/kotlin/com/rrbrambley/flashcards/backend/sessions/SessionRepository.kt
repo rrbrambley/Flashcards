@@ -40,10 +40,13 @@ object SessionRepository {
         shuffle: Boolean,
         questionCount: Int? = null,
         gradeAtEnd: Boolean = false,
+        timeLimitSeconds: Int? = null,
     ): PracticeSessionDto {
         // A subset session (FLA-219) must ask for at least one card; null = the whole deck. The upper
         // bound is left to the client (it has the deck) — clients take(count), which clamps naturally.
         require(questionCount == null || questionCount >= 1) { "questionCount must be at least 1" }
+        // A timed session (#289) must allow at least one second; null = untimed. Expiry is client-driven.
+        require(timeLimitSeconds == null || timeLimitSeconds >= 1) { "timeLimitSeconds must be at least 1" }
         return dbQuery {
             val deckTitle = visibleDeckTitle(userId, deckId)
                 ?: throw NotFoundException("Deck $deckId not found")
@@ -72,6 +75,7 @@ object SessionRepository {
                 it[shuffleSeed] = seed
                 it[PracticeSessions.questionCount] = questionCount
                 it[PracticeSessions.gradeAtEnd] = gradeAtEnd
+                it[PracticeSessions.timeLimitSeconds] = timeLimitSeconds
                 it[createdAtMillis] = now
                 it[updatedAtMillis] = now
             }.value
@@ -90,6 +94,7 @@ object SessionRepository {
                 shuffleSeed = seed,
                 questionCount = questionCount,
                 gradeAtEnd = gradeAtEnd,
+                timeLimitSeconds = timeLimitSeconds,
             )
         }
     }

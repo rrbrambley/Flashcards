@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import type { FlashcardDto } from '../api/types';
 import { buildChoices } from './grading/multipleChoice';
 import { gradeTextAnswer } from './grading/textAnswer';
 import { MultipleChoice } from './components/MultipleChoice';
 import type { PracticeMode } from './modes/types';
+import { formatRemaining, useCountdown } from './useCountdown';
 
 interface BatchPracticeRunnerProps {
   // Null for a guest: the batch runs entirely in-memory and isn't persisted.
@@ -12,6 +13,8 @@ interface BatchPracticeRunnerProps {
   cards: FlashcardDto[];
   // Test or Multiple Choice only (#293) — Classic has no objective grade to defer.
   mode: PracticeMode;
+  // Wall-clock deadline (epoch millis) for a timed session (#289), or null when untimed.
+  deadline: number | null;
   onAgain: () => void;
   onExit: () => void;
 }
@@ -32,7 +35,7 @@ interface BatchResult {
  * Single sitting — answers live in memory; leaving before Submit discards them. Signed-in runs record
  * the answer batch + complete the session on Submit; guests grade locally only.
  */
-export function BatchPracticeRunner({ sessionId, cards, mode, onAgain, onExit }: BatchPracticeRunnerProps) {
+export function BatchPracticeRunner({ sessionId, cards, mode, deadline, onAgain, onExit }: BatchPracticeRunnerProps) {
   const isTest = mode.key === 'test';
   // Multiple-choice options per card, built once so they don't reshuffle on re-render.
   const [choices] = useState<string[][]>(() => (isTest ? [] : cards.map((c) => buildChoices(c, cards))));
@@ -40,6 +43,8 @@ export function BatchPracticeRunner({ sessionId, cards, mode, onAgain, onExit }:
   const [entries, setEntries] = useState<(string | number | null)[]>(() => cards.map(() => (isTest ? '' : null)));
   // Null until Submit; then the per-card grade that drives the results screen.
   const [results, setResults] = useState<BatchResult[] | null>(null);
+  // Timed session (#289): count down to the deadline; on expiry, auto-submit whatever's been answered.
+  const { remainingMs, expired } = useCountdown(deadline);
 
   const isAnswered = (i: number) => (isTest ? (entries[i] as string).trim() !== '' : entries[i] != null);
   const answeredCount = cards.filter((_, i) => isAnswered(i)).length;
@@ -84,6 +89,16 @@ export function BatchPracticeRunner({ sessionId, cards, mode, onAgain, onExit }:
       await api.completeSession(sessionId, Intl.DateTimeFormat().resolvedOptions().timeZone).catch(() => {});
     }
   };
+
+  // Timed session (#289): auto-submit whatever's answered when the countdown expires. A ref keeps the
+  // effect calling the latest `submit` (its closure over `entries`) without re-firing every keystroke.
+  const submitRef = useRef(submit);
+  useEffect(() => {
+    submitRef.current = submit;
+  });
+  useEffect(() => {
+    if (expired && results === null) void submitRef.current();
+  }, [expired, results]);
 
   // Results screen: reuse the card-by-card runner's "Practice complete" layout (#298) so all the
   // grade-at-the-end feedback lives on one screen at the top, not stranded inline below the list.
@@ -130,6 +145,17 @@ export function BatchPracticeRunner({ sessionId, cards, mode, onAgain, onExit }:
 
   return (
     <div className="batch-practice">
+      {/* Timed session (#289): a live m:ss countdown, urgent styling in the last 10s. */}
+      {deadline != null && (
+        <div className="practice-timer-row">
+          <span
+            className={`practice-timer${remainingMs <= 10000 ? ' urgent' : ''}`}
+            aria-label="time remaining"
+          >
+            ⏱ {formatRemaining(remainingMs)}
+          </span>
+        </div>
+      )}
       <ol className="batch-list">
         {cards.map((card, i) => (
           <li key={card.cardUid ?? i} className="batch-item">

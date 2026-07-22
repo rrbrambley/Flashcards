@@ -1213,6 +1213,37 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun session_create_with_time_limit_persists_and_resumes() = runApp { client ->
+        val auth = client.register("timedpractice", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // timeLimitSeconds is stored and kept across resume; a plain create leaves it untimed (null).
+        val created = client.createSession(auth.accessToken, deckId, mode = "test", timeLimitSeconds = 90)
+        assertEquals(90, created.timeLimitSeconds)
+        val resumed = client.createSession(auth.accessToken, deckId, mode = "test", timeLimitSeconds = 30)
+        assertEquals(created.id, resumed.id)
+        assertEquals(90, resumed.timeLimitSeconds, "resume keeps the original time limit")
+
+        val plain = client.createSession(auth.accessToken, deckId, mode = "multiple_choice")
+        assertNull(plain.timeLimitSeconds)
+    }
+
+    @Test
+    fun session_create_rejects_a_non_positive_time_limit() = runApp { client ->
+        val auth = client.register("badtimer", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        val response = client.post("/sessions") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateSessionRequest(deckId, mode = "test", timeLimitSeconds = 0)))
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
     fun complete_records_completion_time_and_timezone() = runApp { client ->
         fun completion(sessionId: Long): Pair<Long?, String?> = transaction {
             PracticeSessions.selectAll().where { PracticeSessions.id eq sessionId }.first()
@@ -1404,6 +1435,8 @@ class ApplicationFlowTest {
         assertEquals(true, flags["practice_question_count"])
         // The grade-at-the-end toggle (#293) is seeded default-on too.
         assertEquals(true, flags["practice_grade_at_end"])
+        // The timed-practice toggle (#289) is seeded default-on too.
+        assertEquals(true, flags["practice_timer"])
         val me = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(true, me.flags["discussions"])
         assertEquals(true, me.flags["avatar_selection"])
@@ -2794,10 +2827,15 @@ class ApplicationFlowTest {
         shuffle: Boolean = false,
         questionCount: Int? = null,
         gradeAtEnd: Boolean = false,
+        timeLimitSeconds: Int? = null,
     ): PracticeSessionDto = post("/sessions") {
         bearerAuth(token)
         contentType(ContentType.Application.Json)
-        setBody(json.encodeToString(CreateSessionRequest(deckId, mode, shuffle, questionCount, gradeAtEnd)))
+        setBody(
+            json.encodeToString(
+                CreateSessionRequest(deckId, mode, shuffle, questionCount, gradeAtEnd, timeLimitSeconds),
+            ),
+        )
     }.decode()
 
     /** Grants the seeded `admin` role to [userId] (bootstraps an admin for a test). */

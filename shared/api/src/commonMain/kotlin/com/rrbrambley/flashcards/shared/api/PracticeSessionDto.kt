@@ -30,4 +30,8 @@ data class PracticeSessionDto(
     /** Grade the whole session at the end instead of per-card (#293). Fixed at creation. Defaulted so
      *  the Room mapper and older/mobile clients that omit it keep grading per card. */
     val gradeAtEnd: Boolean = false,
+    /** Optional per-session time limit in seconds (#289); the client counts down from
+     *  `createdAtMillis + timeLimitSeconds*1000` and auto-completes at expiry. Null = untimed. Minted
+     *  once at creation (stable across resume). Defaulted so the Room mapper + older clients omit it. */
+    val timeLimitSeconds: Int? = null,
 )

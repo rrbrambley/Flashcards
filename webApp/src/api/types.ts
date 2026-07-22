@@ -151,6 +151,9 @@ export interface PracticeSessionDto {
   // Grade the whole session at the end instead of per-card (#293): all cards in a scrollable list,
   // graded on submit. Fixed at creation.
   gradeAtEnd: boolean;
+  // Optional per-session time limit in seconds (#289): the runner counts down from
+  // `createdAtMillis + timeLimitSeconds*1000` and auto-completes at expiry. Null = untimed.
+  timeLimitSeconds: number | null;
 }
 
 export interface CreateSessionRequest {
@@ -163,6 +166,8 @@ export interface CreateSessionRequest {
   questionCount?: number | null;
   // Grade the whole session at the end instead of per-card (#293). Fixed at creation.
   gradeAtEnd?: boolean;
+  // Optional per-session time limit in seconds (#289); null/omitted = untimed. Fixed at creation.
+  timeLimitSeconds?: number | null;
 }
 
 export interface UpdateProgressRequest {
