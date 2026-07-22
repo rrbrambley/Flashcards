@@ -16,6 +16,7 @@ import { trailingCorrectStreak } from './grading/streak';
 import { orderCards } from './shuffle';
 import { exitTarget, fromState } from './exitTarget';
 import { formatRemaining, useCountdown } from './useCountdown';
+import { useExitGuard } from './useExitGuard';
 
 // Resolves the practice mode from the `?mode=` query param. When the deck has only one registered
 // mode we run it directly (preserving the one-click classic flow); with several modes and none
@@ -122,6 +123,9 @@ function PracticeSession({
   const [guestHasUnsaved, setGuestHasUnsaved] = useState(false);
   // Non-null while the "save your progress?" prompt is open; holds the snapshot to persist on signup.
   const [savePromptProgress, setSavePromptProgress] = useState<Progress | null>(null);
+  // Whether the run has finished (results shown). Drives the single-sitting exit guard (#307): while a
+  // timed / grade-at-the-end run is still in progress there's no back button + leaving is warned.
+  const [runCompleted, setRunCompleted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -211,9 +215,22 @@ function PracticeSession({
       progressRef.current = { progress, status };
       const touched = progress.currentCardIndex > 0 || progress.numCorrect > 0 || progress.numIncorrect > 0;
       setGuestHasUnsaved(isGuest && status === 'practicing' && touched);
+      setRunCompleted(status === 'completed');
     },
     [isGuest],
   );
+
+  // "Practice again" reloads a fresh run — re-arm the guard + reload.
+  const practiceAgain = () => {
+    setRunCompleted(false);
+    setReloadToken((t) => t + 1);
+  };
+
+  // A single-sitting run (timed / grade-at-the-end, #306) isn't saved, so while it's in progress hide
+  // the back button and warn on any exit attempt (#307). Off once it completes (results shown).
+  const isSingleSitting = data != null && (data.gradeAtEnd || data.deadline != null);
+  const guardActive = isSingleSitting && !runCompleted;
+  useExitGuard(guardActive, 'Leaving now ends this session and your progress won’t be saved. Leave anyway?');
 
   // Warn on tab close / reload while a guest has unsaved progress.
   useEffect(() => {
@@ -247,6 +264,7 @@ function PracticeSession({
         title={(!loading && data?.deckTitle) || 'Practice'}
         backLabel={exit.label}
         onBack={requestExit}
+        hideBack={guardActive}
         right={<ShareButton deckId={deckId} title={data?.deckTitle} className="link-btn" />}
       />
       <main className="container">
@@ -265,7 +283,8 @@ function PracticeSession({
             cards={data.cards}
             mode={mode}
             deadline={data.deadline}
-            onAgain={() => setReloadToken((t) => t + 1)}
+            onCompleted={() => setRunCompleted(true)}
+            onAgain={practiceAgain}
             onExit={() => navigate(exit.to)}
           />
         ) : (
@@ -284,7 +303,7 @@ function PracticeSession({
             canModerate={can('manage_discussions')}
             deadline={data.deadline}
             onProgress={onProgress}
-            onAgain={() => setReloadToken((t) => t + 1)}
+            onAgain={practiceAgain}
             onExit={() => navigate(exit.to)}
           />
         )}

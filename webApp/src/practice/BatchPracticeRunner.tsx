@@ -15,6 +15,8 @@ interface BatchPracticeRunnerProps {
   mode: PracticeMode;
   // Wall-clock deadline (epoch millis) for a timed session (#289), or null when untimed.
   deadline: number | null;
+  // Fired once the batch is submitted + results shown, so the parent can lift its exit guard (#307).
+  onCompleted: () => void;
   onAgain: () => void;
   onExit: () => void;
 }
@@ -35,7 +37,15 @@ interface BatchResult {
  * Single sitting — answers live in memory; leaving before Submit discards them. Signed-in runs record
  * the answer batch + complete the session on Submit; guests grade locally only.
  */
-export function BatchPracticeRunner({ sessionId, cards, mode, deadline, onAgain, onExit }: BatchPracticeRunnerProps) {
+export function BatchPracticeRunner({
+  sessionId,
+  cards,
+  mode,
+  deadline,
+  onCompleted,
+  onAgain,
+  onExit,
+}: BatchPracticeRunnerProps) {
   const isTest = mode.key === 'test';
   // Multiple-choice options per card, built once so they don't reshuffle on re-render.
   const [choices] = useState<string[][]>(() => (isTest ? [] : cards.map((c) => buildChoices(c, cards))));
@@ -71,6 +81,8 @@ export function BatchPracticeRunner({ sessionId, cards, mode, deadline, onAgain,
       submittedText: submittedText(i),
     }));
     setResults(graded);
+    // Run's done — lift the parent's single-sitting exit guard (#307).
+    onCompleted();
     // Swap-to-results changes the page height; land the user at the top of the score (#298).
     window.scrollTo({ top: 0 });
     // Signed-in: log the whole batch (sequence = list order) and complete the session — best effort,
