@@ -1038,6 +1038,37 @@ button.danger:hover:not(:disabled) {
   text-align: right;
 }
 
+/* Single-sitting settings group (#306): timed + grade-at-the-end, sectioned under their own subheader. */
+.single-sitting-group {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+
+.settings-subheading {
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.single-sitting-note {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+}
+
+/* The toggles inside the group sit flush with its padding, not their own panel. */
+.single-sitting-group .shuffle-toggle,
+.single-sitting-group .timed-field {
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
 /* Timed-session mm:ss field (#289) — revealed under the "Timed" toggle in the practice config. */
 .timed-field {
   display: grid;

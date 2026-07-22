@@ -11,17 +11,23 @@ export function BackHeader({
   backTo = '/library',
   backLabel = 'Library',
   onBack,
+  hideBack = false,
   right,
 }: {
   title: string;
   backTo?: string;
   backLabel?: string;
   onBack?: () => void;
+  // Omit the back control entirely — e.g. an in-progress single-sitting practice run that shouldn't
+  // offer a casual exit (#307). A leading spacer keeps the title centered.
+  hideBack?: boolean;
   right?: ReactNode;
 }) {
   return (
     <header className="app-header">
-      {onBack ? (
+      {hideBack ? (
+        <span className="header-spacer" />
+      ) : onBack ? (
         <button type="button" className="link-btn" onClick={onBack}>
           ← {backLabel}
         </button>

@@ -15,6 +15,7 @@ import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.select
 import org.jetbrains.exposed.v1.jdbc.selectAll
 
@@ -28,7 +29,14 @@ object HomeService {
     suspend fun homeFeed(userId: Long): List<HomeDataDto> = dbQuery {
         val sessions = (PracticeSessions innerJoin Decks)
             .selectAll()
-            .where { (PracticeSessions.userId eq userId) and (PracticeSessions.isCompleted eq false) }
+            // Single-sitting runs (timed / grade-at-the-end, #306) are one-and-done — never surfaced as
+            // a "continue" item, so an abandoned one doesn't invite resuming a session that can't resume.
+            .where {
+                (PracticeSessions.userId eq userId) and
+                    (PracticeSessions.isCompleted eq false) and
+                    PracticeSessions.timeLimitSeconds.isNull() and
+                    (PracticeSessions.gradeAtEnd eq false)
+            }
             .orderBy(PracticeSessions.updatedAtMillis to SortOrder.DESC)
             .map { it.toPracticeSessionDto(it[Decks.title]) }
 

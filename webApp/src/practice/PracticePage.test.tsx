@@ -383,6 +383,26 @@ describe('PracticePage', () => {
     expect(api.completeSession).toHaveBeenCalled();
   });
 
+  it('hides the back button while an in-progress single-sitting (timed) run is going (#307)', async () => {
+    // A far-future deadline → the timed run stays in progress (not auto-completed).
+    vi.mocked(api.createSession).mockResolvedValue(
+      session({ mode: 'test', createdAtMillis: Date.now(), timeLimitSeconds: 300 }),
+    );
+    vi.mocked(api.getDeck).mockResolvedValue({ id: 5, title: 'Spanish', editable: true, flashcards: threeCards });
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=test&timeLimit=300']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+          <Route path="/" element={<div>library</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // The countdown is running (in progress) → the "← Back" control is gone so there's no casual exit.
+    await screen.findByLabelText('time remaining');
+    expect(screen.queryByText(/←/)).not.toBeInTheDocument();
+  });
+
   it('shows an error when the deck has no cards', async () => {
     setup([]);
     expect(await screen.findByText(/no cards to practice/i)).toBeInTheDocument();
