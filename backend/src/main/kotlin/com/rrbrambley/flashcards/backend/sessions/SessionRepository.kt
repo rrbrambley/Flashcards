@@ -16,6 +16,7 @@ import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.core.less
 import org.jetbrains.exposed.v1.core.or
 import org.jetbrains.exposed.v1.jdbc.andWhere
@@ -51,17 +52,26 @@ object SessionRepository {
             val deckTitle = visibleDeckTitle(userId, deckId)
                 ?: throw NotFoundException("Deck $deckId not found")
 
-            val active = PracticeSessions.selectAll()
-                .where {
-                    (PracticeSessions.userId eq userId) and
-                        (PracticeSessions.deckId eq deckId) and
-                        (PracticeSessions.mode eq mode) and
-                        (PracticeSessions.isCompleted eq false)
-                }
-                .firstOrNull()
-            // Resume wins: an existing active session keeps its stored order, so `shuffle` on the request
-            // only takes effect when a brand-new session is created below.
-            if (active != null) return@dbQuery active.toPracticeSessionDto(deckTitle)
+            // Single-sitting runs — timed (#289) or grade-at-the-end (#293) — are one-and-done (#306):
+            // they never resume, so each start mints a fresh session (applying the request's settings)
+            // rather than dropping the user into an existing run. A normal run resumes only a normal
+            // (non-single-sitting) active session, so a left-behind single-sitting one is ignored here.
+            val singleSitting = timeLimitSeconds != null || gradeAtEnd
+            if (!singleSitting) {
+                val active = PracticeSessions.selectAll()
+                    .where {
+                        (PracticeSessions.userId eq userId) and
+                            (PracticeSessions.deckId eq deckId) and
+                            (PracticeSessions.mode eq mode) and
+                            (PracticeSessions.isCompleted eq false) and
+                            PracticeSessions.timeLimitSeconds.isNull() and
+                            (PracticeSessions.gradeAtEnd eq false)
+                    }
+                    .firstOrNull()
+                // Resume wins: an existing active session keeps its stored order, so `shuffle` on the
+                // request only takes effect when a brand-new session is created below.
+                if (active != null) return@dbQuery active.toPracticeSessionDto(deckTitle)
+            }
 
             val now = System.currentTimeMillis()
             // Mint the seed once, server-authoritative, in a JS-safe range (< 2^31) so it round-trips
@@ -111,7 +121,12 @@ object SessionRepository {
                 .selectAll()
                 .where {
                     if (activeOnly) {
-                        (PracticeSessions.userId eq userId) and (PracticeSessions.isCompleted eq false)
+                        // Resumable active sessions only — single-sitting runs (timed / grade-at-the-end,
+                        // #306) aren't meant to be resumed, so they're excluded from the active list.
+                        (PracticeSessions.userId eq userId) and
+                            (PracticeSessions.isCompleted eq false) and
+                            PracticeSessions.timeLimitSeconds.isNull() and
+                            (PracticeSessions.gradeAtEnd eq false)
                     } else {
                         PracticeSessions.userId eq userId
                     }

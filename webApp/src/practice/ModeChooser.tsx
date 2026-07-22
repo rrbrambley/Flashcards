@@ -134,59 +134,72 @@ export function ModeChooser({ deckId }: { deckId: number }) {
           <span className="muted">Practice in a random order</span>
         </label>
 
-        {/* Always shown (when flagged), but disabled unless a gradeable mode is picked — Classic is a
-            self-graded flip, so there's nothing to defer. */}
-        {gradeAtEndEnabled && (
-          <label className={`shuffle-toggle${canGradeAtEnd ? '' : ' disabled'}`}>
-            <input
-              type="checkbox"
-              checked={canGradeAtEnd && gradeAtEnd}
-              disabled={!canGradeAtEnd}
-              onChange={(e) => setGradeAtEnd(e.target.checked)}
-            />
-            <span className="shuffle-toggle-label">Grade at the end</span>
-            <span className="muted">
-              {canGradeAtEnd ? 'Answer every card, then submit to see your score' : 'Available for Test & Multiple Choice'}
-            </span>
-          </label>
-        )}
+        {/* Single-sitting settings (#306): timed + grade-at-the-end run start-to-finish in one go and
+            don't resume, so they're grouped under their own subheader. */}
+        {(gradeAtEndEnabled || timerEnabled) && (
+          <div className="single-sitting-group">
+            <h3 className="settings-subheading">Complete in a single session</h3>
+            <p className="muted single-sitting-note">
+              These run start to finish in one sitting — they don&rsquo;t save to continue later.
+            </p>
 
-        {timerEnabled && (
-          <>
-            <label className="shuffle-toggle">
-              <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
-              <span className="shuffle-toggle-label">Timed</span>
-              <span className="muted">Auto-submit when the clock runs out</span>
-            </label>
-            {timed && (
-              <div className="timed-field">
-                <span className="questions-field-label">Time limit</span>
-                <div className="mmss-input">
-                  <input
-                    type="number"
-                    min={0}
-                    value={minutes}
-                    aria-label="Minutes"
-                    onChange={(e) => setMinutes(e.target.value.replace(/\D/g, ''))}
-                  />
-                  <span className="mmss-unit">min</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={59}
-                    value={seconds}
-                    aria-label="Seconds"
-                    onChange={(e) => {
-                      const n = e.target.value.replace(/\D/g, '');
-                      // Clamp seconds to 0–59 so mm:ss stays well-formed; blank is allowed mid-edit.
-                      setSeconds(n === '' ? '' : String(Math.min(59, Number(n))));
-                    }}
-                  />
-                  <span className="mmss-unit">sec</span>
-                </div>
-              </div>
+            {/* Always shown (when flagged), but disabled unless a gradeable mode is picked — Classic is
+                a self-graded flip, so there's nothing to defer. */}
+            {gradeAtEndEnabled && (
+              <label className={`shuffle-toggle${canGradeAtEnd ? '' : ' disabled'}`}>
+                <input
+                  type="checkbox"
+                  checked={canGradeAtEnd && gradeAtEnd}
+                  disabled={!canGradeAtEnd}
+                  onChange={(e) => setGradeAtEnd(e.target.checked)}
+                />
+                <span className="shuffle-toggle-label">Grade at the end</span>
+                <span className="muted">
+                  {canGradeAtEnd
+                    ? 'Answer every card, then submit to see your score'
+                    : 'Available for Test & Multiple Choice'}
+                </span>
+              </label>
             )}
-          </>
+
+            {timerEnabled && (
+              <>
+                <label className="shuffle-toggle">
+                  <input type="checkbox" checked={timed} onChange={(e) => setTimed(e.target.checked)} />
+                  <span className="shuffle-toggle-label">Timed</span>
+                  <span className="muted">Auto-submit when the clock runs out</span>
+                </label>
+                {timed && (
+                  <div className="timed-field">
+                    <span className="questions-field-label">Time limit</span>
+                    <div className="mmss-input">
+                      <input
+                        type="number"
+                        min={0}
+                        value={minutes}
+                        aria-label="Minutes"
+                        onChange={(e) => setMinutes(e.target.value.replace(/\D/g, ''))}
+                      />
+                      <span className="mmss-unit">min</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={59}
+                        value={seconds}
+                        aria-label="Seconds"
+                        onChange={(e) => {
+                          const n = e.target.value.replace(/\D/g, '');
+                          // Clamp seconds to 0–59 so mm:ss stays well-formed; blank is allowed mid-edit.
+                          setSeconds(n === '' ? '' : String(Math.min(59, Number(n))));
+                        }}
+                      />
+                      <span className="mmss-unit">sec</span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         )}
 
         <button type="button" className="start-practice" onClick={start} disabled={!selectedMode}>

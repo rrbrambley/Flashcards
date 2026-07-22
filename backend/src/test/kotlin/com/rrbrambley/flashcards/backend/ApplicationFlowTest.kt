@@ -1196,34 +1196,30 @@ class ApplicationFlowTest {
     }
 
     @Test
-    fun session_create_with_grade_at_end_persists_and_resumes() = runApp { client ->
+    fun session_create_stores_grade_at_end() = runApp { client ->
         val auth = client.register("batchgrader", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<Page<FlashcardDeckDto>>().items.first().id
 
-        // gradeAtEnd is stored and kept across resume; a plain create defaults it off.
+        // gradeAtEnd is stored + surfaced; a plain create defaults it off. (Grade-at-the-end runs are
+        // single-sitting and never resume — see single_sitting_starts_never_resume_and_ignore_leftovers.)
         val created = client.createSession(auth.accessToken, deckId, mode = "test", gradeAtEnd = true)
         assertTrue(created.gradeAtEnd)
-        val resumed = client.createSession(auth.accessToken, deckId, mode = "test", gradeAtEnd = false)
-        assertEquals(created.id, resumed.id)
-        assertTrue(resumed.gradeAtEnd, "resume keeps the original grade-at-end choice")
 
         val plain = client.createSession(auth.accessToken, deckId, mode = "multiple_choice")
         assertFalse(plain.gradeAtEnd)
     }
 
     @Test
-    fun session_create_with_time_limit_persists_and_resumes() = runApp { client ->
+    fun session_create_stores_the_time_limit() = runApp { client ->
         val auth = client.register("timedpractice", "password1")
         val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
             .decode<Page<FlashcardDeckDto>>().items.first().id
 
-        // timeLimitSeconds is stored and kept across resume; a plain create leaves it untimed (null).
+        // timeLimitSeconds is stored + surfaced; a plain create leaves it untimed (null). (Timed runs
+        // are single-sitting and never resume — see single_sitting_starts_never_resume_and_ignore_leftovers.)
         val created = client.createSession(auth.accessToken, deckId, mode = "test", timeLimitSeconds = 90)
         assertEquals(90, created.timeLimitSeconds)
-        val resumed = client.createSession(auth.accessToken, deckId, mode = "test", timeLimitSeconds = 30)
-        assertEquals(created.id, resumed.id)
-        assertEquals(90, resumed.timeLimitSeconds, "resume keeps the original time limit")
 
         val plain = client.createSession(auth.accessToken, deckId, mode = "multiple_choice")
         assertNull(plain.timeLimitSeconds)
@@ -1241,6 +1237,55 @@ class ApplicationFlowTest {
             setBody(json.encodeToString(CreateSessionRequest(deckId, mode = "test", timeLimitSeconds = 0)))
         }
         assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun single_sitting_starts_never_resume_and_ignore_leftovers() = runApp { client ->
+        val auth = client.register("singlesit", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // A normal run resumes: two plain creates return the same session.
+        val normal1 = client.createSession(auth.accessToken, deckId, mode = "test")
+        val normal2 = client.createSession(auth.accessToken, deckId, mode = "test")
+        assertEquals(normal1.id, normal2.id, "a normal run resumes the existing active session")
+
+        // A timed start is single-sitting (#306): it never resumes — each start mints a fresh session.
+        val timed1 = client.createSession(auth.accessToken, deckId, mode = "test", timeLimitSeconds = 60)
+        assertNotEquals(normal1.id, timed1.id, "a timed start doesn't resume the normal session")
+        assertEquals(60, timed1.timeLimitSeconds)
+        val timed2 = client.createSession(auth.accessToken, deckId, mode = "test", timeLimitSeconds = 60)
+        assertNotEquals(timed1.id, timed2.id, "each timed start is a fresh single-sitting session")
+
+        // Grade-at-the-end is likewise single-sitting.
+        val batch1 = client.createSession(auth.accessToken, deckId, mode = "test", gradeAtEnd = true)
+        val batch2 = client.createSession(auth.accessToken, deckId, mode = "test", gradeAtEnd = true)
+        assertNotEquals(batch1.id, batch2.id, "each grade-at-the-end start is fresh")
+
+        // A later normal run still resumes the ORIGINAL normal session, ignoring the single-sitting leftovers.
+        val normal3 = client.createSession(auth.accessToken, deckId, mode = "test")
+        assertEquals(normal1.id, normal3.id, "a normal run ignores single-sitting leftovers")
+    }
+
+    @Test
+    fun active_list_and_home_exclude_single_sitting_runs() = runApp { client ->
+        val auth = client.register("singlesithome", "password1")
+        val deckId = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // One resumable (normal) run + a timed + a grade-at-the-end run, all incomplete.
+        val normal = client.createSession(auth.accessToken, deckId, mode = "test")
+        client.createSession(auth.accessToken, deckId, mode = "test", timeLimitSeconds = 60)
+        client.createSession(auth.accessToken, deckId, mode = "multiple_choice", gradeAtEnd = true)
+
+        // The active-sessions list shows only the resumable (normal) session — single-sitting runs are excluded.
+        val active = client.get("/sessions?active=true") { bearerAuth(auth.accessToken) }
+            .decode<Page<PracticeSessionDto>>()
+        assertEquals(listOf(normal.id), active.items.map { it.id })
+
+        // Home's "continue" items likewise exclude the single-sitting runs (only the normal one remains).
+        val home = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
+        assertEquals(1, home.count { it.session != null })
     }
 
     @Test
