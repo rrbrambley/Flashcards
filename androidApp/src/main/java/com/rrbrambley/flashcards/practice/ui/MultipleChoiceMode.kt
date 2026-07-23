@@ -13,6 +13,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +44,8 @@ fun MultipleChoiceMode(
     modifier: Modifier = Modifier,
     discussionsEnabled: Boolean = false,
     onDiscuss: () -> Unit = {},
+    // Whether the prompt image is on screen (#311): the runner pauses the timed countdown while it loads.
+    onImageReadyChanged: (Boolean) -> Unit = {},
 ) {
     val choices = remember(flashcard) { buildChoices(flashcard, deck) }
     val correctIndex = remember(flashcard) { choices.indexOf(flashcard.answer.trim()) }
@@ -50,6 +53,8 @@ fun MultipleChoiceMode(
     // Hold the options until the prompt image is on screen (#302 review); no image → ready at once.
     val hasImage = !flashcard.imageUrl.isNullOrBlank()
     var imageReady by remember(flashcard) { mutableStateOf(!hasImage) }
+    // Pause the timed countdown while this card's image is loading, resume once it's ready (#311).
+    LaunchedEffect(imageReady) { onImageReadyChanged(imageReady) }
 
     Column(
         modifier = modifier

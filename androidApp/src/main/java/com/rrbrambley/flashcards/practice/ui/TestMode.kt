@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,8 @@ fun TestMode(
     onDiscuss: () -> Unit = {},
     canSuggest: Boolean = false,
     isGuest: Boolean = false,
+    // Whether the prompt image is on screen (#311): the runner pauses the timed countdown while it loads.
+    onImageReadyChanged: (Boolean) -> Unit = {},
 ) {
     var input by remember(flashcard) { mutableStateOf("") }
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
@@ -59,6 +62,8 @@ fun TestMode(
     // Hold the answer UI until the prompt image is on screen (#302 review); no image → ready at once.
     val hasImage = !flashcard.imageUrl.isNullOrBlank()
     var imageReady by remember(flashcard) { mutableStateOf(!hasImage) }
+    // Pause the timed countdown while this card's image is loading, resume once it's ready (#311).
+    LaunchedEffect(imageReady) { onImageReadyChanged(imageReady) }
 
     fun grade(value: String) {
         val result = TestGrade(

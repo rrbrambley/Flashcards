@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -202,6 +203,31 @@ class PracticeSessionControllerTest {
 
         assertIs<PracticeUiState.Completed>(c.state.value)
         assertEquals(0, c.remainingSeconds.value)
+    }
+
+    @Test
+    fun timedSession_pausedTimer_doesNotAutoCompletePastDeadline() = runTest {
+        // Pausing the countdown while a card's image loads (#311) must not let it expire; on resume the
+        // paused span is credited (the deadline shifts), so it's not instantly over either.
+        var fakeNow = 0L
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 1)) // deadline = 1000ms
+        val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"))))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks, now = { fakeNow })
+
+        c.start()
+        advanceTimeBy(100)
+        assertIs<PracticeUiState.ShowCard>(c.state.value)
+
+        c.pauseTimer()
+        fakeNow = 10_000 // 10s elapse while paused — well past the 1s limit
+        advanceTimeBy(5000)
+        assertIs<PracticeUiState.ShowCard>(c.state.value) // paused → didn't auto-complete
+
+        c.resumeTimer() // credits the 10s pause: deadline shifts, so it's not instantly expired
+        advanceTimeBy(100)
+        assertIs<PracticeUiState.ShowCard>(c.state.value)
+
+        c.close()
     }
 
     @Test

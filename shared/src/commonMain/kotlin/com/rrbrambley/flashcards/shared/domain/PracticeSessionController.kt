@@ -84,6 +84,13 @@ class PracticeSessionController(
     private var reviewJob: Job? = null
     private var timerJob: Job? = null
 
+    // Timed-session deadline (epoch millis; null = untimed) + a pause accumulator (#311). While the
+    // current card's prompt image loads, [pauseTimer] freezes the countdown; [resumeTimer] shifts the
+    // deadline forward by the paused span so it doesn't eat into the budget. Safe with the wall-clock
+    // model (#289) because timed runs are single-sitting (#306) — the deadline lives only for this run.
+    private var deadlineMillis: Long? = null
+    private var pausedAtMillis: Long? = null
+
     /** Whether leaving now should prompt a guest to save: guest, mid-session, with some progress. */
     val shouldPromptSave: Boolean
         get() = isGuest &&
@@ -252,20 +259,40 @@ class PracticeSessionController(
      */
     private fun startTimer(deadline: Long?) {
         timerJob?.cancel()
+        pausedAtMillis = null
+        deadlineMillis = deadline
         if (deadline == null) return
         timerJob = scope.launch {
             while (true) {
-                val remainingMs = deadline - now()
-                if (remainingMs <= 0) {
+                val d = deadlineMillis ?: break
+                // While paused (#311), measure remaining from the frozen pause instant so it holds; when
+                // resumed the deadline has already been shifted forward, so it picks up where it left off.
+                val paused = pausedAtMillis
+                val remainingMs = d - (paused ?: now())
+                if (remainingMs <= 0 && paused == null) {
                     _remainingSeconds.value = 0
                     if (_state.value is PracticeUiState.ShowCard) completeRun()
                     break
                 }
                 // Ceil so the clock reads 1 until it truly hits 0 (matches the web's formatRemaining).
-                _remainingSeconds.value = ((remainingMs + 999) / 1000).toInt()
+                _remainingSeconds.value = ((remainingMs.coerceAtLeast(0) + 999) / 1000).toInt()
                 delay(1000)
             }
         }
+    }
+
+    /** Pauses the timed countdown (#311) — e.g. while the current card's prompt image loads. No-op if
+     *  untimed or already paused. */
+    fun pauseTimer() {
+        if (deadlineMillis != null && pausedAtMillis == null) pausedAtMillis = now()
+    }
+
+    /** Resumes the countdown, shifting the deadline forward by the paused span so no time was lost. */
+    fun resumeTimer() {
+        val pausedAt = pausedAtMillis ?: return
+        val deadline = deadlineMillis ?: return
+        deadlineMillis = deadline + (now() - pausedAt)
+        pausedAtMillis = null
     }
 
     /**
