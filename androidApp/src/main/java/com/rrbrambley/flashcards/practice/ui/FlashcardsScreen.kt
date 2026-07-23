@@ -66,7 +66,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import coil3.compose.SubcomposeAsyncImage
-import coil3.compose.SubcomposeAsyncImageContent
 import com.rrbrambley.flashcards.BuildConfig
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussionSheet
@@ -607,6 +606,12 @@ internal fun CardImage(
         contentDescription = contentDescription,
         contentScale = ContentScale.Fit,
         modifier = modifier,
+        // Report when the image settles via Coil's state callbacks (not a success-slot LaunchedEffect):
+        // those fire reliably for every load, including a memory-cache hit on the next card — which the
+        // slot effect missed, leaving the answer UI hidden (the map card with no options). Fire on
+        // failure too so a genuinely broken image can't permanently hide it.
+        onSuccess = { onResolved() },
+        onError = { onResolved() },
         loading = {
             Box(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
@@ -615,12 +620,7 @@ internal fun CardImage(
                 CircularProgressIndicator()
             }
         },
-        success = {
-            SubcomposeAsyncImageContent()
-            LaunchedEffect(Unit) { onResolved() }
-        },
         error = {
-            LaunchedEffect(Unit) { onResolved() }
             Box(
                 modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
                 contentAlignment = Alignment.Center,
