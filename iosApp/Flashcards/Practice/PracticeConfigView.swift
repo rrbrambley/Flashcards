@@ -15,12 +15,19 @@ struct PracticeConfigView: View {
     let questionCountEnabled: Bool
     /// Whether to offer the "Grade at the end" toggle (gated on `practice_grade_at_end`, #293).
     let gradeAtEndEnabled: Bool
-    let onStart: (_ modeKey: String, _ shuffle: Bool, _ questionCount: Int32?, _ gradeAtEnd: Bool) -> Void
+    /// Whether to offer the "Timed" toggle (gated on `practice_timer`, #289).
+    let timerEnabled: Bool
+    let onStart: (
+        _ modeKey: String, _ shuffle: Bool, _ questionCount: Int32?, _ gradeAtEnd: Bool, _ timeLimitSeconds: Int32?
+    ) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var selectedMode: String?
     @State private var shuffle = true
     @State private var gradeAtEnd = false
+    @State private var timed = false
+    @State private var minutesText = "1"
+    @State private var secondsText = "0"
     @State private var questionsText = ""
 
     /// Grade-at-the-end only applies to the objectively-graded modes (#293), not Classic's self-graded flip.
@@ -69,17 +76,41 @@ struct PracticeConfigView: View {
                         }
                     }
                     Toggle("Shuffle cards", isOn: $shuffle)
-                    // Grade-at-the-end (#293): always shown when flagged, but disabled unless a gradeable
-                    // mode (Test / Multiple Choice) is selected — Classic is a self-graded flip.
-                    if gradeAtEndEnabled {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Toggle("Grade at the end", isOn: $gradeAtEnd)
-                                .disabled(!canGradeAtEnd)
-                            Text(canGradeAtEnd
-                                ? "Answer every card, then submit to see your score"
-                                : "Available for Test & Multiple Choice")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                }
+                // Single-sitting settings (#306): grade-at-the-end + timed run start to finish in one go.
+                if gradeAtEndEnabled || timerEnabled {
+                    Section("Complete in a single session") {
+                        // Grade-at-the-end (#293): always shown when flagged, but disabled unless a
+                        // gradeable mode (Test / Multiple Choice) is selected — Classic self-grades.
+                        if gradeAtEndEnabled {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Toggle("Grade at the end", isOn: $gradeAtEnd)
+                                    .disabled(!canGradeAtEnd)
+                                Text(canGradeAtEnd
+                                    ? "Answer every card, then submit to see your score"
+                                    : "Available for Test & Multiple Choice")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        if timerEnabled {
+                            Toggle("Timed", isOn: $timed)
+                            if timed {
+                                HStack {
+                                    Text("Time limit")
+                                    Spacer()
+                                    TextField("", text: $minutesText)
+                                        .keyboardType(.numberPad)
+                                        .multilineTextAlignment(.trailing)
+                                        .frame(width: 44)
+                                    Text("min").foregroundStyle(.secondary)
+                                    TextField("", text: $secondsText)
+                                        .keyboardType(.numberPad)
+                                        .multilineTextAlignment(.trailing)
+                                        .frame(width: 44)
+                                    Text("sec").foregroundStyle(.secondary)
+                                }
+                            }
                         }
                     }
                 }
@@ -94,7 +125,10 @@ struct PracticeConfigView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Start") {
                         if let selectedMode {
-                            onStart(selectedMode, shuffle, chosenQuestionCount(), canGradeAtEnd && gradeAtEnd)
+                            onStart(
+                                selectedMode, shuffle, chosenQuestionCount(), canGradeAtEnd && gradeAtEnd,
+                                chosenTimeLimit()
+                            )
                         }
                     }
                     .disabled(selectedMode == nil)
@@ -108,5 +142,12 @@ struct PracticeConfigView: View {
         guard questionCountEnabled, maxQuestions > 0 else { return nil }
         let n = min(max(Int(questionsText) ?? maxQuestions, 1), maxQuestions)
         return n < maxQuestions ? Int32(n) : nil
+    }
+
+    /// The chosen time limit in seconds (mm:ss → total), at least 1; nil when off (#289).
+    private func chosenTimeLimit() -> Int32? {
+        guard timerEnabled, timed else { return nil }
+        let total = (Int(minutesText) ?? 0) * 60 + (Int(secondsText) ?? 0)
+        return Int32(max(1, total))
     }
 }

@@ -22,10 +22,11 @@ enum PracticeState {
 
 /// How a practice run is launched (maps to the shared `PracticeEntry`).
 enum PracticeEntry {
-    /// Start or resume a session for a deck in a given mode + shuffle + question-count + grade-at-end
-    /// choice (Library "Practice"). `questionCount` is a subset of the deck (FLA-219); nil = the whole
-    /// deck. `gradeAtEnd` (#293) runs the whole session in one list, graded on submit.
-    case deck(Int64, mode: String, shuffle: Bool, questionCount: Int32?, gradeAtEnd: Bool)
+    /// Start or resume a session for a deck in a given mode + shuffle + question-count + grade-at-end +
+    /// time-limit choice (Library "Practice"). `questionCount` is a subset of the deck (FLA-219); nil =
+    /// the whole deck. `gradeAtEnd` (#293) runs the whole session in one list, graded on submit.
+    /// `timeLimitSeconds` (#289) counts down + auto-completes; nil = untimed.
+    case deck(Int64, mode: String, shuffle: Bool, questionCount: Int32?, gradeAtEnd: Bool, timeLimitSeconds: Int32?)
     /// Resume an existing session (Home "Continue practice"); the mode + order + grade-at-end come from
     /// the session.
     case session(Int64)
@@ -35,13 +36,13 @@ enum PracticeEntry {
     var shared: Shared.PracticeEntry {
         switch self {
         // Kotlin default args don't bridge, so shuffle + questionCount + gradeAtEnd + timeLimitSeconds
-        // are always passed (FLA-200/219, #293/#289). No iOS timer picker yet (#292) → always nil here.
-        case let .deck(id, mode, shuffle, questionCount, gradeAtEnd):
+        // are always passed (FLA-200/219, #293/#289).
+        case let .deck(id, mode, shuffle, questionCount, gradeAtEnd, timeLimitSeconds):
             Shared.PracticeEntry.Deck(
                 deckId: id, mode: mode, shuffle: shuffle,
                 questionCount: questionCount.map { KotlinInt(int: $0) },
                 gradeAtEnd: gradeAtEnd,
-                timeLimitSeconds: nil
+                timeLimitSeconds: timeLimitSeconds.map { KotlinInt(int: $0) }
             )
         case let .session(id): Shared.PracticeEntry.Session(sessionId: id)
         // Guest quick-practice has no config picker; keep the saved order + whole deck, card-by-card.
@@ -57,11 +58,25 @@ enum PracticeEntry {
     /// so its stored flag is read (mirrors Android's ViewModel peek).
     func resolveGradeAtEnd(sessionRepository: PracticeSessionRepository) async -> Bool {
         switch self {
-        case let .deck(_, _, _, _, gradeAtEnd): return gradeAtEnd
+        case let .deck(_, _, _, _, gradeAtEnd, _): return gradeAtEnd
         case .guestDeck: return false
         case let .session(id):
             for await session in asyncStream(BridgingKt.sessionAdapter(sessionRepository, sessionId: id)) {
                 if let session { return session.gradeAtEnd }
+            }
+            return false
+        }
+    }
+
+    /// Whether this run is single-sitting — timed or grade-at-the-end (#306) — so the view hides the
+    /// exit affordance + warns on leaving while in progress. Resumed session is authoritative.
+    func resolveSingleSitting(sessionRepository: PracticeSessionRepository) async -> Bool {
+        switch self {
+        case let .deck(_, _, _, _, gradeAtEnd, timeLimitSeconds): return gradeAtEnd || timeLimitSeconds != nil
+        case .guestDeck: return false
+        case let .session(id):
+            for await session in asyncStream(BridgingKt.sessionAdapter(sessionRepository, sessionId: id)) {
+                if let session { return session.gradeAtEnd || session.timeLimitSeconds != nil }
             }
             return false
         }
@@ -93,10 +108,13 @@ final class PracticeViewModel: ObservableObject {
     @Published private(set) var streak: Int?
     /// Per-card recap of the run (FLA-149); populated after completion.
     @Published private(set) var review: [ReviewItem] = []
+    /// Remaining seconds for a timed run (#289); nil = untimed.
+    @Published private(set) var remainingSeconds: Int?
 
     private let controller: PracticeSessionController
     private var stateTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
+    private var timerTask: Task<Void, Never>?
 
     init(
         flashcardRepository: FlashcardRepository,
@@ -135,6 +153,12 @@ final class PracticeViewModel: ObservableObject {
                 if let save { self?.applySave(save) }
             }
         }
+        timerTask = Task { [weak self] in
+            for await secs in asyncStream(c.remainingSecondsAdapter()) {
+                // -1 is the untimed sentinel from the bridge (FlowAdapter needs non-null).
+                if let secs { self?.remainingSeconds = Int(secs) < 0 ? nil : Int(secs) }
+            }
+        }
         try? await c.start()
     }
 
@@ -142,6 +166,7 @@ final class PracticeViewModel: ObservableObject {
     func stopObserving() {
         stateTask?.cancel()
         saveTask?.cancel()
+        timerTask?.cancel()
         controller.close()
     }
 

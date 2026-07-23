@@ -128,7 +128,7 @@ struct HomeView: View {
             practice = PracticePresentation(
                 entry: .deck(
                     practiceDeck.deckId, mode: PracticeMode.classic.key,
-                    shuffle: false, questionCount: nil, gradeAtEnd: false
+                    shuffle: false, questionCount: nil, gradeAtEnd: false, timeLimitSeconds: nil
                 )
             )
         }

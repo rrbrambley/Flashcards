@@ -13,11 +13,14 @@ struct PracticeRunnerView: View {
     let apiClient: FlashcardApiClient
     var authService: AuthService? = nil
 
-    @State private var gradeAtEnd: Bool?
+    /// Resolved together with `gradeAtEnd`: a grade-at-the-end run is always single-sitting, a
+    /// card-by-card run is single-sitting only when timed (#306/#307).
+    @State private var resolved: (gradeAtEnd: Bool, singleSitting: Bool)?
 
     var body: some View {
-        if let gradeAtEnd {
-            if gradeAtEnd {
+        if let resolved {
+            if resolved.gradeAtEnd {
+                // A grade-at-the-end batch is inherently single-sitting, so its guard is always on.
                 BatchPracticeView(
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
@@ -31,12 +34,17 @@ struct PracticeRunnerView: View {
                     entry: entry,
                     featureFlagStore: featureFlagStore,
                     apiClient: apiClient,
+                    singleSitting: resolved.singleSitting,
                     authService: authService
                 )
             }
         } else {
             LoadingView()
-                .task { gradeAtEnd = await entry.resolveGradeAtEnd(sessionRepository: sessionRepository) }
+                .task {
+                    async let grade = entry.resolveGradeAtEnd(sessionRepository: sessionRepository)
+                    async let single = entry.resolveSingleSitting(sessionRepository: sessionRepository)
+                    resolved = (await grade, await single)
+                }
         }
     }
 }
