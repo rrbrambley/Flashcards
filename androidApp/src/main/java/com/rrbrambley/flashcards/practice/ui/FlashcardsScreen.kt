@@ -47,6 +47,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -99,6 +100,7 @@ fun FlashcardsScreen(
         is FlashcardsScreenState.Batch ->
             BatchPracticeScreen(
                 state = screen.state,
+                remainingSeconds = flashcardsViewModel.remainingSeconds.collectAsState().value,
                 onSubmit = flashcardsViewModel::submitBatch,
                 sharedDeck = flashcardsViewModel::sharedDeck,
                 onBack = onBack,
@@ -139,9 +141,21 @@ private fun CardByCardPractice(
     val canShare = flashcardsState is PracticeUiState.ShowCard ||
         flashcardsState is PracticeUiState.Completed
 
-    // A guest leaving mid-session is offered the save prompt; everyone else just exits.
+    // Timed countdown (#289) + the single-sitting exit guard (#307): while a timed / grade-at-the-end
+    // run is in progress there's nothing saved, so warn before leaving + hide the close affordance.
+    val remaining by flashcardsViewModel.remainingSeconds.collectAsState()
+    val singleSitting by flashcardsViewModel.isSingleSitting.collectAsState()
+    var showLeaveConfirm by remember { mutableStateOf(false) }
+    val guardActive = singleSitting && flashcardsState is PracticeUiState.ShowCard
+
+    // Single-sitting in progress → confirm before leaving; a guest mid-session gets the save prompt;
+    // everyone else just exits.
     val handleExit = {
-        if (flashcardsViewModel.shouldPromptSave()) showSavePrompt = true else onBack()
+        when {
+            guardActive -> showLeaveConfirm = true
+            flashcardsViewModel.shouldPromptSave() -> showSavePrompt = true
+            else -> onBack()
+        }
     }
     BackHandler(onBack = handleExit)
 
@@ -169,6 +183,15 @@ private fun CardByCardPractice(
             onDismiss = { discussionCardUid = null },
         )
     }
+    if (showLeaveConfirm) {
+        LeaveSingleSittingDialog(
+            onConfirm = {
+                showLeaveConfirm = false
+                onBack()
+            },
+            onDismiss = { showLeaveConfirm = false },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -181,8 +204,12 @@ private fun CardByCardPractice(
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 navigationIcon = {
-                    IconButton(onClick = handleExit) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
+                    // Hidden while a single-sitting run is in progress (#307): no casual exit; system
+                    // back still works but confirms first.
+                    if (!guardActive) {
+                        IconButton(onClick = handleExit) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
+                        }
                     }
                 },
                 actions = {
@@ -202,6 +229,15 @@ private fun CardByCardPractice(
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
             ScoreRow(flashcardsState = flashcardsState)
+            // Timed countdown (#289): a m:ss chip, urgent styling in the last 10s.
+            remaining?.takeIf { flashcardsState is PracticeUiState.ShowCard }?.let { secs ->
+                TimerChip(
+                    remainingSeconds = secs,
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(top = 4.dp),
+                )
+            }
             // Live in-session streak (FLA-99): appears at 2+ in a row, with milestone emphasis at 5+.
             (flashcardsState as? PracticeUiState.ShowCard)?.takeIf { InSessionStreak.showsBadge(it.streak) }?.let {
                 SessionStreakBadge(
@@ -414,6 +450,47 @@ private fun ScoreChip(label: String, color: Color) {
             fontWeight = FontWeight.Medium,
         )
     }
+}
+
+/** Formats remaining seconds as m:ss (e.g. 90 → "1:30", 5 → "0:05"). */
+internal fun formatMinSec(totalSeconds: Int): String {
+    val secs = totalSeconds.coerceAtLeast(0)
+    return "${secs / 60}:${(secs % 60).toString().padStart(2, '0')}"
+}
+
+/** Live timed-session countdown (#289): a m:ss pill, red in the final 10s. */
+@Composable
+internal fun TimerChip(remainingSeconds: Int, modifier: Modifier = Modifier) {
+    val urgent = remainingSeconds <= 10
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(50),
+        color = if (urgent) Color(0xFFD33D3D) else MaterialTheme.colorScheme.surfaceContainerHighest,
+    ) {
+        Text(
+            text = stringResource(R.string.practice_timer_remaining, formatMinSec(remainingSeconds)),
+            color = if (urgent) Color.White else MaterialTheme.colorScheme.onSurface,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+        )
+    }
+}
+
+/** Confirm-before-leaving a single-sitting run (#307): its progress isn't saved. */
+@Composable
+private fun LeaveSingleSittingDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.practice_leave_title)) },
+        text = { Text(stringResource(R.string.practice_leave_message)) },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.practice_leave_confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.practice_leave_cancel)) }
+        },
+    )
 }
 
 @Composable
@@ -659,12 +736,27 @@ internal fun FlashcardText(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun BatchPracticeScreen(
     state: BatchPracticeUiState,
+    remainingSeconds: Int?,
     onSubmit: (List<String?>) -> Unit,
     sharedDeck: () -> Pair<Long, String>?,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
     val canShare = state is BatchPracticeUiState.Answering || state is BatchPracticeUiState.Completed
+    // A batch run is single-sitting (#306); while answering, hide the close affordance + confirm on exit.
+    val guardActive = state is BatchPracticeUiState.Answering
+    var showLeaveConfirm by remember { mutableStateOf(false) }
+    val handleExit = { if (guardActive) showLeaveConfirm = true else onBack() }
+    BackHandler(onBack = handleExit)
+    if (showLeaveConfirm) {
+        LeaveSingleSittingDialog(
+            onConfirm = {
+                showLeaveConfirm = false
+                onBack()
+            },
+            onDismiss = { showLeaveConfirm = false },
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -676,8 +768,10 @@ private fun BatchPracticeScreen(
                     titleContentColor = MaterialTheme.colorScheme.primary,
                 ),
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
+                    if (!guardActive) {
+                        IconButton(onClick = handleExit) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
+                        }
                     }
                 },
                 actions = {
@@ -696,7 +790,12 @@ private fun BatchPracticeScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
                 is BatchPracticeUiState.Answering ->
-                    BatchAnswering(cards = state.cards, mode = state.mode, onSubmit = onSubmit)
+                    BatchAnswering(
+                        cards = state.cards,
+                        mode = state.mode,
+                        remainingSeconds = remainingSeconds,
+                        onSubmit = onSubmit,
+                    )
 
                 is BatchPracticeUiState.Completed ->
                     Column(modifier = Modifier.fillMaxSize()) {
@@ -719,7 +818,12 @@ private fun BatchPracticeScreen(
 
 /** The answering phase of a grade-at-the-end run: the card list + a sticky Submit. Owns the entries. */
 @Composable
-private fun BatchAnswering(cards: List<Flashcard>, mode: String, onSubmit: (List<String?>) -> Unit) {
+private fun BatchAnswering(
+    cards: List<Flashcard>,
+    mode: String,
+    remainingSeconds: Int?,
+    onSubmit: (List<String?>) -> Unit,
+) {
     val isTest = mode == PracticeMode.Test.key
     // Multiple-choice options per card, built once so they don't reshuffle on recomposition.
     val choices = remember(cards) { if (isTest) emptyList() else cards.map { buildChoices(it, cards) } }
@@ -729,7 +833,26 @@ private fun BatchAnswering(cards: List<Flashcard>, mode: String, onSubmit: (List
 
     val answeredCount = if (isTest) typed.count { it.isNotBlank() } else picked.count { it >= 0 }
 
+    fun currentAnswers(): List<String?> = cards.indices.map { i ->
+        if (isTest) typed[i].ifBlank { null } else picked[i].takeIf { it >= 0 }?.let { choices[i].getOrNull(it) }
+    }
+
+    // Timed batch (#289): auto-submit whatever's answered when the countdown hits 0. rememberUpdatedState
+    // keeps the effect calling the latest answers without re-firing on every keystroke.
+    val submitLatest by rememberUpdatedState { onSubmit(currentAnswers()) }
+    LaunchedEffect(remainingSeconds) {
+        if (remainingSeconds == 0) submitLatest()
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
+        remainingSeconds?.let { secs ->
+            TimerChip(
+                remainingSeconds = secs,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 8.dp),
+            )
+        }
         LazyColumn(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
@@ -750,14 +873,7 @@ private fun BatchAnswering(cards: List<Flashcard>, mode: String, onSubmit: (List
         }
         Surface(shadowElevation = 8.dp) {
             Button(
-                onClick = {
-                    val answers: List<String?> = if (isTest) {
-                        typed.map { it.ifBlank { null } }
-                    } else {
-                        picked.mapIndexed { i, idx -> idx.takeIf { it >= 0 }?.let { choices[i].getOrNull(it) } }
-                    }
-                    onSubmit(answers)
-                },
+                onClick = { onSubmit(currentAnswers()) },
                 enabled = answeredCount > 0,
                 modifier = Modifier
                     .fillMaxWidth()

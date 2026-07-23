@@ -47,6 +47,7 @@ class PracticeSessionControllerTest {
         shuffle: Boolean = false,
         shuffleSeed: Long = 0L,
         questionCount: Int? = null,
+        timeLimitSeconds: Int? = null,
     ) = PracticeSession(
         id = SESSION_ID,
         deckId = deckId,
@@ -59,6 +60,7 @@ class PracticeSessionControllerTest {
         shuffle = shuffle,
         shuffleSeed = shuffleSeed,
         questionCount = questionCount,
+        timeLimitSeconds = timeLimitSeconds,
     )
 
     /** MockEngine routing the few endpoints the controller touches (streaks / catalog / register / sessions). */
@@ -88,6 +90,7 @@ class PracticeSessionControllerTest {
         entry: PracticeEntry,
         sessions: FakeSessionRepo = FakeSessionRepo(),
         decks: FakeDeckRepo = FakeDeckRepo(),
+        now: () -> Long = { 0L },
     ): PracticeSessionController {
         val apiClient =
             FlashcardApiClient(createFlashcardHttpClient(engine()), baseUrl = "http://localhost", tokenProvider = {
@@ -101,6 +104,7 @@ class PracticeSessionControllerTest {
             auth,
             entry,
             StandardTestDispatcher(scope.testScheduler),
+            now,
         )
     }
 
@@ -183,6 +187,21 @@ class PracticeSessionControllerTest {
         c.start()
         advanceUntilIdle()
         assertIs<PracticeUiState.Failed>(c.state.value)
+    }
+
+    @Test
+    fun timedSession_autoCompletesWhenTheDeadlineHasPassed() = runTest {
+        // A timed session (#289): deadline = createdAt(0) + 1s = 1000ms; `now` is well past it, so the
+        // run is expired the moment it loads → it auto-completes rather than showing a card.
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 1))
+        val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"), card("c"))))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks, now = { 100_000L })
+
+        c.start()
+        advanceUntilIdle()
+
+        assertIs<PracticeUiState.Completed>(c.state.value)
+        assertEquals(0, c.remainingSeconds.value)
     }
 
     @Test
@@ -307,6 +326,7 @@ class PracticeSessionControllerTest {
             shuffle: Boolean,
             questionCount: Int?,
             gradeAtEnd: Boolean,
+            timeLimitSeconds: Int?,
         ): Long = SESSION_ID
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = MutableStateFlow(listOfNotNull(session))
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> = MutableStateFlow(session)

@@ -56,6 +56,15 @@ class FlashcardsViewModel @Inject constructor(
     private val _saveState = MutableStateFlow<GuestSaveState>(GuestSaveState.Idle)
     val saveState: StateFlow<GuestSaveState> = _saveState.asStateFlow()
 
+    // Remaining seconds for a timed run (#289), mirrored from the active controller; null = untimed.
+    private val _remainingSeconds = MutableStateFlow<Int?>(null)
+    val remainingSeconds: StateFlow<Int?> = _remainingSeconds.asStateFlow()
+
+    // Whether this run is single-sitting — timed / grade-at-the-end (#306) — so the screen hides the
+    // exit affordance and warns on leaving while it's in progress.
+    private val _isSingleSitting = MutableStateFlow(false)
+    val isSingleSitting: StateFlow<Boolean> = _isSingleSitting.asStateFlow()
+
     private var controller: PracticeSessionController? = null
     private var batchController: BatchPracticeController? = null
     private var loaded = false
@@ -76,9 +85,11 @@ class FlashcardsViewModel @Inject constructor(
         viewModelScope.launch {
             discussionsFlag =
                 runCatching { featureFlagRepository.isEnabled(FeatureFlags.DISCUSSIONS) }.getOrDefault(false)
-            // Resolve the grading mode: a stored session is authoritative (resume keeps its choice),
+            // Resolve the run's settings: a stored session is authoritative (resume keeps its choice),
             // a deck/guest entry carries the picker's choice. Then drive the matching shared controller.
-            if (resolveGradeAtEnd(entry)) {
+            val settings = resolveSettings(entry)
+            _isSingleSitting.value = settings.gradeAtEnd || settings.timeLimitSeconds != null
+            if (settings.gradeAtEnd) {
                 startBatch(entry)
             } else {
                 startCardByCard(entry)
@@ -86,12 +97,15 @@ class FlashcardsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun resolveGradeAtEnd(entry: PracticeEntry): Boolean = when (entry) {
-        is PracticeEntry.Session ->
-            runCatching { practiceSessionRepository.observeSession(entry.sessionId).first()?.gradeAtEnd }
-                .getOrNull() ?: false
-        is PracticeEntry.Deck -> entry.gradeAtEnd
-        is PracticeEntry.GuestDeck -> entry.gradeAtEnd
+    private data class RunSettings(val gradeAtEnd: Boolean, val timeLimitSeconds: Int?)
+
+    private suspend fun resolveSettings(entry: PracticeEntry): RunSettings = when (entry) {
+        is PracticeEntry.Session -> {
+            val session = runCatching { practiceSessionRepository.observeSession(entry.sessionId).first() }.getOrNull()
+            RunSettings(session?.gradeAtEnd ?: false, session?.timeLimitSeconds)
+        }
+        is PracticeEntry.Deck -> RunSettings(entry.gradeAtEnd, entry.timeLimitSeconds)
+        is PracticeEntry.GuestDeck -> RunSettings(entry.gradeAtEnd, entry.timeLimitSeconds)
     }
 
     private fun startCardByCard(entry: PracticeEntry) {
@@ -110,6 +124,7 @@ class FlashcardsViewModel @Inject constructor(
                 }
             }
             launch { c.saveState.collect { _saveState.value = it } }
+            launch { c.remainingSeconds.collect { _remainingSeconds.value = it } }
             c.start()
         }
     }
@@ -119,6 +134,7 @@ class FlashcardsViewModel @Inject constructor(
         batchController = c
         viewModelScope.launch {
             launch { c.state.collect { _screenState.value = FlashcardsScreenState.Batch(it) } }
+            launch { c.remainingSeconds.collect { _remainingSeconds.value = it } }
             c.start()
         }
     }

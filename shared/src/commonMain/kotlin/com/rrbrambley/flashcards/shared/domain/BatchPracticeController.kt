@@ -2,12 +2,15 @@ package com.rrbrambley.flashcards.shared.domain
 
 import com.rrbrambley.flashcards.practice.grading.gradeTextAnswer
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.nowMillis
 import com.rrbrambley.flashcards.shared.systemTimeZoneId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,11 +35,18 @@ class BatchPracticeController(
     private val apiClient: FlashcardApiClient,
     private val entry: PracticeEntry,
     dispatcher: CoroutineDispatcher = Dispatchers.Main,
+    // Injectable clock (millis) so tests can drive the timed countdown deterministically.
+    private val now: () -> Long = ::nowMillis,
 ) {
     private val scope = CoroutineScope(dispatcher + SupervisorJob())
 
     private val _state = MutableStateFlow<BatchPracticeUiState>(BatchPracticeUiState.Loading)
     val state: StateFlow<BatchPracticeUiState> = _state.asStateFlow()
+
+    // Remaining seconds for a timed batch run (#289); null = untimed. Ticks ~1×/sec to 0; the view
+    // auto-submits whatever's answered when it reaches 0 (it owns the entries).
+    private val _remainingSeconds = MutableStateFlow<Int?>(null)
+    val remainingSeconds: StateFlow<Int?> = _remainingSeconds.asStateFlow()
 
     private var sessionId: Long? = null
     var deckId: Long? = null
@@ -46,6 +56,7 @@ class BatchPracticeController(
 
     private var cards: List<Flashcard> = emptyList()
     private var mode: String = PracticeMode.Test.key
+    private var timerJob: Job? = null
 
     /** Starts the run per the [entry]. Suspends until the card list (or failure) is shown. */
     suspend fun start() {
@@ -58,6 +69,7 @@ class BatchPracticeController(
                         e.shuffle,
                         e.questionCount,
                         gradeAtEnd = true,
+                        timeLimitSeconds = e.timeLimitSeconds,
                     )
                 }.getOrNull()
                 if (sid == null) {
@@ -94,6 +106,7 @@ class BatchPracticeController(
         cards = SessionOrdering.order(deckCards, session.shuffle, session.shuffleSeed)
             .let { ordered -> session.questionCount?.let(ordered::take) ?: ordered }
         _state.update { BatchPracticeUiState.Answering(cards = cards, mode = mode) }
+        startTimer(session.timeLimitSeconds?.let { session.createdAtMillis + it * 1000L })
     }
 
     private suspend fun loadGuestDeck(e: PracticeEntry.GuestDeck) {
@@ -112,6 +125,29 @@ class BatchPracticeController(
         cards = SessionOrdering.order(deckCards, e.shuffle, seed)
             .let { ordered -> e.questionCount?.let(ordered::take) ?: ordered }
         _state.update { BatchPracticeUiState.Answering(cards = cards, mode = mode) }
+        // Guests have no persisted createdAt, so the timed deadline is minted here (once) from now().
+        startTimer(e.timeLimitSeconds?.let { now() + it * 1000L })
+    }
+
+    /**
+     * Runs the timed countdown (#289) to [deadline] (epoch millis; null = untimed). Ticks the remaining
+     * seconds ~1×/sec to 0. The view owns the per-card entries, so it watches [remainingSeconds] and
+     * submits whatever's answered when it reaches 0 (a wall-clock deadline already past → 0 at once).
+     */
+    private fun startTimer(deadline: Long?) {
+        timerJob?.cancel()
+        if (deadline == null) return
+        timerJob = scope.launch {
+            while (true) {
+                val remainingMs = deadline - now()
+                if (remainingMs <= 0) {
+                    _remainingSeconds.value = 0
+                    break
+                }
+                _remainingSeconds.value = ((remainingMs + 999) / 1000).toInt()
+                delay(1000)
+            }
+        }
     }
 
     /**
@@ -122,6 +158,7 @@ class BatchPracticeController(
      */
     fun submit(answers: List<String?>) {
         if (cards.isEmpty()) return
+        timerJob?.cancel()
         val graded = cards.mapIndexed { i, card -> gradeCard(card, answers.getOrNull(i)) }
         val numCorrect = graded.count { it.correct }
         val review = graded.mapIndexed { i, g ->

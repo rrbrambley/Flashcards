@@ -212,6 +212,7 @@ class FlashcardsViewModelTest {
             shuffle: Boolean,
             questionCount: Int?,
             gradeAtEnd: Boolean,
+            timeLimitSeconds: Int?,
         ): Long = session?.id ?: 0L
         override fun observeActiveSessions(): Flow<List<PracticeSession>> = flowOf(listOfNotNull(session))
         override fun observeSession(sessionId: Long): Flow<PracticeSession?> =

@@ -195,7 +195,14 @@ class LibraryViewModelTest {
             stringProvider = FakeStringProvider(),
         )
 
-        viewModel.startPractice(deckId = 7L, mode = "test", shuffle = true, questionCount = 5, gradeAtEnd = true) {
+        viewModel.startPractice(
+            deckId = 7L,
+            mode = "test",
+            shuffle = true,
+            questionCount = 5,
+            gradeAtEnd = true,
+            timeLimitSeconds = 90,
+        ) {
             startedSessionId = it
         }
         testDispatcher.scheduler.advanceUntilIdle()
@@ -205,6 +212,7 @@ class LibraryViewModelTest {
         assertEquals(true, practiceSessionRepository.startedShuffle)
         assertEquals(5, practiceSessionRepository.startedQuestionCount) // the subset is forwarded (FLA-219)
         assertEquals(true, practiceSessionRepository.startedGradeAtEnd) // grade-at-the-end forwarded (#293)
+        assertEquals(90, practiceSessionRepository.startedTimeLimitSeconds) // time limit forwarded (#289)
         assertEquals(42L, startedSessionId)
     }
 
@@ -229,6 +237,7 @@ class LibraryViewModelTest {
             shuffle = false,
             questionCount = null,
             gradeAtEnd = false,
+            timeLimitSeconds = null,
         ) {
             startedSessionId = it
         }
@@ -385,6 +394,7 @@ class LibraryViewModelTest {
         var startedShuffle: Boolean? = null
         var startedQuestionCount: Int? = null
         var startedGradeAtEnd: Boolean? = null
+        var startedTimeLimitSeconds: Int? = null
 
         override suspend fun startOrResumeSession(
             deckId: Long,
@@ -392,6 +402,7 @@ class LibraryViewModelTest {
             shuffle: Boolean,
             questionCount: Int?,
             gradeAtEnd: Boolean,
+            timeLimitSeconds: Int?,
         ): Long {
             if (startShouldFail) throw RuntimeException("offline")
             startedDeckId = deckId
@@ -399,6 +410,7 @@ class LibraryViewModelTest {
             startedShuffle = shuffle
             startedQuestionCount = questionCount
             startedGradeAtEnd = gradeAtEnd
+            startedTimeLimitSeconds = timeLimitSeconds
             return sessionId
         }
 

@@ -10,8 +10,13 @@ import kotlinx.coroutines.flow.Flow
 interface PracticeSessionDao {
     // pendingDelete rows are locally-removed sessions awaiting the backend DELETE (FLA-205) — hidden
     // from every read below so the card disappears immediately.
+    // Single-sitting runs — timed (#289) / grade-at-the-end (#293) — are one-and-done (#306): excluded
+    // so an abandoned one isn't offered as a resumable "continue" session on Home.
     @Transaction
-    @Query("SELECT * FROM practice_sessions WHERE isCompleted = 0 AND pendingDelete = 0 ORDER BY updatedAtMillis DESC")
+    @Query(
+        "SELECT * FROM practice_sessions WHERE isCompleted = 0 AND pendingDelete = 0 " +
+            "AND timeLimitSeconds IS NULL AND gradeAtEnd = 0 ORDER BY updatedAtMillis DESC",
+    )
     fun observeActiveSessions(): Flow<List<PracticeSessionWithDeck>>
 
     @Transaction
@@ -34,12 +39,13 @@ interface PracticeSessionDao {
     suspend fun getSessionById(id: Long): PracticeSessionEntity?
 
     /**
-     * The most-recently-updated active (incomplete) session for this deck + mode, or null. Used to
-     * resume an existing session offline rather than minting a duplicate (FLA-91).
+     * The most-recently-updated *normal* active session for this deck + mode, or null. Used to resume
+     * an existing session offline rather than minting a duplicate (FLA-91). Single-sitting runs (timed
+     * / grade-at-the-end, #306) are excluded — they never resume, so a leftover one isn't matched here.
      */
     @Query(
         "SELECT * FROM practice_sessions WHERE deckId = :deckId AND mode = :mode AND isCompleted = 0 " +
-            "ORDER BY updatedAtMillis DESC LIMIT 1",
+            "AND timeLimitSeconds IS NULL AND gradeAtEnd = 0 ORDER BY updatedAtMillis DESC LIMIT 1",
     )
     suspend fun findActiveByDeckAndMode(deckId: Long, mode: String): PracticeSessionEntity?
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,6 +78,7 @@ fun LibraryScreen(
     val availableModes by libraryViewModel.availableModes.collectAsState()
     val questionCountEnabled by libraryViewModel.questionCountEnabled.collectAsState()
     val gradeAtEndEnabled by libraryViewModel.gradeAtEndEnabled.collectAsState()
+    val timerEnabled by libraryViewModel.timerEnabled.collectAsState()
     var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
     var deckPendingDeletion by remember { mutableStateOf<FlashcardDeck?>(null) }
 
@@ -86,10 +88,19 @@ fun LibraryScreen(
             availableModes = availableModes,
             questionCountEnabled = questionCountEnabled,
             gradeAtEndEnabled = gradeAtEndEnabled,
+            timerEnabled = timerEnabled,
             onDismissRequest = { selectedDeck = null },
-            onPracticeWithMode = { mode, shuffle, questionCount, gradeAtEnd ->
+            onPracticeWithMode = { mode, shuffle, questionCount, gradeAtEnd, timeLimitSeconds ->
                 selectedDeck = null
-                libraryViewModel.startPractice(deck.id, mode.key, shuffle, questionCount, gradeAtEnd, onPracticeDeck)
+                libraryViewModel.startPractice(
+                    deck.id,
+                    mode.key,
+                    shuffle,
+                    questionCount,
+                    gradeAtEnd,
+                    timeLimitSeconds,
+                    onPracticeDeck,
+                )
             },
             onEditClick = {
                 selectedDeck = null
@@ -363,8 +374,9 @@ private fun LibraryDeckActionsSheet(
     availableModes: List<PracticeMode>,
     questionCountEnabled: Boolean,
     gradeAtEndEnabled: Boolean,
+    timerEnabled: Boolean,
     onDismissRequest: () -> Unit,
-    onPracticeWithMode: (PracticeMode, Boolean, Int?, Boolean) -> Unit,
+    onPracticeWithMode: (PracticeMode, Boolean, Int?, Boolean, Int?) -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
@@ -374,12 +386,22 @@ private fun LibraryDeckActionsSheet(
     var selectedMode by remember { mutableStateOf<PracticeMode?>(null) }
     var shuffle by remember { mutableStateOf(true) }
     var gradeAtEnd by remember { mutableStateOf(false) }
+    // A per-session time limit as mm:ss (#289); kept as strings so the fields can be blank mid-edit.
+    var timed by remember { mutableStateOf(false) }
+    var minutesText by remember { mutableStateOf("1") }
+    var secondsText by remember { mutableStateOf("0") }
     // The deck's card count = the max; the field defaults to it (practice the whole deck). FLA-219.
     val maxQuestions = deck.flashcards.size
     var questionsText by remember { mutableStateOf(maxQuestions.toString()) }
     // Grade-at-the-end only applies to the objectively-graded modes (#293) — not Classic's self-graded flip.
     val canGradeAtEnd = gradeAtEndEnabled &&
         (selectedMode == PracticeMode.Test || selectedMode == PracticeMode.MultipleChoice)
+    // Total seconds from the mm:ss fields (#289), at least 1; null when off.
+    val timeLimitSeconds = if (timerEnabled && timed) {
+        (((minutesText.toIntOrNull() ?: 0) * 60) + (secondsText.toIntOrNull() ?: 0)).coerceAtLeast(1)
+    } else {
+        null
+    }
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
         Column(
             modifier = Modifier
@@ -429,22 +451,45 @@ private fun LibraryDeckActionsSheet(
                     )
                 }
                 ShuffleSettingRow(checked = shuffle, onCheckedChange = { shuffle = it })
-                // Grade-at-the-end (#293): always shown when flagged, but disabled unless a gradeable
-                // mode (Test / Multiple Choice) is selected — Classic is a self-graded flip.
-                if (gradeAtEndEnabled) {
-                    GradeAtEndSettingRow(
-                        checked = canGradeAtEnd && gradeAtEnd,
-                        enabled = canGradeAtEnd,
-                        onCheckedChange = { gradeAtEnd = it },
+
+                // Single-sitting settings (#306): grade-at-the-end + timed run start-to-finish in one
+                // sitting (they don't resume), grouped under their own subheader.
+                if (gradeAtEndEnabled || timerEnabled) {
+                    Text(
+                        text = stringResource(R.string.practice_single_sitting_subheader),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    // Grade-at-the-end (#293): always shown when flagged, but disabled unless a gradeable
+                    // mode (Test / Multiple Choice) is selected — Classic is a self-graded flip.
+                    if (gradeAtEndEnabled) {
+                        GradeAtEndSettingRow(
+                            checked = canGradeAtEnd && gradeAtEnd,
+                            enabled = canGradeAtEnd,
+                            onCheckedChange = { gradeAtEnd = it },
+                        )
+                    }
+                    if (timerEnabled) {
+                        TimedSettingRow(checked = timed, onCheckedChange = { timed = it })
+                        if (timed) {
+                            TimeLimitField(
+                                minutesText = minutesText,
+                                secondsText = secondsText,
+                                onMinutesChange = { minutesText = it.filter { c -> c.isDigit() }.take(3) },
+                                onSecondsChange = { secondsText = it.filter { c -> c.isDigit() }.take(2) },
+                            )
+                        }
+                    }
                 }
+
                 Button(
                     onClick = {
                         selectedMode?.let { mode ->
                             // Clamp to 1..max; a real subset (< the whole deck) sends a count, else null.
                             val n = questionsText.toIntOrNull()?.coerceIn(1, maxQuestions) ?: maxQuestions
                             val count = if (questionCountEnabled && n < maxQuestions) n else null
-                            onPracticeWithMode(mode, shuffle, count, canGradeAtEnd && gradeAtEnd)
+                            onPracticeWithMode(mode, shuffle, count, canGradeAtEnd && gradeAtEnd, timeLimitSeconds)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -588,6 +633,67 @@ private fun GradeAtEndSettingRow(checked: Boolean, enabled: Boolean, onCheckedCh
             )
         }
         Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange)
+    }
+}
+
+/** "Timed" toggle (#289): reveals the mm:ss [TimeLimitField] below when on. */
+@Composable
+private fun TimedSettingRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = stringResource(R.string.practice_timed_label),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(R.string.practice_timed_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+/** The mm:ss time-limit input (#289): two number fields labelled min / sec so it isn't read as "1:0". */
+@Composable
+private fun TimeLimitField(
+    minutesText: String,
+    secondsText: String,
+    onMinutesChange: (String) -> Unit,
+    onSecondsChange: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.practice_time_limit_label),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f),
+        )
+        OutlinedTextField(
+            value = minutesText,
+            onValueChange = onMinutesChange,
+            label = { Text(stringResource(R.string.practice_time_minutes)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.width(84.dp),
+        )
+        OutlinedTextField(
+            value = secondsText,
+            onValueChange = onSecondsChange,
+            label = { Text(stringResource(R.string.practice_time_seconds)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.width(84.dp),
+        )
     }
 }
 
