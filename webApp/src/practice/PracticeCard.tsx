@@ -1,5 +1,6 @@
 import { useRef, useState, type PointerEvent } from 'react';
 import type { FlashcardDto } from '../api/types';
+import { PromptImage } from './components/PromptImage';
 
 interface PracticeCardProps {
   card: FlashcardDto;
@@ -7,11 +8,13 @@ interface PracticeCardProps {
   onFlip: () => void;
   onSwipeLeft: () => void; // incorrect
   onSwipeRight: () => void; // correct
+  /** Reports the front image has settled, so a timed run can resume its countdown (#317). */
+  onImageReady?: () => void;
 }
 
 const SWIPE_THRESHOLD = 90; // px of horizontal travel to count as a swipe
 
-export function PracticeCard({ card, isFlipped, onFlip, onSwipeLeft, onSwipeRight }: PracticeCardProps) {
+export function PracticeCard({ card, isFlipped, onFlip, onSwipeLeft, onSwipeRight, onImageReady }: PracticeCardProps) {
   const [dragX, setDragX] = useState(0);
   const startX = useRef<number | null>(null);
   // A committed swipe shouldn't also fire the trailing click (which would flip).
@@ -71,7 +74,14 @@ export function PracticeCard({ card, isFlipped, onFlip, onSwipeLeft, onSwipeRigh
       <div className={`flip-inner${isFlipped ? ' flipped' : ''}`}>
         <div className="flip-face flip-front">
           {card.question && <p className="practice-term">{card.question}</p>}
-          {hasImage && <img src={card.imageUrl ?? ''} alt={card.question || 'card image'} className="practice-image" />}
+          {hasImage && (
+            <PromptImage
+              src={card.imageUrl ?? ''}
+              alt={card.question || 'card image'}
+              className="practice-image"
+              onReady={onImageReady}
+            />
+          )}
         </div>
         <div className="flip-face flip-back">
           <p className="practice-answer">{card.answer}</p>
