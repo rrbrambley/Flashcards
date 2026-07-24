@@ -35,6 +35,7 @@ struct LibraryView: View {
         let shuffle: Bool
         let questionCount: Int32?
         let gradeAtEnd: Bool
+        let timeLimitSeconds: Int32?
     }
     @State private var practicing: PracticingDeck?
 
@@ -80,7 +81,8 @@ struct LibraryView: View {
                     sessionRepository: sessionRepository,
                     entry: .deck(
                         item.id, mode: item.mode, shuffle: item.shuffle,
-                        questionCount: item.questionCount, gradeAtEnd: item.gradeAtEnd
+                        questionCount: item.questionCount, gradeAtEnd: item.gradeAtEnd,
+                        timeLimitSeconds: item.timeLimitSeconds
                     ),
                     featureFlagStore: featureFlagStore,
                     apiClient: apiClient
@@ -100,11 +102,13 @@ struct LibraryView: View {
                     maxQuestions: item.cardCount,
                     // Fail-open like the mode gating: offered unless the flag is explicitly off.
                     questionCountEnabled: featureFlagStore.flags[FeatureFlag.practiceQuestionCount] != false,
-                    gradeAtEndEnabled: featureFlagStore.flags[FeatureFlag.practiceGradeAtEnd] != false
-                ) { mode, shuffle, questionCount, gradeAtEnd in
+                    gradeAtEndEnabled: featureFlagStore.flags[FeatureFlag.practiceGradeAtEnd] != false,
+                    timerEnabled: featureFlagStore.flags[FeatureFlag.practiceTimer] != false
+                ) { mode, shuffle, questionCount, gradeAtEnd, timeLimitSeconds in
                     pendingStart = PracticingDeck(
                         id: item.id, mode: mode, shuffle: shuffle,
-                        questionCount: questionCount, gradeAtEnd: gradeAtEnd
+                        questionCount: questionCount, gradeAtEnd: gradeAtEnd,
+                        timeLimitSeconds: timeLimitSeconds
                     )
                     configuring = nil
                 }
@@ -217,7 +221,7 @@ struct LibraryView: View {
                     Button {
                         practicing = PracticingDeck(
                             id: deck.id, mode: PracticeMode.classic.key,
-                            shuffle: false, questionCount: nil, gradeAtEnd: false
+                            shuffle: false, questionCount: nil, gradeAtEnd: false, timeLimitSeconds: nil
                         )
                     } label: {
                         Label("Practice", systemImage: "play.fill")

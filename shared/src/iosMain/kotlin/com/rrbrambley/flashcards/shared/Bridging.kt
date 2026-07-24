@@ -71,6 +71,13 @@ fun PracticeSessionController.stateAdapter(): FlowAdapter<PracticeUiState> = Flo
 /** The guest "save your progress" flow state. */
 fun PracticeSessionController.saveStateAdapter(): FlowAdapter<GuestSaveState> = FlowAdapter(saveState)
 
+/** Timed-session countdown (#289): remaining seconds, or -1 when untimed (FlowAdapter needs non-null). */
+fun PracticeSessionController.remainingSecondsAdapter(): FlowAdapter<Int> = FlowAdapter(
+    remainingSeconds.map {
+        it ?: -1
+    },
+)
+
 /**
  * Builds the shared "grade at the end" batch runner (#293) for iOS — supplies the main dispatcher
  * (Kotlin default args don't bridge). The iOS view model observes [batchStateAdapter], calls [submit]
@@ -86,6 +93,9 @@ fun createBatchPracticeController(
 
 /** The batch runner's UI state (Loading / Answering / Completed / Failed). */
 fun BatchPracticeController.batchStateAdapter(): FlowAdapter<BatchPracticeUiState> = FlowAdapter(state)
+
+/** Timed batch countdown (#289): remaining seconds, or -1 when untimed. The view submits at 0. */
+fun BatchPracticeController.remainingSecondsAdapter(): FlowAdapter<Int> = FlowAdapter(remainingSeconds.map { it ?: -1 })
 
 /** The home feed (backend GET /home, offline fallback from cached sessions + static items). */
 fun HomeRepository.homeAdapter(): FlowAdapter<HomeFeed> = FlowAdapter(observeHomeData())

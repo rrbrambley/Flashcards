@@ -11,8 +11,14 @@ struct PracticeView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showHelp = false
     @State private var showSavePrompt = false
+    /// Confirm-before-leaving a single-sitting run in progress (#307).
+    @State private var showLeaveConfirm = false
     /// The card whose discussion sheet is open (its cardUid), or nil when closed (FLA-123).
     @State private var discussionTarget: DiscussionTarget?
+
+    /// Whether this run is single-sitting (timed / grade-at-the-end, #306) — hides the casual exit +
+    /// warns on leaving while in progress (#307). Resolved by the runner before this view is built.
+    private let singleSitting: Bool
 
     // Kept so the discussion sheet can post over the shared client (and convert a guest to sign in).
     private let apiClient: FlashcardApiClient
@@ -26,11 +32,13 @@ struct PracticeView: View {
         entry: PracticeEntry,
         featureFlagStore: FeatureFlagStore,
         apiClient: FlashcardApiClient,
+        singleSitting: Bool = false,
         authService: AuthService? = nil
     ) {
         self.apiClient = apiClient
         self.authService = authService
         self.featureFlagStore = featureFlagStore
+        self.singleSitting = singleSitting
         _viewModel = StateObject(
             wrappedValue: PracticeViewModel(
                 flashcardRepository: flashcardRepository,
@@ -50,11 +58,21 @@ struct PracticeView: View {
         return true
     }
 
+    /// The exit guard is live only while a single-sitting run is still showing cards (#307): once
+    /// completed/failed there's nothing to lose, so Close leaves normally.
+    private var guardActive: Bool {
+        if case .showCard = viewModel.state { return singleSitting }
+        return false
+    }
+
     var body: some View {
         NavigationStack {
             content
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
+                        // A fullScreenCover has no swipe-to-dismiss, so Close is the only exit; while a
+                        // single-sitting run is in progress it routes through a confirm (#307) — no
+                        // casual exit, but not a trap either (iOS has no system-back like Android).
                         Button("Close") { handleClose() }
                     }
                     ToolbarItemGroup(placement: .topBarTrailing) {
@@ -72,6 +90,12 @@ struct PracticeView: View {
                     Button("Got it", role: .cancel) {}
                 } message: {
                     Text("Tap a card to flip it.\nSwipe right if you got it, left if you need more practice.")
+                }
+                .alert("Leave this session?", isPresented: $showLeaveConfirm) {
+                    Button("Leave", role: .destructive) { dismiss() }
+                    Button("Keep practicing", role: .cancel) {}
+                } message: {
+                    Text("This session runs in one sitting — if you leave, your progress won't be saved.")
                 }
                 .sheet(isPresented: $showSavePrompt) {
                     GuestSavePromptView(viewModel: viewModel, onLeave: { dismiss() }, onCancel: { showSavePrompt = false })
@@ -94,9 +118,16 @@ struct PracticeView: View {
         }
     }
 
-    /// Guests with progress get the save prompt before leaving; everyone else just dismisses.
+    /// Single-sitting runs in progress confirm first (#307); guests with progress get the save prompt;
+    /// everyone else just dismisses.
     private func handleClose() {
-        if viewModel.shouldPromptSave { showSavePrompt = true } else { dismiss() }
+        if guardActive {
+            showLeaveConfirm = true
+        } else if viewModel.shouldPromptSave {
+            showSavePrompt = true
+        } else {
+            dismiss()
+        }
     }
 
     private func shareURL(_ deckId: Int64) -> URL? {
@@ -110,6 +141,10 @@ struct PracticeView: View {
         case let .showCard(card, position, numCorrect, numIncorrect, canGoBack, mode, deck, discussionsEnabled, isGlobal, streak):
             VStack(spacing: Spacing.lg) {
                 ScoreRow(numIncorrect: numIncorrect, numCorrect: numCorrect)
+                // Timed countdown (#289): a m:ss chip, urgent styling in the final 10s.
+                if let remaining = viewModel.remainingSeconds {
+                    TimerChip(remainingSeconds: remaining)
+                }
                 // Live in-session streak (FLA-99): appears at 2+ in a row, milestone emphasis at 5+.
                 if InSessionStreak.shared.showsBadge(streak: Int32(streak)) {
                     SessionStreakBadge(streak: streak)
@@ -258,6 +293,32 @@ private struct SessionStreakBadge: View {
             .padding(.vertical, Spacing.sm)
             .background(Color.orange.opacity(hot ? 0.28 : 0.15), in: Capsule())
             .foregroundStyle(hot ? Color(red: 0.6, green: 0.21, blue: 0.05) : .orange)
+    }
+}
+
+/// Formats remaining seconds as m:ss (e.g. 90 → "1:30", 5 → "0:05"). Mirrors Android's `formatMinSec`.
+func formatMinSec(_ totalSeconds: Int) -> String {
+    let secs = max(0, totalSeconds)
+    return "\(secs / 60):\(String(format: "%02d", secs % 60))"
+}
+
+/// Live timed-session countdown (#289): a m:ss pill, red in the final 10s. Shared by the card-by-card
+/// and grade-at-the-end runners.
+struct TimerChip: View {
+    let remainingSeconds: Int
+
+    var body: some View {
+        let urgent = remainingSeconds <= 10
+        Text("\(formatMinSec(remainingSeconds)) left")
+            .font(.subheadline.bold())
+            .foregroundStyle(urgent ? Color.white : Color.primary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 5)
+            .background(
+                urgent ? Color(red: 0.83, green: 0.24, blue: 0.24) : Color(.tertiarySystemFill),
+                in: Capsule()
+            )
+            .accessibilityLabel("\(formatMinSec(remainingSeconds)) remaining")
     }
 }
 

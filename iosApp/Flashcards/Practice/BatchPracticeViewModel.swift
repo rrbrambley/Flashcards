@@ -20,9 +20,12 @@ final class BatchPracticeViewModel: ObservableObject {
     @Published private(set) var streak: Int?
     /// Per-card recap of the run (FLA-149); populated after submit.
     @Published private(set) var review: [ReviewItem] = []
+    /// Remaining seconds for a timed batch run (#289); nil = untimed. The view submits when it hits 0.
+    @Published private(set) var remainingSeconds: Int?
 
     private let controller: BatchPracticeController
     private var stateTask: Task<Void, Never>?
+    private var timerTask: Task<Void, Never>?
 
     init(
         flashcardRepository: FlashcardRepository,
@@ -48,12 +51,18 @@ final class BatchPracticeViewModel: ObservableObject {
                 if let state { self?.apply(state) }
             }
         }
+        timerTask = Task { [weak self] in
+            for await secs in asyncStream(c.remainingSecondsAdapter()) {
+                if let secs { self?.remainingSeconds = Int(secs) < 0 ? nil : Int(secs) }
+            }
+        }
         try? await c.start()
     }
 
     /// Stops observing + tears down the controller — call when the batch screen goes away.
     func stopObserving() {
         stateTask?.cancel()
+        timerTask?.cancel()
         controller.close()
     }
 
