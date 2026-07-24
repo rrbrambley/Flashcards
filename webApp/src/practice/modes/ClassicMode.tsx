@@ -8,7 +8,7 @@ import type { PracticeModeProps } from './types';
  * classic keyboard shortcuts (← / → mark, space/enter flip); the runner remounts it per card, so
  * the flip resets on its own. Self-reported correctness via swipe or the buttons.
  */
-export function ClassicMode({ card, onResult, onDiscuss }: PracticeModeProps) {
+export function ClassicMode({ card, onResult, onDiscuss, onImageReady }: PracticeModeProps) {
   const [isFlipped, setIsFlipped] = useState(false);
 
   useEffect(() => {
@@ -32,6 +32,7 @@ export function ClassicMode({ card, onResult, onDiscuss }: PracticeModeProps) {
         onFlip={() => setIsFlipped((f) => !f)}
         onSwipeLeft={() => onResult(false)}
         onSwipeRight={() => onResult(true)}
+        onImageReady={onImageReady}
       />
 
       <p className="muted practice-hint">Tap to flip · swipe or ← / → (or the buttons) to mark</p>

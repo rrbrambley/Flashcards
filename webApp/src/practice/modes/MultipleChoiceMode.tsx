@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { MultipleChoice } from '../components/MultipleChoice';
 import { DiscussButton } from '../components/DiscussButton';
+import { PromptImage } from '../components/PromptImage';
 import { buildChoices } from '../grading/multipleChoice';
 import type { PracticeModeProps } from './types';
 
@@ -10,7 +11,7 @@ import type { PracticeModeProps } from './types';
  * The runner remounts this per card, so the choices + selection reset on their own — and choices are
  * built once per mount so they don't reshuffle on re-render.
  */
-export function MultipleChoiceMode({ card, cards, onGraded, onAdvance, onDiscuss }: PracticeModeProps) {
+export function MultipleChoiceMode({ card, cards, onGraded, onAdvance, onDiscuss, onImageReady }: PracticeModeProps) {
   const [choices] = useState(() => buildChoices(card, cards));
   const correctIndex = choices.indexOf(card.answer.trim());
   const [selected, setSelected] = useState<number | null>(null);
@@ -44,7 +45,14 @@ export function MultipleChoiceMode({ card, cards, onGraded, onAdvance, onDiscuss
     <div className="mc-mode">
       <div className="test-prompt">
         {card.question && <p className="practice-term">{card.question}</p>}
-        {hasImage && <img src={card.imageUrl ?? ''} alt={card.question || 'card image'} className="practice-image" />}
+        {hasImage && (
+          <PromptImage
+            src={card.imageUrl ?? ''}
+            alt={card.question || 'card image'}
+            className="practice-image"
+            onReady={onImageReady}
+          />
+        )}
       </div>
 
       <MultipleChoice

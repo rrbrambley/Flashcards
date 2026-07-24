@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TextAnswerInput } from '../components/TextAnswerInput';
 import { DiscussButton } from '../components/DiscussButton';
+import { PromptImage } from '../components/PromptImage';
 import { SuggestAnswerButton } from '../SuggestAnswerButton';
 import { gradeTextAnswer } from '../grading/textAnswer';
 import type { PracticeModeProps } from './types';
@@ -11,7 +12,7 @@ import type { PracticeModeProps } from './types';
  * user proceeds (Next / Enter), which reports the outcome. The runner remounts this per card, so the
  * two-phase state resets on its own.
  */
-export function TestMode({ card, onGraded, onAdvance, onDiscuss, canSuggest, isGuest }: PracticeModeProps) {
+export function TestMode({ card, onGraded, onAdvance, onDiscuss, canSuggest, isGuest, onImageReady }: PracticeModeProps) {
   const [graded, setGraded] = useState<{ input: string; correct: boolean } | null>(null);
 
   // Once revealed, Enter advances (mirrors the submit-with-Enter flow).
@@ -33,7 +34,14 @@ export function TestMode({ card, onGraded, onAdvance, onDiscuss, canSuggest, isG
     <div className="test-mode">
       <div className="test-prompt">
         {card.question && <p className="practice-term">{card.question}</p>}
-        {hasImage && <img src={card.imageUrl ?? ''} alt={card.question || 'card image'} className="practice-image" />}
+        {hasImage && (
+          <PromptImage
+            src={card.imageUrl ?? ''}
+            alt={card.question || 'card image'}
+            className="practice-image"
+            onReady={onImageReady}
+          />
+        )}
       </div>
 
       {!graded ? (

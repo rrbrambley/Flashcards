@@ -359,8 +359,15 @@ function PracticeRunner({
   onExit,
 }: PracticeRunnerProps) {
   const [state, dispatch] = useReducer(practiceReducer, initPractice(cards, progress, initialStreak));
-  // Timed session (#289): count down to the deadline; on expiry, end the run wherever it is.
-  const { remainingMs, expired } = useCountdown(deadline);
+  // Pause the countdown while the current card's prompt image is still loading (#317): the mode's
+  // PromptImage reports load/error via onImageReady, marking this index ready. A card with no image is
+  // ready at once. Tracked by index (not a boolean) so advancing a card auto-resets to "not ready"
+  // without a reset effect — readyForIndex only matches once the new card's image settles.
+  const [readyForIndex, setReadyForIndex] = useState<number | null>(null);
+  const imageLoading = !!state.cards[state.index]?.imageUrl && readyForIndex !== state.index;
+  // Timed session (#289): count down to the deadline; on expiry, end the run wherever it is. The
+  // countdown is frozen while the prompt image loads (#317) so no time is lost to the fetch.
+  const { remainingMs, expired } = useCountdown(deadline, deadline != null && imageLoading);
   // Overall streak after this completion (FLA-106); null until loaded / for guests (no session).
   const [streak, setStreak] = useState<number | null>(null);
   // The session's answer log for the end-of-session review (FLA-149); null until the session
@@ -575,6 +582,7 @@ function PracticeRunner({
         onDiscuss={canDiscuss ? () => setDiscussCardUid(currentCard.cardUid ?? null) : undefined}
         canSuggest={isGlobal && !!currentCard.cardUid}
         isGuest={isGuest}
+        onImageReady={() => setReadyForIndex(state.index)}
       />
 
       {discussCardUid && (

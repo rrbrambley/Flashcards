@@ -36,6 +36,13 @@ export interface PracticeModeProps {
   canSuggest?: boolean;
   /** Whether the current user is a signed-out guest (gates the sign-in conversion for suggestions). */
   isGuest?: boolean;
+  /**
+   * Reports that the current card's prompt image has settled (loaded or errored), so a timed run can
+   * resume its countdown — paused while the image loads (#317). A mode with a prompt image wires this
+   * to its [PromptImage]; a mode/card without an image never needs it (the runner treats no-image
+   * cards as ready immediately).
+   */
+  onImageReady?: () => void;
 }
 
 /** A selectable practice mode: its persisted key, display copy, and the component that runs it. */
