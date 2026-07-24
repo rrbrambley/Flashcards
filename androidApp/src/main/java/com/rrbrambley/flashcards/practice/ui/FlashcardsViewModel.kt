@@ -164,6 +164,15 @@ class FlashcardsViewModel @Inject constructor(
         batchController?.submit(answers)
     }
 
+    /** Pause/resume the timed countdown (#311) while the current card's prompt image loads. No-op untimed. */
+    fun pauseTimer() {
+        controller?.pauseTimer()
+    }
+
+    fun resumeTimer() {
+        controller?.resumeTimer()
+    }
+
     fun shouldPromptSave(): Boolean = controller?.shouldPromptSave ?: false
 
     fun saveProgressByCreatingAccount(email: String, password: String) {

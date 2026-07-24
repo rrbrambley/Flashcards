@@ -159,6 +159,12 @@ private fun CardByCardPractice(
     }
     BackHandler(onBack = handleExit)
 
+    // Pause the timed countdown while the current card's prompt image loads, resume once it's on screen
+    // (#311). No-op for untimed runs. Test / Multiple Choice report this via onImageReadyChanged.
+    fun onPromptImageReadyChanged(ready: Boolean) {
+        if (ready) flashcardsViewModel.resumeTimer() else flashcardsViewModel.pauseTimer()
+    }
+
     // When the guest finishes creating an account, the save is done — leave the practice screen
     // (the app is now signed in, so MainActivity shows the saved session under "Continue studying").
     LaunchedEffect(saveState) {
@@ -271,6 +277,7 @@ private fun CardByCardPractice(
                                     onDiscuss = onDiscuss,
                                     canSuggest = state.isGlobal,
                                     isGuest = isGuest,
+                                    onImageReadyChanged = ::onPromptImageReadyChanged,
                                 )
 
                             PracticeMode.MultipleChoice.key ->
@@ -281,6 +288,7 @@ private fun CardByCardPractice(
                                     onAdvance = flashcardsViewModel::goForward,
                                     discussionsEnabled = state.discussionsEnabled,
                                     onDiscuss = onDiscuss,
+                                    onImageReadyChanged = ::onPromptImageReadyChanged,
                                 )
 
                             else -> ClassicMode(
