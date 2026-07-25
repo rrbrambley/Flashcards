@@ -255,7 +255,7 @@ struct LibraryView: View {
             } label: {
                 Image(systemName: "arrow.up.arrow.down")
             }
-            .accessibilityLabel("Sort decks")
+            .accessibilityLabel(Text("Sort decks"))
         }
     }
 }

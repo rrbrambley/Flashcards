@@ -10,18 +10,18 @@ extension PracticeMode: @retroactive Identifiable {
 
     var label: String {
         switch self {
-        case .test: "Test"
-        case .multiplechoice: "Multiple Choice"
-        default: "Classic"
+        case .test: String(localized: "Test")
+        case .multiplechoice: String(localized: "Multiple Choice")
+        default: String(localized: "Classic")
         }
     }
 
     /// One-line description shown in the practice-config picker (FLA-200), mirroring web/Android copy.
     var summary: String {
         switch self {
-        case .test: "Type the answer."
-        case .multiplechoice: "Pick the answer from four options."
-        default: "Flip the card and mark whether you knew it."
+        case .test: String(localized: "Type the answer.")
+        case .multiplechoice: String(localized: "Pick the answer from four options.")
+        default: String(localized: "Flip the card and mark whether you knew it.")
         }
     }
 

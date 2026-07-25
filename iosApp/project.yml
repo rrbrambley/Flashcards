@@ -7,6 +7,8 @@ options:
     iOS: "17.0"
   createIntermediateGroups: true
   groupSortPosition: top
+  # Base (source) language for the String Catalog (Localizable.xcstrings) — localization readiness (#315).
+  developmentRegion: en
 
 settings:
   base:
@@ -76,6 +78,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # Extract localizable strings (Text/Button LocalizedStringKeys + String(localized:)) into the
+        # String Catalog on build, so Localizable.xcstrings stays in sync as copy is added (#315).
+        SWIFT_EMIT_LOC_STRINGS: "YES"
         # The shared Kotlin/Native framework is produced by the build phase below into
         # shared/build/xcode-frameworks/<config>/<sdk>; find + link it (static) by name.
         FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"

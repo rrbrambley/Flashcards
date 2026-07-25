@@ -17,7 +17,9 @@ struct ImageUploader: ImageUploading {
     let apiClient: FlashcardApiClient
 
     /// Shown on any upload failure (unreadable image, network, 503, rejected) — matches Android's copy.
-    static let errorMessage = "Couldn't add the image. Use a JPEG, PNG, WebP or GIF under 5 MB and try again."
+    static let errorMessage = String(
+        localized: "Couldn't add the image. Use a JPEG, PNG, WebP or GIF under 5 MB and try again."
+    )
 
     /// Matches the backend's `/images` limit (5 MB) and accepted MIME types.
     private static let maxBytes = 5 * 1024 * 1024

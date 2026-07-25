@@ -145,7 +145,7 @@ struct HomeView: View {
             } label: {
                 Image(systemName: "person.crop.circle")
             }
-            .accessibilityLabel("Account")
+            .accessibilityLabel(Text("Account"))
         }
     }
 }
@@ -177,7 +177,7 @@ private struct FeedCard: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("Remove practice session")
+                    .accessibilityLabel(Text("Remove practice session"))
                 }
             }
             if let session = item.session {

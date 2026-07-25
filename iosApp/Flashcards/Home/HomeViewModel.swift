@@ -65,7 +65,7 @@ final class HomeViewModel: ObservableObject {
         if case .loaded = state {
             refreshFailed = true
         } else {
-            state = .failed("Couldn't load your home feed. Check your connection.")
+            state = .failed(String(localized: "Couldn't load your home feed. Check your connection."))
         }
     }
 }

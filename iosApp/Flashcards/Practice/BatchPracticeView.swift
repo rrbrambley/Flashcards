@@ -45,7 +45,7 @@ struct BatchPracticeView: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         if let deckId = viewModel.shareDeckId, let url = shareURL(deckId) {
                             ShareLink(item: url) { Image(systemName: "square.and.arrow.up") }
-                                .accessibilityLabel("Share deck")
+                                .accessibilityLabel(Text("Share deck"))
                         }
                     }
                 }
@@ -183,7 +183,7 @@ private struct BatchAnsweringView: View {
                     .textFieldStyle(.roundedBorder)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .accessibilityLabel("Answer for question \(i + 1)")
+                    .accessibilityLabel(Text("Answer for question \(i + 1)"))
             } else {
                 ForEach(choices[i].indices, id: \.self) { idx in
                     Button {

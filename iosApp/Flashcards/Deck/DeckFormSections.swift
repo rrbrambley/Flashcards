@@ -21,7 +21,7 @@ struct DeckFormSections: View {
             TextField("Deck title", text: $deckTitle)
                 .disabled(!isEditable)
             if showErrors && deckTitle.trimmed.isEmpty {
-                FormErrorText("Enter a deck title")
+                FormErrorText(String(localized: "Enter a deck title"))
             }
         }
 
@@ -55,7 +55,7 @@ struct DeckFormSections: View {
                     onRemove: { onRemoveImage(card.id) }
                 )
                 if showErrors && card.isStarted && !card.isComplete {
-                    FormErrorText("Each card needs a definition, plus a term or an image.")
+                    FormErrorText(String(localized: "Each card needs a definition, plus a term or an image."))
                 }
                 if isEditable && cards.count > 1 {
                     Button("Remove card", systemImage: "trash", role: .destructive) {
@@ -67,7 +67,7 @@ struct DeckFormSections: View {
 
         if showErrors && cards.completeCards.isEmpty {
             Section {
-                FormErrorText("Add at least one card with a definition and a term or image.")
+                FormErrorText(String(localized: "Add at least one card with a definition and a term or image."))
             }
         }
 

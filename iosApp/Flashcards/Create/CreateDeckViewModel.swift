@@ -97,7 +97,7 @@ final class CreateDeckViewModel: ObservableObject {
             justSaved = true
         } catch {
             // Keep the form so the user can retry (e.g. offline).
-            saveError = "Couldn't save the deck. Check your connection and try again."
+            saveError = String(localized: "Couldn't save the deck. Check your connection and try again.")
         }
         isSaving = false
     }

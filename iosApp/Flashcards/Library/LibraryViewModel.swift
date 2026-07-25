@@ -7,7 +7,9 @@ import SwiftUI
 /// so it can't cleanly be `CaseIterable` — the view iterates its `.entries` instead.)
 extension DeckSortOrder: @retroactive Identifiable {
     public var id: String { name }
-    var label: String { self == .alphabetical ? "A–Z" : "Recently practiced" }
+    var label: String {
+        self == .alphabetical ? String(localized: "A–Z") : String(localized: "Recently practiced")
+    }
 }
 
 /// Lists the user's decks from the offline-first `FlashcardRepository` (which best-effort re-syncs
@@ -59,7 +61,7 @@ final class LibraryViewModel: ObservableObject {
         do {
             try await flashcardRepository.deleteFlashcardDeck(deckId: deckId)
         } catch {
-            deleteError = "Couldn't delete the deck. Check your connection and try again."
+            deleteError = String(localized: "Couldn't delete the deck. Check your connection and try again.")
         }
     }
 
