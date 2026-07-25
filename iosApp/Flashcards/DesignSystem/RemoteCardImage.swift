@@ -6,6 +6,10 @@ import SwiftUI
 /// comes from `SDImageSVGCoder`, registered at app launch in `FlashcardsApp`.
 struct RemoteCardImage: View {
     let url: String
+    /// Called once the image settles — loaded or failed. Lets a timed practice run resume its
+    /// countdown, paused while the prompt image loads (#314). `WebImage`'s onSuccess fires for cached
+    /// images too (with a cache-type), so this covers the already-cached case without extra handling.
+    var onReady: (() -> Void)?
 
     var body: some View {
         WebImage(
@@ -17,6 +21,8 @@ struct RemoteCardImage: View {
         } placeholder: {
             ProgressView()
         }
+        .onSuccess { _, _, _ in onReady?() }
+        .onFailure { _ in onReady?() }
         .transition(.fade)
         .accessibilityHidden(true)
     }

@@ -182,6 +182,17 @@ final class PracticeViewModel: ObservableObject {
 
     func goForward() { controller.goForward() }
 
+    /// Pauses the timed countdown while the current card's prompt image loads, and resumes once it
+    /// settles (#314). Safe no-op for untimed runs (the controller's pause/resume guard on the
+    /// deadline) and idempotent, so repeated ready/loading reports don't drift the clock.
+    func setPromptImageReady(_ ready: Bool) {
+        if ready {
+            controller.resumeTimer()
+        } else {
+            controller.pauseTimer()
+        }
+    }
+
     func saveProgressByCreatingAccount(email: String, password: String) async {
         try? await controller.saveProgressByCreatingAccount(email: email, password: password)
     }

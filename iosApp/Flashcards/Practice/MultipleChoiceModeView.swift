@@ -14,6 +14,8 @@ struct MultipleChoiceModeView: View {
     let onAdvance: () -> Void
     let discussionsEnabled: Bool
     let onDiscuss: () -> Void
+    /// Prompt-image readiness for the timed-run pause (#314); forwarded to `CardPrompt`.
+    let onImageReadyChanged: (Bool) -> Void
 
     @State private var choices: [String]
     @State private var selected: Int?
@@ -32,13 +34,15 @@ struct MultipleChoiceModeView: View {
         onGraded: @escaping (Bool, String?) -> Void,
         onAdvance: @escaping () -> Void,
         discussionsEnabled: Bool = false,
-        onDiscuss: @escaping () -> Void = {}
+        onDiscuss: @escaping () -> Void = {},
+        onImageReadyChanged: @escaping (Bool) -> Void = { _ in }
     ) {
         self.card = card
         self.onGraded = onGraded
         self.onAdvance = onAdvance
         self.discussionsEnabled = discussionsEnabled
         self.onDiscuss = onDiscuss
+        self.onImageReadyChanged = onImageReadyChanged
         // The first init's shuffle wins (@State ignores later initialValues), so `choices` is stable.
         _choices = State(initialValue: IosPracticeGradingKt.buildChoicesForSwift(card: card, deck: deck))
     }
@@ -46,7 +50,7 @@ struct MultipleChoiceModeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.md) {
-                CardPrompt(card: card)
+                CardPrompt(card: card, onImageReadyChanged: onImageReadyChanged)
                     .padding(.bottom, Spacing.sm)
 
                 ForEach(Array(choices.enumerated()), id: \.offset) { index, option in

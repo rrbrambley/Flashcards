@@ -196,6 +196,8 @@ struct PracticeView: View {
             deckEnabled: discussionsEnabled,
             isGuest: viewModel.isGuestMode
         )
+        // Pause the countdown while this card's prompt image loads (#314); no-op for untimed runs.
+        let onImageReadyChanged = { (ready: Bool) in viewModel.setPromptImageReady(ready) }
         // Bridged Kotlin enum is a non-final class, so the switch needs a `default` (→ Classic).
         switch PracticeMode.companion.fromKey(key: mode) {
         case .test:
@@ -208,7 +210,8 @@ struct PracticeView: View {
                 canSuggest: isGlobal,
                 isGuest: viewModel.isGuestMode,
                 apiClient: apiClient,
-                authService: authService
+                authService: authService,
+                onImageReadyChanged: onImageReadyChanged
             )
         case .multiplechoice:
             MultipleChoiceModeView(
@@ -217,7 +220,8 @@ struct PracticeView: View {
                 onGraded: viewModel.applyResult,
                 onAdvance: viewModel.goForward,
                 discussionsEnabled: showDiscuss,
-                onDiscuss: onDiscuss
+                onDiscuss: onDiscuss,
+                onImageReadyChanged: onImageReadyChanged
             )
         default:
             ClassicModeView(
@@ -227,7 +231,8 @@ struct PracticeView: View {
                 onPrevious: viewModel.goBack,
                 onNext: viewModel.goForward,
                 discussionsEnabled: showDiscuss,
-                onDiscuss: onDiscuss
+                onDiscuss: onDiscuss,
+                onImageReadyChanged: onImageReadyChanged
             )
         }
     }
@@ -264,11 +269,17 @@ private struct ScoreRow: View {
 /// The card's question text + optional image — the prompt shared by the Test + Multiple-Choice modes.
 struct CardPrompt: View {
     let card: Flashcard
+    /// Reports prompt-image readiness for the timed-run pause (#314): `false` when an image is still
+    /// loading (pause the countdown), `true` once it settles or when there's no image (resume). Default
+    /// no-op so non-timed / non-runner callers need no change.
+    var onImageReadyChanged: (Bool) -> Void = { _ in }
+
+    private var hasImage: Bool { card.imageUrl.map { !$0.isEmpty } ?? false }
 
     var body: some View {
         VStack(spacing: Spacing.md) {
             if let imageUrl = card.imageUrl, !imageUrl.isEmpty {
-                RemoteCardImage(url: imageUrl)
+                RemoteCardImage(url: imageUrl, onReady: { onImageReadyChanged(true) })
                     .frame(maxHeight: 220)
             }
             if !card.question.isEmpty {
@@ -277,6 +288,9 @@ struct CardPrompt: View {
                     .multilineTextAlignment(.center)
             }
         }
+        // Pause immediately for an imaged card (RemoteCardImage.onReady flips it back to ready); a
+        // text-only card is ready at once so the countdown never pauses.
+        .onAppear { onImageReadyChanged(!hasImage) }
     }
 }
 
