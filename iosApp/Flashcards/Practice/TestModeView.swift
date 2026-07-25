@@ -20,6 +20,8 @@ struct TestModeView: View {
     var isGuest = false
     var apiClient: FlashcardApiClient?
     var authService: AuthService?
+    /// Prompt-image readiness for the timed-run pause (#314); forwarded to `CardPrompt`.
+    var onImageReadyChanged: (Bool) -> Void = { _ in }
 
     @State private var input = ""
     @State private var graded: Graded?
@@ -34,7 +36,7 @@ struct TestModeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.lg) {
-                CardPrompt(card: card)
+                CardPrompt(card: card, onImageReadyChanged: onImageReadyChanged)
 
                 if let graded {
                     verdict(graded)

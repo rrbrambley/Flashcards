@@ -12,6 +12,8 @@ struct ClassicModeView: View {
     let onNext: () -> Void
     var discussionsEnabled = false
     var onDiscuss: () -> Void = {}
+    /// Prompt-image readiness for the timed-run pause (#314); the front-of-card image drives it.
+    var onImageReadyChanged: (Bool) -> Void = { _ in }
 
     @State private var flipped = false
 
@@ -21,7 +23,8 @@ struct ClassicModeView: View {
                 card: card,
                 flipped: $flipped,
                 onSwipeRight: { onResult(true, nil) },
-                onSwipeLeft: { onResult(false, nil) }
+                onSwipeLeft: { onResult(false, nil) },
+                onImageReadyChanged: onImageReadyChanged
             )
             .frame(maxHeight: .infinity)
             // The discussion affordance appears once the answer is revealed (flipped), mirroring web.
@@ -40,10 +43,16 @@ private struct FlashcardCardView: View {
     @Binding var flipped: Bool
     let onSwipeRight: () -> Void
     let onSwipeLeft: () -> Void
+    /// Prompt-image readiness for the timed-run pause (#314): `false` while the front image loads,
+    /// `true` once it settles or when there's no image.
+    var onImageReadyChanged: (Bool) -> Void = { _ in }
 
     @State private var drag: CGSize = .zero
+    @State private var imageLoaded = false
 
     private let threshold: CGFloat = 120
+
+    private var hasImage: Bool { card.imageUrl.map { !$0.isEmpty } ?? false }
 
     var body: some View {
         ZStack {
@@ -52,6 +61,11 @@ private struct FlashcardCardView: View {
             face(text: card.answer, imageUrl: nil, caption: "Answer")
                 .opacity(flipped ? 1 : 0)
                 .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+        }
+        // Report the reconciled ready state (see CardPrompt): edges would race the fast/cached image's
+        // resume ahead of the appear-time pause and strand the countdown paused (#314).
+        .onChange(of: imageLoaded, initial: true) { _, _ in
+            onImageReadyChanged(!hasImage || imageLoaded)
         }
         .rotation3DEffect(.degrees(flipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
         .offset(x: drag.width, y: drag.height * 0.15)
@@ -92,7 +106,7 @@ private struct FlashcardCardView: View {
             .overlay {
                 VStack(spacing: Spacing.md) {
                     if let imageUrl, !imageUrl.isEmpty {
-                        RemoteCardImage(url: imageUrl)
+                        RemoteCardImage(url: imageUrl, onReady: { imageLoaded = true })
                             .frame(maxHeight: 220)
                     }
                     if !text.isEmpty {
