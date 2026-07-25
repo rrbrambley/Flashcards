@@ -269,17 +269,18 @@ private struct ScoreRow: View {
 /// The card's question text + optional image — the prompt shared by the Test + Multiple-Choice modes.
 struct CardPrompt: View {
     let card: Flashcard
-    /// Reports prompt-image readiness for the timed-run pause (#314): `false` when an image is still
+    /// Reports prompt-image readiness for the timed-run pause (#314): `false` while an image is still
     /// loading (pause the countdown), `true` once it settles or when there's no image (resume). Default
     /// no-op so non-timed / non-runner callers need no change.
     var onImageReadyChanged: (Bool) -> Void = { _ in }
 
     private var hasImage: Bool { card.imageUrl.map { !$0.isEmpty } ?? false }
+    @State private var imageLoaded = false
 
     var body: some View {
         VStack(spacing: Spacing.md) {
             if let imageUrl = card.imageUrl, !imageUrl.isEmpty {
-                RemoteCardImage(url: imageUrl, onReady: { onImageReadyChanged(true) })
+                RemoteCardImage(url: imageUrl, onReady: { imageLoaded = true })
                     .frame(maxHeight: 220)
             }
             if !card.question.isEmpty {
@@ -288,9 +289,13 @@ struct CardPrompt: View {
                     .multilineTextAlignment(.center)
             }
         }
-        // Pause immediately for an imaged card (RemoteCardImage.onReady flips it back to ready); a
-        // text-only card is ready at once so the countdown never pauses.
-        .onAppear { onImageReadyChanged(!hasImage) }
+        // Report the *reconciled* ready state (ready = no image, or the image has settled) on appear and
+        // on every change — so the final report always reflects reality. Reporting edges instead would
+        // race: a fast/cached image's onReady (resume) can fire before the view's appear (pause), which
+        // would then strand the countdown paused (#314).
+        .onChange(of: imageLoaded, initial: true) { _, _ in
+            onImageReadyChanged(!hasImage || imageLoaded)
+        }
     }
 }
 

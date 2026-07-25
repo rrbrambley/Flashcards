@@ -48,6 +48,7 @@ private struct FlashcardCardView: View {
     var onImageReadyChanged: (Bool) -> Void = { _ in }
 
     @State private var drag: CGSize = .zero
+    @State private var imageLoaded = false
 
     private let threshold: CGFloat = 120
 
@@ -61,8 +62,11 @@ private struct FlashcardCardView: View {
                 .opacity(flipped ? 1 : 0)
                 .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
         }
-        // Pause immediately for an imaged card; the front image's onReady resumes it (#314).
-        .onAppear { onImageReadyChanged(!hasImage) }
+        // Report the reconciled ready state (see CardPrompt): edges would race the fast/cached image's
+        // resume ahead of the appear-time pause and strand the countdown paused (#314).
+        .onChange(of: imageLoaded, initial: true) { _, _ in
+            onImageReadyChanged(!hasImage || imageLoaded)
+        }
         .rotation3DEffect(.degrees(flipped ? 180 : 0), axis: (x: 0, y: 1, z: 0))
         .offset(x: drag.width, y: drag.height * 0.15)
         .rotationEffect(.degrees(Double(drag.width) / 25))
@@ -102,7 +106,7 @@ private struct FlashcardCardView: View {
             .overlay {
                 VStack(spacing: Spacing.md) {
                     if let imageUrl, !imageUrl.isEmpty {
-                        RemoteCardImage(url: imageUrl, onReady: { onImageReadyChanged(true) })
+                        RemoteCardImage(url: imageUrl, onReady: { imageLoaded = true })
                             .frame(maxHeight: 220)
                     }
                     if !text.isEmpty {

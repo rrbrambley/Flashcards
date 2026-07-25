@@ -17,11 +17,15 @@ struct RemoteCardImage: View {
             // Rasterize SVGs at a crisp card size rather than their (often tiny) intrinsic size.
             context: [.imageThumbnailPixelSize: CGSize(width: 600, height: 600)]
         ) { image in
+            // The content closure runs only once the image has loaded (the placeholder shows until
+            // then), so its appearance is a reliable "settled" signal — more so than `.onSuccess`, which
+            // can be missed with this content-closure initializer. Covers the cached case too (content
+            // appears immediately). Failures fall through to `.onFailure` below.
             image.resizable().scaledToFit()
+                .onAppear { onReady?() }
         } placeholder: {
             ProgressView()
         }
-        .onSuccess { _, _, _ in onReady?() }
         .onFailure { _ in onReady?() }
         .transition(.fade)
         .accessibilityHidden(true)
