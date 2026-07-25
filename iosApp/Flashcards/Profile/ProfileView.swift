@@ -36,7 +36,7 @@ struct ProfileView: View {
         if viewModel.isLoading {
             LoadingView()
         } else if viewModel.loadFailed {
-            ErrorRetryView(message: "Couldn't load your profile.") {
+            ErrorRetryView(message: String(localized: "Couldn't load your profile.")) {
                 Task { await viewModel.load() }
             }
         } else {
@@ -97,7 +97,7 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
                         .disabled(viewModel.isSaving)
-                        .accessibilityLabel("\(option.key) avatar")
+                        .accessibilityLabel(Text("\(option.key) avatar"))
                     }
                 }
             }

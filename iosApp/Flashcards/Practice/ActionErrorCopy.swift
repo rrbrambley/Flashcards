@@ -22,24 +22,25 @@ enum ActionErrorCopy {
     static func discussionPost(_ error: Error) -> String {
         switch recover(error) {
         case is ActionError.RateLimit:
-            return "You're posting too quickly. Please wait a moment."
+            return String(localized: "You're posting too quickly. Please wait a moment.")
         case is ActionError.Locked:
-            return "This thread is locked."
+            return String(localized: "This thread is locked.")
         case let rejected as ActionError.Rejected:
-            return rejected.message ?? "Your message couldn't be posted."
+            // The server's rejection reason is passed through as-is (already human copy, not localizable).
+            return rejected.message ?? String(localized: "Your message couldn't be posted.")
         default:
-            return "Couldn't post your message. Check your connection and try again."
+            return String(localized: "Couldn't post your message. Check your connection and try again.")
         }
     }
 
     static func suggestion(_ error: Error) -> String {
         switch recover(error) {
         case is ActionError.RateLimit:
-            return "You're suggesting too quickly. Please wait a moment."
+            return String(localized: "You're suggesting too quickly. Please wait a moment.")
         case let rejected as ActionError.Rejected:
-            return rejected.message ?? "That suggestion couldn't be accepted."
+            return rejected.message ?? String(localized: "That suggestion couldn't be accepted.")
         default:
-            return "Couldn't send your suggestion. Check your connection and try again."
+            return String(localized: "Couldn't send your suggestion. Check your connection and try again.")
         }
     }
 }

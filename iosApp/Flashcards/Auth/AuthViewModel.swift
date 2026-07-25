@@ -24,11 +24,21 @@ final class AuthViewModel: ObservableObject {
         self.authService = authService
     }
 
-    var title: String { mode == .login ? "Welcome back" : "Create your account" }
-    var submitTitle: String { mode == .login ? "Log in" : "Create account" }
-    var googleTitle: String { mode == .login ? "Sign in with Google" : "Sign up with Google" }
+    // These are plain String (consumed by a Text(String) / Button(String) at the call site, which don't
+    // localize a runtime String), so wrap the literals in String(localized:) to keep them translatable.
+    var title: String {
+        mode == .login ? String(localized: "Welcome back") : String(localized: "Create your account")
+    }
+    var submitTitle: String {
+        mode == .login ? String(localized: "Log in") : String(localized: "Create account")
+    }
+    var googleTitle: String {
+        mode == .login ? String(localized: "Sign in with Google") : String(localized: "Sign up with Google")
+    }
     var switchPrompt: String {
-        mode == .login ? "Don't have an account? Register" : "Already have an account? Log in"
+        mode == .login
+            ? String(localized: "Don't have an account? Register")
+            : String(localized: "Already have an account? Log in")
     }
 
     func toggleMode() {
@@ -39,7 +49,7 @@ final class AuthViewModel: ObservableObject {
     func submit() async {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
         guard PresentationHelpersKt.credentialsProvided(email: email, password: password) else {
-            errorMessage = "Enter your email and password."
+            errorMessage = String(localized: "Enter your email and password.")
             return
         }
         guard !isSubmitting else { return }
@@ -78,9 +88,9 @@ final class AuthViewModel: ObservableObject {
         } catch GoogleSignInHelper.SignInError.cancelled {
             // User backed out — no error to show.
         } catch GoogleSignInHelper.SignInError.notConfigured {
-            errorMessage = "Google sign-in isn't configured."
+            errorMessage = String(localized: "Google sign-in isn't configured.")
         } catch {
-            errorMessage = "Couldn't sign in with Google. Please try again."
+            errorMessage = String(localized: "Couldn't sign in with Google. Please try again.")
         }
         isSubmitting = false
     }

@@ -86,7 +86,7 @@ private struct FlashcardCardView: View {
         }
     }
 
-    private func face(text: String, imageUrl: String?, caption: String) -> some View {
+    private func face(text: String, imageUrl: String?, caption: LocalizedStringKey) -> some View {
         RoundedRectangle(cornerRadius: 20)
             .fill(Color(.secondarySystemBackground))
             .overlay {

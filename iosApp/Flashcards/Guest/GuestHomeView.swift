@@ -71,7 +71,7 @@ struct GuestHomeView: View {
             .listStyle(.plain)
             .refreshable { await viewModel.load() }
         case .failed:
-            ErrorRetryView(message: "Couldn't load the deck catalog.") { Task { await viewModel.load() } }
+            ErrorRetryView(message: String(localized: "Couldn't load the deck catalog.")) { Task { await viewModel.load() } }
         }
     }
 }

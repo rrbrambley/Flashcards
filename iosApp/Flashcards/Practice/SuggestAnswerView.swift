@@ -69,7 +69,7 @@ final class SuggestAnswerViewModel: ObservableObject {
                 return
             }
             guard result is AuthResult.Success else {
-                authError = "Something went wrong. Check your connection and try again."
+                authError = String(localized: "Something went wrong. Check your connection and try again.")
                 authSubmitting = false
                 return
             }

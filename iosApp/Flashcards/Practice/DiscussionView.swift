@@ -139,7 +139,7 @@ final class DiscussionViewModel: ObservableObject {
                 return
             }
             guard result is AuthResult.Success else {
-                authError = "Something went wrong. Check your connection and try again."
+                authError = String(localized: "Something went wrong. Check your connection and try again.")
                 authSubmitting = false
                 return
             }
@@ -178,7 +178,7 @@ final class DiscussionViewModel: ObservableObject {
             try await apiClient.reportMessage(messageId: messageId, reason: reason)
             reportedIds.insert(messageId)
         } catch {
-            postError = "Couldn't report this message. Please try again."
+            postError = String(localized: "Couldn't report this message. Please try again.")
         }
     }
 }
@@ -456,13 +456,14 @@ private struct DiscussionAuthPrompt: View {
 /// Compact relative time: "just now", "5m", "3h", "2d", else an absolute date.
 private func relativeTime(_ millis: Int64) -> String {
     let seconds = Date().timeIntervalSince1970 - Double(millis) / 1000
-    if seconds < 60 { return "just now" }
+    // Returned as String and shown via Text(String), so each literal is wrapped to stay localizable.
+    if seconds < 60 { return String(localized: "just now") }
     let minutes = Int(seconds / 60)
-    if minutes < 60 { return "\(minutes)m" }
+    if minutes < 60 { return String(localized: "\(minutes)m") }
     let hours = minutes / 60
-    if hours < 24 { return "\(hours)h" }
+    if hours < 24 { return String(localized: "\(hours)h") }
     let days = hours / 24
-    if days < 7 { return "\(days)d" }
+    if days < 7 { return String(localized: "\(days)d") }
     return Date(timeIntervalSince1970: Double(millis) / 1000)
         .formatted(date: .abbreviated, time: .omitted)
 }

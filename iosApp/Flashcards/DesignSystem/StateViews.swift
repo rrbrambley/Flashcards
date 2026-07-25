@@ -9,7 +9,9 @@ struct LoadingView: View {
     }
 }
 
-/// Full-screen error with a retry action, for a screen's `.failed` state.
+/// Full-screen error with a retry action, for a screen's `.failed` state. `message` is a resolved
+/// String (it often carries a ViewModel's already-localized error), so localize literals at the call
+/// site with `String(localized:)`.
 struct ErrorRetryView: View {
     let message: String
     let retry: () -> Void
@@ -29,9 +31,10 @@ struct ErrorRetryView: View {
 /// Empty-state placeholder (no data yet). Thin wrapper over `ContentUnavailableView` for a
 /// consistent call site across screens.
 struct EmptyStateView: View {
-    let title: String
+    // LocalizedStringKey (not String) so literal call sites localize automatically + are type-enforced.
+    let title: LocalizedStringKey
     let systemImage: String
-    let message: String
+    let message: LocalizedStringKey
 
     var body: some View {
         ContentUnavailableView(title, systemImage: systemImage, description: Text(message))
@@ -41,7 +44,8 @@ struct EmptyStateView: View {
 /// Unobtrusive bottom banner shown over cached content when a background refresh fails (offline /
 /// server down) — parity with Android's "couldn't refresh" snackbar. Use via `.safeAreaInset`.
 struct RefreshFailedBanner: View {
-    let message: String
+    // Always static copy → LocalizedStringKey so literals localize automatically.
+    let message: LocalizedStringKey
 
     var body: some View {
         HStack(spacing: Spacing.sm) {
@@ -56,7 +60,9 @@ struct RefreshFailedBanner: View {
     }
 }
 
-/// Inline form validation/error text (red, footnote) — used by the deck form sections.
+/// Inline form validation/error text (red, footnote) — used by the deck form sections. `message` is a
+/// resolved String (validation literals or a ViewModel's localized error), so localize literals at the
+/// call site with `String(localized:)`.
 struct FormErrorText: View {
     private let message: String
     init(_ message: String) { self.message = message }

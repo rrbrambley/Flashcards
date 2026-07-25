@@ -121,7 +121,7 @@ final class EditDeckViewModel: ObservableObject {
             originalCards = cards
             didSave = true
         } catch {
-            saveError = "Couldn't save your changes. Check your connection and try again."
+            saveError = String(localized: "Couldn't save your changes. Check your connection and try again.")
         }
         isSaving = false
     }

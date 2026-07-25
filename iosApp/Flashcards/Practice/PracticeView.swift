@@ -78,11 +78,11 @@ struct PracticeView: View {
                     ToolbarItemGroup(placement: .topBarTrailing) {
                         if let deckId = viewModel.shareDeckId, let url = shareURL(deckId) {
                             ShareLink(item: url) { Image(systemName: "square.and.arrow.up") }
-                                .accessibilityLabel("Share deck")
+                                .accessibilityLabel(Text("Share deck"))
                         }
                         if isClassic {
                             Button { showHelp = true } label: { Image(systemName: "questionmark.circle") }
-                                .accessibilityLabel("How to practice")
+                                .accessibilityLabel(Text("How to practice"))
                         }
                     }
                 }
@@ -318,7 +318,7 @@ struct TimerChip: View {
                 urgent ? Color(red: 0.83, green: 0.24, blue: 0.24) : Color(.tertiarySystemFill),
                 in: Capsule()
             )
-            .accessibilityLabel("\(formatMinSec(remainingSeconds)) remaining")
+            .accessibilityLabel(Text("\(formatMinSec(remainingSeconds)) remaining"))
     }
 }
 
@@ -359,7 +359,7 @@ struct CompletionView: View {
         }
     }
 
-    private func stat(_ label: String, _ value: Int, color: Color) -> some View {
+    private func stat(_ label: LocalizedStringKey, _ value: Int, color: Color) -> some View {
         VStack {
             Text("\(value)").font(.largeTitle.bold()).foregroundStyle(color)
             Text(label).font(.subheadline).foregroundStyle(.secondary)

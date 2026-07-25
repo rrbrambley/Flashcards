@@ -1,0 +1,644 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@ avatar" : {
+
+    },
+    "%@ left" : {
+
+    },
+    "%@ remaining" : {
+
+    },
+    "%d of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$d of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld day streak" : {
+
+    },
+    "%lld in a row" : {
+
+    },
+    "%lld." : {
+
+    },
+    "%lldd" : {
+
+    },
+    "%lldh" : {
+
+    },
+    "%lldm" : {
+
+    },
+    "AVATAR" : {
+
+    },
+    "Account" : {
+
+    },
+    "Add a message…" : {
+
+    },
+    "Add a title, then the terms and definitions you want to practice." : {
+
+    },
+    "Add at least one card with a definition and a term or image." : {
+
+    },
+    "Add card" : {
+
+    },
+    "Add image" : {
+
+    },
+    "Already have an account? Log in" : {
+
+    },
+    "Also acceptable: %@" : {
+
+    },
+    "Answer" : {
+
+    },
+    "Answer every card, then submit to see your score" : {
+
+    },
+    "Answer for question %lld" : {
+
+    },
+    "Answer: %@" : {
+
+    },
+    "Available for Test & Multiple Choice" : {
+
+    },
+    "Avatar selection isn't available right now." : {
+
+    },
+    "Avatars are unavailable right now." : {
+
+    },
+    "A–Z" : {
+
+    },
+    "Browse without an account" : {
+
+    },
+    "Can't reach the server" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Card %lld" : {
+
+    },
+    "Category" : {
+
+    },
+    "Category (optional)" : {
+
+    },
+    "Check" : {
+
+    },
+    "Check your connection and pull to refresh." : {
+
+    },
+    "Check your connection and try again." : {
+
+    },
+    "Choose a mode" : {
+
+    },
+    "Classic" : {
+
+    },
+    "Close" : {
+
+    },
+    "Complete in a single session" : {
+
+    },
+    "Confirm" : {
+
+    },
+    "Correct" : {
+
+    },
+    "Couldn't add the image. Use a JPEG, PNG, WebP or GIF under 5 MB and try again." : {
+
+    },
+    "Couldn't delete deck" : {
+
+    },
+    "Couldn't delete the deck. Check your connection and try again." : {
+
+    },
+    "Couldn't load the deck catalog." : {
+
+    },
+    "Couldn't load the discussion" : {
+
+    },
+    "Couldn't load your home feed. Check your connection." : {
+
+    },
+    "Couldn't load your profile." : {
+
+    },
+    "Couldn't post your message. Check your connection and try again." : {
+
+    },
+    "Couldn't refresh your decks. Showing your saved library." : {
+
+    },
+    "Couldn't refresh. Showing your saved feed." : {
+
+    },
+    "Couldn't report this message. Please try again." : {
+
+    },
+    "Couldn't save the deck. Check your connection and try again." : {
+
+    },
+    "Couldn't save your changes. Check your connection and try again." : {
+
+    },
+    "Couldn't send your suggestion. Check your connection and try again." : {
+
+    },
+    "Couldn't sign in with Google. Please try again." : {
+
+    },
+    "Couldn't start practice" : {
+
+    },
+    "Couldn't update your avatar." : {
+
+    },
+    "Create" : {
+
+    },
+    "Create a set from the New tab." : {
+
+    },
+    "Create account" : {
+
+    },
+    "Create account & post" : {
+
+    },
+    "Create account & save" : {
+
+    },
+    "Create account & suggest" : {
+
+    },
+    "Create an account to post your message and help others learn." : {
+
+    },
+    "Create an account to suggest this answer and help improve the deck." : {
+
+    },
+    "Create your account" : {
+
+    },
+    "Deck" : {
+
+    },
+    "Deck created" : {
+
+    },
+    "Deck title" : {
+
+    },
+    "Definition" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete deck" : {
+
+    },
+    "Delete “%@”?" : {
+
+    },
+    "Discard" : {
+
+    },
+    "Discard changes?" : {
+
+    },
+    "Discuss this card" : {
+
+    },
+    "Discussion" : {
+
+    },
+    "Don't have an account? Register" : {
+
+    },
+    "Done" : {
+
+    },
+    "Each card needs a definition, plus a term or an image." : {
+
+    },
+    "Edit deck" : {
+
+    },
+    "Email" : {
+
+    },
+    "Enter a deck title" : {
+
+    },
+    "Enter your email and password." : {
+
+    },
+    "Flip the card and mark whether you knew it." : {
+
+    },
+    "Google sign-in isn't configured." : {
+
+    },
+    "Got it" : {
+
+    },
+    "Grade at the end" : {
+
+    },
+    "Have an account? Log in" : {
+
+    },
+    "Home" : {
+
+    },
+    "How to practice" : {
+
+    },
+    "Incorrect" : {
+
+    },
+    "Join the discussion" : {
+
+    },
+    "Keep editing" : {
+
+    },
+    "Keep practicing" : {
+
+    },
+    "Leave" : {
+
+    },
+    "Leave this session?" : {
+
+    },
+    "Leave without saving" : {
+
+    },
+    "Library" : {
+
+    },
+    "Load more" : {
+
+    },
+    "Log in" : {
+
+    },
+    "Log in & post" : {
+
+    },
+    "Log in & suggest" : {
+
+    },
+    "Log in to post your message and help others learn." : {
+
+    },
+    "Log in to suggest this answer and help improve the deck." : {
+
+    },
+    "Log out" : {
+
+    },
+    "Multiple Choice" : {
+
+    },
+    "Need an account? Register" : {
+
+    },
+    "New" : {
+
+    },
+    "New deck" : {
+
+    },
+    "Next" : {
+
+    },
+    "No decks are available yet." : {
+
+    },
+    "No decks match your search." : {
+
+    },
+    "No decks yet" : {
+
+    },
+    "No matches" : {
+
+    },
+    "No messages yet" : {
+
+    },
+    "No practice modes are available right now." : {
+
+    },
+    "OK" : {
+
+    },
+    "OR" : {
+
+    },
+    "One per line. Also accepted in Test mode." : {
+
+    },
+    "Other accepted answers (optional)" : {
+
+    },
+    "Password" : {
+
+    },
+    "Pick a deck" : {
+
+    },
+    "Pick an avatar shown on your profile and discussion posts." : {
+
+    },
+    "Pick the answer from four options." : {
+
+    },
+    "Post" : {
+
+    },
+    "Practice" : {
+
+    },
+    "Practice %@" : {
+
+    },
+    "Practice complete" : {
+
+    },
+    "Previous" : {
+
+    },
+    "Profile" : {
+
+    },
+    "Questions (max %lld)" : {
+
+    },
+    "Reason (optional)" : {
+
+    },
+    "Recently practiced" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove avatar" : {
+
+    },
+    "Remove card" : {
+
+    },
+    "Remove image" : {
+
+    },
+    "Remove practice session" : {
+
+    },
+    "Remove practice session?" : {
+
+    },
+    "Reply" : {
+
+    },
+    "Replying to %@" : {
+
+    },
+    "Report" : {
+
+    },
+    "Report message" : {
+
+    },
+    "Reported" : {
+
+    },
+    "Review" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save your progress?" : {
+
+    },
+    "Search decks" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Share deck" : {
+
+    },
+    "Shuffle cards" : {
+
+    },
+    "Sign in" : {
+
+    },
+    "Sign in to join the discussion…" : {
+
+    },
+    "Sign in with Google" : {
+
+    },
+    "Sign up with Google" : {
+
+    },
+    "Something went wrong" : {
+
+    },
+    "Something went wrong. Check your connection and try again." : {
+
+    },
+    "Sort" : {
+
+    },
+    "Sort decks" : {
+
+    },
+    "Start" : {
+
+    },
+    "Start studying — no account needed." : {
+
+    },
+    "Start the conversation!" : {
+
+    },
+    "Submit (%lld/%lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Submit (%1$lld/%2$lld)"
+          }
+        }
+      }
+    },
+    "Suggest an answer" : {
+
+    },
+    "Tap a card to flip it.\nSwipe right if you got it, left if you need more practice." : {
+
+    },
+    "Tap to flip" : {
+
+    },
+    "Term" : {
+
+    },
+    "Test" : {
+
+    },
+    "Thanks — we'll review your suggestion." : {
+
+    },
+    "That suggestion couldn't be accepted." : {
+
+    },
+    "This deck and its cards will be permanently deleted." : {
+
+    },
+    "This deck has no cards, or we couldn't reach the server." : {
+
+    },
+    "This deck is read-only and can't be edited." : {
+
+    },
+    "This session runs in one sitting — if you leave, your progress won't be saved." : {
+
+    },
+    "This should be correct" : {
+
+    },
+    "This thread is locked." : {
+
+    },
+    "Time limit" : {
+
+    },
+    "Timed" : {
+
+    },
+    "Title" : {
+
+    },
+    "To review" : {
+
+    },
+    "Try again" : {
+
+    },
+    "Type the answer" : {
+
+    },
+    "Type the answer." : {
+
+    },
+    "Uploading image…" : {
+
+    },
+    "Welcome back" : {
+
+    },
+    "Why are you reporting this? (optional)" : {
+
+    },
+    "You answered: %@" : {
+
+    },
+    "You haven't typed an answer — skip this one?" : {
+
+    },
+    "You'll lose your progress if you leave. Create an account to save this session." : {
+
+    },
+    "You're posting too quickly. Please wait a moment." : {
+
+    },
+    "You're suggesting too quickly. Please wait a moment." : {
+
+    },
+    "Your message couldn't be posted." : {
+
+    },
+    "Your practice feed will appear here." : {
+
+    },
+    "Your progress on “%@” will be lost." : {
+
+    },
+    "[removed by a moderator]" : {
+
+    },
+    "^[%lld card](inflect: true)" : {
+
+    },
+    "just now" : {
+
+    },
+    "min" : {
+
+    },
+    "sec" : {
+
+    },
+    "✓ %d" : {
+
+    },
+    "✗ %d" : {
+
+    },
+    "🔒 This discussion is locked." : {
+
+    },
+    "🔥 %d" : {
+
+    }
+  },
+  "version" : "1.0"
+}
