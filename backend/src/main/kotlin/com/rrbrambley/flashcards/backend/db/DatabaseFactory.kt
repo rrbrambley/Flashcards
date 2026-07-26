@@ -75,6 +75,7 @@ object DatabaseFactory {
                 DiscussionMessages,
                 DiscussionReports,
                 AnswerSuggestions,
+                Notifications,
                 FeatureFlags,
                 FeatureFlagUserOverrides,
                 FeatureFlagRoleOverrides,

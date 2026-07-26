@@ -13,6 +13,7 @@ import com.rrbrambley.flashcards.backend.flags.flagRoutes
 import com.rrbrambley.flashcards.backend.health.healthRoutes
 import com.rrbrambley.flashcards.backend.home.homeRoutes
 import com.rrbrambley.flashcards.backend.images.imageRoutes
+import com.rrbrambley.flashcards.backend.notifications.notificationRoutes
 import com.rrbrambley.flashcards.backend.sessions.sessionRoutes
 import com.rrbrambley.flashcards.backend.streaks.streakRoutes
 import com.rrbrambley.flashcards.backend.suggestions.suggestionRoutes
@@ -41,6 +42,7 @@ fun Application.configureRouting() {
             streakRoutes()
             homeRoutes()
             imageRoutes()
+            notificationRoutes()
             adminRoutes()
             discussionAuthedRoutes()
             suggestionRoutes()

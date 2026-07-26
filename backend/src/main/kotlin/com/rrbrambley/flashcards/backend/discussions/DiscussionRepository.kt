@@ -12,6 +12,8 @@ import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.ForbiddenException
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.error.TooManyRequestsException
+import com.rrbrambley.flashcards.backend.notifications.NotificationRepository
+import com.rrbrambley.flashcards.backend.notifications.NotificationType
 import com.rrbrambley.flashcards.backend.routes.Cursor
 import com.rrbrambley.flashcards.backend.validation.Validation
 import com.rrbrambley.flashcards.shared.api.DiscussionMessageDto
@@ -112,7 +114,7 @@ object DiscussionRepository {
 
         enforceRateLimit(userId, thread.id, now)
         val text = Validation.normalizeDiscussionMessage(content)
-        validateParent(parentMessageId, thread.id)
+        val parentAuthorId = validateParent(parentMessageId, thread.id)
 
         val messageId = DiscussionMessages.insertAndGetId {
             it[threadId] = thread.id
@@ -126,6 +128,23 @@ object DiscussionRepository {
         DiscussionThreads.update({ DiscussionThreads.id eq thread.id }) {
             it[messageCount] = newCount
             if (newCount >= AUTO_LOCK_AT) it[isLocked] = true
+        }
+
+        // Notify the parent message's author of the reply (#321) — skipping self-replies. In this
+        // transaction, so it commits atomically with the reply. `data` carries the deep-link fields;
+        // the client renders localized copy per type.
+        if (parentAuthorId != null && parentAuthorId != userId) {
+            NotificationRepository.insert(
+                recipientUserId = parentAuthorId,
+                type = NotificationType.DISCUSSION_REPLY,
+                data = mapOf(
+                    "cardUid" to cardUid,
+                    "threadId" to thread.id.toString(),
+                    "messageId" to messageId.toString(),
+                    "replierDisplayName" to authorDisplayName(userId),
+                ),
+                now = now,
+            )
         }
 
         DiscussionMessageDto(
@@ -318,13 +337,16 @@ object DiscussionRepository {
         }
     }
 
-    private fun validateParent(parentMessageId: Long?, threadId: Long) {
-        if (parentMessageId == null) return
+    /** Validates a reply's parent and returns the parent's author id (for notifying them); null for a
+     *  top-level message. Throws on a missing parent or a reply-to-a-reply (one level only). */
+    private fun validateParent(parentMessageId: Long?, threadId: Long): Long? {
+        if (parentMessageId == null) return null
         val parent = DiscussionMessages.selectAll()
             .where { (DiscussionMessages.id eq parentMessageId) and (DiscussionMessages.threadId eq threadId) }
             .firstOrNull()
             ?: throw IllegalArgumentException("the message you're replying to doesn't exist")
         require(parent[DiscussionMessages.parentMessageId] == null) { "replies can only be one level deep" }
+        return parent[DiscussionMessages.authorUserId].value
     }
 
     private fun authorDisplayName(userId: Long): String {

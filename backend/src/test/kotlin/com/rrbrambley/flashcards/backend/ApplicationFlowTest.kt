@@ -53,6 +53,7 @@ import com.rrbrambley.flashcards.shared.api.LockThreadRequest
 import com.rrbrambley.flashcards.shared.api.LoginRequest
 import com.rrbrambley.flashcards.shared.api.LogoutRequest
 import com.rrbrambley.flashcards.shared.api.MeResponse
+import com.rrbrambley.flashcards.shared.api.NotificationDto
 import com.rrbrambley.flashcards.shared.api.Page
 import com.rrbrambley.flashcards.shared.api.PracticeAnswerDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
@@ -64,6 +65,7 @@ import com.rrbrambley.flashcards.shared.api.StreakCalendarResponse
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
 import com.rrbrambley.flashcards.shared.api.SuggestAnswerRequest
 import com.rrbrambley.flashcards.shared.api.ToggleDiscussionRequest
+import com.rrbrambley.flashcards.shared.api.UnreadCountDto
 import com.rrbrambley.flashcards.shared.api.UpdateProfileRequest
 import com.rrbrambley.flashcards.shared.api.UpdateProgressRequest
 import com.typesafe.config.ConfigFactory
@@ -529,6 +531,86 @@ class ApplicationFlowTest {
         assertFalse(
             client.get("/admin/discussions/reports") { bearerAuth(admin.accessToken) }
                 .decode<Page<ReportedMessageDto>>().items.any { it.reportId == report.reportId },
+        )
+    }
+
+    @Test
+    fun discussion_reply_notifies_the_parent_author(): Unit = runApp { client ->
+        val admin = client.register("notif_admin", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+        val alice = client.register("notif_alice", "password1")
+        val bob = client.register("notif_bob", "password1")
+
+        // Alice posts a top-level message; Bob replies to it.
+        val top = client.postMessage(alice.accessToken, cardUid, "Alice's take").decode<DiscussionMessageDto>()
+        client.postMessage(bob.accessToken, cardUid, "Bob's reply", parentMessageId = top.id)
+            .decode<DiscussionMessageDto>()
+
+        // Alice gets a discussion_reply notification carrying the deep-link data.
+        val notifs = client.get("/notifications") { bearerAuth(alice.accessToken) }.decode<Page<NotificationDto>>()
+        assertEquals(1, notifs.items.size)
+        val n = notifs.items.single()
+        assertEquals("discussion_reply", n.type)
+        assertFalse(n.isRead)
+        assertEquals(cardUid, n.data["cardUid"])
+        assertEquals("notif_bob", n.data["replierDisplayName"])
+        // Unread count backs the badge.
+        assertEquals(
+            1,
+            client.get("/notifications/unread-count") { bearerAuth(alice.accessToken) }.decode<UnreadCountDto>().count,
+        )
+
+        // Bob (the replier) is not notified of his own reply.
+        assertTrue(
+            client.get("/notifications") {
+                bearerAuth(bob.accessToken)
+            }.decode<Page<NotificationDto>>().items.isEmpty(),
+        )
+
+        // Marking read drops the unread count.
+        assertEquals(
+            HttpStatusCode.NoContent,
+            client.post("/notifications/${n.id}/read") { bearerAuth(alice.accessToken) }.status,
+        )
+        assertEquals(
+            0,
+            client.get("/notifications/unread-count") { bearerAuth(alice.accessToken) }.decode<UnreadCountDto>().count,
+        )
+    }
+
+    @Test
+    fun self_reply_creates_no_notification_and_notifications_are_owner_scoped(): Unit = runApp { client ->
+        val admin = client.register("notif_admin2", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+        val alice = client.register("notif_alice2", "password1")
+        val top = client.postMessage(alice.accessToken, cardUid, "top").decode<DiscussionMessageDto>()
+
+        // Replying to your own message produces no notification.
+        client.postMessage(alice.accessToken, cardUid, "self reply", parentMessageId = top.id)
+        assertTrue(
+            client.get("/notifications") { bearerAuth(alice.accessToken) }
+                .decode<Page<NotificationDto>>().items.isEmpty(),
+        )
+
+        // Bob replies → Alice gets one; Bob can't mark someone else's notification read (404, hides it).
+        val bob = client.register("notif_bob2", "password1")
+        client.postMessage(bob.accessToken, cardUid, "bob reply", parentMessageId = top.id)
+        val n = client.get("/notifications") { bearerAuth(alice.accessToken) }
+            .decode<Page<NotificationDto>>().items.single()
+        assertEquals(
+            HttpStatusCode.NotFound,
+            client.post("/notifications/${n.id}/read") { bearerAuth(bob.accessToken) }.status,
+        )
+        // Mark-all read clears the owner's unread count.
+        assertEquals(
+            HttpStatusCode.NoContent,
+            client.post("/notifications/read") { bearerAuth(alice.accessToken) }.status,
+        )
+        assertEquals(
+            0,
+            client.get("/notifications/unread-count") { bearerAuth(alice.accessToken) }.decode<UnreadCountDto>().count,
         )
     }
 
