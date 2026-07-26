@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.rrbrambley.flashcards.notifications.data.NotificationDao
+import com.rrbrambley.flashcards.notifications.data.NotificationEntity
 import kotlinx.coroutines.Dispatchers
 
 @Database(
@@ -13,8 +15,9 @@ import kotlinx.coroutines.Dispatchers
         FlashcardEntity::class,
         PracticeSessionEntity::class,
         PracticeAnswerEntity::class,
+        NotificationEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,
 )
 @ConstructedBy(FlashcardsDatabaseConstructor::class)
@@ -22,6 +25,7 @@ abstract class FlashcardsDatabase : RoomDatabase() {
     abstract fun flashcardDao(): FlashcardDao
     abstract fun practiceSessionDao(): PracticeSessionDao
     abstract fun practiceAnswerDao(): PracticeAnswerDao
+    abstract fun notificationDao(): NotificationDao
 }
 
 // KSP generates the actual implementation of this constructor for each platform.

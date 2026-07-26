@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.shared
 
 import com.rrbrambley.flashcards.home.data.DefaultHomeFeedStrings
 import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
+import com.rrbrambley.flashcards.notifications.data.NotificationRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
 import com.rrbrambley.flashcards.practice.data.PracticeSessionRepositoryImpl
@@ -11,6 +12,7 @@ import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.LocalDataStore
+import com.rrbrambley.flashcards.shared.domain.NotificationRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import com.rrbrambley.flashcards.shared.sync.ConnectivityMonitor
 import com.rrbrambley.flashcards.shared.sync.PracticeSyncManager
@@ -29,6 +31,7 @@ class FlashcardSdk(
     val flashcardRepository: FlashcardRepository,
     val practiceSessionRepository: PracticeSessionRepository,
     val homeRepository: HomeRepository,
+    val notificationRepository: NotificationRepository,
     val localDataStore: LocalDataStore,
     val syncManager: PracticeSyncManager? = null,
 )
@@ -68,6 +71,7 @@ fun buildFlashcardSdk(
             practiceSessionRepository,
             homeFeedStrings,
         ),
+        notificationRepository = NotificationRepositoryImpl(apiClient, database.notificationDao()),
         localDataStore = RoomLocalDataStore(database),
         syncManager = syncManager,
     )

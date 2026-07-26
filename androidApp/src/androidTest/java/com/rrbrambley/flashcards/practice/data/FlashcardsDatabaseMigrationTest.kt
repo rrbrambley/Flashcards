@@ -393,4 +393,41 @@ class FlashcardsDatabaseMigrationTest {
             assertTrue(cursor.isNull(1))
         }
     }
+
+    @Test
+    fun migrate17To18_preservesSessionsAndAddsNotificationsTable() {
+        // Seed a v17 database with a session (no notifications table yet).
+        helper.createDatabase(testDb, 17).apply {
+            execSQL(
+                "INSERT INTO flashcard_decks (id, title, editable, tags, discussionEnabled, isGlobal) " +
+                    "VALUES (1, 'Spanish basics', 1, '[]', 0, 0)",
+            )
+            execSQL(
+                "INSERT INTO practice_sessions " +
+                    "(id, deckId, currentCardIndex, numCorrect, numIncorrect, isCompleted, mode, " +
+                    "shuffle, shuffleSeed, questionCount, gradeAtEnd, timeLimitSeconds, pendingSync, " +
+                    "pendingDelete, createdAtMillis, updatedAtMillis) " +
+                    "VALUES (1, 1, 2, 1, 0, 0, 'test', 0, 0, NULL, 0, NULL, 0, 0, 1000, 1000)",
+            )
+            close()
+        }
+
+        // Run MIGRATION_17_18 and validate against the exported v18 schema.
+        val db = helper.runMigrationsAndValidate(testDb, 18, true, MIGRATION_17_18)
+
+        // The session survived, and the new notifications table accepts a row.
+        db.query("SELECT mode FROM practice_sessions WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("test", cursor.getString(0))
+        }
+        db.execSQL(
+            "INSERT INTO notifications (id, type, data, isRead, createdAtMillis) " +
+                "VALUES (7, 'discussion_reply', '{\"cardUid\":\"c1\"}', 0, 5000)",
+        )
+        db.query("SELECT type, isRead FROM notifications WHERE id = 7").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("discussion_reply", cursor.getString(0))
+            assertEquals(0, cursor.getInt(1))
+        }
+    }
 }
