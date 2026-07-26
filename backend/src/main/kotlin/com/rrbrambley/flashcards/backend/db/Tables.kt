@@ -317,3 +317,22 @@ object AnswerSuggestions : LongIdTable("answer_suggestions") {
         index(false, status, createdAtMillis)
     }
 }
+
+/**
+ * A user-facing in-app notification (#321) — generic + extensible: [type] tags the kind (e.g.
+ * "discussion_reply") and [data] is a JSON payload of type-specific fields for client rendering +
+ * deep-linking, so new types need no migration. Produced internally by features; read only by the
+ * recipient. [isRead] backs the unread badge.
+ */
+object Notifications : LongIdTable("notifications") {
+    val recipientUserId = reference("recipient_user_id", Users, onDelete = ReferenceOption.CASCADE)
+    val type = varchar("type", 64)
+    val data = text("data")
+    val isRead = bool("is_read").default(false)
+    val createdAtMillis = long("created_at_millis")
+
+    init {
+        // The recipient's feed, newest first.
+        index(false, recipientUserId, createdAtMillis)
+    }
+}
