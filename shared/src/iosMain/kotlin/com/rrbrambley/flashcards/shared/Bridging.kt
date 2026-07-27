@@ -9,6 +9,8 @@ import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.GuestSaveState
 import com.rrbrambley.flashcards.shared.domain.HomeFeed
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
+import com.rrbrambley.flashcards.shared.domain.Notification
+import com.rrbrambley.flashcards.shared.domain.NotificationRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeAnswer
 import com.rrbrambley.flashcards.shared.domain.PracticeEntry
 import com.rrbrambley.flashcards.shared.domain.PracticeSession
@@ -99,3 +101,9 @@ fun BatchPracticeController.remainingSecondsAdapter(): FlowAdapter<Int> = FlowAd
 
 /** The home feed (backend GET /home, offline fallback from cached sessions + static items). */
 fun HomeRepository.homeAdapter(): FlowAdapter<HomeFeed> = FlowAdapter(observeHomeData())
+
+/** The user's notifications (#321), newest first (offline-first; re-syncs on subscribe). */
+fun NotificationRepository.notificationsAdapter(): FlowAdapter<List<Notification>> = FlowAdapter(observeNotifications())
+
+/** The unread notification count, for the badge (#321). */
+fun NotificationRepository.unreadCountAdapter(): FlowAdapter<Int> = FlowAdapter(observeUnreadCount())

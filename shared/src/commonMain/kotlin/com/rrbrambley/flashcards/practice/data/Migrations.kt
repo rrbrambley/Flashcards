@@ -141,6 +141,26 @@ val MIGRATION_16_17 = object : Migration(16, 17) {
     }
 }
 
+/** v17 → v18: add the `notifications` cache table (#321) — the offline-first in-app notification feed.
+ *  A new table, so nothing to backfill; the SQL mirrors Room's exported v18 schema exactly. */
+val MIGRATION_17_18 = object : Migration(17, 18) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "CREATE TABLE IF NOT EXISTS `notifications` (" +
+                "`id` INTEGER NOT NULL, " +
+                "`type` TEXT NOT NULL, " +
+                "`data` TEXT NOT NULL, " +
+                "`isRead` INTEGER NOT NULL, " +
+                "`createdAtMillis` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`id`))",
+        )
+        connection.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_notifications_createdAtMillis` " +
+                "ON `notifications` (`createdAtMillis`)",
+        )
+    }
+}
+
 /** Every migration, in order; passed to the Room builder by [createFlashcardsDatabase]. */
 val ALL_MIGRATIONS =
     arrayOf(
@@ -158,4 +178,5 @@ val ALL_MIGRATIONS =
         MIGRATION_14_15,
         MIGRATION_15_16,
         MIGRATION_16_17,
+        MIGRATION_17_18,
     )

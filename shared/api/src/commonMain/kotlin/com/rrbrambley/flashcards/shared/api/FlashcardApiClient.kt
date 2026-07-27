@@ -234,6 +234,41 @@ class FlashcardApiClient(
     @Throws(Exception::class)
     suspend fun getHome(): List<HomeDataDto> = client.get(url("/home")) { auth() }.body()
 
+    // --- Notifications (#321) ---
+    /**
+     * One cursor-paginated page of the caller's notifications, newest first. Pass [cursor] = a previous
+     * page's [Page.nextCursor] to continue; null starts at the first page.
+     */
+    @Throws(Exception::class)
+    suspend fun getNotifications(limit: Int? = null, cursor: String? = null): Page<NotificationDto> =
+        client.get(url("/notifications")) {
+            auth()
+            limit?.let { parameter("limit", it) }
+            cursor?.let { parameter("cursor", it) }
+        }.body()
+
+    /** Fetches every page of [getNotifications]; offline-first clients cache them all at once. */
+    @Throws(Exception::class)
+    suspend fun getAllNotifications(): List<NotificationDto> =
+        fetchAllPages { cursor -> getNotifications(cursor = cursor) }
+
+    /** The caller's unread notification count, for the badge. */
+    @Throws(Exception::class)
+    suspend fun getUnreadNotificationCount(): Int =
+        client.get(url("/notifications/unread-count")) { auth() }.body<UnreadCountDto>().count
+
+    /** Marks one of the caller's notifications read (idempotent). */
+    @Throws(Exception::class)
+    suspend fun markNotificationRead(id: Long) {
+        client.post(url("/notifications/$id/read")) { auth() }
+    }
+
+    /** Marks all the caller's notifications read. */
+    @Throws(Exception::class)
+    suspend fun markAllNotificationsRead() {
+        client.post(url("/notifications/read")) { auth() }
+    }
+
     // --- Streaks ---
     /**
      * The user's practice streak (FLA-106): overall + per-deck consecutive days with a completed
