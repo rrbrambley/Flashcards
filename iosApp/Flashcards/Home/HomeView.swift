@@ -15,6 +15,7 @@ struct HomeView: View {
     }
     @State private var practice: PracticePresentation?
     @State private var showProfile = false
+    @State private var showNotifications = false
 
     /// The in-progress session the user is confirming removal of (FLA-205), or nil.
     private struct RemovingSession: Identifiable {
@@ -31,7 +32,13 @@ struct HomeView: View {
     var body: some View {
         content
             .navigationTitle("Home")
-            .toolbar { accountMenu }
+            .toolbar {
+                notificationsBell
+                accountMenu
+            }
+            .sheet(isPresented: $showNotifications) {
+                NotificationsView(repository: container.notificationRepository)
+            }
             .fullScreenCover(item: $practice) { presentation in
                 PracticeRunnerView(
                     flashcardRepository: container.flashcardRepository,
@@ -131,6 +138,16 @@ struct HomeView: View {
                     shuffle: false, questionCount: nil, gradeAtEnd: false, timeLimitSeconds: nil
                 )
             )
+        }
+    }
+
+    /// The notifications bell + unread badge (#321), gated on the `notifications` flag (fail-open).
+    @ToolbarContentBuilder
+    private var notificationsBell: some ToolbarContent {
+        if container.featureFlagStore.notificationsVisible {
+            ToolbarItem(placement: .topBarLeading) {
+                NotificationsBadgeButton(repository: container.notificationRepository) { showNotifications = true }
+            }
         }
     }
 

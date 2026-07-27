@@ -13,6 +13,9 @@
     "%@ remaining" : {
 
     },
+    "%@ replied to your comment" : {
+
+    },
     "%d of %lld" : {
       "localizations" : {
         "en" : {
@@ -42,6 +45,9 @@
 
     },
     "%lldm" : {
+
+    },
+    "99+" : {
 
     },
     "AVATAR" : {
@@ -338,6 +344,9 @@
     "Log out" : {
 
     },
+    "Mark all read" : {
+
+    },
     "Multiple Choice" : {
 
     },
@@ -368,7 +377,16 @@
     "No messages yet" : {
 
     },
+    "No notifications yet" : {
+
+    },
     "No practice modes are available right now." : {
+
+    },
+    "Notifications" : {
+
+    },
+    "Notifications, %lld unread" : {
 
     },
     "OK" : {
@@ -488,6 +506,9 @@
     "Sign up with Google" : {
 
     },
+    "Someone" : {
+
+    },
     "Something went wrong" : {
 
     },
@@ -589,6 +610,9 @@
 
     },
     "You answered: %@" : {
+
+    },
+    "You have a new notification" : {
 
     },
     "You haven't typed an answer — skip this one?" : {

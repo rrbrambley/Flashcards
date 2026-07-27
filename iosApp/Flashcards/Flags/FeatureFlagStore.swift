@@ -13,6 +13,7 @@ enum FeatureFlag {
     static let practiceQuestionCount = "practice_question_count"
     static let practiceGradeAtEnd = "practice_grade_at_end"
     static let practiceTimer = "practice_timer"
+    static let notifications = "notifications"
 }
 
 /// Holds the caller's resolved feature flags (FLA-174) so SwiftUI can hide/reveal features. iOS has
@@ -48,5 +49,11 @@ final class FeatureFlagStore: ObservableObject {
     /// users, matching web/Android (`isGuest || isEnabled(...)`).
     func discussionsVisible(deckEnabled: Bool, isGuest: Bool) -> Bool {
         deckEnabled && (isGuest || isEnabled(FeatureFlag.discussions))
+    }
+
+    /// Whether the notifications center should show (#321). Fail-open (like the practice-mode flags):
+    /// visible unless the flag is explicitly off.
+    var notificationsVisible: Bool {
+        flags[FeatureFlag.notifications] != false
     }
 }
