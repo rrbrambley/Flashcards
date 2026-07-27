@@ -261,4 +261,14 @@
     <string name="profile_cd_avatar_option">%1$s avatar</string>
     <string name="avatar_cd">%1$s\'s avatar</string>
     <string name="avatar_cd_generic">Avatar</string>
+
+    <!-- Notifications center (#321) -->
+    <string name="main_cd_notifications">Notifications</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_cd_back">Back</string>
+    <string name="notifications_mark_all_read">Mark all read</string>
+    <string name="notifications_empty">No notifications yet.</string>
+    <string name="notification_discussion_reply">%1$s replied to your comment</string>
+    <string name="notification_someone">Someone</string>
+    <string name="notification_generic">You have a new notification</string>
 </resources>

@@ -18,6 +18,7 @@ object FeatureFlags {
     const val PRACTICE_QUESTION_COUNT = "practice_question_count"
     const val PRACTICE_GRADE_AT_END = "practice_grade_at_end"
     const val PRACTICE_TIMER = "practice_timer"
+    const val NOTIFICATIONS = "notifications"
 }
 
 /**

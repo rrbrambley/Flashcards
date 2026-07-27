@@ -1,6 +1,8 @@
 package com.rrbrambley.flashcards.di
 
 import com.rrbrambley.flashcards.home.data.HomeRepositoryImpl
+import com.rrbrambley.flashcards.notifications.data.NotificationDao
+import com.rrbrambley.flashcards.notifications.data.NotificationRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardDao
 import com.rrbrambley.flashcards.practice.data.FlashcardRepositoryImpl
 import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
@@ -19,6 +21,7 @@ import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.LocalDataStore
+import com.rrbrambley.flashcards.shared.domain.NotificationRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionSyncer
 import dagger.Module
@@ -56,6 +59,13 @@ object RepositoryModule {
     // Profile + avatar catalog (FLA-166) — online-only, wraps the shared client.
     @Provides
     fun provideProfileRepository(apiClient: FlashcardApiClient): ProfileRepository = ProfileRepositoryImpl(apiClient)
+
+    // Offline-first notifications (#321) — the shared repository over the client + Room DAO.
+    @Provides
+    fun provideNotificationRepository(
+        apiClient: FlashcardApiClient,
+        notificationDao: NotificationDao,
+    ): NotificationRepository = NotificationRepositoryImpl(apiClient, notificationDao)
 
     // One impl instance backs both the repository and the offline-session syncer (FLA-91), so the
     // sync loop and the UI share the same Room writes (and the single-flight mutex).
