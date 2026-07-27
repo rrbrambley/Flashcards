@@ -9,7 +9,7 @@ import type { HomeData } from '../api/types';
 vi.mock('../api/client', () => ({
   api: { getHome: vi.fn(), getSession: vi.fn(), deleteSession: vi.fn(), getAllDecks: vi.fn(), getStreaks: vi.fn() },
 }));
-vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn() }) }));
+vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn(), isEnabled: () => false }) }));
 
 function PracticeStub() {
   const { id } = useParams();

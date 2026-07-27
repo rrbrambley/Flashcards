@@ -29,4 +29,8 @@ enum class FeatureFlag(val key: String, val description: String, val defaultEnab
 
     // Offer the "Timed" toggle — an optional per-session countdown that auto-completes on expiry (#289).
     PRACTICE_TIMER("practice_timer", "Offer setting a per-session time limit", true),
+
+    // Show the in-app notifications center + unread badge (#321). Visibility only — notifications are
+    // still produced when off; flipping this off just hides the UI.
+    NOTIFICATIONS("notifications", "Show the in-app notifications center", true),
 }

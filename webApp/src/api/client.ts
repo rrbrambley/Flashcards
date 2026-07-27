@@ -13,11 +13,13 @@ import type {
   HomeData,
   ImageUploadResponse,
   MeResponse,
+  NotificationDto,
   Page,
   PracticeAnswer,
   PracticeSessionDto,
   ReportedMessage,
   RoleDto,
+  UnreadCountDto,
   StreakCalendarResponse,
   StreaksResponse,
   UpdateProfileRequest,
@@ -195,6 +197,15 @@ export const api = {
   // The curated avatar catalog (FLA-162). Empty when the CDN is unconfigured.
   getAvatars: () => request<AvatarOption[]>('/avatars', { auth: true }),
   getHome: () => request<HomeData[]>('/home', { auth: true }),
+  // --- Notifications (#321) ---
+  // One cursor-paginated page of the caller's notifications, newest first.
+  getNotifications: (cursor?: string) =>
+    request<Page<NotificationDto>>(`/notifications${buildQuery({ cursor })}`, { auth: true }),
+  // Unread count for the badge.
+  getUnreadNotificationCount: () => request<UnreadCountDto>('/notifications/unread-count', { auth: true }),
+  markNotificationRead: (id: number) =>
+    request<void>(`/notifications/${id}/read`, { method: 'POST', auth: true }),
+  markAllNotificationsRead: () => request<void>('/notifications/read', { method: 'POST', auth: true }),
   // One cursor-paginated page of decks (newest first). Pass a prior page's nextCursor to continue.
   getDecks: (params: { limit?: number; cursor?: string } = {}) => getDecksPage(params),
   // Every deck across all pages — for flows that need the whole library (e.g. finding a deck by title).
