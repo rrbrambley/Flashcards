@@ -299,3 +299,17 @@ export interface HomeData {
   // section render under one header. Null/absent for a flat, header-less item.
   section?: string | null;
 }
+
+// --- Notifications (#321) ---
+// A generic in-app notification: a `type` tag + a flexible `data` payload the UI renders per type.
+export interface NotificationDto {
+  id: number;
+  type: string;
+  data: Record<string, string>;
+  isRead: boolean;
+  createdAtMillis: number;
+}
+
+export interface UnreadCountDto {
+  count: number;
+}

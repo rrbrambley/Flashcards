@@ -4,10 +4,11 @@ import { api } from '../api/client';
 import type { HomeButtonAction, HomeData, HomeSessionInfo } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { Avatar } from '../components/Avatar';
+import { NotificationBell } from '../notifications/NotificationBell';
 import { findMode } from '../practice/modes';
 
 export function HomePage() {
-  const { signOut, displayName, avatarUrl } = useAuth();
+  const { signOut, displayName, avatarUrl, isEnabled } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState<HomeData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +100,7 @@ export function HomePage() {
           <Link to="/library" className="link-btn">
             Library
           </Link>
+          {isEnabled('notifications') && <NotificationBell />}
           <button className="link-btn" onClick={signOut}>
             Sign out
           </button>

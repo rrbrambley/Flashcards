@@ -1564,6 +1564,8 @@ class ApplicationFlowTest {
         assertEquals(true, flags["practice_grade_at_end"])
         // The timed-practice toggle (#289) is seeded default-on too.
         assertEquals(true, flags["practice_timer"])
+        // The notifications-center visibility switch (#321) is seeded default-on too.
+        assertEquals(true, flags["notifications"])
         val me = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(true, me.flags["discussions"])
         assertEquals(true, me.flags["avatar_selection"])
