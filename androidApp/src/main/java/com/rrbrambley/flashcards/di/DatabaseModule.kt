@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.di
 
 import android.content.Context
 import com.rrbrambley.flashcards.BuildConfig
+import com.rrbrambley.flashcards.notifications.data.NotificationDao
 import com.rrbrambley.flashcards.practice.data.FlashcardDao
 import com.rrbrambley.flashcards.practice.data.FlashcardsDatabase
 import com.rrbrambley.flashcards.practice.data.PracticeAnswerDao
@@ -34,4 +35,7 @@ class DatabaseModule {
 
     @Provides
     fun providePracticeAnswerDao(database: FlashcardsDatabase): PracticeAnswerDao = database.practiceAnswerDao()
+
+    @Provides
+    fun provideNotificationDao(database: FlashcardsDatabase): NotificationDao = database.notificationDao()
 }

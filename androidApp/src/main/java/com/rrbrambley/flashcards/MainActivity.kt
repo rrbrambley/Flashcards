@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -44,7 +46,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.auth.AuthState
 import com.rrbrambley.flashcards.auth.AuthViewModel
@@ -55,6 +60,8 @@ import com.rrbrambley.flashcards.edit.ui.EditDeckActivity
 import com.rrbrambley.flashcards.guest.ui.GuestCatalogScreen
 import com.rrbrambley.flashcards.home.ui.HomeScreen
 import com.rrbrambley.flashcards.library.ui.LibraryScreen
+import com.rrbrambley.flashcards.notifications.ui.NotificationsActivity
+import com.rrbrambley.flashcards.notifications.ui.NotificationsViewModel
 import com.rrbrambley.flashcards.practice.ui.FlashcardsActivity
 import com.rrbrambley.flashcards.profile.ui.ProfileActivity
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
@@ -164,10 +171,13 @@ private enum class BottomDestination(@StringRes val labelRes: Int, val icon: Ima
 private fun HomeScaffolding(
     createDeckViewModel: CreateDeckViewModel = hiltViewModel(),
     authViewModel: AuthViewModel = hiltViewModel(),
+    notificationsViewModel: NotificationsViewModel = hiltViewModel(),
 ) {
     var currentDestination by rememberSaveable { mutableStateOf(BottomDestination.Home) }
     var showAccountMenu by remember { mutableStateOf(false) }
     val createDeckUiState by createDeckViewModel.uiState.collectAsState()
+    val notificationsEnabled by notificationsViewModel.notificationsEnabled.collectAsState()
+    val unreadCount by notificationsViewModel.unreadCount.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(createDeckUiState.deckSaved) {
@@ -218,6 +228,26 @@ private fun HomeScaffolding(
                         BottomDestination.Home,
                         BottomDestination.Library,
                         -> {
+                            // Notifications bell + unread badge (#321), gated on the flag (fail-open).
+                            if (notificationsEnabled) {
+                                val bellDescription = stringResource(R.string.main_cd_notifications)
+                                IconButton(
+                                    onClick = {
+                                        context.startActivity(Intent(context, NotificationsActivity::class.java))
+                                    },
+                                    modifier = Modifier.semantics { contentDescription = bellDescription },
+                                ) {
+                                    BadgedBox(
+                                        badge = {
+                                            if (unreadCount > 0) {
+                                                Badge { Text(if (unreadCount > 99) "99+" else unreadCount.toString()) }
+                                            }
+                                        },
+                                    ) {
+                                        Text("🔔", fontSize = 20.sp)
+                                    }
+                                }
+                            }
                             IconButton(onClick = { showAccountMenu = true }) {
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
