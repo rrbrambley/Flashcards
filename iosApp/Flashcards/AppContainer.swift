@@ -19,6 +19,7 @@ final class AppContainer: ObservableObject {
     var flashcardRepository: FlashcardRepository { sdk.flashcardRepository }
     var practiceSessionRepository: PracticeSessionRepository { sdk.practiceSessionRepository }
     var homeRepository: HomeRepository { sdk.homeRepository }
+    var notificationRepository: NotificationRepository { sdk.notificationRepository }
     var apiClient: FlashcardApiClient { sdk.apiClient }
     var imageUploader: ImageUploader { ImageUploader(apiClient: sdk.apiClient) }
     var profileService: ProfileService { ApiProfileService(apiClient: sdk.apiClient) }
