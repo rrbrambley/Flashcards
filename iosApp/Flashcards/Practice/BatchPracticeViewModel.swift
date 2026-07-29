@@ -20,6 +20,10 @@ final class BatchPracticeViewModel: ObservableObject {
     @Published private(set) var streak: Int?
     /// Per-card recap of the run (FLA-149); populated after submit.
     @Published private(set) var review: [ReviewItem] = []
+    /// The run's mode key + whether the deck is global — gate the recap's "this should be correct"
+    /// suggestion (#338). Populated on completion.
+    @Published private(set) var mode = ""
+    @Published private(set) var isGlobal = false
     /// Remaining seconds for a timed batch run (#289); nil = untimed. The view submits when it hits 0.
     @Published private(set) var remainingSeconds: Int?
 
@@ -79,6 +83,8 @@ final class BatchPracticeViewModel: ObservableObject {
         case let done as BatchPracticeUiState.Completed:
             streak = done.streak.map { Int($0.intValue) }
             review = (done.review as? [ReviewItem]) ?? []
+            mode = done.mode
+            isGlobal = done.isGlobal
             state = .completed(numCorrect: Int(done.numCorrect), numIncorrect: Int(done.numIncorrect))
         case is BatchPracticeUiState.Failed:
             state = .failed

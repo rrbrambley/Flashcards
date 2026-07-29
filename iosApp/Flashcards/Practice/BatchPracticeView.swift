@@ -17,12 +17,23 @@ struct BatchPracticeView: View {
         return false
     }
 
+    /// For the recap's "this should be correct" suggestion (#338): the client to post it + the auth
+    /// service driving the guest → sign-in conversion, and whether this run is a guest run.
+    private let apiClient: FlashcardApiClient
+    private let authService: AuthService?
+    private let isGuest: Bool
+
     init(
         flashcardRepository: FlashcardRepository,
         sessionRepository: PracticeSessionRepository,
         entry: PracticeEntry,
-        apiClient: FlashcardApiClient
+        apiClient: FlashcardApiClient,
+        authService: AuthService? = nil,
+        isGuest: Bool = false
     ) {
+        self.apiClient = apiClient
+        self.authService = authService
+        self.isGuest = isGuest
         _viewModel = StateObject(
             wrappedValue: BatchPracticeViewModel(
                 flashcardRepository: flashcardRepository,
@@ -85,7 +96,14 @@ struct BatchPracticeView: View {
                 numCorrect: numCorrect,
                 numIncorrect: numIncorrect,
                 streak: viewModel.streak,
-                review: viewModel.review
+                review: viewModel.review,
+                suggestion: ReviewSuggestion(
+                    mode: viewModel.mode,
+                    isGlobal: viewModel.isGlobal,
+                    isGuest: isGuest,
+                    apiClient: apiClient,
+                    authService: authService
+                )
             ) { dismiss() }
         case .failed:
             ContentUnavailableView {
