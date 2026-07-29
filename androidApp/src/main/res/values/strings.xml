@@ -226,6 +226,7 @@
 
     <!-- Test-mode "this should be correct" answer suggestion (FLA-134) -->
     <string name="suggest_action">This should be correct</string>
+    <string name="suggest_review_title">Think this should have counted?</string>
     <string name="suggest_submitting">Sending…</string>
     <string name="suggest_submitted">Thanks — we\'ll review your suggestion.</string>
     <string name="suggest_error_rate">You\'re suggesting too quickly. Please wait a bit.</string>

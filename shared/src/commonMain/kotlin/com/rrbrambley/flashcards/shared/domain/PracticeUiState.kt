@@ -61,6 +61,10 @@ sealed class BatchPracticeUiState {
         /** Overall practice streak after this completion (FLA-106); null until read / 0 = none. */
         val streak: Int? = null,
         val review: List<ReviewItem> = emptyList(),
+        /** The run's mode key + whether the deck is global — so the recap can offer the Test-mode
+         *  "this should be correct" suggestion on a global deck's wrong answers (#338). */
+        val mode: String = PracticeMode.Test.key,
+        val isGlobal: Boolean = false,
     ) : BatchPracticeUiState()
 
     data object Failed : BatchPracticeUiState()

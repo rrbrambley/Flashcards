@@ -56,6 +56,10 @@ class BatchPracticeController(
 
     private var cards: List<Flashcard> = emptyList()
     private var mode: String = PracticeMode.Test.key
+
+    // Whether the practiced deck is global (catalog) — gates the Test-mode answer-suggestion action on
+    // the recap (#338), since suggestions only apply to global decks.
+    private var isGlobal: Boolean = false
     private var timerJob: Job? = null
 
     /** Starts the run per the [entry]. Suspends until the card list (or failure) is shown. */
@@ -102,6 +106,7 @@ class BatchPracticeController(
         deckId = session.deckId
         deckTitle = session.deckTitle
         mode = session.mode
+        isGlobal = deck?.isGlobal ?: false
         // Same stored, resume-stable order + subset the card-by-card runner uses (FLA-200 / FLA-219).
         cards = SessionOrdering.order(deckCards, session.shuffle, session.shuffleSeed)
             .let { ordered -> session.questionCount?.let(ordered::take) ?: ordered }
@@ -120,6 +125,8 @@ class BatchPracticeController(
         }
         deckTitle = deck.title
         mode = e.mode
+        // Guests only ever practice the public catalog, which is the global decks.
+        isGlobal = true
         // Guests have no persisted session, so mint a seed here for a stable order (once per run).
         val seed = if (e.shuffle) Random.nextInt(1, Int.MAX_VALUE).toLong() else 0L
         cards = SessionOrdering.order(deckCards, e.shuffle, seed)
@@ -178,6 +185,8 @@ class BatchPracticeController(
                 numCorrect = numCorrect,
                 numIncorrect = cards.size - numCorrect,
                 review = review,
+                mode = mode,
+                isGlobal = isGlobal,
             )
         }
         persistAndComplete(graded)
