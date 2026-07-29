@@ -578,7 +578,7 @@ private fun FlashcardsCompletionContent(
     // keeping the recap uncluttered (no per-row button).
     suggestTarget?.let { target ->
         ModalBottomSheet(onDismissRequest = { suggestTarget = null }) {
-            SuggestFromReviewSheet(item = target, isGuest = isGuest)
+            SuggestFromReviewSheet(item = target, isGuest = isGuest, onClose = { suggestTarget = null })
         }
     }
 }
@@ -586,7 +586,7 @@ private fun FlashcardsCompletionContent(
 /** The grade-at-the-end suggestion bottom sheet (#338): the learner's wrong answer + the reusable
  *  "this should be correct" action, which handles submission + guest sign-in conversion. */
 @Composable
-private fun SuggestFromReviewSheet(item: ReviewItem, isGuest: Boolean) {
+private fun SuggestFromReviewSheet(item: ReviewItem, isGuest: Boolean, onClose: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -595,6 +595,16 @@ private fun SuggestFromReviewSheet(item: ReviewItem, isGuest: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        // An explicit close (×) in addition to swipe-down / scrim dismissal.
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier.align(Alignment.End),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = stringResource(R.string.suggest_review_close),
+            )
+        }
         Text(
             text = stringResource(R.string.suggest_review_title),
             style = MaterialTheme.typography.titleMedium,
