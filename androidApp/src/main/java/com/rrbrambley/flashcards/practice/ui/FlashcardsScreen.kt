@@ -2,8 +2,10 @@ package com.rrbrambley.flashcards.practice.ui
 import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -71,6 +74,7 @@ import com.rrbrambley.flashcards.BuildConfig
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussionSheet
 import com.rrbrambley.flashcards.practice.grading.buildChoices
+import com.rrbrambley.flashcards.practice.suggestions.SuggestAnswerAction
 import com.rrbrambley.flashcards.shared.domain.BatchPracticeUiState
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.GuestSaveState
@@ -103,6 +107,7 @@ fun FlashcardsScreen(
                 remainingSeconds = flashcardsViewModel.remainingSeconds.collectAsState().value,
                 onSubmit = flashcardsViewModel::submitBatch,
                 sharedDeck = flashcardsViewModel::sharedDeck,
+                isGuest = isGuest,
                 onBack = onBack,
             )
         is FlashcardsScreenState.CardByCard ->
@@ -502,7 +507,26 @@ private fun LeaveSingleSittingDialog(onConfirm: () -> Unit, onDismiss: () -> Uni
 }
 
 @Composable
-private fun FlashcardsCompletionContent(streak: Int?, review: List<ReviewItem>, modifier: Modifier = Modifier) {
+@OptIn(ExperimentalMaterial3Api::class)
+private fun FlashcardsCompletionContent(
+    streak: Int?,
+    review: List<ReviewItem>,
+    modifier: Modifier = Modifier,
+    // Grade-at-the-end suggestion (#338): on a Test-mode run over a global deck, long-pressing a
+    // wrong-answer row offers "this should be correct". Null mode → no suggestion (card-by-card recap).
+    suggestMode: String? = null,
+    isGlobal: Boolean = false,
+    isGuest: Boolean = false,
+) {
+    var suggestTarget by remember { mutableStateOf<ReviewItem?>(null) }
+
+    // Only Test-mode wrong answers on a global deck, with a stable card + a non-blank typed answer.
+    fun canSuggest(item: ReviewItem): Boolean = suggestMode == PracticeMode.Test.key &&
+        isGlobal &&
+        !item.correct &&
+        item.cardUid.isNotBlank() &&
+        !item.submittedText.isNullOrBlank()
+
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
@@ -544,16 +568,80 @@ private fun FlashcardsCompletionContent(streak: Int?, review: List<ReviewItem>, 
                         .padding(top = 4.dp, bottom = 2.dp),
                 )
             }
-            items(review) { item -> ReviewRow(item) }
+            items(review) { item ->
+                ReviewRow(item, onLongPress = if (canSuggest(item)) ({ suggestTarget = item }) else null)
+            }
+        }
+    }
+
+    // Long-press a wrong Test answer → a bottom sheet offering "this should be correct" (#338),
+    // keeping the recap uncluttered (no per-row button).
+    suggestTarget?.let { target ->
+        ModalBottomSheet(onDismissRequest = { suggestTarget = null }) {
+            SuggestFromReviewSheet(item = target, isGuest = isGuest, onClose = { suggestTarget = null })
         }
     }
 }
 
-/** One row of the end-of-session recap: outcome + (image) + prompt + correct answer + submitted text. */
+/** The grade-at-the-end suggestion bottom sheet (#338): the learner's wrong answer + the reusable
+ *  "this should be correct" action, which handles submission + guest sign-in conversion. */
 @Composable
-private fun ReviewRow(item: ReviewItem, modifier: Modifier = Modifier) {
+private fun SuggestFromReviewSheet(item: ReviewItem, isGuest: Boolean, onClose: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // An explicit close (×) in addition to swipe-down / scrim dismissal.
+        IconButton(
+            onClick = onClose,
+            modifier = Modifier.align(Alignment.End),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = stringResource(R.string.suggest_review_close),
+            )
+        }
+        Text(
+            text = stringResource(R.string.suggest_review_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
+        )
+        item.submittedText?.takeIf { it.isNotBlank() }?.let { submitted ->
+            Text(
+                text = stringResource(R.string.practice_review_submitted, submitted),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+        SuggestAnswerAction(
+            cardUid = item.cardUid,
+            suggestedAnswer = item.submittedText.orEmpty(),
+            isGuest = isGuest,
+        )
+    }
+}
+
+/** One row of the end-of-session recap: outcome + (image) + prompt + correct answer + submitted text.
+ *  [onLongPress] (non-null only for a suggestible wrong Test answer, #338) opens the suggestion sheet. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ReviewRow(item: ReviewItem, modifier: Modifier = Modifier, onLongPress: (() -> Unit)? = null) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (onLongPress != null) {
+                    Modifier.combinedClickable(onClick = {}, onLongClick = onLongPress)
+                } else {
+                    Modifier
+                },
+            ),
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         border = CardDefaults.outlinedCardBorder(),
@@ -747,6 +835,7 @@ private fun BatchPracticeScreen(
     remainingSeconds: Int?,
     onSubmit: (List<String?>) -> Unit,
     sharedDeck: () -> Pair<Long, String>?,
+    isGuest: Boolean,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -817,6 +906,9 @@ private fun BatchPracticeScreen(
                             streak = state.streak,
                             review = state.review,
                             modifier = Modifier.fillMaxSize(),
+                            suggestMode = state.mode,
+                            isGlobal = state.isGlobal,
+                            isGuest = isGuest,
                         )
                     }
             }

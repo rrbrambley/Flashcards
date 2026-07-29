@@ -136,6 +136,37 @@ class BatchPracticeControllerTest {
     }
 
     @Test
+    fun completed_carriesModeAndGlobalForTheSuggestionGate() = runTest {
+        // #338: the recap needs the run mode + whether the deck is global to gate the Test-mode
+        // "this should be correct" suggestion.
+        val sessions = FakeSessionRepo(session(deckId = 1, mode = PracticeMode.Test.key))
+        val globalDeck = deck(1, listOf(card("a"), card("b"))).copy(isGlobal = true)
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, FakeDeckRepo(globalDeck))
+        c.start()
+        advanceUntilIdle()
+
+        c.submit(listOf("a-a", "nope"))
+        advanceUntilIdle()
+
+        val s = completed(c.state.value)
+        assertEquals(PracticeMode.Test.key, s.mode)
+        assertTrue(s.isGlobal)
+    }
+
+    @Test
+    fun completed_isGlobalFalseForAnOwnedDeck() = runTest {
+        val sessions = FakeSessionRepo(session(deckId = 1))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, FakeDeckRepo(deck(1, listOf(card("a")))))
+        c.start()
+        advanceUntilIdle()
+
+        c.submit(listOf("nope"))
+        advanceUntilIdle()
+
+        assertTrue(!completed(c.state.value).isGlobal)
+    }
+
+    @Test
     fun submit_gradesMultipleChoice_byChosenOption() = runTest {
         val sessions = FakeSessionRepo(session(deckId = 1, mode = PracticeMode.MultipleChoice.key))
         val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"))))
