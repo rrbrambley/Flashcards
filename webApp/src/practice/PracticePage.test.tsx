@@ -19,6 +19,7 @@ vi.mock('../api/client', () => ({
     getAnswers: vi.fn(),
     getStreaks: vi.fn(),
     register: vi.fn(),
+    suggestAnswer: vi.fn(),
     getDiscussionThread: vi.fn(),
     getDiscussionMessages: vi.fn(),
   },
@@ -357,6 +358,46 @@ describe('PracticePage', () => {
     expect(screen.getByText('You reviewed 2 cards.')).toBeInTheDocument();
     expect(api.recordAnswers).toHaveBeenCalled();
     expect(api.completeSession).toHaveBeenCalled();
+  });
+
+  it('offers "this should be correct" on a wrong Test row of a global-deck batch recap (#338)', async () => {
+    vi.mocked(api.createSession).mockResolvedValue(session({ mode: 'test', gradeAtEnd: true }));
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Capitals',
+      editable: false,
+      isGlobal: true,
+      flashcards: [
+        { question: 'Q1', answer: 'A1', cardUid: 'c1' },
+        { question: 'Q2', answer: 'A2', cardUid: 'c2' },
+      ],
+    });
+    vi.mocked(api.recordAnswers).mockResolvedValue(session());
+    vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
+    vi.mocked(api.suggestAnswer).mockResolvedValue(undefined);
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=test&shuffle=0&gradeAtEnd=1']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+          <Route path="/" element={<div>library</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // Answer Q1 right and Q2 wrong, then submit.
+    await userEvent.type(await screen.findByLabelText('Answer for question 1'), 'A1');
+    await userEvent.type(screen.getByLabelText('Answer for question 2'), 'nope');
+    await userEvent.click(screen.getByRole('button', { name: /Submit/ }));
+
+    // Only the one wrong row gets the affordance — the correct row doesn't.
+    expect(await screen.findByText('Practice complete')).toBeInTheDocument();
+    const suggestButtons = screen.getAllByRole('button', { name: 'This should be correct' });
+    expect(suggestButtons).toHaveLength(1);
+
+    // It suggests the typed answer for the wrong card.
+    await userEvent.click(suggestButtons[0]);
+    expect(await screen.findByText(/sent for review/)).toBeInTheDocument();
+    expect(api.suggestAnswer).toHaveBeenCalledWith('c2', 'nope');
   });
 
   it('auto-completes a timed session whose deadline has already passed (#289)', async () => {
