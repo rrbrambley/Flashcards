@@ -4,6 +4,7 @@ import type { FlashcardDto } from '../api/types';
 import { buildChoices } from './grading/multipleChoice';
 import { gradeTextAnswer } from './grading/textAnswer';
 import { MultipleChoice } from './components/MultipleChoice';
+import { SuggestAnswerButton } from './SuggestAnswerButton';
 import type { PracticeMode } from './modes/types';
 import { formatRemaining, useCountdown } from './useCountdown';
 
@@ -13,6 +14,11 @@ interface BatchPracticeRunnerProps {
   cards: FlashcardDto[];
   // Test or Multiple Choice only (#293) — Classic has no objective grade to defer.
   mode: PracticeMode;
+  // Whether this is a global (catalog) deck — gates the recap's Test-mode "this should be
+  // correct" suggestion (#338), matching the card-by-card affordance.
+  isGlobal: boolean;
+  // Guests can suggest too — the button runs the sign-in conversion first (FLA-130/#338).
+  isGuest: boolean;
   // Wall-clock deadline (epoch millis) for a timed session (#289), or null when untimed.
   deadline: number | null;
   // Fired once the batch is submitted + results shown, so the parent can lift its exit guard (#307).
@@ -41,6 +47,8 @@ export function BatchPracticeRunner({
   sessionId,
   cards,
   mode,
+  isGlobal,
+  isGuest,
   deadline,
   onCompleted,
   onAgain,
@@ -140,6 +148,11 @@ export function BatchPracticeRunner({
                   {r.card.question && <span className="review-prompt">{r.card.question}</span>}
                   <span className="review-answer">{r.card.answer}</span>
                   {r.submittedText && <span className="review-submitted">You answered: {r.submittedText}</span>}
+                  {/* "This should be correct" on a wrong Test answer, global decks only (#338) —
+                      same gate + component as the card-by-card affordance (FLA-130). */}
+                  {isTest && isGlobal && !r.correct && r.card.cardUid && r.submittedText && (
+                    <SuggestAnswerButton cardUid={r.card.cardUid} answer={r.submittedText} isGuest={isGuest} />
+                  )}
                 </div>
               </li>
             ))}

@@ -282,6 +282,8 @@ function PracticeSession({
             sessionId={data.sessionId}
             cards={data.cards}
             mode={mode}
+            isGlobal={data.isGlobal}
+            isGuest={isGuest}
             deadline={data.deadline}
             onCompleted={() => setRunCompleted(true)}
             onAgain={practiceAgain}
