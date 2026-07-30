@@ -53,6 +53,13 @@ enum PracticeEntry {
         }
     }
 
+    /// Whether this is a guest run (no session/persistence) — drives the suggestion's sign-in
+    /// conversion prompt (#338).
+    var isGuest: Bool {
+        if case .guestDeck = self { return true }
+        return false
+    }
+
     /// Resolves whether this run grades at the end (#293), so the presenter picks the batch or the
     /// card-by-card runner. A deck/guest entry carries the choice; a resumed session is authoritative,
     /// so its stored flag is read (mirrors Android's ViewModel peek).

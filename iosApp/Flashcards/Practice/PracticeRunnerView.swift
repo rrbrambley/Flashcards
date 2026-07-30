@@ -25,7 +25,9 @@ struct PracticeRunnerView: View {
                     flashcardRepository: flashcardRepository,
                     sessionRepository: sessionRepository,
                     entry: entry,
-                    apiClient: apiClient
+                    apiClient: apiClient,
+                    authService: authService,
+                    isGuest: entry.isGuest
                 )
             } else {
                 PracticeView(

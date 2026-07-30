@@ -341,6 +341,25 @@ struct TimerChip: View {
     }
 }
 
+/// Context for offering the Test-mode "this should be correct" suggestion from the recap (#338): a
+/// wrong Test answer with a typed response, on a global-deck card. Nil for the card-by-card recap
+/// (it offers the suggestion inline during the run).
+struct ReviewSuggestion {
+    let mode: String
+    let isGlobal: Bool
+    let isGuest: Bool
+    let apiClient: FlashcardApiClient
+    let authService: AuthService?
+
+    func canSuggest(_ item: ReviewItem) -> Bool {
+        mode == PracticeMode.test.key &&
+            isGlobal &&
+            !item.correct &&
+            !item.cardUid.isEmpty &&
+            !(item.submittedText ?? "").isEmpty
+    }
+}
+
 /// End-of-deck summary + the per-card recap of the run (FLA-149). Shared by the card-by-card runner
 /// and the grade-at-the-end batch runner (#293/#298).
 struct CompletionView: View {
@@ -348,7 +367,11 @@ struct CompletionView: View {
     let numIncorrect: Int
     let streak: Int?
     let review: [ReviewItem]
+    /// When set (grade-at-the-end, #338), long-pressing a wrong Test row offers the suggestion.
+    var suggestion: ReviewSuggestion? = nil
     let onDone: () -> Void
+
+    @State private var suggestTarget: ReviewItem?
 
     var body: some View {
         ScrollView {
@@ -367,7 +390,7 @@ struct CompletionView: View {
                     StreakBadge(streak: streak)
                 }
                 if !review.isEmpty {
-                    ReviewList(items: review)
+                    ReviewList(items: review, suggestion: suggestion, onSuggest: { suggestTarget = $0 })
                 }
                 Button("Done", action: onDone)
                     .buttonStyle(.primary)
@@ -375,6 +398,17 @@ struct CompletionView: View {
                     .padding(.top, Spacing.md)
             }
             .padding(Spacing.lg)
+        }
+        .sheet(item: $suggestTarget) { item in
+            if let suggestion {
+                SuggestAnswerView(
+                    cardUid: item.cardUid,
+                    suggestedAnswer: item.submittedText ?? "",
+                    isGuest: suggestion.isGuest,
+                    apiClient: suggestion.apiClient,
+                    authService: suggestion.authService
+                )
+            }
         }
     }
 
@@ -389,6 +423,8 @@ struct CompletionView: View {
 /// The per-card recap list: each graded answer in play order, joined to its card.
 private struct ReviewList: View {
     let items: [ReviewItem]
+    var suggestion: ReviewSuggestion?
+    var onSuggest: (ReviewItem) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -396,7 +432,11 @@ private struct ReviewList: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
             ForEach(items) { item in
-                ReviewRow(item: item)
+                ReviewRow(
+                    item: item,
+                    canSuggest: suggestion?.canSuggest(item) ?? false,
+                    onSuggest: { onSuggest(item) }
+                )
             }
         }
         .padding(.top, Spacing.md)
@@ -404,10 +444,21 @@ private struct ReviewList: View {
 }
 
 /// One recap row: outcome + (image) + prompt + correct answer + the submitted text (Test/MC).
+/// When `canSuggest` (a wrong Test answer on a global deck, #338), long-pressing offers the
+/// "this should be correct" suggestion via a context menu.
 private struct ReviewRow: View {
     let item: ReviewItem
+    var canSuggest = false
+    var onSuggest: () -> Void = {}
 
     var body: some View {
+        row
+            .padding(Spacing.md)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+            .modifier(SuggestContextMenu(enabled: canSuggest, onSuggest: onSuggest))
+    }
+
+    private var row: some View {
         HStack(spacing: Spacing.md) {
             OutcomeBadge(correct: item.correct)
             if let url = item.imageUrl, !url.isEmpty {
@@ -426,8 +477,25 @@ private struct ReviewRow: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(Spacing.md)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+/// Attaches the "this should be correct" long-press menu only when eligible — an empty
+/// `.contextMenu` would still capture the long-press but show nothing, so gate the whole modifier.
+private struct SuggestContextMenu: ViewModifier {
+    let enabled: Bool
+    let onSuggest: () -> Void
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content.contextMenu {
+                Button(action: onSuggest) {
+                    Label("This should be correct", systemImage: "checkmark.circle")
+                }
+            }
+        } else {
+            content
+        }
     }
 }
 
