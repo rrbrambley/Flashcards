@@ -35,11 +35,28 @@ import com.rrbrambley.flashcards.ui.Avatar
  * `GET /avatars`. Tapping an option saves it immediately; "Remove avatar" clears it. The picker is
  * hidden (with a note) when the catalog is empty — no CDN configured.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    ProfileContent(
+        uiState = uiState,
+        onRetry = viewModel::load,
+        onClearAvatar = viewModel::clearAvatar,
+        onSelectAvatar = viewModel::selectAvatar,
+        modifier = modifier,
+    )
+}
 
+/** Stateless profile body — driven by [uiState] + callbacks so each state renders under test. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun ProfileContent(
+    uiState: ProfileUiState,
+    onRetry: () -> Unit,
+    onClearAvatar: () -> Unit,
+    onSelectAvatar: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     if (uiState.loading) {
         Column(
             modifier = modifier.fillMaxSize(),
@@ -63,7 +80,7 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
                 text = stringResource(R.string.profile_load_failed),
                 color = MaterialTheme.colorScheme.error,
             )
-            TextButton(onClick = viewModel::load) {
+            TextButton(onClick = onRetry) {
                 Text(stringResource(R.string.profile_retry))
             }
             return@Column
@@ -102,7 +119,7 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
                 )
                 if (uiState.selectedAvatarKey != null) {
                     TextButton(
-                        onClick = viewModel::clearAvatar,
+                        onClick = onClearAvatar,
                         enabled = !uiState.saving,
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                     ) {
@@ -123,7 +140,7 @@ fun ProfileScreen(modifier: Modifier = Modifier, viewModel: ProfileViewModel = h
                         option = option,
                         selected = option.key == uiState.selectedAvatarKey,
                         enabled = !uiState.saving,
-                        onSelect = { viewModel.selectAvatar(option.key) },
+                        onSelect = { onSelectAvatar(option.key) },
                     )
                 }
             }
