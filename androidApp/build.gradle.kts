@@ -42,6 +42,9 @@ android {
         debug {
             // Produce Jacoco coverage data from testDebugUnitTest.
             enableUnitTestCoverage = true
+            // Also instrument for connectedDebugAndroidTest so the Compose UI tests (instrumented)
+            // contribute coverage (#260). jacocoTestReport merges both exec sources when present.
+            enableAndroidTestCoverage = true
         }
         release {
             isMinifyEnabled = false
@@ -113,11 +116,14 @@ jacoco {
 }
 
 // AGP doesn't emit a usable Jacoco report for unit tests on its own; this reads the exec
-// data produced by `enableUnitTestCoverage` (debug) against the compiled debug classes.
+// data produced by `enableUnitTestCoverage` (debug) against the compiled debug classes. It ALSO
+// merges the instrumented `.ec` from `connectedDebugAndroidTest` (`enableAndroidTestCoverage`) when
+// present — so a CI job that runs the emulator tests first gets Compose UI coverage too (#260). When
+// only unit exec is present (the plain JVM job, no emulator) it degrades to a unit-only report.
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("testDebugUnitTest")
     group = "verification"
-    description = "Generates a Jacoco coverage report from the debug unit tests."
+    description = "Jacoco coverage from the debug unit tests (+ instrumented tests when their exec data is present)."
 
     reports {
         xml.required.set(true) // consumed by the CI coverage comment
@@ -152,9 +158,15 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     executionData.setFrom(
         fileTree(layout.buildDirectory) {
             include(
+                // Unit tests (enableUnitTestCoverage).
                 "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec",
                 "jacoco/testDebugUnitTest.exec",
                 "outputs/code_coverage/debugUnitTest/**/*.ec",
+                // Instrumented tests pulled off the device (enableAndroidTestCoverage), merged in when
+                // connectedDebugAndroidTest has run in the same job (#260). Globbed broadly to tolerate
+                // AGP's connected-coverage output-path variations across versions.
+                "outputs/code_coverage/debugAndroidTest/connected/**/*.ec",
+                "outputs/code_coverage/connected/**/*.ec",
             )
         },
     )
