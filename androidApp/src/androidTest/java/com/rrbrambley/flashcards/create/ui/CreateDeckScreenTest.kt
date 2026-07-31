@@ -140,10 +140,11 @@ class CreateDeckScreenTest {
             )
         }
 
-        // create_deck_cd_remove_card = "Remove card %1$d" (card number, 1-based)
-        composeTestRule.onNodeWithContentDescription("Remove card 2").performClick()
+        // create_deck_cd_remove_card = "Remove card %1$d" (card number, 1-based). Target card 1's
+        // affordance — card 2's is below the fold in the LazyColumn and isn't composed.
+        composeTestRule.onNodeWithContentDescription("Remove card 1").performClick()
 
-        assertEquals(2L, removedId)
+        assertEquals(1L, removedId)
     }
 
     @Test

@@ -49,7 +49,8 @@ class EditDeckScreenTest {
     fun readOnlyDeck_hidesRemoveAffordance_evenWithMultipleCards() {
         content(editable = false)
 
-        composeTestRule.onNodeWithContentDescription("Remove card 2").assertDoesNotExist()
+        // Card 1's affordance is on-screen (card 2 is below the LazyColumn fold); read-only hides it.
+        composeTestRule.onNodeWithContentDescription("Remove card 1").assertDoesNotExist()
     }
 
     @Test
@@ -57,7 +58,7 @@ class EditDeckScreenTest {
         content(editable = true)
 
         composeTestRule.onNodeWithText("This deck is read-only and can't be edited.").assertDoesNotExist()
-        // Editable multi-card deck keeps the remove affordance.
-        composeTestRule.onNodeWithContentDescription("Remove card 2").assertIsDisplayed()
+        // Editable multi-card deck keeps the remove affordance (card 1's is on-screen).
+        composeTestRule.onNodeWithContentDescription("Remove card 1").assertIsDisplayed()
     }
 }
