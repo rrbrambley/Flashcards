@@ -38,7 +38,22 @@ fun GuestCatalogScreen(
     onPracticeDeck: (FlashcardDeckDto) -> Unit = {},
 ) {
     val uiState by guestCatalogViewModel.uiState.collectAsState()
+    GuestCatalogContent(
+        uiState = uiState,
+        onRetry = guestCatalogViewModel::load,
+        onPracticeDeck = onPracticeDeck,
+        modifier = modifier,
+    )
+}
 
+/** Stateless catalog body — driven by [uiState] + callbacks so it renders each state under test. */
+@Composable
+internal fun GuestCatalogContent(
+    uiState: GuestCatalogUiState,
+    onRetry: () -> Unit,
+    onPracticeDeck: (FlashcardDeckDto) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Box(modifier = modifier.fillMaxSize()) {
         when (val state = uiState) {
             GuestCatalogUiState.Loading ->
@@ -50,7 +65,7 @@ fun GuestCatalogScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(stringResource(R.string.guest_catalog_error))
-                Button(onClick = guestCatalogViewModel::load) { Text(stringResource(R.string.action_retry)) }
+                Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
             }
 
             is GuestCatalogUiState.Loaded -> if (state.decks.isEmpty()) {

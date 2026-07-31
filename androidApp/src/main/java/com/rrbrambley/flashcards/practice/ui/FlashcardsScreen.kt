@@ -508,7 +508,7 @@ private fun LeaveSingleSittingDialog(onConfirm: () -> Unit, onDismiss: () -> Uni
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun FlashcardsCompletionContent(
+internal fun FlashcardsCompletionContent(
     streak: Int?,
     review: List<ReviewItem>,
     modifier: Modifier = Modifier,
@@ -830,7 +830,7 @@ internal fun FlashcardText(text: String, modifier: Modifier = Modifier) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BatchPracticeScreen(
+internal fun BatchPracticeScreen(
     state: BatchPracticeUiState,
     remainingSeconds: Int?,
     onSubmit: (List<String?>) -> Unit,

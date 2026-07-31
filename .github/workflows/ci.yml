@@ -199,11 +199,15 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && !cancelled() }}
         uses: madrapps/jacoco-report@v1.8.0
         with:
+          # backend only — androidApp coverage is posted by the android-instrumented job, which merges
+          # unit + instrumented (Compose UI) coverage; reporting the unit-only number here too would be
+          # a misleadingly-low second androidApp figure (#260).
           paths: |
             ${{ github.workspace }}/backend/build/reports/jacoco/test/jacocoTestReport.xml
-            ${{ github.workspace }}/androidApp/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: Code Coverage
+          title: Code Coverage (backend)
+          # Update the existing comment in place instead of posting a fresh one every push.
+          update-comment: true
           # Report-only: 0 thresholds never fail the check. Raise these (and add a branch
           # protection rule requiring this job) to gate on coverage later.
           min-coverage-overall: 0
@@ -269,6 +273,9 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' || needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # for the merged (unit + instrumented) androidApp coverage comment (#260)
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -350,6 +357,36 @@ jobs:
           path: androidApp/build/reports/androidTests/
           if-no-files-found: ignore
           retention-days: 7
+
+      # Merge the instrumented coverage (pulled off the device by enableAndroidTestCoverage) with the
+      # debug unit-test coverage into one androidApp report, so the Compose UI tests count (#260). Runs
+      # on the host (no emulator) — jacocoTestReport reads the .ec already on disk + runs the unit tests.
+      - name: Android coverage report (unit + instrumented)
+        if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+        run: ./gradlew :androidApp:jacocoTestReport --stacktrace
+
+      - name: Upload androidApp coverage report
+        if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-coverage-report
+          path: androidApp/build/reports/jacoco/jacocoTestReport/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Android coverage PR comment
+        if: ${{ github.event_name == 'pull_request' && !cancelled() }}
+        uses: madrapps/jacoco-report@v1.8.0
+        with:
+          paths: |
+            ${{ github.workspace }}/androidApp/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: Android Code Coverage (unit + UI tests)
+          # Update the existing comment in place instead of posting a fresh one every push.
+          update-comment: true
+          # Report-only, like the backend comment — 0 thresholds never fail the check.
+          min-coverage-overall: 0
+          min-coverage-changed-files: 0
 
   ios:
     name: iOS (build + shared iOS tests)

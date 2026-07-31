@@ -153,7 +153,7 @@ private fun ErrorMessage(onRetry: () -> Unit) {
 }
 
 @Composable
-private fun HomeScreenContent(
+internal fun HomeScreenContent(
     cards: List<HomeData>,
     streak: Int?,
     onButtonAction: (HomeButtonAction) -> Unit,
