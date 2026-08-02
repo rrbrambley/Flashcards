@@ -433,14 +433,21 @@ backend-only, mirrored by the web app).
 ./gradlew ktlintCheck                       # Kotlin lint across all modules
 ./gradlew :backend:test                     # backend integration tests (Testcontainers)
 cd webApp && npm run build && npm run lint && npm run test  # build + lint + test the web app
+cd webApp && npm run test:e2e               # web end-to-end smoke tests (Playwright; needs `make start` first)
 ```
 
+The web **end-to-end** smoke tests (`webApp/e2e/`, Playwright) drive the real app against a live
+backend. Start the stack first (`make start` — Postgres + the backend), install the browser once
+(`cd webApp && npx playwright install chromium`), then `npm run test:e2e` (Playwright starts the
+Vite dev server itself). See [`webApp/README.md`](webApp/README.md#end-to-end-tests) for details.
+
 CI (`.github/workflows/ci.yml`) runs ktlint, the JVM unit tests (backend/android/shared) with
-coverage, and the web build/lint/tests on every relevant PR (jobs are **path-gated** so each runs
-only when its area changed). Two expensive native jobs — **Android instrumented** (emulator;
-covers the Room migration test) and **iOS** (a macOS runner: shared iOS tests + an `xcodebuild`
-of the app) — are **opt-in**: they run only when their paths changed *and* the PR carries a label
-(`ci:android` / `ci:ios` / `ci:native`), or via a manual workflow dispatch.
+coverage, the web build/lint/tests, and the web **E2E** smoke job (spins up Postgres + the backend)
+on every relevant PR — jobs are **path-gated** so each runs only when its area changed. Two
+expensive native jobs — **Android instrumented** (emulator; covers the Room migration test) and
+**iOS** (a macOS runner: shared iOS tests + an `xcodebuild` of the app) — also run automatically
+when their paths change (no opt-in label required), and can be triggered manually via a workflow
+dispatch.
 
 The backend tests start a real Postgres via Testcontainers, so they need Docker. Under
 Colima they additionally need:
