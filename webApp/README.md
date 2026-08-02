@@ -31,6 +31,30 @@ of drifting to another port if 5173 is taken.
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | ESLint |
 | `npm run test` | Vitest unit/component tests (`test:coverage` for coverage) |
+| `npm run test:e2e` | Playwright end-to-end smoke tests (needs a running backend — see below) |
+
+## End-to-end tests
+
+The E2E smoke tests (`e2e/`, [Playwright](https://playwright.dev)) drive the real app against a
+**live backend** — covering wiring that the unit tests can't (routing, the auth token flow, the
+API↔UI contract, persistence). Playwright starts the Vite dev server itself; you just supply the
+backend + Postgres.
+
+```bash
+# 1. From the repo root: start Postgres + the backend
+make start
+
+# 2. First time only: download the Playwright browser
+cd webApp && npx playwright install chromium
+
+# 3. Run the smoke tests (Playwright starts the web dev server automatically)
+npm run test:e2e            # add :ui (npm run test:e2e:ui) for the interactive runner
+```
+
+Each run registers a fresh, uniquely-named throwaway user, so runs don't collide with existing
+data. If the backend isn't reachable at `http://localhost:8080`, the suite fails fast and tells you
+to run `make start`. In CI a dedicated **`e2e`** job brings up Postgres + the backend and runs the
+same suite on every PR that touches the web app, backend, or shared DTOs.
 
 ## Configuration
 

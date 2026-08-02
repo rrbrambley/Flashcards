@@ -27,6 +27,13 @@ coverage
 # Vite cache
 .vite
 
+# Playwright E2E artifacts
+test-results
+playwright-report
+blob-report
+.playwright
+playwright/.cache
+
 # Local environment config (copy .env.example -> .env and fill in your values)
 .env
 .env.*
