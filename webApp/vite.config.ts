@@ -12,6 +12,9 @@ export default defineConfig({
     strictPort: true,
   },
   test: {
+    // Vitest owns the unit tests under src/. The Playwright E2E specs live in e2e/ and run via
+    // `npm run test:e2e` — scope the unit runner to src/ so it never picks up an e2e `.spec.ts`.
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
     environment: 'jsdom',
     globals: false,
     setupFiles: './src/test/setup.ts',
