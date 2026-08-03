@@ -7,7 +7,6 @@ import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -16,9 +15,11 @@ import kotlin.test.assertTrue
  * the single source of truth — if someone changes the typo threshold or the choice rules on only one
  * platform, that platform's run fails against the fixture, so drift is caught in CI.
  *
- * This lives in `jvmTest` (not `commonTest`) purely so it can load the fixture as a classpath
- * resource; the grading code itself is `commonMain`, so verifying it on the JVM verifies the exact
- * same logic that runs on iOS.
+ * This lives in `commonTest`, so it runs on the JVM (`:shared:jvmTest`) AND on iOS/Kotlin-Native
+ * (`:shared:iosSimulatorArm64Test`) — pinning all three platforms (with the web) to the same fixture
+ * and catching any iOS-specific bridging drift, not just the JVM (#344). Native has no classpath
+ * resources, so the fixture JSON is embedded as [GRADING_FIXTURES_JSON] by the
+ * `generateGradingFixtureSource` Gradle task, derived from the same repo-root file.
  */
 class GradingParityFixtureTest {
 
@@ -49,11 +50,7 @@ class GradingParityFixtureTest {
         val allowedDistractors: List<String>,
     )
 
-    private val fixtures: Fixtures by lazy {
-        val stream = javaClass.getResourceAsStream("/grading-fixtures.json")
-        assertNotNull(stream, "grading-fixtures.json not on the test classpath")
-        JSON.decodeFromString(stream.bufferedReader().use { it.readText() })
-    }
+    private val fixtures: Fixtures = JSON.decodeFromString(GRADING_FIXTURES_JSON)
 
     private companion object {
         val JSON = Json { ignoreUnknownKeys = true }

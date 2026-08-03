@@ -4,6 +4,36 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Embed the canonical practice-grading golden fixture (FLA-81) as a Kotlin string so the parity test
+// can run in `commonTest` on Kotlin/Native (iOS) too — Native has no classpath resources (#344). The
+// repo-root JSON stays the single source of truth (web reads it via node:fs; this is derived at
+// build time, never hand-edited).
+val generateGradingFixture = tasks.register("generateGradingFixtureSource") {
+    val fixture = rootDir.resolve("testFixtures/practice-grading/grading-fixtures.json")
+    val outputDir = layout.buildDirectory.dir("generated/gradingFixture/commonTest/kotlin")
+    inputs.file(fixture)
+    outputs.dir(outputDir)
+    doLast {
+        val escaped = fixture.readText()
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\$", "\\\$")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+        val pkgDir = outputDir.get().dir("com/rrbrambley/flashcards/practice/grading").asFile
+        pkgDir.mkdirs()
+        pkgDir.resolve("GradingFixtureData.kt").writeText(
+            buildString {
+                appendLine("package com.rrbrambley.flashcards.practice.grading")
+                appendLine()
+                appendLine("// GENERATED from testFixtures/practice-grading/grading-fixtures.json — do not edit.")
+                appendLine("internal const val GRADING_FIXTURES_JSON: String = \"$escaped\"")
+            },
+        )
+    }
+}
+
 kotlin {
     // jvmToolchain(11), the -Xexpect-actual-classes opt-in, and compileSdk/minSdk come from the
     // flashcards.kmp.library convention.
@@ -49,17 +79,19 @@ kotlin {
             // Darwin (NSURLSession) HTTP engine so iOS uses the platform networking stack.
             implementation(libs.ktor.client.darwin)
         }
-        commonTest.dependencies {
-            implementation(libs.kotlin.test)
-            implementation(libs.ktor.client.mock)
-            implementation(libs.coroutines.test)
+        commonTest {
+            // The grading golden fixture, embedded as a Kotlin string by generateGradingFixtureSource
+            // so GradingParityFixtureTest runs on both JVM and iOS Native (#344).
+            kotlin.srcDir(generateGradingFixture)
+            dependencies {
+                implementation(libs.kotlin.test)
+                implementation(libs.ktor.client.mock)
+                implementation(libs.coroutines.test)
+            }
         }
-        // The canonical practice-grading golden fixture (FLA-81) lives at the repo root so both this
-        // module and the web app share one copy. Expose it on the jvmTest classpath as a resource so
-        // GradingParityFixtureTest can load it; the web reads the same file directly via node:fs.
+        // The shuffle golden fixture (FLA-200) is still loaded as a jvmTest classpath resource by
+        // ShuffleParityFixtureTest (JVM-only), shared with the web Vitest suite.
         jvmTest {
-            resources.srcDir(rootDir.resolve("testFixtures/practice-grading"))
-            // The shuffle golden fixture (FLA-200), likewise shared with the web Vitest suite.
             resources.srcDir(rootDir.resolve("testFixtures/practice-shuffle"))
         }
     }
