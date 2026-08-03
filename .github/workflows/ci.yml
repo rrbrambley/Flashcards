@@ -73,11 +73,16 @@ jobs:
               - *gradle
               - 'shared/**'
               - 'iosApp/**'
+              # The shared iOS test now runs the grading golden-fixture parity too (#344), so a
+              # fixture-only edit must re-run the iOS job to catch Native drift.
+              - 'testFixtures/practice-grading/**'
             # The Kotlin/Native half of the ios job (the shared iOS test). A Swift-only change
             # (iosApp/** without shared/gradle) doesn't affect it, so it's skipped there (FLA-141).
             ios_kmp:
               - *gradle
               - 'shared/**'
+              # The grading golden fixture is embedded into the shared iOS test (#344).
+              - 'testFixtures/practice-grading/**'
             web:
               - '.github/workflows/ci.yml'
               - 'webApp/**'
