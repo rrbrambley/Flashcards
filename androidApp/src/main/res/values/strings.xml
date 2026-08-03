@@ -276,4 +276,6 @@
     <string name="notification_suggestion_accepted">Your suggestion \"%1$s\" was added to %2$s</string>
     <string name="notification_suggestion_declined">Your suggestion \"%1$s\" wasn\'t added to %2$s</string>
     <string name="notification_a_deck">a deck</string>
+    <string name="notification_streak_milestone">🔥 %1$s-day streak! Keep it up.</string>
+    <string name="notification_thread_activity">%1$s also posted in a discussion you joined</string>
 </resources>

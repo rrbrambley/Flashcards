@@ -191,5 +191,13 @@ private fun notificationText(notification: Notification): String = when (notific
         }
         stringResource(template, answer, deck)
     }
+    "streak_milestone" -> stringResource(
+        R.string.notification_streak_milestone,
+        notification.data["streak"].orEmpty(),
+    )
+    "thread_activity" -> stringResource(
+        R.string.notification_thread_activity,
+        notification.data["replierDisplayName"] ?: stringResource(R.string.notification_someone),
+    )
     else -> stringResource(R.string.notification_generic)
 }

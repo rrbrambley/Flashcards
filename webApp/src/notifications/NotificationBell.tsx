@@ -19,6 +19,10 @@ function notificationText(n: NotificationDto): string {
         ? `Your suggestion "${answer}" was added to ${deck}`
         : `Your suggestion "${answer}" wasn't added to ${deck}`;
     }
+    case 'streak_milestone':
+      return `🔥 ${n.data.streak ?? ''}-day streak! Keep it up.`;
+    case 'thread_activity':
+      return `${n.data.replierDisplayName ?? 'Someone'} also posted in a discussion you joined`;
     default:
       return 'You have a new notification';
   }

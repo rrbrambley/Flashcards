@@ -3160,6 +3160,91 @@ class ApplicationFlowTest {
         )
     }
 
+    @Test
+    fun streak_milestone_notifies_once_when_crossing_a_threshold(): Unit = runApp { client ->
+        val tz = "America/New_York"
+        val zone = ZoneId.of(tz)
+        fun millisDaysAgo(daysAgo: Long): Long =
+            LocalDate.now(zone).minusDays(daysAgo).atTime(12, 0).atZone(zone).toInstant().toEpochMilli()
+
+        val auth = client.register("streakmilestone", "password1")
+        val deckId = client.get("/decks?limit=1") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+
+        // Seed 6 prior consecutive days as completed WITHOUT the API, so the producer doesn't fire during
+        // setup: create a session, then mark it completed + back-dated directly.
+        for (daysAgo in 1L..6L) {
+            val session = client.createSession(auth.accessToken, deckId)
+            transaction {
+                PracticeSessions.update({ PracticeSessions.id eq session.id }) {
+                    it[isCompleted] = true
+                    it[completedAtMillis] = millisDaysAgo(daysAgo)
+                    it[completedTimeZone] = tz
+                }
+            }
+        }
+
+        suspend fun completeTodaySession() {
+            val session = client.createSession(auth.accessToken, deckId)
+            client.post("/sessions/${session.id}/complete") {
+                bearerAuth(auth.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(CompleteSessionRequest(tz)))
+            }
+        }
+
+        // Completing today makes it a 7-day streak → exactly one milestone notification.
+        completeTodaySession()
+        val notifs = client.get("/notifications") { bearerAuth(auth.accessToken) }
+            .decode<Page<NotificationDto>>().items
+        assertEquals(1, notifs.size)
+        notifs.single().let { n ->
+            assertEquals("streak_milestone", n.type)
+            assertEquals("7", n.data["streak"])
+        }
+
+        // A second completion the same day doesn't advance the streak → no duplicate milestone.
+        completeTodaySession()
+        assertEquals(
+            1,
+            client.get("/notifications") { bearerAuth(auth.accessToken) }.decode<Page<NotificationDto>>().items.size,
+        )
+    }
+
+    @Test
+    fun thread_activity_notifies_other_participants_but_not_the_directly_replied_to(): Unit = runApp { client ->
+        val admin = client.register("threadadmin", "password1")
+        grantAdmin(admin.userId)
+        val (_, cardUid) = client.discussionDeck(admin.accessToken)
+        val alice = client.register("alice_t", "password1")
+        val bob = client.register("bob_t", "password1")
+        val carol = client.register("carol_t", "password1")
+
+        // alice posts; bob replies to alice; carol adds a new top-level message.
+        val aliceMsg = client.postMessage(alice.accessToken, cardUid, "Alice's take").decode<DiscussionMessageDto>()
+        client.postMessage(bob.accessToken, cardUid, "Bob's reply", parentMessageId = aliceMsg.id)
+        client.postMessage(carol.accessToken, cardUid, "Carol joins in")
+
+        // alice: a direct-reply notice (from bob) + a thread-activity notice (from carol) — no double-up.
+        val aliceNotifs = client.get("/notifications") { bearerAuth(alice.accessToken) }
+            .decode<Page<NotificationDto>>().items
+        assertEquals(2, aliceNotifs.size)
+        assertEquals(setOf("discussion_reply", "thread_activity"), aliceNotifs.map { it.type }.toSet())
+
+        // bob: only thread-activity from carol (not a duplicate for his own reply), naming carol.
+        val bobNotifs = client.get("/notifications") { bearerAuth(bob.accessToken) }
+            .decode<Page<NotificationDto>>().items
+        assertEquals(1, bobNotifs.size)
+        assertEquals("thread_activity", bobNotifs.single().type)
+        assertEquals("carol_t", bobNotifs.single().data["replierDisplayName"])
+
+        // carol (the poster) is never notified of her own post.
+        assertTrue(
+            client.get("/notifications") { bearerAuth(carol.accessToken) }
+                .decode<Page<NotificationDto>>().items.isEmpty(),
+        )
+    }
+
     /** Registers [user], creates a deck + a [mode] session, and records [answers] over HTTP (#346). */
     private suspend fun HttpClient.seedAnswers(user: String, mode: String, answers: List<PracticeAnswerDto>) {
         val auth = register(user, "password1")

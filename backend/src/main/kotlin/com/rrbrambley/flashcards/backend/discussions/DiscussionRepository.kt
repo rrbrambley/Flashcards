@@ -130,32 +130,47 @@ object DiscussionRepository {
             if (newCount >= AUTO_LOCK_AT) it[isLocked] = true
         }
 
-        // Notify the parent message's author of the reply (#321) — skipping self-replies. In this
-        // transaction, so it commits atomically with the reply. `data` carries the deep-link fields;
-        // the client renders localized copy per type.
-        if (parentAuthorId != null && parentAuthorId != userId) {
+        // Notifications (#321/#333), in this transaction so they commit atomically with the message.
+        // `data` carries the deep-link fields; the client renders localized copy per type.
+        val posterName = authorDisplayName(userId)
+        val notified = mutableSetOf(userId)
+        fun notify(recipientUserId: Long, type: NotificationType) {
+            if (!notified.add(recipientUserId)) return // never notify the poster, nor twice
             NotificationRepository.insert(
-                recipientUserId = parentAuthorId,
-                type = NotificationType.DISCUSSION_REPLY,
+                recipientUserId = recipientUserId,
+                type = type,
                 data = mapOf(
                     "cardUid" to cardUid,
                     "threadId" to thread.id.toString(),
                     "messageId" to messageId.toString(),
-                    "replierDisplayName" to authorDisplayName(userId),
+                    "replierDisplayName" to posterName,
                 ),
                 now = now,
             )
         }
 
+        // The direct reply target gets the specific "replied to your comment" (#321) — claimed first so
+        // they don't also get the broader thread-activity notification below.
+        if (parentAuthorId != null) notify(parentAuthorId, NotificationType.DISCUSSION_REPLY)
+        // Everyone else who's posted in this thread gets "new activity in a discussion you joined"
+        // (#333) — a fan-out over the (bounded, auto-locked) thread's distinct participants.
+        threadParticipants(thread.id).forEach { notify(it, NotificationType.THREAD_ACTIVITY) }
+
         DiscussionMessageDto(
             id = messageId,
-            authorDisplayName = authorDisplayName(userId),
+            authorDisplayName = posterName,
             authorAvatarUrl = authorAvatarUrl(userId),
             content = text,
             parentMessageId = parentMessageId,
             createdAtMillis = now,
         )
     }
+
+    /** Distinct user ids that have posted in [threadId] — the audience for thread-activity notices. */
+    private fun threadParticipants(threadId: Long): Set<Long> = DiscussionMessages
+        .select(DiscussionMessages.authorUserId)
+        .where { DiscussionMessages.threadId eq threadId }
+        .mapTo(mutableSetOf()) { it[DiscussionMessages.authorUserId].value }
 
     /** Locks or unlocks a card's thread (admin). Creates the thread if needed so an empty card can be locked. */
     suspend fun setLocked(cardUid: String, locked: Boolean): DiscussionThreadDto = dbQuery {

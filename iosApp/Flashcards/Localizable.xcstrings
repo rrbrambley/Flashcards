@@ -4,6 +4,9 @@
     "" : {
 
     },
+    "%@ also posted in a discussion you joined" : {
+
+    },
     "%@ avatar" : {
 
     },
@@ -681,6 +684,9 @@
 
     },
     "🔒 This discussion is locked." : {
+
+    },
+    "🔥 %@-day streak! Keep it up." : {
 
     },
     "🔥 %d" : {

@@ -119,6 +119,12 @@ private struct NotificationRow: View {
             return notification.data["accepted"] == "true"
                 ? Text("Your suggestion \"\(answer)\" was added to \(deck)")
                 : Text("Your suggestion \"\(answer)\" wasn't added to \(deck)")
+        case "streak_milestone":
+            let streak = notification.data["streak"] ?? ""
+            return Text("🔥 \(streak)-day streak! Keep it up.")
+        case "thread_activity":
+            let poster = notification.data["replierDisplayName"] ?? String(localized: "Someone")
+            return Text("\(poster) also posted in a discussion you joined")
         default:
             return Text("You have a new notification")
         }
