@@ -113,6 +113,12 @@ private struct NotificationRow: View {
         case "discussion_reply":
             let replier = notification.data["replierDisplayName"] ?? String(localized: "Someone")
             return Text("\(replier) replied to your comment")
+        case "answer_suggestion_reviewed":
+            let answer = notification.data["suggestedAnswer"] ?? ""
+            let deck = notification.data["deckTitle"] ?? String(localized: "a deck")
+            return notification.data["accepted"] == "true"
+                ? Text("Your suggestion \"\(answer)\" was added to \(deck)")
+                : Text("Your suggestion \"\(answer)\" wasn't added to \(deck)")
         default:
             return Text("You have a new notification")
         }

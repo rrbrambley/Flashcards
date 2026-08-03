@@ -2218,6 +2218,60 @@ class ApplicationFlowTest {
         }
 
     @Test
+    fun answer_suggestion_review_notifies_the_suggester(): Unit = runApp { client ->
+        val admin = client.register("reviewadmin", "password1")
+        grantAdmin(admin.userId)
+        val (deckId, cardUid) = client.discussionDeck(admin.accessToken) // a global deck
+        val user = client.register("reviewsuggester", "password1")
+
+        // Accept path → the suggester gets an "accepted" notification with the deep-link data.
+        client.suggestAnswer(user.accessToken, cardUid, "Paris, France")
+        val accepted = client.get("/admin/answer-suggestions") { bearerAuth(admin.accessToken) }
+            .decode<Page<AnswerSuggestionDto>>().items.single { it.cardUid == cardUid }
+        client.post("/admin/answer-suggestions/${accepted.id}/accept") { bearerAuth(admin.accessToken) }
+
+        val afterAccept = client.get("/notifications") { bearerAuth(user.accessToken) }
+            .decode<Page<NotificationDto>>().items
+        assertEquals(1, afterAccept.size)
+        afterAccept.single().let { n ->
+            assertEquals("answer_suggestion_reviewed", n.type)
+            assertEquals("true", n.data["accepted"])
+            assertEquals("Paris, France", n.data["suggestedAnswer"])
+            assertEquals(cardUid, n.data["cardUid"])
+            assertEquals(deckId.toString(), n.data["deckId"])
+            assertNotNull(n.data["deckTitle"])
+        }
+
+        // Dismiss path → a second notification, flagged not-accepted.
+        client.suggestAnswer(user.accessToken, cardUid, "Lutetia")
+        val toDismiss = client.get("/admin/answer-suggestions") { bearerAuth(admin.accessToken) }
+            .decode<Page<AnswerSuggestionDto>>().items.single { it.cardUid == cardUid }
+        client.post("/admin/answer-suggestions/${toDismiss.id}/dismiss") { bearerAuth(admin.accessToken) }
+
+        val declined = client.get("/notifications") { bearerAuth(user.accessToken) }
+            .decode<Page<NotificationDto>>().items
+        assertEquals(2, declined.size)
+        assertEquals("false", declined.first().data["accepted"]) // newest first
+        assertEquals("Lutetia", declined.first().data["suggestedAnswer"])
+        assertEquals(
+            2,
+            client.get("/notifications/unread-count") {
+                bearerAuth(user.accessToken)
+            }.decode<UnreadCountDto>().count,
+        )
+
+        // Self-review: an admin resolving their OWN suggestion isn't notified.
+        client.suggestAnswer(admin.accessToken, cardUid, "City of Light")
+        val ownSuggestion = client.get("/admin/answer-suggestions") { bearerAuth(admin.accessToken) }
+            .decode<Page<AnswerSuggestionDto>>().items.single { it.suggestedAnswer == "City of Light" }
+        client.post("/admin/answer-suggestions/${ownSuggestion.id}/accept") { bearerAuth(admin.accessToken) }
+        assertTrue(
+            client.get("/notifications") { bearerAuth(admin.accessToken) }
+                .decode<Page<NotificationDto>>().items.isEmpty(),
+        )
+    }
+
+    @Test
     fun answer_suggestion_submit_queue_accept_and_dismiss() = runApp { client ->
         val admin = client.register("sugadmin", "password1")
         grantAdmin(admin.userId)

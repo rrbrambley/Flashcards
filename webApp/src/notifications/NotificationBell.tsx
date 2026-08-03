@@ -12,6 +12,13 @@ function notificationText(n: NotificationDto): string {
   switch (n.type) {
     case 'discussion_reply':
       return `${n.data.replierDisplayName ?? 'Someone'} replied to your comment`;
+    case 'answer_suggestion_reviewed': {
+      const answer = n.data.suggestedAnswer ?? 'your answer';
+      const deck = n.data.deckTitle ?? 'a deck';
+      return n.data.accepted === 'true'
+        ? `Your suggestion "${answer}" was added to ${deck}`
+        : `Your suggestion "${answer}" wasn't added to ${deck}`;
+    }
     default:
       return 'You have a new notification';
   }

@@ -7,4 +7,7 @@ package com.rrbrambley.flashcards.backend.notifications
  */
 enum class NotificationType(val key: String) {
     DISCUSSION_REPLY("discussion_reply"),
+
+    /** An admin accepted or declined the user's "this should be correct" answer suggestion (#333). */
+    ANSWER_SUGGESTION_REVIEWED("answer_suggestion_reviewed"),
 }
