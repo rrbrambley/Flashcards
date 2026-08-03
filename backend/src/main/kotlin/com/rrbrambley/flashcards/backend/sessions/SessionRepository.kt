@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.backend.sessions
 
+import com.rrbrambley.flashcards.backend.answerstats.normalizeAnswer
 import com.rrbrambley.flashcards.backend.db.Decks
 import com.rrbrambley.flashcards.backend.db.PracticeAnswers
 import com.rrbrambley.flashcards.backend.db.PracticeSessions
@@ -236,6 +237,8 @@ object SessionRepository {
                     this[PracticeAnswers.sequence] = answer.sequence
                     this[PracticeAnswers.answeredAtMillis] = answer.answeredAtMillis
                     this[PracticeAnswers.submittedText] = answer.submittedText
+                    // Canonical grouping key for the per-card "most common answers" aggregation (#346).
+                    this[PracticeAnswers.normalizedAnswer] = normalizeAnswer(answer.submittedText)
                 }
             }
 

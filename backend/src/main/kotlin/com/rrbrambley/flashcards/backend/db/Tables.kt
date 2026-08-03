@@ -217,6 +217,11 @@ object PracticeSessions : LongIdTable("practice_sessions") {
  *
  * [answerUid] is minted client-side so offline-first re-syncs are idempotent (unique per session);
  * [sequence] is the 0-based play order; [cardUid] is the stable per-card id (FLA-113) for review.
+ *
+ * [normalizedAnswer] is a canonical form of [submittedText] (trim + lowercase + collapse whitespace,
+ * mirroring the shared Test-mode grading normalization) computed at insert, so equivalent answers
+ * ("Paris", "paris ") group together — powering the per-card "most common answers" aggregation
+ * ([AnswerStatsRepository], #346). Null when there's no typed/selected answer (e.g. Classic mode).
  */
 object PracticeAnswers : LongIdTable("practice_answers") {
     val sessionId = reference("session_id", PracticeSessions, onDelete = ReferenceOption.CASCADE)
@@ -226,12 +231,16 @@ object PracticeAnswers : LongIdTable("practice_answers") {
     val sequence = integer("sequence")
     val answeredAtMillis = long("answered_at_millis")
     val submittedText = varchar("submitted_text", 1000).nullable()
+    val normalizedAnswer = varchar("normalized_answer", 1000).nullable()
 
     init {
         // Idempotent recording: re-sending an answer (flaky connection) can't double-insert.
         uniqueIndex(sessionId, answerUid)
         // Ordered retrieval for review + streak derivation, and the count/cascade lookups.
         index(false, sessionId, sequence)
+        // Backs the per-card "most common answers" aggregation: GROUP BY normalized_answer per card
+        // (#346).
+        index(false, cardUid, normalizedAnswer)
     }
 }
 
