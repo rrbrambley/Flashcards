@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.backend.db
 
+import com.rrbrambley.flashcards.backend.answerstats.normalizeAnswer
 import com.rrbrambley.flashcards.backend.auth.Passwords
 import com.rrbrambley.flashcards.backend.auth.Permission
 import com.rrbrambley.flashcards.backend.auth.Role
@@ -13,6 +14,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.isNotNull
 import org.jetbrains.exposed.v1.core.isNull
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -81,6 +83,7 @@ object DatabaseFactory {
                 FeatureFlagRoleOverrides,
             )
             backfillCardUids()
+            backfillNormalizedAnswers()
             seed()
         }
     }
@@ -92,6 +95,22 @@ object DatabaseFactory {
                 it[cardUid] = java.util.UUID.randomUUID().toString()
             }
         }
+    }
+
+    /**
+     * Populates [PracticeAnswers.normalizedAnswer] for answers logged before the column existed, so
+     * the per-card "most common answers" aggregation sees historical data too (#346). Only rows with a
+     * submitted answer and a still-null normalized form are touched, so it's a cheap idempotent no-op
+     * on subsequent boots.
+     */
+    private fun backfillNormalizedAnswers() {
+        PracticeAnswers.selectAll()
+            .where { PracticeAnswers.submittedText.isNotNull() and PracticeAnswers.normalizedAnswer.isNull() }
+            .forEach { row ->
+                PracticeAnswers.update({ PracticeAnswers.id eq row[PracticeAnswers.id] }) {
+                    it[normalizedAnswer] = normalizeAnswer(row[submittedText])
+                }
+            }
     }
 
     /** Idempotent: guarded so restarts (without a volume wipe) don't duplicate rows. */

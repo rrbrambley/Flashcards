@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.backend
 import com.rrbrambley.flashcards.backend.admin.AdminUserDto
 import com.rrbrambley.flashcards.backend.admin.GrantRoleRequest
 import com.rrbrambley.flashcards.backend.admin.RoleDto
+import com.rrbrambley.flashcards.backend.answerstats.AnswerStatsRepository
 import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
 import com.rrbrambley.flashcards.backend.auth.Permission
 import com.rrbrambley.flashcards.backend.auth.PermissionRepository
@@ -2973,6 +2974,155 @@ class ApplicationFlowTest {
         UserRoles.insert {
             it[UserRoles.userId] = userId
             it[roleId] = adminRoleId
+        }
+    }
+
+    @Test
+    fun most_common_answers_groups_normalized_variants_across_users_split_by_correctness() = runApp { client ->
+        val card = "stats-card-geo-1"
+        // User A (Test mode): "Paris" + "paris " are the same answer once normalized; "London" is wrong.
+        client.seedAnswers(
+            "stats-a",
+            "test",
+            listOf(
+                PracticeAnswerDto(
+                    "sa-0",
+                    card,
+                    correct = true,
+                    sequence = 0,
+                    answeredAtMillis = 100,
+                    submittedText = "Paris",
+                ),
+                PracticeAnswerDto(
+                    "sa-1",
+                    card,
+                    correct = true,
+                    sequence = 1,
+                    answeredAtMillis = 200,
+                    submittedText = "paris ",
+                ),
+                PracticeAnswerDto(
+                    "sa-2",
+                    card,
+                    correct = false,
+                    sequence = 2,
+                    answeredAtMillis = 300,
+                    submittedText = "London",
+                ),
+                // A skipped / Classic-style answer with no text must not become a "common answer".
+                PracticeAnswerDto(
+                    "sa-3",
+                    card,
+                    correct = false,
+                    sequence = 3,
+                    answeredAtMillis = 400,
+                    submittedText = null,
+                ),
+            ),
+        )
+        // User B (Test mode): "PARIS" (the latest submission) pushes the paris group to 3; "Berlin" wrong.
+        client.seedAnswers(
+            "stats-b",
+            "test",
+            listOf(
+                PracticeAnswerDto(
+                    "sb-0",
+                    card,
+                    correct = true,
+                    sequence = 0,
+                    answeredAtMillis = 500,
+                    submittedText = "PARIS",
+                ),
+                PracticeAnswerDto(
+                    "sb-1",
+                    card,
+                    correct = false,
+                    sequence = 1,
+                    answeredAtMillis = 600,
+                    submittedText = "Berlin",
+                ),
+            ),
+        )
+
+        val stats = AnswerStatsRepository.mostCommonAnswers(card)
+
+        // paris (3, all correct) first; then the two single wrong answers, alphabetical (berlin, london).
+        assertEquals(listOf("paris", "berlin", "london"), stats.map { it.normalizedAnswer })
+        val paris = stats.first()
+        assertEquals(3, paris.count)
+        assertEquals(3, paris.correctCount)
+        // The representative display form is a real raw variant (the most recent: "PARIS"), not the key.
+        assertEquals("PARIS", paris.answer)
+        assertTrue(stats.drop(1).all { it.count == 1 && it.correctCount == 0 })
+        // The blank/absent answer isn't represented at all.
+        assertTrue(stats.none { it.normalizedAnswer.isBlank() })
+    }
+
+    @Test
+    fun most_common_answers_can_filter_by_practice_mode() = runApp { client ->
+        val card = "stats-card-geo-2"
+        client.seedAnswers(
+            "stats-c",
+            "test",
+            listOf(
+                PracticeAnswerDto(
+                    "sc-0",
+                    card,
+                    correct = true,
+                    sequence = 0,
+                    answeredAtMillis = 100,
+                    submittedText = "Paris",
+                ),
+            ),
+        )
+        client.seedAnswers(
+            "stats-d",
+            "multiple_choice",
+            listOf(
+                PracticeAnswerDto(
+                    "sd-0",
+                    card,
+                    correct = false,
+                    sequence = 0,
+                    answeredAtMillis = 200,
+                    submittedText = "London",
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf("paris"),
+            AnswerStatsRepository.mostCommonAnswers(card, mode = "test").map {
+                it.normalizedAnswer
+            },
+        )
+        assertEquals(
+            listOf("london"),
+            AnswerStatsRepository.mostCommonAnswers(card, mode = "multiple_choice").map { it.normalizedAnswer },
+        )
+        assertEquals(
+            setOf("paris", "london"),
+            AnswerStatsRepository.mostCommonAnswers(card).map { it.normalizedAnswer }.toSet(),
+        )
+    }
+
+    /** Registers [user], creates a deck + a [mode] session, and records [answers] over HTTP (#346). */
+    private suspend fun HttpClient.seedAnswers(user: String, mode: String, answers: List<PracticeAnswerDto>) {
+        val auth = register(user, "password1")
+        val deck = post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Deck", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        val session = post("/sessions") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateSessionRequest(deck.id, mode)))
+        }.decode<PracticeSessionDto>()
+        post("/sessions/${session.id}/answers") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(RecordAnswersRequest(answers)))
         }
     }
 
