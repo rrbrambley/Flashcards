@@ -636,10 +636,33 @@
     "Your progress on “%@” will be lost." : {
 
     },
+    "Your suggestion \"%@\" was added to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your suggestion \"%1$@\" was added to %2$@"
+          }
+        }
+      }
+    },
+    "Your suggestion \"%@\" wasn't added to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your suggestion \"%1$@\" wasn't added to %2$@"
+          }
+        }
+      }
+    },
     "[removed by a moderator]" : {
 
     },
     "^[%lld card](inflect: true)" : {
+
+    },
+    "a deck" : {
 
     },
     "just now" : {

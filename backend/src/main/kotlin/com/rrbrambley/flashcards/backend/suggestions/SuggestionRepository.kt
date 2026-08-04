@@ -7,6 +7,8 @@ import com.rrbrambley.flashcards.backend.db.Flashcards
 import com.rrbrambley.flashcards.backend.db.Users
 import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.NotFoundException
+import com.rrbrambley.flashcards.backend.notifications.NotificationRepository
+import com.rrbrambley.flashcards.backend.notifications.NotificationType
 import com.rrbrambley.flashcards.backend.routes.Cursor
 import com.rrbrambley.flashcards.data.mapping.AlternativeAnswers
 import com.rrbrambley.flashcards.shared.api.Page
@@ -107,6 +109,7 @@ object SuggestionRepository {
      * and marks it accepted. 404 if the suggestion isn't open or the card no longer exists.
      */
     suspend fun accept(adminUserId: Long, suggestionId: Long) = dbQuery {
+        val now = System.currentTimeMillis()
         val suggestion = AnswerSuggestions.selectAll()
             .where { (AnswerSuggestions.id eq suggestionId) and (AnswerSuggestions.status eq STATUS_OPEN) }
             .firstOrNull()
@@ -125,20 +128,70 @@ object SuggestionRepository {
         AnswerSuggestions.update({ AnswerSuggestions.id eq suggestionId }) {
             it[status] = STATUS_ACCEPTED
             it[resolvedByUserId] = adminUserId
-            it[resolvedAtMillis] = System.currentTimeMillis()
+            it[resolvedAtMillis] = now
         }
+        notifySuggester(
+            suggesterUserId = suggestion[AnswerSuggestions.suggesterUserId].value,
+            adminUserId = adminUserId,
+            cardUid = cardUid,
+            suggested = suggested,
+            accepted = true,
+            now = now,
+        )
     }
 
     /** Dismisses an open suggestion (admin) without changing the card. 404 if not open/missing. */
     suspend fun dismiss(adminUserId: Long, suggestionId: Long) = dbQuery {
-        val updated = AnswerSuggestions.update({
-            (AnswerSuggestions.id eq suggestionId) and (AnswerSuggestions.status eq STATUS_OPEN)
-        }) {
+        val now = System.currentTimeMillis()
+        // Read the row first (vs. a bare conditional update) so we have the suggester + text to notify.
+        val suggestion = AnswerSuggestions.selectAll()
+            .where { (AnswerSuggestions.id eq suggestionId) and (AnswerSuggestions.status eq STATUS_OPEN) }
+            .firstOrNull()
+            ?: throw NotFoundException("Suggestion not found")
+        AnswerSuggestions.update({ AnswerSuggestions.id eq suggestionId }) {
             it[status] = STATUS_DISMISSED
             it[resolvedByUserId] = adminUserId
-            it[resolvedAtMillis] = System.currentTimeMillis()
+            it[resolvedAtMillis] = now
         }
-        if (updated == 0) throw NotFoundException("Suggestion not found")
+        notifySuggester(
+            suggesterUserId = suggestion[AnswerSuggestions.suggesterUserId].value,
+            adminUserId = adminUserId,
+            cardUid = suggestion[AnswerSuggestions.cardUid],
+            suggested = suggestion[AnswerSuggestions.suggestedAnswer],
+            accepted = false,
+            now = now,
+        )
+    }
+
+    /**
+     * Tells the suggester their "this should be correct" suggestion was reviewed (#333) — accepted or
+     * declined, carrying the deep-link fields (card + deck) so the client renders localized copy. Runs
+     * in the caller's transaction so it commits with the decision. Skips an admin reviewing their own
+     * suggestion. Deck fields are best-effort (omitted if the card/deck is gone).
+     */
+    private fun notifySuggester(
+        suggesterUserId: Long,
+        adminUserId: Long,
+        cardUid: String,
+        suggested: String,
+        accepted: Boolean,
+        now: Long,
+    ) {
+        if (suggesterUserId == adminUserId) return
+        val deckRow = (Flashcards innerJoin Decks)
+            .select(Flashcards.deckId, Decks.title)
+            .where { Flashcards.cardUid eq cardUid }
+            .firstOrNull()
+        val data = buildMap {
+            put("accepted", accepted.toString())
+            put("suggestedAnswer", suggested)
+            put("cardUid", cardUid)
+            deckRow?.let {
+                put("deckId", it[Flashcards.deckId].value.toString())
+                put("deckTitle", it[Decks.title])
+            }
+        }
+        NotificationRepository.insert(suggesterUserId, NotificationType.ANSWER_SUGGESTION_REVIEWED, data, now)
     }
 
     /** Throws unless [cardUid] is a real card on a global deck (suggestions are global-only). */

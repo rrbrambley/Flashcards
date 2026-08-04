@@ -181,5 +181,15 @@ private fun notificationText(notification: Notification): String = when (notific
         R.string.notification_discussion_reply,
         notification.data["replierDisplayName"] ?: stringResource(R.string.notification_someone),
     )
+    "answer_suggestion_reviewed" -> {
+        val answer = notification.data["suggestedAnswer"].orEmpty()
+        val deck = notification.data["deckTitle"] ?: stringResource(R.string.notification_a_deck)
+        val template = if (notification.data["accepted"] == "true") {
+            R.string.notification_suggestion_accepted
+        } else {
+            R.string.notification_suggestion_declined
+        }
+        stringResource(template, answer, deck)
+    }
     else -> stringResource(R.string.notification_generic)
 }

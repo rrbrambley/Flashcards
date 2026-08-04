@@ -273,4 +273,7 @@
     <string name="notification_discussion_reply">%1$s replied to your comment</string>
     <string name="notification_someone">Someone</string>
     <string name="notification_generic">You have a new notification</string>
+    <string name="notification_suggestion_accepted">Your suggestion \"%1$s\" was added to %2$s</string>
+    <string name="notification_suggestion_declined">Your suggestion \"%1$s\" wasn\'t added to %2$s</string>
+    <string name="notification_a_deck">a deck</string>
 </resources>

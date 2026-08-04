@@ -48,6 +48,22 @@ describe('NotificationBell', () => {
     expect(screen.getByText('User2 replied to your comment')).toBeInTheDocument();
   });
 
+  it('renders answer-suggestion-reviewed copy for accepted + declined', async () => {
+    const reviewed = (id: number, accepted: boolean): NotificationDto => ({
+      id,
+      type: 'answer_suggestion_reviewed',
+      data: { accepted: String(accepted), suggestedAnswer: 'Paris, France', deckTitle: 'Capitals', cardUid: `c${id}` },
+      isRead: false,
+      createdAtMillis: Date.now() - id * 60_000,
+    });
+    vi.mocked(api.getNotifications).mockResolvedValue({ items: [reviewed(1, true), reviewed(2, false)], nextCursor: null });
+    render(<NotificationBell />);
+    await openPanel();
+
+    expect(await screen.findByText('Your suggestion "Paris, France" was added to Capitals')).toBeInTheDocument();
+    expect(screen.getByText('Your suggestion "Paris, France" wasn\'t added to Capitals')).toBeInTheDocument();
+  });
+
   it('marks one read on click and decrements the badge', async () => {
     render(<NotificationBell />);
     await openPanel();
