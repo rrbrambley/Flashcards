@@ -314,6 +314,51 @@ button.danger:hover:not(:disabled) {
   white-space: nowrap;
 }
 
+/* Tappable variant of the daily-streak badge — opens the streak-details popup (#353). */
+.streak-badge-button {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: inherit;
+}
+.streak-badge-button:hover {
+  background: #ffe4cc;
+}
+
+/* Streak-details popup (#353): a flame hero, a headline, and a max-streak / sessions-completed row. */
+.streak-details {
+  text-align: center;
+}
+.streak-details-hero {
+  font-size: 2.75rem;
+  font-weight: 800;
+  color: #c2410c;
+}
+.streak-details-headline {
+  margin: 0.25rem 0 1.25rem;
+  font-weight: 600;
+}
+.streak-details-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--border);
+}
+.streak-details-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.streak-details-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.streak-details-stat-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* Live in-session answer streak (FLA-99) — warm like the daily streak but bolder, and it "pops" at
    the 5+ milestone. Distinct from .streak-badge (the daily streak shown on completion/home). */
 .session-streak-row {

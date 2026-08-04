@@ -14,6 +14,7 @@ enum FeatureFlag {
     static let practiceGradeAtEnd = "practice_grade_at_end"
     static let practiceTimer = "practice_timer"
     static let notifications = "notifications"
+    static let streakDetails = "streak_details"
 }
 
 /// Holds the caller's resolved feature flags (FLA-174) so SwiftUI can hide/reveal features. iOS has

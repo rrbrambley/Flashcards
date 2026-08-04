@@ -182,6 +182,16 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun streakDetailsFlag_isSurfacedFromTheFeatureFlagRepository() = runTest(testDispatcher) {
+        val repository = FakeHomeRepository(homeData = emptyList())
+        val flags = FakeFeatureFlagRepository(mapOf(FeatureFlags.STREAK_DETAILS to true))
+
+        val viewModel = homeViewModel(repository, featureFlags = flags)
+
+        assertEquals(true, viewModel.streakDetailsEnabled.value)
+    }
+
+    @Test
     fun removeSession_discardsThroughThePracticeRepository() = runTest(testDispatcher) {
         val repository = FakeHomeRepository(homeData = emptyList())
         val sessionRepository = FakePracticeSessionRepository()

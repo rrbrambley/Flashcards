@@ -33,4 +33,8 @@ enum class FeatureFlag(val key: String, val description: String, val defaultEnab
     // Show the in-app notifications center + unread badge (#321). Visibility only — notifications are
     // still produced when off; flipping this off just hides the UI.
     NOTIFICATIONS("notifications", "Show the in-app notifications center", true),
+
+    // Make the streak flame badge tappable → a popup with current/max streak + sessions completed
+    // (#353). Visibility only; off leaves the badge as a plain, non-interactive pill.
+    STREAK_DETAILS("streak_details", "Show the streak-details popup on the flame badge", true),
 }

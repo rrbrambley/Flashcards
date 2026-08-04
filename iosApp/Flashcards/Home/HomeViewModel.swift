@@ -11,6 +11,9 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var refreshFailed = false
     /// Overall practice streak (FLA-106); nil until loaded / when there's no active streak.
     @Published private(set) var streak: Int?
+    /// Longest-ever streak + lifetime completed-session count, for the streak-details popup (#353).
+    @Published private(set) var maxStreak: Int = 0
+    @Published private(set) var sessionsCompleted: Int = 0
 
     private let repository: HomeRepository
     private let apiClient: FlashcardApiClient
@@ -24,6 +27,8 @@ final class HomeViewModel: ObservableObject {
     func loadStreak() async {
         if let result = try? await apiClient.getStreaks(tz: TimeZone.current.identifier) {
             streak = Int(result.overall.current)
+            maxStreak = Int(result.overall.longest)
+            sessionsCompleted = Int(result.sessionsCompleted)
         }
     }
 

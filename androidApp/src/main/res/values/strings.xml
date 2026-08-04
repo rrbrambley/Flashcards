@@ -132,6 +132,12 @@
     <string name="practice_complete_subtitle">Nice work reviewing this deck.</string>
     <!-- Practice streak pill (FLA-106), shown on Home + the completion screen. %1$d = day count. -->
     <string name="streak_badge">🔥 %1$d day streak</string>
+    <!-- Streak-details popup (#353) -->
+    <string name="streak_details_flame">🔥 %1$d</string>
+    <string name="streak_details_headline">You\'re on a %1$d-day streak!</string>
+    <string name="streak_details_max">Max streak</string>
+    <string name="streak_details_sessions">Sessions completed</string>
+    <string name="streak_details_done">Done</string>
     <string name="practice_cd_previous_card">Previous card</string>
     <string name="practice_cd_next_card">Next card</string>
     <!-- Practice modes -->
