@@ -60,6 +60,27 @@ class FlashcardsScreenTest {
     }
 
     @Test
+    fun batch_topBarShowsTheDeckName() {
+        // #352: the top-bar title is the deck being practiced, not the generic "Flashcards".
+        composeTestRule.setContent {
+            BatchPracticeScreen(
+                state = BatchPracticeUiState.Answering(
+                    cards = listOf(Flashcard(question = "Capital of France?", answer = "Paris")),
+                    mode = PracticeMode.Test.key,
+                ),
+                remainingSeconds = null,
+                onSubmit = {},
+                sharedDeck = { 1L to "World Capitals" },
+                isGuest = false,
+                onBack = {},
+            )
+        }
+
+        composeTestRule.onNodeWithText("World Capitals").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Flashcards").assertDoesNotExist()
+    }
+
+    @Test
     fun batchCompleted_showsRecap() {
         val state = BatchPracticeUiState.Completed(
             numCorrect = 1,
