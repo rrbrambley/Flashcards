@@ -215,7 +215,12 @@ private fun CardByCardPractice(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(stringResource(R.string.flashcards), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Show the deck being practiced; fall back to the app name until it's loaded (#352).
+                    Text(
+                        text = flashcardsViewModel.sharedDeck()?.second ?: stringResource(R.string.flashcards),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -865,7 +870,12 @@ internal fun BatchPracticeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(stringResource(R.string.flashcards), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Show the deck being practiced; fall back to the app name until it's loaded (#352).
+                    Text(
+                        text = sharedDeck()?.second ?: stringResource(R.string.flashcards),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
