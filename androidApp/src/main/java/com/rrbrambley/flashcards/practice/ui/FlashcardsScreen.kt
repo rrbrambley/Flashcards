@@ -118,6 +118,14 @@ fun FlashcardsScreen(
 }
 
 /**
+ * Whether to offer the "How to practice" help (the flip/swipe copy is Classic-only): true only while a
+ * Classic card is actually showing — never in Test / Multiple Choice, and not on the loading or
+ * completion screens (those aren't a `ShowCard`, so the mode is unknown) (#351).
+ */
+internal fun offersClassicHelp(state: PracticeUiState): Boolean =
+    state is PracticeUiState.ShowCard && state.mode == PracticeMode.Classic.key
+
+/**
  * The mode-agnostic card-by-card runner. The Scaffold + score row + loading/completion states are
  * shared; each card is rendered by the per-mode view chosen from the session's
  * [PracticeUiState.ShowCard.mode] (Classic flip / Test text-entry / Multiple Choice). The ViewModel
@@ -138,10 +146,9 @@ private fun CardByCardPractice(
     // The card whose discussion sheet is open (its cardUid), or null when closed (FLA-122).
     var discussionCardUid by remember { mutableStateOf<String?>(null) }
 
-    // The help copy explains flip/swipe, so it's only offered in Classic mode.
-    val isClassic = (flashcardsState as? PracticeUiState.ShowCard)?.mode?.let {
-        it == PracticeMode.Classic.key
-    } ?: true
+    // The help copy explains flip/swipe, so it's only offered while actually showing a Classic card
+    // (#351) — not in Test/Multiple-Choice, nor on the loading/completion screens.
+    val isClassic = offersClassicHelp(flashcardsState)
     // Share is available once a deck is loaded (a card is showing or the session is complete).
     val canShare = flashcardsState is PracticeUiState.ShowCard ||
         flashcardsState is PracticeUiState.Completed
