@@ -9,9 +9,13 @@ struct StreakDetailsView: View {
 
     var body: some View {
         VStack(spacing: Spacing.md) {
-            Text("🔥 \(current)")
-                .font(.system(size: 44, weight: .bold))
-                .foregroundStyle(.orange)
+            // SF Symbol (not the 🔥 emoji) so it always renders — matching StreakBadge.
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "flame.fill")
+                Text("\(current)")
+            }
+            .font(.system(size: 44, weight: .bold))
+            .foregroundStyle(.orange)
             Text("You're on a \(current)-day streak!")
                 .font(.subheadline.weight(.medium))
             Divider()
