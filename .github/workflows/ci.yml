@@ -117,7 +117,7 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
         with:
           # Publish a Build Scan per Gradle invocation to scans.gradle.com for easier CI triage
           # (FLA-139). Publishing to the public service requires agreeing to Gradle's terms of use.
@@ -157,7 +157,7 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
         with:
           # Publish a Build Scan per Gradle invocation to scans.gradle.com for easier CI triage
           # (FLA-139). Publishing to the public service requires agreeing to Gradle's terms of use.
@@ -317,7 +317,7 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
         with:
           build-scan-publish: true
           build-scan-terms-of-use-url: "https://gradle.com/help/legal-terms-of-use"
@@ -401,7 +401,7 @@ jobs:
         uses: android-actions/setup-android@v4
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
         with:
           # Publish a Build Scan per Gradle invocation to scans.gradle.com for easier CI triage
           # (FLA-139). Publishing to the public service requires agreeing to Gradle's terms of use.
@@ -523,7 +523,7 @@ jobs:
           java-version: '21'
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
         with:
           # Publish a Build Scan per Gradle invocation to scans.gradle.com for easier CI triage
           # (FLA-139). Publishing to the public service requires agreeing to Gradle's terms of use.
