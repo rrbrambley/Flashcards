@@ -8,7 +8,10 @@ import com.rrbrambley.flashcards.backend.db.dbQuery
 import com.rrbrambley.flashcards.backend.error.NotFoundException
 import com.rrbrambley.flashcards.backend.mapping.toPracticeAnswerDto
 import com.rrbrambley.flashcards.backend.mapping.toPracticeSessionDto
+import com.rrbrambley.flashcards.backend.notifications.NotificationRepository
+import com.rrbrambley.flashcards.backend.notifications.NotificationType
 import com.rrbrambley.flashcards.backend.routes.Cursor
+import com.rrbrambley.flashcards.backend.streaks.StreakService
 import com.rrbrambley.flashcards.shared.api.Page
 import com.rrbrambley.flashcards.shared.api.PracticeAnswerDto
 import com.rrbrambley.flashcards.shared.api.PracticeSessionDto
@@ -199,6 +202,9 @@ object SessionRepository {
 
     suspend fun complete(userId: Long, sessionId: Long, timeZone: String?): PracticeSessionDto = dbQuery {
         val now = System.currentTimeMillis()
+        // The streak before this completion is counted (today not yet a completed day, usually), so we
+        // can tell whether THIS completion advances it across a milestone (#333).
+        val streakBefore = StreakService.overallCurrentStreakTx(userId, timeZone)
         val updated = PracticeSessions.update({
             (PracticeSessions.id eq sessionId) and (PracticeSessions.userId eq userId)
         }) {
@@ -209,6 +215,18 @@ object SessionRepository {
             it[completedTimeZone] = timeZone
         }
         if (updated == 0) throw NotFoundException("Session $sessionId not found")
+
+        // Streak-milestone notification (#333): fire once, only on the first completion of the day that
+        // pushes the streak onto a milestone value — subsequent same-day completions don't advance it.
+        val streakAfter = StreakService.overallCurrentStreakTx(userId, timeZone)
+        if (streakAfter > streakBefore && streakAfter in StreakService.MILESTONES) {
+            NotificationRepository.insert(
+                recipientUserId = userId,
+                type = NotificationType.STREAK_MILESTONE,
+                data = mapOf("streak" to streakAfter.toString()),
+                now = now,
+            )
+        }
         fetchSession(userId, sessionId)!!
     }
 

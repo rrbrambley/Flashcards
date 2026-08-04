@@ -19,6 +19,22 @@ import java.time.ZoneOffset
 object StreakService {
 
     /**
+     * Daily-streak lengths that earn a "🔥 N-day streak!" milestone notification (#333). Curated to be
+     * meaningful, not spammy; extend as desired.
+     */
+    val MILESTONES = setOf(7, 30, 100, 365)
+
+    /**
+     * The user's current overall streak, computed within the CALLER's transaction — for producers that
+     * need to detect a streak change during another action (e.g. session completion, #333). Must be
+     * called inside a `dbQuery` block.
+     */
+    fun overallCurrentStreakTx(userId: Long, tz: String?): Int {
+        val zone = tz.toZoneOrNull() ?: ZoneOffset.UTC
+        return computeStreak(completedDates(userId, zone).overall, LocalDate.now(zone)).current
+    }
+
+    /**
      * The user's practice streak (FLA-106): consecutive days with a **completed** session, overall
      * and per deck. Each completion is bucketed to a local date using the timezone recorded at
      * completion ([PracticeSessions.completedTimeZone], FLA-105), falling back to the caller's [tz];

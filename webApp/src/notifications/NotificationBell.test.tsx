@@ -64,6 +64,33 @@ describe('NotificationBell', () => {
     expect(screen.getByText('Your suggestion "Paris, France" wasn\'t added to Capitals')).toBeInTheDocument();
   });
 
+  it('renders streak-milestone and thread-activity copy', async () => {
+    vi.mocked(api.getNotifications).mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          type: 'streak_milestone',
+          data: { streak: '7' },
+          isRead: false,
+          createdAtMillis: Date.now() - 60_000,
+        },
+        {
+          id: 2,
+          type: 'thread_activity',
+          data: { replierDisplayName: 'Carol', cardUid: 'c2' },
+          isRead: false,
+          createdAtMillis: Date.now() - 120_000,
+        },
+      ],
+      nextCursor: null,
+    });
+    render(<NotificationBell />);
+    await openPanel();
+
+    expect(await screen.findByText('🔥 7-day streak! Keep it up.')).toBeInTheDocument();
+    expect(screen.getByText('Carol also posted in a discussion you joined')).toBeInTheDocument();
+  });
+
   it('marks one read on click and decrements the badge', async () => {
     render(<NotificationBell />);
     await openPanel();
