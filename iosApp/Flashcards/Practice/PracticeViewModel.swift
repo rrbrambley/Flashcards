@@ -115,6 +115,10 @@ final class PracticeViewModel: ObservableObject {
     @Published private(set) var streak: Int?
     /// Per-card recap of the run (FLA-149); populated after completion.
     @Published private(set) var review: [ReviewItem] = []
+    /// The run's mode + whether the deck is global — gate the completion recap's "this should be
+    /// correct" suggestion (#361). Populated on completion.
+    @Published private(set) var mode: String = ""
+    @Published private(set) var isGlobal = false
     /// Remaining seconds for a timed run (#289); nil = untimed.
     @Published private(set) var remainingSeconds: Int?
 
@@ -222,6 +226,8 @@ final class PracticeViewModel: ObservableObject {
         case let done as PracticeUiState.Completed:
             streak = done.streak.map { Int($0.intValue) }
             review = (done.review as? [ReviewItem]) ?? []
+            mode = done.mode
+            isGlobal = done.isGlobal
             state = .completed(numCorrect: Int(done.numCorrect), numIncorrect: Int(done.numIncorrect))
         case is PracticeUiState.Failed:
             state = .failed

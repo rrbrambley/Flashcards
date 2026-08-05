@@ -34,6 +34,11 @@ sealed class PracticeUiState {
         val streak: Int? = null,
         /** Per-card recap of the run (FLA-149); empty until the answer log loads / for guests. */
         val review: List<ReviewItem> = emptyList(),
+        /** The run's mode key + whether the deck is global — so the recap can offer the Test-mode
+         *  "this should be correct" suggestion on a global deck's wrong answers (#338/#361), the same
+         *  as the grade-at-the-end recap does. */
+        val mode: String = PracticeMode.Classic.key,
+        val isGlobal: Boolean = false,
     ) : PracticeUiState()
 
     data object Failed : PracticeUiState()

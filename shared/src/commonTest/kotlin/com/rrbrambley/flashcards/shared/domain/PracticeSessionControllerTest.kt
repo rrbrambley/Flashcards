@@ -302,6 +302,27 @@ class PracticeSessionControllerTest {
         assertEquals(listOf("a", "b"), completed.review.map { it.cardUid })
         assertEquals("oops", completed.review[1].submittedText)
         assertTrue(sessions.completed)
+        // The completion carries the run mode + (non-global) deck flag for the suggestion gate (#361).
+        assertEquals(PracticeMode.Test.key, completed.mode)
+        assertEquals(false, completed.isGlobal)
+    }
+
+    @Test
+    fun completed_carriesModeAndGlobalForTheSuggestionGate() = runTest {
+        // #361: the card-by-card completion recap gates the Test-mode "this should be correct"
+        // suggestion on the run mode + whether the deck is global, exactly like grade-at-the-end.
+        val sessions = FakeSessionRepo(session(deckId = 1)) // default mode is Test
+        val decks = FakeDeckRepo(deck(1, listOf(card("a")), global = true))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks)
+        c.start()
+        advanceUntilIdle()
+
+        c.onResult(correct = false) // single card → complete
+        advanceUntilIdle()
+
+        val completed = c.state.value as PracticeUiState.Completed
+        assertEquals(PracticeMode.Test.key, completed.mode)
+        assertTrue(completed.isGlobal)
     }
 
     // ---- guest ----
