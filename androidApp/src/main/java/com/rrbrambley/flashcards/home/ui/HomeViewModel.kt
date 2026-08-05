@@ -7,6 +7,7 @@ import com.rrbrambley.flashcards.auth.FeatureFlagRepository
 import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.StringProvider
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
+import com.rrbrambley.flashcards.shared.api.StreaksResponse
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
 import com.rrbrambley.flashcards.shared.domain.PracticeSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,10 +43,19 @@ class HomeViewModel @Inject constructor(
     private val _streak = MutableStateFlow<Int?>(null)
     val streak: StateFlow<Int?> = _streak.asStateFlow()
 
+    // The full streaks payload (current/longest + sessionsCompleted) backing the streak-details popup
+    // (#353); null until loaded / on failure.
+    private val _streaks = MutableStateFlow<StreaksResponse?>(null)
+    val streaks: StateFlow<StreaksResponse?> = _streaks.asStateFlow()
+
     // Whether the streak-calendar feature is enabled for this user (FLA-174); false until resolved.
     // The Android streak calendar (FLA-172) will render behind this.
     private val _streakCalendarEnabled = MutableStateFlow(false)
     val streakCalendarEnabled: StateFlow<Boolean> = _streakCalendarEnabled.asStateFlow()
+
+    // Whether the streak-details popup (#353) is enabled; false until resolved / when off.
+    private val _streakDetailsEnabled = MutableStateFlow(false)
+    val streakDetailsEnabled: StateFlow<Boolean> = _streakDetailsEnabled.asStateFlow()
 
     // One-shot user-facing messages (e.g. a failed background refresh), surfaced as a snackbar.
     private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
@@ -62,9 +72,9 @@ class HomeViewModel @Inject constructor(
     /** Best-effort overall-streak fetch; a failure (or no streak) simply leaves the badge hidden. */
     private fun loadStreak() {
         viewModelScope.launch {
-            _streak.value = runCatching {
-                apiClient.getStreaks(ZoneId.systemDefault().id).overall.current
-            }.getOrNull()
+            val response = runCatching { apiClient.getStreaks(ZoneId.systemDefault().id) }.getOrNull()
+            _streaks.value = response
+            _streak.value = response?.overall?.current
         }
     }
 
@@ -72,6 +82,7 @@ class HomeViewModel @Inject constructor(
     private fun loadFlags() {
         viewModelScope.launch {
             _streakCalendarEnabled.value = featureFlagRepository.isEnabled(FeatureFlags.STREAK_CALENDAR)
+            _streakDetailsEnabled.value = featureFlagRepository.isEnabled(FeatureFlags.STREAK_DETAILS)
         }
     }
 

@@ -44,6 +44,12 @@ object StreakService {
         val requestZone = tz.toZoneOrNull() ?: ZoneOffset.UTC
         val today = LocalDate.now(requestZone)
         val completed = completedDates(userId, requestZone)
+        // Lifetime completed-session count for the streak-details popup (#353).
+        val sessionsCompleted = PracticeSessions
+            .select(PracticeSessions.id)
+            .where { (PracticeSessions.userId eq userId) and (PracticeSessions.isCompleted eq true) }
+            .count()
+            .toInt()
 
         StreaksResponse(
             overall = computeStreak(completed.overall, today),
@@ -51,6 +57,7 @@ object StreakService {
                 val streak = computeStreak(dates, today)
                 DeckStreakDto(deckId, streak.current, streak.longest)
             },
+            sessionsCompleted = sessionsCompleted,
         )
     }
 

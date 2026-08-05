@@ -9,7 +9,10 @@ import type { HomeData } from '../api/types';
 vi.mock('../api/client', () => ({
   api: { getHome: vi.fn(), getSession: vi.fn(), deleteSession: vi.fn(), getAllDecks: vi.fn(), getStreaks: vi.fn() },
 }));
-vi.mock('../auth/auth-context', () => ({ useAuth: () => ({ signOut: vi.fn(), isEnabled: () => false }) }));
+let mockFlags: Record<string, boolean> = {};
+vi.mock('../auth/auth-context', () => ({
+  useAuth: () => ({ signOut: vi.fn(), isEnabled: (key: string) => mockFlags[key] === true }),
+}));
 
 function PracticeStub() {
   const { id } = useParams();
@@ -54,8 +57,9 @@ const createItem: HomeData = {
 describe('HomePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockFlags = {};
     // Default: no active streak, so the badge is absent unless a test opts in.
-    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 0, longest: 0 }, decks: [] });
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 0, longest: 0 }, decks: [], sessionsCompleted: 0 });
   });
 
   it('renders the home feed items and their buttons', async () => {
@@ -172,10 +176,35 @@ describe('HomePage', () => {
 
   it('shows the overall streak badge when there is an active streak', async () => {
     vi.mocked(api.getHome).mockResolvedValue([createItem]);
-    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 4, longest: 9 }, decks: [] });
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 4, longest: 9 }, decks: [], sessionsCompleted: 12 });
     renderHome();
 
     expect(await screen.findByText(/4 day streak/)).toBeInTheDocument();
+  });
+
+  it('opens the streak-details popup on tap when streak_details is enabled (#353)', async () => {
+    mockFlags = { streak_details: true };
+    vi.mocked(api.getHome).mockResolvedValue([createItem]);
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 4, longest: 9 }, decks: [], sessionsCompleted: 12 });
+    renderHome();
+
+    await userEvent.click(await screen.findByRole('button', { name: /4-day streak/ }));
+
+    // The popup surfaces current streak, max streak, and sessions completed.
+    expect(await screen.findByText("You’re on a 4-day streak!")).toBeInTheDocument();
+    expect(screen.getByText('9')).toBeInTheDocument();
+    expect(screen.getByText('Max streak')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
+    expect(screen.getByText('Sessions completed')).toBeInTheDocument();
+  });
+
+  it('leaves the streak badge non-interactive when streak_details is off', async () => {
+    vi.mocked(api.getHome).mockResolvedValue([createItem]);
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 4, longest: 9 }, decks: [], sessionsCompleted: 12 });
+    renderHome();
+
+    expect(await screen.findByText(/4 day streak/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /streak/ })).not.toBeInTheDocument();
   });
 
   it('hides the streak badge when the current streak is zero', async () => {

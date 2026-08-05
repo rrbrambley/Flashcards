@@ -6,10 +6,15 @@ import kotlinx.serialization.Serializable
  * Response for `GET /streaks` (FLA-106): the user's practice **streak** — consecutive days with a
  * completed session — computed from the `completedAtMillis`/`completedTimeZone` recorded per
  * completion (FLA-105). [overall] spans all decks; [decks] carries the same per deck (the data is
- * returned even though current clients only surface [overall]).
+ * returned even though current clients only surface [overall]). [sessionsCompleted] is the user's
+ * lifetime count of completed sessions, for the streak-details popup (#353).
  */
 @Serializable
-data class StreaksResponse(val overall: StreakDto, val decks: List<DeckStreakDto> = emptyList())
+data class StreaksResponse(
+    val overall: StreakDto,
+    val decks: List<DeckStreakDto> = emptyList(),
+    val sessionsCompleted: Int = 0,
+)
 
 /** A streak: [current] consecutive days up to today (or yesterday, one grace day), and the [longest] run ever. */
 @Serializable

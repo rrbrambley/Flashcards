@@ -350,6 +350,9 @@
     "Mark all read" : {
 
     },
+    "Max streak" : {
+
+    },
     "Multiple Choice" : {
 
     },
@@ -488,6 +491,9 @@
     "Search decks" : {
 
     },
+    "Sessions completed" : {
+
+    },
     "Settings" : {
 
     },
@@ -622,6 +628,9 @@
 
     },
     "You'll lose your progress if you leave. Create an account to save this session." : {
+
+    },
+    "You're on a %lld-day streak!" : {
 
     },
     "You're posting too quickly. Please wait a moment." : {

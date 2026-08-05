@@ -204,6 +204,8 @@ export interface DeckStreakDto {
 export interface StreaksResponse {
   overall: StreakDto;
   decks: DeckStreakDto[];
+  // Lifetime count of completed sessions, for the streak-details popup (#353).
+  sessionsCompleted: number;
 }
 
 // GET /streaks/calendar?month=YYYY-MM — the days of `month` the user completed a session (FLA-170),

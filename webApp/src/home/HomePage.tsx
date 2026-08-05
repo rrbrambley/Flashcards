@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
-import type { HomeButtonAction, HomeData, HomeSessionInfo } from '../api/types';
+import type { HomeButtonAction, HomeData, HomeSessionInfo, StreaksResponse } from '../api/types';
 import { useAuth } from '../auth/auth-context';
 import { Avatar } from '../components/Avatar';
 import { NotificationBell } from '../notifications/NotificationBell';
@@ -17,8 +17,10 @@ export function HomePage() {
   // The in-progress session the user is confirming removal of (FLA-205), or null.
   const [confirmRemove, setConfirmRemove] = useState<{ sessionId: number; title: string } | null>(null);
   const [removing, setRemoving] = useState(false);
-  // Overall practice streak (FLA-106); null until loaded, 0 when there is no active streak.
-  const [streak, setStreak] = useState<number | null>(null);
+  // Overall practice streak (FLA-106); null until loaded, `overall.current` 0 when there's no streak.
+  const [streaks, setStreaks] = useState<StreaksResponse | null>(null);
+  // Whether the streak-details popup (#353) is open.
+  const [showStreakDetails, setShowStreakDetails] = useState(false);
 
   const loadHome = useCallback(async () => {
     try {
@@ -32,7 +34,7 @@ export function HomePage() {
     // Best-effort: a streak failure must never block the feed, so fetch it separately.
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      setStreak((await api.getStreaks(tz)).overall.current);
+      setStreaks(await api.getStreaks(tz));
     } catch {
       // leave the badge hidden
     }
@@ -92,11 +94,22 @@ export function HomePage() {
       <header className="app-header">
         <h1>Flashcards</h1>
         <nav className="app-header-nav">
-          {streak != null && streak > 0 && (
-            <span className="streak-badge" title="Days in a row with a completed practice">
-              🔥 {streak} day streak
-            </span>
-          )}
+          {streaks &&
+            streaks.overall.current > 0 &&
+            (isEnabled('streak_details') ? (
+              <button
+                type="button"
+                className="streak-badge streak-badge-button"
+                onClick={() => setShowStreakDetails(true)}
+                aria-label={`${streaks.overall.current}-day streak — view details`}
+              >
+                🔥 {streaks.overall.current} day streak
+              </button>
+            ) : (
+              <span className="streak-badge" title="Days in a row with a completed practice">
+                🔥 {streaks.overall.current} day streak
+              </span>
+            ))}
           <Link to="/library" className="link-btn">
             Library
           </Link>
@@ -165,6 +178,35 @@ export function HomePage() {
           </div>
         </div>
       )}
+
+      {showStreakDetails && streaks && (
+        <StreakDetailsModal streaks={streaks} onClose={() => setShowStreakDetails(false)} />
+      )}
+    </div>
+  );
+}
+
+/** The streak-details popup (#353): the current streak, plus max streak + sessions completed. */
+function StreakDetailsModal({ streaks, onClose }: { streaks: StreaksResponse; onClose: () => void }) {
+  return (
+    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Streak details" onClick={onClose}>
+      <div className="modal-card streak-details" onClick={(e) => e.stopPropagation()}>
+        <div className="streak-details-hero">🔥 {streaks.overall.current}</div>
+        <p className="streak-details-headline">You’re on a {streaks.overall.current}-day streak!</p>
+        <div className="streak-details-stats">
+          <div>
+            <span className="streak-details-stat-value">{streaks.overall.longest}</span>
+            <span className="streak-details-stat-label">Max streak</span>
+          </div>
+          <div>
+            <span className="streak-details-stat-value">{streaks.sessionsCompleted}</span>
+            <span className="streak-details-stat-label">Sessions completed</span>
+          </div>
+        </div>
+        <div className="modal-actions">
+          <button onClick={onClose}>Done</button>
+        </div>
+      </div>
     </div>
   );
 }

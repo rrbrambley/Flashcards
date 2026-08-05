@@ -1463,6 +1463,30 @@ class ApplicationFlowTest {
     }
 
     @Test
+    fun streaks_report_the_lifetime_completed_session_count() = runApp { client ->
+        // #353: sessionsCompleted counts every completed session (not distinct days), for the popup.
+        val tz = "UTC"
+        val auth = client.register("sessioncount", "password1")
+        val deckId = client.get("/decks?limit=1") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items.first().id
+        suspend fun sessionsCompleted(): Int =
+            client.get("/streaks?tz=$tz") { bearerAuth(auth.accessToken) }.decode<StreaksResponse>().sessionsCompleted
+
+        assertEquals(0, sessionsCompleted())
+
+        // Three completions today: the streak stays at one day, but the session count is three.
+        repeat(3) {
+            val session = client.createSession(auth.accessToken, deckId)
+            client.post("/sessions/${session.id}/complete") {
+                bearerAuth(auth.accessToken)
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(CompleteSessionRequest(tz)))
+            }
+        }
+        assertEquals(3, sessionsCompleted())
+    }
+
+    @Test
     fun streak_calendar_lists_active_days_for_month() = runApp { client ->
         val tz = "America/New_York"
         val zone = ZoneId.of(tz)
@@ -1567,6 +1591,8 @@ class ApplicationFlowTest {
         assertEquals(true, flags["practice_timer"])
         // The notifications-center visibility switch (#321) is seeded default-on too.
         assertEquals(true, flags["notifications"])
+        // The streak-details popup switch (#353) is seeded default-on too.
+        assertEquals(true, flags["streak_details"])
         val me = client.get("/auth/me") { bearerAuth(user.accessToken) }.decode<MeResponse>()
         assertEquals(true, me.flags["discussions"])
         assertEquals(true, me.flags["avatar_selection"])

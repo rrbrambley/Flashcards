@@ -23,6 +23,8 @@ struct HomeView: View {
         let title: String
     }
     @State private var pendingRemoval: RemovingSession?
+    /// Whether the streak-details popup (#353) is open.
+    @State private var showStreakDetails = false
 
     init(repository: HomeRepository, apiClient: FlashcardApiClient, onCreateDeck: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: HomeViewModel(repository: repository, apiClient: apiClient))
@@ -95,9 +97,23 @@ struct HomeView: View {
     private func feed(_ items: [HomeData]) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                // Overall practice streak (FLA-106), pinned above the feed when active.
+                // Overall practice streak (FLA-106), pinned above the feed when active. Tappable → the
+                // streak-details popup when the streak_details flag is on (#353).
                 if let streak = viewModel.streak, streak > 0 {
-                    StreakBadge(streak: streak)
+                    if container.featureFlagStore.isEnabled(FeatureFlag.streakDetails) {
+                        Button { showStreakDetails = true } label: { StreakBadge(streak: streak) }
+                            .buttonStyle(.plain)
+                            .popover(isPresented: $showStreakDetails) {
+                                StreakDetailsView(
+                                    current: streak,
+                                    maxStreak: viewModel.maxStreak,
+                                    sessionsCompleted: viewModel.sessionsCompleted
+                                )
+                                .presentationCompactAdaptation(.popover)
+                            }
+                    } else {
+                        StreakBadge(streak: streak)
+                    }
                 }
                 // Group consecutive cards under their section header (FLA-96); header-less for nil.
                 ForEach(Array(HomeDataKt.groupHomeBySection(items: items).enumerated()), id: \.offset) { _, group in

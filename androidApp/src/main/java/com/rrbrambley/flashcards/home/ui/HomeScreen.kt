@@ -1,5 +1,6 @@
 package com.rrbrambley.flashcards.home.ui
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.ui.labelRes
+import com.rrbrambley.flashcards.shared.api.StreaksResponse
 import com.rrbrambley.flashcards.shared.domain.HomeButton
 import com.rrbrambley.flashcards.shared.domain.HomeButtonAction
 import com.rrbrambley.flashcards.shared.domain.HomeData
@@ -67,6 +70,8 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel(), onButtonAction: (
     val uiState by homeViewModel.uiState.collectAsState()
     val isRefreshing by homeViewModel.isRefreshing.collectAsState()
     val streak by homeViewModel.streak.collectAsState()
+    val streaks by homeViewModel.streaks.collectAsState()
+    val streakDetailsEnabled by homeViewModel.streakDetailsEnabled.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -75,6 +80,8 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel(), onButtonAction: (
 
     // The in-progress session (id + title) the user is confirming removal of (FLA-205), or null.
     var pendingRemoval by remember { mutableStateOf<Pair<Long, String>?>(null) }
+    // Whether the streak-details popup (#353) is open.
+    var showStreakDetails by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
@@ -90,6 +97,7 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel(), onButtonAction: (
                     streak = streak,
                     onButtonAction = onButtonAction,
                     onRequestRemove = { sessionId, title -> pendingRemoval = sessionId to title },
+                    onStreakClick = if (streakDetailsEnabled) ({ showStreakDetails = true }) else null,
                 )
             }
         }
@@ -105,6 +113,10 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel(), onButtonAction: (
             },
             onDismiss = { pendingRemoval = null },
         )
+    }
+
+    streaks?.takeIf { showStreakDetails }?.let { s ->
+        StreakDetailsDialog(streaks = s, onDismiss = { showStreakDetails = false })
     }
 }
 
@@ -122,6 +134,61 @@ private fun RemoveSessionDialog(deckTitle: String, onConfirm: () -> Unit, onDism
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
+}
+
+/** The streak-details popup (#353): the flame current streak + a max-streak / sessions-completed row. */
+@Composable
+private fun StreakDetailsDialog(streaks: StreaksResponse, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.streak_details_done)) }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.streak_details_flame, streaks.overall.current),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFC2410C),
+                )
+                Text(
+                    text = stringResource(R.string.streak_details_headline, streaks.overall.current),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                ) {
+                    StreakStat(
+                        value = streaks.overall.longest.toString(),
+                        label = stringResource(R.string.streak_details_max),
+                    )
+                    StreakStat(
+                        value = streaks.sessionsCompleted.toString(),
+                        label = stringResource(R.string.streak_details_sessions),
+                    )
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun StreakStat(value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable
@@ -158,6 +225,8 @@ internal fun HomeScreenContent(
     streak: Int?,
     onButtonAction: (HomeButtonAction) -> Unit,
     onRequestRemove: (Long, String) -> Unit = { _, _ -> },
+    // When non-null (the streak_details flag is on, #353), tapping the badge opens the details popup.
+    onStreakClick: (() -> Unit)? = null,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -166,7 +235,7 @@ internal fun HomeScreenContent(
     ) {
         // Overall practice streak (FLA-106), pinned above the feed when active.
         if (streak != null && streak > 0) {
-            item { HomeStreakBadge(streak = streak) }
+            item { HomeStreakBadge(streak = streak, onClick = onStreakClick) }
         }
         // Group consecutive cards under their section header (FLA-96); header-less for null sections.
         groupHomeBySection(cards).forEach { group ->
@@ -182,12 +251,14 @@ internal fun HomeScreenContent(
     }
 }
 
-/** 🔥 N day streak pill above the home feed (FLA-106); warm accent matching web/practice. */
+/** 🔥 N day streak pill above the home feed (FLA-106); tappable when [onClick] is set (#353). */
 @Composable
-private fun HomeStreakBadge(streak: Int) {
+private fun HomeStreakBadge(streak: Int, onClick: (() -> Unit)? = null) {
     Box(
         modifier = Modifier
-            .background(color = Color(0xFFFFF1E6), shape = RoundedCornerShape(999.dp))
+            .clip(RoundedCornerShape(999.dp))
+            .background(color = Color(0xFFFFF1E6))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 14.dp, vertical = 6.dp),
     ) {
         Text(
