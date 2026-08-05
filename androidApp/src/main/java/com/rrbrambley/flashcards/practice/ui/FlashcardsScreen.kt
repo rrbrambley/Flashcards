@@ -280,6 +280,11 @@ private fun CardByCardPractice(
                             streak = state.streak,
                             review = state.review,
                             modifier = Modifier.fillMaxSize(),
+                            // Offer "this should be correct" on wrong Test answers of a global deck here
+                            // too, not just grade-at-the-end (#361).
+                            suggestMode = state.mode,
+                            isGlobal = state.isGlobal,
+                            isGuest = isGuest,
                         )
 
                     is PracticeUiState.ShowCard -> {

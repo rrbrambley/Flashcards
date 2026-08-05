@@ -10,6 +10,7 @@ import { DEFAULT_MODE, findMode, PRACTICE_MODES } from './modes';
 import type { PracticeMode } from './modes/types';
 import { ShareButton } from './ShareButton';
 import { SavePrompt } from './SavePrompt';
+import { SuggestAnswerButton } from './SuggestAnswerButton';
 import { DiscussionPanel } from './DiscussionPanel';
 import { initPractice, practiceReducer } from './practiceReducer';
 import { trailingCorrectStreak } from './grading/streak';
@@ -515,6 +516,11 @@ function PracticeRunner({
                         {card?.question && <span className="review-prompt">{card.question}</span>}
                         <span className="review-answer">{card?.answer ?? '—'}</span>
                         {ans.submittedText && <span className="review-submitted">You answered: {ans.submittedText}</span>}
+                        {/* "This should be correct" on a wrong Test answer, global decks only — same
+                            gate as the grade-at-the-end recap, now on the card-by-card review too (#361). */}
+                        {mode.key === 'test' && isGlobal && !ans.correct && card && card.cardUid && ans.submittedText && (
+                          <SuggestAnswerButton cardUid={card.cardUid} answer={ans.submittedText} isGuest={isGuest} />
+                        )}
                       </div>
                     </li>
                   );

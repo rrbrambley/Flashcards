@@ -400,6 +400,41 @@ describe('PracticePage', () => {
     expect(api.suggestAnswer).toHaveBeenCalledWith('c2', 'nope');
   });
 
+  it('offers "this should be correct" on the card-by-card (non-batch) completion review too (#361)', async () => {
+    vi.mocked(api.createSession).mockResolvedValue(session({ mode: 'test' }));
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Capitals',
+      editable: false,
+      isGlobal: true,
+      flashcards: [{ question: 'Q1', answer: 'A1', cardUid: 'c1' }],
+    });
+    vi.mocked(api.updateProgress).mockResolvedValue(session());
+    vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
+    vi.mocked(api.getAnswers).mockResolvedValue([
+      { answerUid: 'a1', cardUid: 'c1', correct: false, sequence: 0, answeredAtMillis: 0, submittedText: 'wrong' },
+    ]);
+    vi.mocked(api.suggestAnswer).mockResolvedValue(undefined);
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=test']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // Answer the single card wrong, then advance past it to complete the (card-by-card) session.
+    await userEvent.type(await screen.findByLabelText('Your answer'), 'wrong');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Next' }));
+
+    // The completion review (not grade-at-the-end) offers the suggestion on the wrong Test row.
+    expect(await screen.findByText('Practice complete')).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: 'This should be correct' }));
+    expect(await screen.findByText(/sent for review/)).toBeInTheDocument();
+    expect(api.suggestAnswer).toHaveBeenCalledWith('c1', 'wrong');
+  });
+
   it('auto-completes a timed session whose deadline has already passed (#289)', async () => {
     // Created at epoch 0 with a 1s limit → deadline is in 1970, so it's expired the moment it loads.
     vi.mocked(api.createSession).mockResolvedValue(

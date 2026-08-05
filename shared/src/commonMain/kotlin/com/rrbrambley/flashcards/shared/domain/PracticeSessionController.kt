@@ -248,7 +248,16 @@ class PracticeSessionController(
     /** Ends the run wherever it is — the last card finishing, or the timed countdown hitting 0 (#289). */
     private fun completeRun() {
         timerJob?.cancel()
-        _state.update { PracticeUiState.Completed(numCorrect = numCorrect, numIncorrect = numIncorrect) }
+        _state.update {
+            // Carry mode + isGlobal so the completion recap can offer "this should be correct" on a
+            // wrong Test answer of a global deck, just like grade-at-the-end (#361).
+            PracticeUiState.Completed(
+                numCorrect = numCorrect,
+                numIncorrect = numIncorrect,
+                mode = mode,
+                isGlobal = isGlobal,
+            )
+        }
         complete()
     }
 

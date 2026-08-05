@@ -167,7 +167,16 @@ struct PracticeView: View {
                 numCorrect: numCorrect,
                 numIncorrect: numIncorrect,
                 streak: viewModel.streak,
-                review: viewModel.review
+                review: viewModel.review,
+                // Offer "this should be correct" on wrong Test answers of a global deck on the
+                // card-by-card completion recap too, not just grade-at-the-end (#361).
+                suggestion: ReviewSuggestion(
+                    mode: viewModel.mode,
+                    isGlobal: viewModel.isGlobal,
+                    isGuest: viewModel.isGuestMode,
+                    apiClient: apiClient,
+                    authService: authService
+                )
             ) { dismiss() }
         case .failed:
             ContentUnavailableView {
