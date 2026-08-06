@@ -3,6 +3,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -794,7 +795,6 @@ internal fun CardImage(
     SubcomposeAsyncImage(
         model = model,
         contentDescription = contentDescription,
-        contentScale = ContentScale.Fit,
         modifier = modifier,
         // Report when the image settles via Coil's state callbacks (not a success-slot LaunchedEffect):
         // those fire reliably for every load, including a memory-cache hit on the next card — which the
@@ -809,6 +809,17 @@ internal fun CardImage(
             ) {
                 CircularProgressIndicator()
             }
+        },
+        // Draw the resolved image with a real Image (not the default SubcomposeAsyncImage content) so
+        // its intrinsic size drives the layout: height = width ÷ aspect ratio, clamped by the caller's
+        // heightIn(max). Otherwise a very wide flag (e.g. Qatar ~2.5:1) gets stretched (#363).
+        success = {
+            Image(
+                painter = painter,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth(),
+            )
         },
         error = {
             Box(
