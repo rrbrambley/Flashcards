@@ -452,7 +452,16 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: ./gradlew :androidApp:connectedDebugAndroidTest --stacktrace
+          # Pull the renders CardImageAspectRatioTest saves (#363) before the emulator goes away, so a
+          # visual fix leaves something a human can look at. Keep the suite's exit status.
+          script: |
+            set +e
+            ./gradlew :androidApp:connectedDebugAndroidTest --stacktrace
+            status=$?
+            adb root >/dev/null 2>&1 || true
+            adb pull /sdcard/Android/data/com.rrbrambley.flashcards/files/screenshots \
+              androidApp/build/reports/screenshots || true
+            exit $status
 
       # On push to main: compile the instrumented test APK (no emulator) to warm the Gradle cache;
       # the AVD snapshot above is already saved to main's cache scope for PRs to restore.
@@ -466,6 +475,17 @@ jobs:
         with:
           name: instrumented-test-results
           path: androidApp/build/reports/androidTests/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # The card renders from CardImageAspectRatioTest — download these to eyeball a UI change without
+      # a local emulator (the assertions catch the geometry; the eye catches everything else).
+      - name: Upload card image renders
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: card-image-renders
+          path: androidApp/build/reports/screenshots/
           if-no-files-found: ignore
           retention-days: 7
 
