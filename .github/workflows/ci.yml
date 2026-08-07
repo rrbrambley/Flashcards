@@ -453,14 +453,15 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           # Pull the renders CardImageAspectRatioTest saves (#363) before the emulator goes away, so a
-          # visual fix leaves something a human can look at. Keep the suite's exit status.
-          script: |
-            set +e
-            ./gradlew :androidApp:connectedDebugAndroidTest --stacktrace
-            status=$?
-            adb root >/dev/null 2>&1 || true
-            adb pull /sdcard/Android/data/com.rrbrambley.flashcards/files/screenshots \
-              androidApp/build/reports/screenshots || true
+          # visual fix leaves something a human can look at. This is folded (>-) into a SINGLE line on
+          # purpose: the action runs each line of `script` as its own `sh -c`, so a multi-line version
+          # loses `$?` between statements and fails the step on the pull's exit code.
+          script: >-
+            ./gradlew :androidApp:connectedDebugAndroidTest --stacktrace; status=$?;
+            adb root >/dev/null 2>&1 || true; adb wait-for-device;
+            adb shell 'ls -lR /sdcard/Android/data/com.rrbrambley.flashcards/files' || true;
+            adb pull /sdcard/Android/data/com.rrbrambley.flashcards/files/screenshots
+            androidApp/build/reports/ || true;
             exit $status
 
       # On push to main: compile the instrumented test APK (no emulator) to warm the Gradle cache;
@@ -485,7 +486,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: card-image-renders
-          path: androidApp/build/reports/screenshots/
+          path: |
+            androidApp/build/reports/screenshots/
+            androidApp/build/outputs/connected_android_test_additional_output/
           if-no-files-found: ignore
           retention-days: 7
 

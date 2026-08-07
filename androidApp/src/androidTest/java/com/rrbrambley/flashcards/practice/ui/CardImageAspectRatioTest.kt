@@ -1,6 +1,7 @@
 package com.rrbrambley.flashcards.practice.ui
 
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.Modifier
@@ -133,15 +134,26 @@ class CardImageAspectRatioTest {
     }
 
     /**
-     * Writes the render to the app's external files dir so CI can pull it as an artifact — a visual
-     * fix deserves something a human can look at, not just a passing assertion.
+     * Writes the render out so CI can keep it as an artifact — a visual fix deserves something a human
+     * can look at, not just a passing assertion.
+     *
+     * Prefers the directory AGP passes as `additionalTestOutputDir`, which it pulls off the device
+     * itself; falls back to the app's external files dir (which the workflow pulls by hand). Logs the
+     * path either way, so a run that produces no artifact says where it actually wrote.
      */
     private fun save(image: ImageBitmap, name: String) {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val dir = File(context.getExternalFilesDir(null), "screenshots").apply { mkdirs() }
-        File(dir, "$name.png").outputStream().use {
+        val agpOutputDir = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+        val dir = if (agpOutputDir != null) {
+            File(agpOutputDir)
+        } else {
+            File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null), "screenshots")
+        }
+        dir.mkdirs()
+        val file = File(dir, "$name.png")
+        file.outputStream().use {
             image.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+        Log.i("CardImageRender", "Wrote $name to ${file.absolutePath}")
     }
 
     private data class Bounds(val width: Float, val height: Float)
