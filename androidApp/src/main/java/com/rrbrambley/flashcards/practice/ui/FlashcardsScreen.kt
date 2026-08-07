@@ -769,8 +769,7 @@ internal fun CardPrompt(flashcard: Flashcard, modifier: Modifier = Modifier, onI
                 onResolved = onImageReady,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 240.dp)
-                    .clip(RoundedCornerShape(20.dp)),
+                    .heightIn(max = 240.dp),
             )
         }
     }
@@ -784,6 +783,9 @@ internal fun CardPrompt(flashcard: Flashcard, modifier: Modifier = Modifier, onI
  * [onResolved] fires once the image settles (loaded OR failed) so the answering modes can hold their
  * input UI until the prompt image is on screen (#302 review) — firing on failure too, so a broken
  * image can't permanently hide the controls.
+ *
+ * [modifier] bounds the image rather than sizing it: the image is laid out at its own aspect ratio
+ * inside those bounds and centered, so the hairline outline hugs the picture itself.
  */
 @Composable
 internal fun CardImage(
@@ -792,48 +794,56 @@ internal fun CardImage(
     modifier: Modifier = Modifier,
     onResolved: () -> Unit = {},
 ) {
-    SubcomposeAsyncImage(
-        model = model,
-        contentDescription = contentDescription,
-        modifier = modifier,
-        // Report when the image settles via Coil's state callbacks (not a success-slot LaunchedEffect):
-        // those fire reliably for every load, including a memory-cache hit on the next card — which the
-        // slot effect missed, leaving the answer UI hidden (the map card with no options). Fire on
-        // failure too so a genuinely broken image can't permanently hide it.
-        onSuccess = { onResolved() },
-        onError = { onResolved() },
-        loading = {
-            Box(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
-        },
-        // Draw the resolved image with a real Image (not the default SubcomposeAsyncImage content) so
-        // its intrinsic size drives the layout: height = width ÷ aspect ratio, clamped by the caller's
-        // heightIn(max). Otherwise a very wide flag (e.g. Qatar ~2.5:1) gets stretched (#363).
-        success = {
-            Image(
-                painter = painter,
-                contentDescription = contentDescription,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-        error = {
-            Box(
-                modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(id = android.R.drawable.ic_menu_gallery),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        SubcomposeAsyncImage(
+            model = model,
+            contentDescription = contentDescription,
+            // Report when the image settles via Coil's state callbacks (not a success-slot
+            // LaunchedEffect): those fire reliably for every load, including a memory-cache hit on the
+            // next card — which the slot effect missed, leaving the answer UI hidden (the map card with
+            // no options). Fire on failure too so a genuinely broken image can't permanently hide it.
+            onSuccess = { onResolved() },
+            onError = { onResolved() },
+            loading = {
+                Box(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            },
+            // Draw the resolved image with a real Image (not the default SubcomposeAsyncImage content)
+            // so its intrinsic size drives the layout: the node ends up exactly the picture's size, at
+            // its true aspect ratio, within the bounds the caller passed (#363).
+            //
+            // The hairline outline gives the picture an edge. Flags are full-bleed art that often runs
+            // to white — Ireland's middle third, Qatar's hoist — and on a white card those bleed into
+            // the card, so the flag reads as floating fragments at the wrong size (#363 review).
+            success = {
+                val shape = RoundedCornerShape(8.dp)
+                Image(
+                    painter = painter,
+                    contentDescription = contentDescription,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .clip(shape)
+                        .border(width = 1.dp, color = MaterialTheme.colorScheme.outlineVariant, shape = shape),
                 )
-            }
-        },
-    )
+            },
+            error = {
+                Box(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(id = android.R.drawable.ic_menu_gallery),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+        )
+    }
 }
 
 /** The serif, centered card text shared by every mode. */
