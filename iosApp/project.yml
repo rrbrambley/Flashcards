@@ -116,8 +116,16 @@ targets:
     platform: iOS
     sources:
       - path: FlashcardsTests
+      # The generated flags, as a folder reference, so FlagRenderingTests can decode the real files
+      # through the app's SVG coder (#370). A folder reference keeps them as a `flags/` directory in
+      # the bundle, so adding a flag needs no project change.
+      - path: ../tools/country-flags/flags
+        name: flags
+        type: folder
+        buildPhase: resources
     dependencies:
       - target: Flashcards
+      - package: SDWebImageSVGCoder
     settings:
       base:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Flashcards.app/Flashcards"
