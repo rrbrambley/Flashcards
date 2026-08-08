@@ -9,9 +9,9 @@
         <path fill="#ffd200" stroke="none" d="M 200 1800 L 25200 1800 L 25200 10800 L 200 10800 Z"/>
         <path fill="#d40000" stroke="none" d="M 200 3600 L 25200 3600 L 25200 9000 L 200 9000 Z"/>
         <path fill="#000000" stroke="none" d="M 200 5400 L 25200 5400 L 25200 7200 L 200 7200 Z"/>
-        <g clip-path="url(#a)" transform="matrix(200 0 0 200 0 0)">
+        <g transform="matrix(200 0 0 200 0 0)"><g clip-path="url(#a)">
             <path fill="#000000" stroke="#000000" stroke-width="3" d="M 42 31.500002 L 0 63 L 0 0 Z"/>
-        </g>
+        </g></g>
         <path fill="#ffffff" stroke="none" d="M 8400 6300 L 0 12600 L 0 0 Z"/>
         <path fill="#d40000" stroke="none" d="M 3200 3169.4998 L 4845.8 8234.8 L 537 5104.3 L 5863 5104.3 L 1554.2 8234.8 Z"/>
         <g>
