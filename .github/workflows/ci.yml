@@ -36,6 +36,8 @@ jobs:
       ios_kmp: ${{ steps.filter.outputs.ios_kmp }}
       web: ${{ steps.filter.outputs.web }}
       e2e: ${{ steps.filter.outputs.e2e }}
+      # The generated seed images + the manifest they're generated from (#370).
+      seed_assets: ${{ steps.filter.outputs.seed_assets }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -73,6 +75,8 @@ jobs:
               - *gradle
               - 'shared/**'
               - 'iosApp/**'
+              # The iOS job decodes the committed flags through the app's SVG coder (#370).
+              - 'tools/country-flags/flags/**'
               # The shared iOS test now runs the grading golden-fixture parity too (#344), so a
               # fixture-only edit must re-run the iOS job to catch Native drift.
               - 'testFixtures/practice-grading/**'
@@ -95,6 +99,13 @@ jobs:
               - 'webApp/**'
               - 'backend/**'
               - 'shared/**'
+            # The committed flag SVGs, their generator, and the manifest listing which flags must
+            # exist. Nothing else runs on tools/**, so without this a flag added to flags.json with no
+            # generated image — or a regeneration that reintroduces a renderer hazard — ships silently.
+            seed_assets:
+              - '.github/workflows/ci.yml'
+              - 'tools/country-flags/**'
+              - 'backend/src/main/resources/seed/flags.json'
 
   kotlin-lint:
     name: Kotlin lint (ktlint)
@@ -635,13 +646,33 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  seed-assets:
+    name: Seed assets (flag SVG invariants)
+    needs: changes
+    if: ${{ needs.changes.outputs.seed_assets == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      # No network, no device: asserts every seeded code has a generated flag, that none are orphaned,
+      # and that none reintroduce a construct a client's SVG renderer mishandles (#369).
+      - name: Check the committed flags are normalised
+        working-directory: tools/country-flags
+        run: npm run check
+
   # Fan-in so branch protection can require ONE check ("CI passed") even when some jobs are
   # path-skipped: green iff every job that ran passed (skipped counts as OK). Always runs so it
   # reports a status even when the jobs it needs were skipped.
   ci-passed:
     name: CI passed
     if: ${{ always() }}
-    needs: [changes, kotlin-lint, jvm, web, e2e, android-instrumented, ios]
+    needs: [changes, kotlin-lint, jvm, web, e2e, android-instrumented, ios, seed-assets]
     runs-on: ubuntu-latest
     steps:
       - name: Verify no required job failed
