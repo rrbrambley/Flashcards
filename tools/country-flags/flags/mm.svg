@@ -1,0 +1,22 @@
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(66.666664 0 0 66.666664 0 0)">
+        <path fill="#fecb00" stroke="none" d="M 0 0 L 18 0 L 18 12 L 0 12 Z"/>
+        <path fill="#34b233" stroke="none" d="M 0 4 L 18 4 L 18 12 L 0 12 Z"/>
+        <path fill="#ea2839" stroke="none" d="M 0 8 L 18 8 L 18 12 L 0 12 Z"/>
+        <g transform="matrix(4.422 0 0 4.422 9 6.422)">
+            <path id="a" fill="#ffffff" stroke="none" d="M -0.325 0 L 0 -1 L 0.325 0 Z"/>
+            <g transform="matrix(-0.80901706 -0.58778524 0.58778524 -0.80901706 0 0)">
+                <path fill="#ffffff" stroke="none" d="M -0.325 0 L 0 -1 L 0.325 0 Z"/>
+            </g>
+            <g transform="matrix(0.309017 -0.95105654 0.95105654 0.309017 0 0)">
+                <path fill="#ffffff" stroke="none" d="M -0.325 0 L 0 -1 L 0.325 0 Z"/>
+            </g>
+            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                <path fill="#ffffff" stroke="none" d="M -0.325 0 L 0 -1 L 0.325 0 Z"/>
+            </g>
+            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                <path fill="#ffffff" stroke="none" d="M -0.325 0 L 0 -1 L 0.325 0 Z"/>
+            </g>
+        </g>
+    </g>
+</svg>

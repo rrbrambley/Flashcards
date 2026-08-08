@@ -1,0 +1,859 @@
+<svg width="1000" height="600" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <radialGradient id="F" cx="416.51" cy="837.65" r="11.146" fx="416.51" fy="837.65" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9885 0.006 9.646)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="E" cx="439.62" cy="837.58" r="7.506" fx="439.62" fy="837.58" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9878 0.006 10.237)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="D" cx="416.58" cy="860.97" r="7.422" fx="416.58" fy="860.97" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0082 0.006 -7.063)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="C" cx="393.34" cy="837.95" r="7.506" fx="393.34" fy="837.95" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.991 0.006 7.468)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="B" cx="416.38" cy="814.57" r="7.422" fx="416.38" fy="814.57" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0057 0.006 -4.636)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="G" cx="760.54" cy="474.25" r="12.039" fx="760.54" fy="474.25" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.993 -0.006 3.294)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="H" cx="731.81" cy="474.25" r="12.039" fx="731.81" fy="474.25" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.993 -0.006 1.88)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="I" cx="703.46" cy="474.25" r="12.039" fx="703.46" fy="474.25" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.993 -0.006 3.294)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="J" cx="771.02" cy="499.67" r="12.039" fx="771.02" fy="499.67" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.991 -0.006 4.502)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="K" cx="742.68" cy="499.67" r="12.039" fx="742.68" fy="499.67" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.991 -0.006 4.502)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="L" cx="714.14" cy="499.67" r="12.039" fx="714.14" fy="499.67" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.991 -0.006 4.502)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="M" cx="772.18" cy="526.29" r="12.039" fx="772.18" fy="526.29" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.993 -0.006 3.655)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="N" cx="745.39" cy="525.29" r="12.039" fx="745.39" fy="525.29" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.993 -0.006 3.648)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="O" cx="716.86" cy="525.29" r="12.039" fx="716.86" fy="525.29" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.993 -0.006 3.648)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="P" cx="768.04" cy="552.78" r="11.383" fx="768.04" fy="552.78" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9892 -0.006 5.991)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="Q" cx="741.28" cy="552.78" r="11.347" fx="741.28" fy="552.78" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9923 -0.006 4.237)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="R" cx="714.26" cy="552.78" r="11.385" fx="714.26" fy="552.78" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.989 -0.006 6.08)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="S" cx="761.91" cy="580.39" r="10.886" fx="761.91" fy="580.39" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9926 -0.006 4.303)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="T" cx="737.53" cy="577.5" r="10.886" fx="737.53" fy="577.5" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.992 -0.006 4.59)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="U" cx="711.71" cy="576.36" r="10.886" fx="711.71" fy="576.36" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9926 -0.006 4.272)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="V" cx="751.9" cy="604.02" r="10.462" fx="751.9" fy="604.02" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9892 -0.006 6.531)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="W" cx="729.67" cy="600.54" r="9.95" fx="729.67" fy="600.54" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9991 -0.006 0.513)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="X" cx="706.08" cy="597.51" r="8.123" fx="706.08" fy="597.51" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9973 -0.006 1.636)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="Y" cx="741.9" cy="625.39" r="9.95" fx="741.9" fy="625.39" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9991 -0.006 0.535)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="Z" cx="720.45" cy="618.78" r="8.345" fx="720.45" fy="618.78" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0069 -0.006 -4.273)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="a" cx="700.55" cy="614.7" r="7.03" fx="700.55" fy="614.7" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9964 -0.006 2.18)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="b" cx="731.65" cy="644.12" r="9.333" fx="731.65" fy="644.12" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9983 -0.006 1.067)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="c" cx="712.98" cy="635.08" r="7.792" fx="712.98" fy="635.08" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.006 -0.006 -3.791)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="d" cx="695.15" cy="628.49" r="6.64" fx="695.15" fy="628.49" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9977 -0.006 1.462)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="e" cx="718.42" cy="660.82" r="8.623" fx="718.42" fy="660.82" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0025 -0.006 -1.666)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="f" cx="702.21" cy="650.42" r="7.301" fx="702.21" fy="650.42" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.999 -0.006 0.647)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="g" cx="686.7" cy="642.53" r="6.091" fx="686.7" fy="642.53" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0069 -0.006 -4.435)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="h" cx="707.38" cy="674.82" r="7.953" fx="707.38" fy="674.82" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9913 -0.006 5.871)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="i" cx="693.57" cy="664.01" r="6.615" fx="693.57" fy="664.01" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.013 -0.006 -8.648)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="j" cx="680.18" cy="655.53" r="5.651" fx="680.18" fy="655.53" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0053 -0.006 -3.497)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="k" cx="694.25" cy="686.15" r="6.753" fx="694.25" fy="686.15" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0099 -0.006 -6.764)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="l" cx="682.92" cy="676.43" r="5.721" fx="682.92" fy="676.43" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0058 -0.006 -3.938)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="m" cx="671.83" cy="668.65" r="4.779" fx="671.83" fy="668.65" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0244 -0.006 -16.33)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="n" cx="682.71" cy="696.23" r="6.282" fx="682.71" fy="696.23" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.008 -0.006 -5.5850005)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="o" cx="673.31" cy="686.5" r="5.292" fx="673.31" fy="686.5" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.017 -0.006 -11.630001)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="p" cx="663.89" cy="678.28" r="4.489" fx="663.89" fy="678.28" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0086 -0.006 -5.844)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="q" cx="671.6" cy="705.18" r="6.282" fx="671.6" fy="705.18" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0059 -0.006 -4.166)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="r" cx="662.2" cy="695.65" r="5.292" fx="662.2" fy="695.65" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0106 -0.006 -7.342)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="s" cx="654.58" cy="687.37" r="4.49" fx="654.58" fy="687.37" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0167 -0.006 -11.49)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="t" cx="646.03" cy="696.48" r="4.136" fx="646.03" fy="696.48" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0235 -0.006 -16.403)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="u" cx="653.02" cy="704.68" r="4.489" fx="653.02" fy="704.68" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0055 -0.006 -3.892)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="v" cx="660.59" cy="713.14" r="4.846" fx="660.59" fy="713.14" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0171 -0.006 -12.2)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="w" cx="637.01" cy="705.72" r="3.872" fx="637.01" fy="705.72" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.011 -0.006 -7.714)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="x" cx="642.62" cy="712.94" r="4.135" fx="642.62" fy="712.94" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0138 -0.006 -9.865)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="y" cx="649.42" cy="720.03" r="4.405" fx="649.42" fy="720.03" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0073 -0.006 -5.25)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="z" cx="628.35" cy="711.82" r="3.517" fx="628.35" fy="711.82" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0268 -0.006 -19.049)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AA" cx="633.37" cy="718.62" r="3.871" fx="633.37" fy="718.62" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0211 -0.006 -15.182999)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AB" cx="639.59" cy="726.09" r="4.048" fx="639.59" fy="726.09" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0317 -0.006 -23.056)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AC" cx="621.03" cy="717.31" r="3.417" fx="621.03" fy="717.31" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0162 -0.006 -11.635)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AD" cx="625.6" cy="723.58" r="3.634" fx="625.6" fy="723.58" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.019 -0.006 -13.684)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AE" cx="629.94" cy="730.32" r="3.904" fx="629.94" fy="730.32" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0334 -0.006 -24.397)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AF" cx="614.05" cy="721.3" r="3.053" fx="614.05" fy="721.3" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0098 -0.006 -7.086)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AG" cx="617.69" cy="727.85" r="3.256" fx="617.69" fy="727.85" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0159 -0.006 -11.57)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AH" cx="621.24" cy="734.22" r="3.473" fx="621.24" fy="734.22" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0053 -0.006 -3.906)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AI" cx="606.69" cy="724.91" r="2.946" fx="606.69" fy="724.91" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0049 -0.006 -3.546)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AJ" cx="609.28" cy="730.85" r="3.122" fx="609.28" fy="730.85" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0186 -0.006 -13.586)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AK" cx="612.94" cy="737.49" r="3.378" fx="612.94" fy="737.49" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0156 -0.006 -11.523001)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AL" cx="600.03" cy="728.91" r="2.506" fx="600.03" fy="728.91" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0265 -0.006 -19.31)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AM" cx="602" cy="734.39" r="2.724" fx="602" fy="734.39" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9888 -0.006 8.212)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AN" cx="604.74" cy="740" r="2.914" fx="604.74" fy="740" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 1.0027 -0.006 -1.96)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+        <radialGradient id="AO" cx="685.79" cy="453.08" r="8.107" fx="685.79" fy="453.08" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1 0 0 0.9966 1.762 2.964)">
+            <stop offset="0" stop-color="#fbd55f"/>
+            <stop offset="1" stop-color="#cb8e32"/>
+        </radialGradient>
+    </defs>
+    <path fill="#001489" stroke="none" d="M 0 0 L 1000 0 L 1000 600 L 0 600 Z"/>
+    <path fill="#ffffff" stroke="none" d="M 0 100 L 1000 100 L 1000 500 L 0 500 Z"/>
+    <path fill="#da291c" stroke="none" d="M 0 200 L 1000 200 L 1000 400 L 0 400 Z"/>
+    <g transform="matrix(1 0 0 1 -0.001 0)">
+        <path fill="#ffffff" stroke="none" d="M 375 300 C 375 348.3249 341.42136 387.5 300 387.5 C 258.57864 387.5 225 348.3249 225 300 C 225 251.67508 258.57864 212.50002 300 212.50002 C 341.42136 212.50002 375 251.67508 375 300 Z"/>
+        <g transform="matrix(0.1538 0 0 0.1538 235.94 234.48001)">
+            <g>
+                <g>
+                    <path fill="#cea849" stroke="#000000" stroke-width="3" stroke-linejoin="round" d="M 105.36001 349.34003 L 116.36 329.09 L 90.36 321.84 L 82.36 339.84 Z M 727.6 349.34003 L 716.6 329.09 L 742.6 321.84 L 750.6 339.84 Z"/>
+                    <path fill="#dca842" stroke="#000000" stroke-width="3.001" stroke-linejoin="round" d="M 409.48004 91.43801 L 369.38602 92.59501 C 343.78503 95.013 334.052 104.885 349.949 123.56 C 308.677 130.029 268.312 139.468 231.00899 159.186 C 220.523 157.446 208.347 163.32 204.853 173.418 C 201.941 181.576 209.041 190.24602 221.665 186.80501 C 213.31502 208.792 114.675 206.233 112.165 242.855 C 119.637 236.487 127.864006 231.089 136.071 236.537 L 130.415 253.64702 C 116.052 257.924 105.96 260.291 99.945 276.01 C 93.732994 291.78 84.815 315.842 78.602 327.681 C 74.522 333.153 73.539 338.965 73.539 341.851 C 73.539 348.665 78.408 358.177 89.664 358.177 C 101.12 358.177 106.758 351.002 106.758 343.789 C 106.092 338.769 104.114 332.877 92.00801 333.561 C 112.329 328.69 129.894 335.514 141.695 343.038 C 158.001 355.07596 162.082 378.418 152.57 397.618 C 143.247 416.272 119.557 427.16104 84.226 413.382 C 55.49 402.09 26.582 416.86603 17.07 442.533 C -26.223 559.683 49.478 654.703 135.29 710.113 C 224.59401 767.816 240.5 783.53094 264.38 811.733 C 288.45 839.888 311.75 872.131 346.692 872.131 C 352.129 872.131 357.374 870.571 362.036 868.034 C 384.031 868.034 385.46 876.24207 414.97302 876.761 L 414.97302 876.791 C 415.48495 876.791 415.977 876.765 416.473 876.761 L 417.943 876.791 L 417.943 876.761 C 447.48703 876.2471 448.908 868.034 470.911 868.034 C 475.573 870.571 480.78702 872.131 486.22302 872.131 C 521.166 872.131 544.466 839.888 568.535 811.733 C 592.415 783.528 608.356 767.813 697.655 710.113 C 783.465 654.698 859.165 559.673 815.87506 442.533 C 806.363 416.865 777.425 402.09 748.688 413.383 C 713.358 427.16104 689.699 416.273 680.376 397.618 C 670.864 378.418 674.945 355.07596 691.251 343.038 C 703.053 335.514 720.586 328.689 740.907 333.561 C 728.801 332.877 726.85406 338.77 726.1879 343.789 C 726.1879 351.002 731.826 358.177 743.2819 358.177 C 754.539 358.177 759.376 348.665 759.376 341.85 C 759.376 338.965 758.426 333.153 754.345 327.681 C 748.133 315.842 739.182 291.778 732.97 276.011 C 726.95605 260.291 716.86395 257.924 702.49994 253.64598 L 696.876 236.537 C 705.083 231.089 713.30994 236.487 720.782 242.855 C 718.275 206.233 619.602 208.791 611.252 186.80501 C 623.877 190.247 631.008 181.576 628.096 173.418 C 624.602 163.32 612.426 157.445 601.94 159.186 C 564.67 139.466 524.27 130.026 483 123.55601 C 498.89 104.876 489.16 95.009 463.56 92.592 L 423.46597 91.435 L 416.466 91.216 L 409.49704 91.435 Z"/>
+                    <g>
+                        <path fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 365.36002 93.09301 C 403.932 93.213 395.37604 139.237 360.36 141.343 C 317.211 146.378 264.159 144.963 235.36002 156.843 M 136.36 218.09001 C 169.674 208.712 205.562 216.298 227.36002 206.34 C 249.158 196.382 253.85 163.444 230.36 159.09 M 349.11 123.590004 C 356.79004 121.82 364.999 121.546 369.089 117.82 C 373.179 114.094 374.402 107.415 364.609 106.59 M 221.61899 187.09 C 228.77998 175.04 226.45601 166.636 217.101 172.42 M 467.601 93.09301 C 429.02902 93.213 437.585 139.237 472.601 141.343 C 515.75 146.378 568.802 144.963 597.601 156.843 M 696.601 218.09001 C 663.287 208.712 627.399 216.298 605.601 206.34 C 583.803 196.382 579.111 163.444 602.601 159.09 M 483.851 123.590004 C 476.171 121.82 467.962 121.546 463.872 117.82 C 459.782 114.094 458.55997 107.415 468.352 106.59 M 611.332 187.09 C 604.171 175.04 606.495 166.636 615.85 172.42 M 219.23 742.4501 C 280.966 786.115 289.897 842.88007 353.77002 845.6 M 354.55002 854.5 C 316.888 862.61 292.232 842.137 262.527 797.682 C 247.377 775.2819 207.587 743.782 139.637 701.30194 C 32.857 634.642 1.217 518.392 35.967 454.642 C 44.51 438.96597 66.447 432.785 79.066 436.29602 C 111.877 445.148 167.013 436.29602 167.207 383.13702 C 167.401 353.22 142.939 318.258 111.295 318.258 C 92.07101 318.258 81.784 324.638 76.739 331.412 M 349.889 831.9019 C 349.889 828.984 352.409 825.918 356.10098 825.918 C 359.793 825.918 363.089 829.182 363.089 833.238 C 363.089 842.138 358.03903 846.935 347.364 844.8079 C 338.627 843.07806 334.745 833.632 338.434 824.138 C 342.121 814.495 354.545 808.5121 367.939 814.495 C 381.339 820.677 379.782 841.149 375.126 852.77 C 372.407 859.495 366.97003 865.13306 360.37003 868.792 M 613.72 742.452 C 551.99 786.112 543.06 842.882 478.99002 845.602 M 478.41 854.502 C 516.072 862.612 540.728 842.139 570.428 797.684 C 585.377 775.283 625.37 743.7831 693.31793 701.305 C 800.08795 634.646 831.7379 518.385 796.988 454.645 C 788.45 438.96896 766.513 432.788 753.8939 436.299 C 721.083 445.151 665.947 436.299 665.753 383.14 C 665.559 353.223 690.021 318.261 721.664 318.261 C 740.883 318.261 751.17505 324.641 756.22 331.415"/>
+                        <path fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 495.87997 830.52 C 495.87997 804.064 451.037 795.756 416.675 795.756 C 382.50702 795.756 337.47 804.064 337.47 830.52"/>
+                        <path fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 483.07 831.9001 C 483.07 828.982 480.54996 825.9161 476.858 825.9161 C 473.166 825.9161 469.86996 829.18 469.86996 833.236 C 469.86996 842.136 474.92 846.9329 485.595 844.8061 C 494.332 843.076 498.21396 833.63007 494.525 824.136 C 490.838 814.493 478.414 808.51 465.02 814.493 C 451.62 820.675 453.177 841.1469 457.833 852.768 C 460.552 859.493 465.989 865.131 472.589 868.7899"/>
+                        <path fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 460.16 857.17 C 442.104 857.17 442.686 876.6099 416.47897 876.6099 C 390.467 876.6099 391.04797 857.17 372.992 857.17"/>
+                    </g>
+                </g>
+                <g>
+                    <path fill="url(#F)" stroke="#000000" stroke-width="3" d="M 416.48 828.14 C 403.668 828.14 403.668 847.17505 416.48 847.17505 C 429.29202 847.17505 429.486 828.14 416.48 828.14"/>
+                    <path fill="url(#E)" stroke="#000000" stroke-width="3" d="M 439.58 831.66 C 431.62302 831.66 431.62302 843.488 439.58 843.488 C 447.537 843.488 447.73602 831.66 439.58 831.66"/>
+                    <path fill="url(#D)" stroke="#000000" stroke-width="3" d="M 422.49997 860.99 C 422.49997 852.988 410.657 852.988 410.657 860.99 C 410.657 868.942 422.49997 868.942 422.49997 860.99"/>
+                    <path fill="url(#C)" stroke="#000000" stroke-width="3" d="M 393.38 843.89 C 401.337 843.89 401.337 832.012 393.38 832.012 C 385.423 832.012 385.224 843.89 393.38 843.89"/>
+                    <path fill="url(#B)" stroke="#000000" stroke-width="3" d="M 410.46 814.57007 C 410.46 822.5219 422.303 822.5219 422.303 814.57007 C 422.303 806.618 410.46 806.618 410.46 814.57007"/>
+                </g>
+            </g>
+            <g id="AP">
+                <path fill="#825123" stroke="#000000" stroke-width="3" d="M 154.05 272.66 C 156.226 272.781 158.441 273.33 160.488 274.191 C 164.103 275.714 167.272 278.32 168.394 281.941 C 168.401 281.964 168.418 281.981 168.425 282.004 C 200.337 370.554 183.27 408.29398 154.925 465.594 C 113.967 548.1 143.82 671.014 235.3 724.754 C 280.274 751.049 314.956 760.016 341.52 766.66 C 354.801 769.982 366.078 772.73 375.614 776.816 C 384.814 780.756 394.31104 787.816 400.309 795.99 C 391.11896 796.75 376.11896 799.271 368.755 801.435 C 358.051 787.8319 331.131 775.325 303.271 765.847 C 275.411 756.369 246.346 749.623 230.583 746.503 L 230.552 746.503 C 179.26802 731.62897 131.452 698.254 95.432 655.847 C 57.296997 610.958 37.807 549.497 45.338 487.877 C 47.025005 473.775 52.63 465.158 60.618 460.471 C 68.606 455.784 78.715 454.985 89.431 455.691 C 108.908005 456.81396 127.991 451.49603 145.431 440.752 C 167.919 426.90698 177.135 402.427 176.77498 375.846 C 176.415 349.265 166.374 320.713 150.463 299.44 C 144.777 291.782 142.501 286.04 142.619 281.596 C 142.737 277.152 145.621 274.218 149.15 273.19 C 150.04723 272.93002 150.96869 272.76248 151.9 272.69 C 152.61717 272.63147 153.33745 272.62112 154.056 272.659 Z"/>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#G)" stroke="#000000" d="M 760.57 462.8 C 775.907 462.8 775.907 485.711 760.57 485.711 C 745.233 485.711 745.03894 462.8 760.57 462.8"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#H)" stroke="#000000" d="M 731.84 461.38 C 747.177 461.38 747.177 484.29095 731.84 484.29095 C 716.5029 484.29095 716.3091 461.38 731.84 461.38"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#I)" stroke="#000000" d="M 703.49994 462.8 C 718.8369 462.8 718.8369 485.711 703.49994 485.711 C 688.1631 485.711 687.969 462.8 703.49994 462.8"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#J)" stroke="#000000" d="M 771.05994 488.24 C 786.3969 488.24 786.3969 511.102 771.05994 511.102 C 755.7231 511.102 755.529 488.24 771.05994 488.24"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#K)" stroke="#000000" d="M 742.70996 488.24 C 758.04694 488.24 758.04694 511.102 742.70996 511.102 C 727.373 511.102 727.179 488.24 742.70996 488.24"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#L)" stroke="#000000" d="M 714.17 488.24 C 729.507 488.24 729.507 511.102 714.17 511.102 C 698.833 511.102 698.639 488.24 714.17 488.24"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#M)" stroke="#000000" d="M 772.22 514.84 C 787.557 514.84 787.557 537.751 772.22 537.751 C 756.88293 537.751 756.6891 514.84 772.22 514.84"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#N)" stroke="#000000" d="M 745.43 513.84 C 760.767 513.84 760.767 536.751 745.43 536.751 C 730.093 536.751 729.899 513.84 745.43 513.84"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#O)" stroke="#000000" d="M 716.89 513.84 C 732.227 513.84 732.227 536.751 716.89 536.751 C 701.553 536.751 701.359 513.84 716.89 513.84"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#P)" stroke="#000000" d="M 768.14 542.02 C 782.50806 542.02 782.50806 563.54 768.14 563.54 C 753.583 563.54 753.389 542.02 768.14 542.02"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#Q)" stroke="#000000" d="M 741.35 542.02 C 755.713 542.02 755.713 563.54 741.35 563.54 C 726.788 563.54 726.788 542.02 741.35 542.02"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#R)" stroke="#000000" d="M 714.37 542.02 C 728.738 542.02 728.738 563.54 714.37 563.54 C 699.808 563.54 699.614 542.02 714.37 542.02"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#S)" stroke="#000000" d="M 762.43 570.11 C 776.212 570.657 775.24194 591.282 761.46 590.685 C 747.6779 590.088 748.45 569.314 762.43 570.11"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#T)" stroke="#000000" d="M 738.05 567.22 C 751.832 567.816 750.862 588.392 737.076 587.795 C 723.29407 587.248 724.07 566.673 738.05 567.22"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#U)" stroke="#000000" d="M 712.23 566.07 C 726.0171 566.666 725.047 587.242 711.26 586.645 C 697.479 586.049 698.255 565.274 712.23 566.07"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#V)" stroke="#000000" d="M 752.61005 594.2 C 765.815 595.194 764.453 614.775 751.253 613.831 C 738.053 613.036 739.216 593.256 752.61005 594.2"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#W)" stroke="#000000" d="M 730.29004 591.12 C 742.909 591.865 741.55194 610.701 729.127 609.956 C 716.50793 609.161 717.6711 590.325 730.29004 591.12"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#X)" stroke="#000000" d="M 706.61 589.93 C 716.704 590.526 715.73 605.883 705.63605 605.088 C 695.542 604.492 696.3171 589.383 706.61 589.93"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#Y)" stroke="#000000" d="M 742.52 615.97 C 755.139 616.715 753.782 635.551 741.357 634.806 C 728.738 634.011 729.901 615.175 742.52 615.97"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#Z)" stroke="#000000" d="M 720.97 610.9 C 731.457 611.695 730.289 627.4 720 626.655 C 709.515 625.86 710.488 610.155 720.97 610.9"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#a)" stroke="#000000" d="M 700.97 608.22 C 709.707 608.568 708.73303 621.788 700.195 621.191 C 691.45807 620.793 692.23303 607.623 700.97 608.22"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#b)" stroke="#000000" d="M 733.58997 635.55 C 745.046 638.085 741.164 655.38 729.7089 652.646 C 718.253 650.111 722.139 633.065 733.58997 635.55"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#c)" stroke="#000000" d="M 714.56 628 C 724.072 630.137 720.772 644.5 711.454 642.164 C 701.9409 640.027 705.048 625.664 714.56 628"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#d)" stroke="#000000" d="M 696.50995 622.58 C 704.47205 624.32 701.753 636.347 693.7911 634.408 C 685.835 632.668 688.553 620.641 696.50995 622.58"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#e)" stroke="#000000" d="M 721.16 653.24 C 731.259 656.719 725.822 672.076 715.723 668.398 C 705.6291 664.869 710.873 649.562 721.16 653.24"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#f)" stroke="#000000" d="M 704.47 644.1 C 713.013 647.032 708.351 659.855 700.00195 656.724 C 691.46405 653.841 695.927 641.019 704.47 644.1"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#g)" stroke="#000000" d="M 688.55 637.34 C 695.53796 639.626 691.85 650.311 684.862 647.777 C 677.87 645.292 681.562 634.607 688.55 637.34"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#h)" stroke="#000000" d="M 710.49005 668.2 C 719.42 672.275 713.209 685.644 704.278 681.37 C 695.3469 677.493 701.559 664.124 710.49005 668.2"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#i)" stroke="#000000" d="M 696.12006 658.46 C 703.49994 661.79 698.257 673.022 691.075 669.543 C 683.695 666.263 688.745 654.981 696.12006 658.46"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#j)" stroke="#000000" d="M 682.34 650.91 C 688.552 653.842 684.084 662.937 678.066 660.204 C 671.854 657.321 676.128 647.978 682.34 650.91"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#k)" stroke="#000000" d="M 697.09 680.63 C 704.47 684.308 698.64606 695.54 691.46405 691.663 C 684.084 687.985 689.714 676.753 697.09 680.63"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#l)" stroke="#000000" d="M 685.25 671.88 C 691.462 674.961 686.607 684.305 680.588 680.975 C 674.376 677.894 679.231 668.55 685.25 671.88"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#m)" stroke="#000000" d="M 673.79 664.87 C 678.84 667.603 674.76 675.158 669.909 672.474 C 664.859 669.939 668.741 661.988 673.79 664.87"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#n)" stroke="#000000" d="M 685.83 691.46 C 692.236 695.535 685.83 705.276 679.618 701.00195 C 673.211 696.927 679.424 687.186 685.83 691.46"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#o)" stroke="#000000" d="M 675.93 682.57 C 681.168 686.049 675.93 694.00104 670.687 690.522 C 665.444 687.043 670.687 678.842 675.93 682.57"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#p)" stroke="#000000" d="M 666.03 674.96 C 670.498 677.892 666.03 684.502 661.76 681.57 C 657.298 678.688 661.76 672.078 666.03 674.96"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#q)" stroke="#000000" d="M 674.73 700.43 C 681.136 704.7039 674.73 714.197 668.518 709.922 C 662.111 705.847 668.324 696.155 674.73 700.43"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#r)" stroke="#000000" d="M 664.83 691.66 C 670.068 695.189 664.83 703.14 659.587 699.61206 C 654.344 696.133 659.587 688.181 664.83 691.66"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#s)" stroke="#000000" d="M 656.71 684.11 C 661.173 687.042 656.71 693.602 652.436 690.72 C 647.973 687.788 652.436 680.979 656.71 684.11"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#t)" stroke="#000000" d="M 647.98 693.4 C 652.055 695.935 647.98 702.147 644.094 699.61206 C 640.018 696.929 644.094 690.716 647.98 693.4"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#u)" stroke="#000000" d="M 655.16 701.4 C 659.623 704.283 655.16 710.892 650.89 707.96 C 646.423 705.078 650.89 698.468 655.16 701.4"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#v)" stroke="#000000" d="M 662.92 709.55 C 667.77 712.83 662.92 720.036 658.258 716.7069 C 653.403 713.625 658.258 706.22 662.92 709.55"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#w)" stroke="#000000" d="M 638.85 702.94006 C 642.538 705.475 638.85 710.892 635.162 708.5561 C 631.47 706.021 635.162 700.406 638.85 702.94006"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#x)" stroke="#000000" d="M 644.57 709.9199 C 648.645 712.6531 644.57 718.66693 640.689 715.934 C 636.609 713.25 640.689 707.236 644.57 709.9199"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#y)" stroke="#000000" d="M 651.55 716.8401 C 655.824 719.524 651.55 726.134 647.28 723.251 C 643.007 720.319 647.28 713.9081 651.55 716.8401"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#z)" stroke="#000000" d="M 630 709.27997 C 633.3 711.41693 630 716.685 626.7 714.3499 C 623.4 712.212 626.7 706.994 630 709.27997"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AA)" stroke="#000000" d="M 635.21 715.78 C 638.898 718.315 635.21 723.93 631.522 721.446 C 627.835 718.911 631.522 713.296 635.21 715.78"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AB)" stroke="#000000" d="M 641.53 723.19 C 645.411 725.7249 641.53 731.937 637.649 729.005 C 633.767 726.47 637.649 720.258 641.53 723.19"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AC)" stroke="#000000" d="M 622.74 714.97 C 625.846 717.306 622.347 721.978 619.241 719.642 C 616.329 717.306 619.634 712.634 622.74 714.97"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AD)" stroke="#000000" d="M 627.45 721.07 C 630.75 723.60504 627.062 728.624 623.762 726.09 C 620.462 723.60504 624.15 718.535 627.45 721.07"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AE)" stroke="#000000" d="M 631.97 727.58 C 635.464 730.3129 631.582 735.92993 627.895 733.04706 C 624.401 730.314 628.282 724.697 631.97 727.58"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AF)" stroke="#000000" d="M 615.7 719.44006 C 618.225 721.577 614.925 725.503 612.4 723.167 C 609.875 720.83093 613.18 717.154 615.7 719.44006"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AG)" stroke="#000000" d="M 619.58 725.92 C 622.105 728.206 618.61 732.48 615.892 729.797 C 613.174 727.461 616.862 723.18695 619.58 725.92"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AH)" stroke="#000000" d="M 623.18 732.05 C 626.092 734.783 622.21 739.058 619.299 736.324 C 616.386 733.8389 620.268 729.366 623.18 732.05"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AI)" stroke="#000000" d="M 608.34 723.22 C 610.67 725.35706 607.37 728.836 605.04 726.699 C 602.71 724.3629 606.01 720.884 608.34 723.22"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AJ)" stroke="#000000" d="M 611.02 729 C 613.545 731.535 610.05 735.21204 607.526 732.678 C 605.002 730.3419 608.496 726.465 611.02 729"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AK)" stroke="#000000" d="M 614.9 735.44 C 617.619 738.17303 613.737 742.249 611.019 739.515 C 608.3 736.981 611.993 732.707 614.9 735.44"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AL)" stroke="#000000" d="M 601.5 727.58 C 603.244 729.518 600.332 732.252 598.588 730.3129 C 596.838 728.37494 599.557 725.443 601.5 727.58"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AM)" stroke="#000000" d="M 603.61 732.94006 C 605.553 735.077 602.447 737.96 600.31 735.823 C 598.566 733.68604 601.478 730.803 603.61 732.94006"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AN)" stroke="#000000" d="M 606.49 738.4899 C 608.622 740.826 605.128 743.907 602.991 741.6209 C 600.859 739.285 604.353 735.955 606.49 738.4899"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 833.41003 0)">
+                    <path fill="url(#AO)" stroke="#000000" d="M 687.5999 446.92 C 697.694 446.92 697.694 462.078 687.5999 462.078 C 677.506 462.078 677.312 446.92 687.5999 446.92"/>
+                </g>
+            </g>
+            <g transform="matrix(-1 0 0 1 832.96 0)">
+                <g>
+                    <path fill="#825123" stroke="#000000" stroke-width="3" d="M 154.05 272.66 C 156.226 272.781 158.441 273.33 160.488 274.191 C 164.103 275.714 167.272 278.32 168.394 281.941 C 168.401 281.964 168.418 281.981 168.425 282.004 C 200.337 370.554 183.27 408.29398 154.925 465.594 C 113.967 548.1 143.82 671.014 235.3 724.754 C 280.274 751.049 314.956 760.016 341.52 766.66 C 354.801 769.982 366.078 772.73 375.614 776.816 C 384.814 780.756 394.31104 787.816 400.309 795.99 C 391.11896 796.75 376.11896 799.271 368.755 801.435 C 358.051 787.8319 331.131 775.325 303.271 765.847 C 275.411 756.369 246.346 749.623 230.583 746.503 L 230.552 746.503 C 179.26802 731.62897 131.452 698.254 95.432 655.847 C 57.296997 610.958 37.807 549.497 45.338 487.877 C 47.025005 473.775 52.63 465.158 60.618 460.471 C 68.606 455.784 78.715 454.985 89.431 455.691 C 108.908005 456.81396 127.991 451.49603 145.431 440.752 C 167.919 426.90698 177.135 402.427 176.77498 375.846 C 176.415 349.265 166.374 320.713 150.463 299.44 C 144.777 291.782 142.501 286.04 142.619 281.596 C 142.737 277.152 145.621 274.218 149.15 273.19 C 150.04723 272.93002 150.96869 272.76248 151.9 272.69 C 152.61717 272.63147 153.33745 272.62112 154.056 272.659 Z"/>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#G)" stroke="#000000" d="M 760.57 462.8 C 775.907 462.8 775.907 485.711 760.57 485.711 C 745.233 485.711 745.03894 462.8 760.57 462.8"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#H)" stroke="#000000" d="M 731.84 461.38 C 747.177 461.38 747.177 484.29095 731.84 484.29095 C 716.5029 484.29095 716.3091 461.38 731.84 461.38"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#I)" stroke="#000000" d="M 703.49994 462.8 C 718.8369 462.8 718.8369 485.711 703.49994 485.711 C 688.1631 485.711 687.969 462.8 703.49994 462.8"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#J)" stroke="#000000" d="M 771.05994 488.24 C 786.3969 488.24 786.3969 511.102 771.05994 511.102 C 755.7231 511.102 755.529 488.24 771.05994 488.24"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#K)" stroke="#000000" d="M 742.70996 488.24 C 758.04694 488.24 758.04694 511.102 742.70996 511.102 C 727.373 511.102 727.179 488.24 742.70996 488.24"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#L)" stroke="#000000" d="M 714.17 488.24 C 729.507 488.24 729.507 511.102 714.17 511.102 C 698.833 511.102 698.639 488.24 714.17 488.24"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#M)" stroke="#000000" d="M 772.22 514.84 C 787.557 514.84 787.557 537.751 772.22 537.751 C 756.88293 537.751 756.6891 514.84 772.22 514.84"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#N)" stroke="#000000" d="M 745.43 513.84 C 760.767 513.84 760.767 536.751 745.43 536.751 C 730.093 536.751 729.899 513.84 745.43 513.84"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#O)" stroke="#000000" d="M 716.89 513.84 C 732.227 513.84 732.227 536.751 716.89 536.751 C 701.553 536.751 701.359 513.84 716.89 513.84"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#P)" stroke="#000000" d="M 768.14 542.02 C 782.50806 542.02 782.50806 563.54 768.14 563.54 C 753.583 563.54 753.389 542.02 768.14 542.02"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#Q)" stroke="#000000" d="M 741.35 542.02 C 755.713 542.02 755.713 563.54 741.35 563.54 C 726.788 563.54 726.788 542.02 741.35 542.02"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#R)" stroke="#000000" d="M 714.37 542.02 C 728.738 542.02 728.738 563.54 714.37 563.54 C 699.808 563.54 699.614 542.02 714.37 542.02"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#S)" stroke="#000000" d="M 762.43 570.11 C 776.212 570.657 775.24194 591.282 761.46 590.685 C 747.6779 590.088 748.45 569.314 762.43 570.11"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#T)" stroke="#000000" d="M 738.05 567.22 C 751.832 567.816 750.862 588.392 737.076 587.795 C 723.29407 587.248 724.07 566.673 738.05 567.22"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#U)" stroke="#000000" d="M 712.23 566.07 C 726.0171 566.666 725.047 587.242 711.26 586.645 C 697.479 586.049 698.255 565.274 712.23 566.07"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#V)" stroke="#000000" d="M 752.61005 594.2 C 765.815 595.194 764.453 614.775 751.253 613.831 C 738.053 613.036 739.216 593.256 752.61005 594.2"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#W)" stroke="#000000" d="M 730.29004 591.12 C 742.909 591.865 741.55194 610.701 729.127 609.956 C 716.50793 609.161 717.6711 590.325 730.29004 591.12"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#X)" stroke="#000000" d="M 706.61 589.93 C 716.704 590.526 715.73 605.883 705.63605 605.088 C 695.542 604.492 696.3171 589.383 706.61 589.93"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#Y)" stroke="#000000" d="M 742.52 615.97 C 755.139 616.715 753.782 635.551 741.357 634.806 C 728.738 634.011 729.901 615.175 742.52 615.97"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#Z)" stroke="#000000" d="M 720.97 610.9 C 731.457 611.695 730.289 627.4 720 626.655 C 709.515 625.86 710.488 610.155 720.97 610.9"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#a)" stroke="#000000" d="M 700.97 608.22 C 709.707 608.568 708.73303 621.788 700.195 621.191 C 691.45807 620.793 692.23303 607.623 700.97 608.22"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#b)" stroke="#000000" d="M 733.58997 635.55 C 745.046 638.085 741.164 655.38 729.7089 652.646 C 718.253 650.111 722.139 633.065 733.58997 635.55"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#c)" stroke="#000000" d="M 714.56 628 C 724.072 630.137 720.772 644.5 711.454 642.164 C 701.9409 640.027 705.048 625.664 714.56 628"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#d)" stroke="#000000" d="M 696.50995 622.58 C 704.47205 624.32 701.753 636.347 693.7911 634.408 C 685.835 632.668 688.553 620.641 696.50995 622.58"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#e)" stroke="#000000" d="M 721.16 653.24 C 731.259 656.719 725.822 672.076 715.723 668.398 C 705.6291 664.869 710.873 649.562 721.16 653.24"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#f)" stroke="#000000" d="M 704.47 644.1 C 713.013 647.032 708.351 659.855 700.00195 656.724 C 691.46405 653.841 695.927 641.019 704.47 644.1"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#g)" stroke="#000000" d="M 688.55 637.34 C 695.53796 639.626 691.85 650.311 684.862 647.777 C 677.87 645.292 681.562 634.607 688.55 637.34"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#h)" stroke="#000000" d="M 710.49005 668.2 C 719.42 672.275 713.209 685.644 704.278 681.37 C 695.3469 677.493 701.559 664.124 710.49005 668.2"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#i)" stroke="#000000" d="M 696.12006 658.46 C 703.49994 661.79 698.257 673.022 691.075 669.543 C 683.695 666.263 688.745 654.981 696.12006 658.46"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#j)" stroke="#000000" d="M 682.34 650.91 C 688.552 653.842 684.084 662.937 678.066 660.204 C 671.854 657.321 676.128 647.978 682.34 650.91"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#k)" stroke="#000000" d="M 697.09 680.63 C 704.47 684.308 698.64606 695.54 691.46405 691.663 C 684.084 687.985 689.714 676.753 697.09 680.63"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#l)" stroke="#000000" d="M 685.25 671.88 C 691.462 674.961 686.607 684.305 680.588 680.975 C 674.376 677.894 679.231 668.55 685.25 671.88"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#m)" stroke="#000000" d="M 673.79 664.87 C 678.84 667.603 674.76 675.158 669.909 672.474 C 664.859 669.939 668.741 661.988 673.79 664.87"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#n)" stroke="#000000" d="M 685.83 691.46 C 692.236 695.535 685.83 705.276 679.618 701.00195 C 673.211 696.927 679.424 687.186 685.83 691.46"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#o)" stroke="#000000" d="M 675.93 682.57 C 681.168 686.049 675.93 694.00104 670.687 690.522 C 665.444 687.043 670.687 678.842 675.93 682.57"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#p)" stroke="#000000" d="M 666.03 674.96 C 670.498 677.892 666.03 684.502 661.76 681.57 C 657.298 678.688 661.76 672.078 666.03 674.96"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#q)" stroke="#000000" d="M 674.73 700.43 C 681.136 704.7039 674.73 714.197 668.518 709.922 C 662.111 705.847 668.324 696.155 674.73 700.43"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#r)" stroke="#000000" d="M 664.83 691.66 C 670.068 695.189 664.83 703.14 659.587 699.61206 C 654.344 696.133 659.587 688.181 664.83 691.66"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#s)" stroke="#000000" d="M 656.71 684.11 C 661.173 687.042 656.71 693.602 652.436 690.72 C 647.973 687.788 652.436 680.979 656.71 684.11"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#t)" stroke="#000000" d="M 647.98 693.4 C 652.055 695.935 647.98 702.147 644.094 699.61206 C 640.018 696.929 644.094 690.716 647.98 693.4"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#u)" stroke="#000000" d="M 655.16 701.4 C 659.623 704.283 655.16 710.892 650.89 707.96 C 646.423 705.078 650.89 698.468 655.16 701.4"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#v)" stroke="#000000" d="M 662.92 709.55 C 667.77 712.83 662.92 720.036 658.258 716.7069 C 653.403 713.625 658.258 706.22 662.92 709.55"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#w)" stroke="#000000" d="M 638.85 702.94006 C 642.538 705.475 638.85 710.892 635.162 708.5561 C 631.47 706.021 635.162 700.406 638.85 702.94006"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#x)" stroke="#000000" d="M 644.57 709.9199 C 648.645 712.6531 644.57 718.66693 640.689 715.934 C 636.609 713.25 640.689 707.236 644.57 709.9199"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#y)" stroke="#000000" d="M 651.55 716.8401 C 655.824 719.524 651.55 726.134 647.28 723.251 C 643.007 720.319 647.28 713.9081 651.55 716.8401"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#z)" stroke="#000000" d="M 630 709.27997 C 633.3 711.41693 630 716.685 626.7 714.3499 C 623.4 712.212 626.7 706.994 630 709.27997"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AA)" stroke="#000000" d="M 635.21 715.78 C 638.898 718.315 635.21 723.93 631.522 721.446 C 627.835 718.911 631.522 713.296 635.21 715.78"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AB)" stroke="#000000" d="M 641.53 723.19 C 645.411 725.7249 641.53 731.937 637.649 729.005 C 633.767 726.47 637.649 720.258 641.53 723.19"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AC)" stroke="#000000" d="M 622.74 714.97 C 625.846 717.306 622.347 721.978 619.241 719.642 C 616.329 717.306 619.634 712.634 622.74 714.97"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AD)" stroke="#000000" d="M 627.45 721.07 C 630.75 723.60504 627.062 728.624 623.762 726.09 C 620.462 723.60504 624.15 718.535 627.45 721.07"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AE)" stroke="#000000" d="M 631.97 727.58 C 635.464 730.3129 631.582 735.92993 627.895 733.04706 C 624.401 730.314 628.282 724.697 631.97 727.58"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AF)" stroke="#000000" d="M 615.7 719.44006 C 618.225 721.577 614.925 725.503 612.4 723.167 C 609.875 720.83093 613.18 717.154 615.7 719.44006"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AG)" stroke="#000000" d="M 619.58 725.92 C 622.105 728.206 618.61 732.48 615.892 729.797 C 613.174 727.461 616.862 723.18695 619.58 725.92"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AH)" stroke="#000000" d="M 623.18 732.05 C 626.092 734.783 622.21 739.058 619.299 736.324 C 616.386 733.8389 620.268 729.366 623.18 732.05"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AI)" stroke="#000000" d="M 608.34 723.22 C 610.67 725.35706 607.37 728.836 605.04 726.699 C 602.71 724.3629 606.01 720.884 608.34 723.22"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AJ)" stroke="#000000" d="M 611.02 729 C 613.545 731.535 610.05 735.21204 607.526 732.678 C 605.002 730.3419 608.496 726.465 611.02 729"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AK)" stroke="#000000" d="M 614.9 735.44 C 617.619 738.17303 613.737 742.249 611.019 739.515 C 608.3 736.981 611.993 732.707 614.9 735.44"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AL)" stroke="#000000" d="M 601.5 727.58 C 603.244 729.518 600.332 732.252 598.588 730.3129 C 596.838 728.37494 599.557 725.443 601.5 727.58"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AM)" stroke="#000000" d="M 603.61 732.94006 C 605.553 735.077 602.447 737.96 600.31 735.823 C 598.566 733.68604 601.478 730.803 603.61 732.94006"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AN)" stroke="#000000" d="M 606.49 738.4899 C 608.622 740.826 605.128 743.907 602.991 741.6209 C 600.859 739.285 604.353 735.955 606.49 738.4899"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 833.41003 0)">
+                        <path fill="url(#AO)" stroke="#000000" d="M 687.5999 446.92 C 697.694 446.92 697.694 462.078 687.5999 462.078 C 677.506 462.078 677.312 446.92 687.5999 446.92"/>
+                    </g>
+                </g>
+            </g>
+            <path fill="#89c5e3" stroke="#000000" d="M 182.15 433.08 C 193.41199 395.607 199.04298 347.448 183.124 284.78 C 253.20499 239.554 302.514 198.20398 416.674 198.20398 C 530.634 198.20398 584.404 229.614 650.224 284.78 C 634.499 347.451 640.13 395.41003 651.194 433.08 L 181.774 433.08"/>
+            <path fill="#fcdd09" stroke="none" d="M 235.49998 341.84 L 230.28001 398.5 C 230.22902 398.50702 230.175 398.492 230.124 398.5 L 210.00398 342.34 L 219.691 401.652 L 219.472 401.746 L 197.002 372.096 L 210.502 407.346 L 194.002 395.846 L 204.033 414.658 L 203.753 415.033 L 192.003 413.595 L 199.28299 423.815 C 197.76807 428.04034 196.99664 432.49628 197.00299 436.985 C 197.00299 437.198 197.063 437.396 197.066 437.609 L 274.691 437.609 C 274.694 437.396 274.753 437.199 274.753 436.984 C 274.753 432.347 273.962 427.889 272.473 423.76505 L 287.763 409.095 L 268.513 415.81497 L 268.043 415.096 C 271.001 411.463 299.951 375.846 298.763 375.846 C 297.534 375.846 262.163 406.18604 260.919 407.252 L 260.731 407.09598 L 288.512 345.59604 L 250.074 400.78403 C 249.948 400.734 249.826 400.676 249.699 400.628 L 261.019 342.348 L 240.769 398.348 L 235.519 341.848 Z"/>
+            <path fill="#0f47af" stroke="#000000" d="M 181.82 433.08 C 175.60799 453.854 167.845 471.547 161.051 486.656 C 143.383 526.465 139.695 619.056 204.925 684.506 C 301.798 781.369 375.575 742.356 412.655 795.136 L 420.22504 795.136 C 457.305 742.356 531.075 781.369 627.955 684.506 C 693.185 619.052 689.68994 526.466 671.828 486.656 C 665.228 471.697 657.266 453.85504 651.054 433.08 L 181.634 433.08"/>
+            <path fill="#ffffff" stroke="none" d="M 323.62 343.97 C 322.498 338.538 309.825 339.582 310.745 330.845 C 302.316 329.501 303.887 314.439 319.62 315.47 C 321.277 312.48 340.294 305.635 337.995 315.095 C 347.539 306.779 354.452 314.393 349.11996 318.095 C 352.802 321.782 354.65997 330.209 343.37 329.47 C 347.68997 337.155 337.658 336.869 330.995 334.72 C 331.159 337.631 330.663 339.937 326.87 339.22 C 324.476 340.838 326.288 342.924 326.62 344.84497 Z M 498.22 349.9 C 498.32697 343.045 485.40903 345.137 485.89 337.33 C 478.878 336.255 479.89697 321.734 494.39 322.606 C 493.582 318.412 513.903 313.029 511.986 322.246 C 519.065 314.741 526.052 321.757 521.766 325.12 C 525.292 328.65 529.572 334.721 517.134 336.014 C 522.147 340.874 511.664 343.099 505.28296 341.042 C 505.44 343.83 503.59 344.788 499.95697 344.10196 C 497.66504 345.652 500.775 348.898 501.09302 350.73804 Z M 598.9 373.59003 C 600.102 368.39996 588.244 368.859 588.551 362.94702 C 583.164 362.13303 583.946 351.138 595.081 351.79797 C 594.461 348.62204 608.949 343.296 607.977 351.026 C 613.416 345.343 619.409 351.156 616.116 353.701 C 618.826 356.37503 622.114 360.971 612.557 361.95 C 616.409 365.63 608.354 367.31497 603.452 365.757 C 603.572 367.867 602.902 368.218 600.11 367.69897 C 598.348 368.872 602.238 371.706 602.482 373.099 L 598.9 373.589 Z"/>
+            <path fill="#509164" stroke="#000000" d="M 558.456 472.49 C 561.373 457.332 573.822 443.366 575.186 431.53802 C 576.351 420.853 578.492 416.37997 584.716 405.148 C 590.941 393.866 593.465 388.648 594.829 380.845 C 596.772 370.75598 604.36 368.619 607.859 378.90698 C 611.165 389.195 617.777 415.037 621.278 421.052 C 624.584 427.065 628.091 435.415 627.503 439.49 C 626.92 443.565 631.979 445.10596 634.897 448.03802 C 637.815 450.771 638.203 460.264 646.762 468.415 C 655.316 476.565 664.847 482.38004 672.822 486.45496 C 680.017 502.608 684.881 527.06 683.712 554.991 L 149.43 554.991 C 149.235 547.635 149.43 540.429 149.818 533.471 C 197.274 521.245 214.97499 489.984 235.006 492.121 C 245.9 476.963 259.125 460.661 268.267 452.311 C 279.156 442.421 300.552 403.01096 305.999 378.906 C 311.446 355.05002 319.418 342.228 325.447 343.57 C 331.476 344.962 334.006 346.105 341.201 367.674 C 351.124 397.344 357.931 400.873 365.514 422.194 C 372.12604 440.682 385.939 473.83096 407.139 491.12704 C 420.364 481.237 435.535 470.154 440.395 462.401 C 444.483 455.592 450.707 445.10596 458.09604 440.086 C 461.40198 430.19598 465.679 412.503 469.185 408.22897 C 472.491 404.352 473.851 400.47598 474.238 393.66702 C 474.432 386.85797 479.68503 372.495 486.88098 360.467 C 494.08 348.64 503.61 344.76297 507.887 360.467 C 511.971 376.223 521.5 409.223 530.449 429.797 C 534.143 438.347 540.955 455.194 555.926 472.88702 L 557.543 474.793 C 557.847 474.26303 558.151 473.867 558.456 472.489 Z"/>
+            <g>
+                <path fill="#034418" stroke="none" d="M 497.20203 528.38 C 487.283 518.838 471.529 520.975 463.557 513.421 C 455.775 506.06503 443.327 511.085 416.48404 497.517 C 413.177 495.777 409.871 493.641 406.56497 491.106 C 385.364 473.81097 371.557 440.612 364.945 422.173 C 357.551 401.001 350.55 397.522 340.631 367.60303 C 335.379 351.69897 332.461 346.829 328.961 345.089 C 338.103 355.029 333.243 370.535 340.631 387.234 C 343.549 393.844 338.685 393.844 337.131 391.707 C 335.771 389.57004 331.296 388.57596 329.155 388.775 C 333.048 392.105 333.631 400.454 337.519 409.152 C 341.214 417.899 334.602 416.954 342.579 429.38 C 344.714 432.858 345.496 438.077 342.384 440.214 C 339.078 442.152 336.743 434.2 331.878 436.934 C 333.242 440.064 338.878 445.68 342.578 448.96 C 346.272 452.29004 342.772 454.03 339.854 452.489 C 336.742 450.899 332.654 449.358 330.518 447.619 C 330.518 450.153 333.63 453.03598 337.907 456.912 C 342.383 460.64 339.465 463.323 329.154 463.323 C 330.712 465.659 330.13 471.474 325.459 472.269 C 331.877 472.66696 336.742 484.495 344.714 485.29004 C 352.49597 485.837 353.274 491.304 345.69 492.646 C 338.106 493.988 322.736 481.76196 315.153 473.81 C 313.206 476.54303 309.123 477.686 306.205 476.146 C 306.011 479.823 307.176 488.77 310.677 494.584 C 306.982 493.04303 302.123 488.172 297.257 482.159 C 292.592 476.54303 289.48 484.89203 293.563 489.912 C 297.646 494.981 300.37 499.056 293.757 502.93198 C 287.339 506.61 283.256 505.268 278.392 498.45996 C 271.585 504.125 268.862 504.473 263.608 503.529 C 263.608 506.809 257.967 514.612 255.44298 520.427 C 249.801 531.659 505.56802 554.968 498.374 527.783 M 681.164 530.1 C 613.866 524.236 576.72 498.243 555.71 473.39297 C 540.734 455.899 533.927 438.852 530.232 430.30396 C 521.285 409.72903 511.755 376.728 507.672 360.974 C 506.307 355.75604 504.36496 352.624 502.03 351.48196 C 498.53003 349.742 500.277 355.75604 502.807 358.837 C 505.53 361.769 505.336 364.503 501.83597 362.366 C 498.336 360.427 496.58304 364.304 499.88898 369.125 C 503.001 373.796 507.86502 379.264 508.836 384.48196 C 509.812 389.551 510.201 393.974 512.725 396.50903 C 515.06 399.043 506.307 399.639 502.612 393.626 C 502.41797 397.503 503.588 403.119 506.112 402.522 C 508.448 402.125 509.225 404.26202 505.918 410.126 C 502.612 415.742 503.001 417.681 504.171 420.216 C 505.918 424.092 510.395 408.736 513.118 417.48203 C 514.478 421.557 516.813 426.626 518.948 429.907 C 521.09 433.037 520.896 434.97696 517.784 434.97696 C 514.672 434.97696 511.94797 427.17297 511.56 433.783 C 511.36597 440.19498 516.424 442.332 521.673 441.934 C 526.731 441.73502 527.508 443.674 526.731 446.407 C 526.149 449.13998 528.285 451.82404 531.203 451.277 C 533.926 450.48203 538.208 453.017 540.539 459.627 C 542.87 466.237 538.985 469.119 533.344 464.447 C 527.702 459.627 519.536 455.35303 518.754 451.82404 C 518.172 448.742 515.837 453.215 518.366 457.48898 C 520.701 461.763 522.061 463.70203 525.173 465.441 C 528.285 466.981 524.979 473.39297 519.731 469.318 C 514.671 465.441 512.337 466.385 510.783 470.858 C 508.253 478.065 500.67 476.32504 503.001 480.20203 C 505.332 484.079 504.36496 490.291 500.864 491.832 C 497.16504 493.372 492.88797 491.086 493.276 484.277 C 492.30597 485.619 488.611 486.216 485.693 485.42096 C 485.30496 494.963 482.58102 498.243 476.745 495.709 C 476.551 497.84604 476.35696 501.523 473.439 504.257 C 479.857 503.312 481.217 507.736 481.799 510.469 C 482.193 513.203 483.164 512.805 486.859 513.203 C 490.35898 513.401 494.83496 518.023 488.222 516.88 C 481.605 515.936 471.298 518.222 465.269 513.799 C 471.493 519.415 489.193 519.614 496.58304 526.769 C 550.463 548.936 645.38 556.689 682.909 546.401 C 683.104 541.928 682.521 531.64 682.133 528.36"/>
+                <path fill="#034418" stroke="none" d="M 603.028 372.77 C 604.582 373.515 606.14 375.653 607.5 378.982 C 610.806 389.27 617.418 415.064 620.924 421.077 C 624.23 427.09097 627.73 435.43997 627.148 439.515 C 626.56 443.59097 631.619 445.181 634.537 448.06396 C 637.455 450.797 637.843 460.29 646.402 468.441 C 654.961 476.592 664.492 482.456 672.462 486.53098 C 677.327 497.365 681.022 511.927 682.575 529.024 C 659.626 527.284 630.842 520.475 616.447 514.064 C 617.03 511.92798 617.03 509.24402 616.253 505.169 C 615.282 501.09302 616.059 497.96204 620.336 494.08597 C 624.618 490.20905 623.254 483.599 620.923 479.922 C 618.588 476.44196 618.783 474.306 620.724 472.169 C 622.477 470.23 622.477 466.702 618.394 462.825 C 614.112 458.949 617.03 454.87302 619.364 451.39496 C 621.7 447.865 625.2 441.852 622.671 434.099 C 620.141 426.54504 616.253 435.839 613.141 432.956 C 611.194 430.968 610.029 427.29 612.17 424.20898 C 614.306 421.277 612.947 415.661 610.417 411.387 C 616.059 409.847 606.529 393.346 604.97 386.339 C 603.417 379.33102 606.723 375.85303 603.028 373.119"/>
+            </g>
+            <path fill="#509164" stroke="none" d="M 358.31 435.81003 C 358.31 439.488 357.34 444.756 356.364 446.495 C 358.699 450.173 361.81097 457.727 361.422 460.06302 C 364.534 457.18103 370.56403 459.467 371.924 467.468 C 373.28796 475.618 374.648 483.173 373.871 487.646 C 376.594 489.982 382.43 494.057 383.401 498.53003 C 384.371 502.804 387.28998 502.208 390.207 501.81 C 399.34897 500.468 398.57196 511.502 408.103 509.96 C 421.52203 508.02304 413.16202 518.708 426.57996 518.31 C 434.35797 517.913 445.05704 519.453 450.505 527.057 C 456.529 518.907 461.783 521.988 467.23 524.125 C 472.677 526.063 479.483 525.517 473.454 521.243 C 467.23 516.77 454.976 516.173 449.529 517.515 C 444.082 518.907 435.916 517.913 430.274 512.893 C 424.827 507.82297 415.29797 503.55 409.462 503.351 C 403.62604 503.15204 402.267 502.804 397.796 496.194 C 393.51404 489.784 386.51303 490.52896 383.012 490.18103 C 379.706 489.98096 377.177 485.708 381.06598 481.633 C 386.707 475.619 378.73 474.823 381.64798 471.146 C 384.56604 467.469 383.013 462.597 375.23 462.00098 C 367.45303 461.40497 370.37 458.919 371.53598 453.453 C 374.259 440.482 356.752 442.619 358.116 436.40604 M 663.676 505.69 C 664.453 497.738 658.423 494.458 657.064 488.395 C 655.899 482.381 646.364 482.183 643.839 483.972 C 644.81 485.712 643.839 488.792 642.669 490.532 C 641.504 492.12198 641.504 493.067 643.839 493.862 C 646.364 494.458 648.505 495.005 648.699 497.142 C 648.893 499.08 650.063 497.341 651.034 494.80603 C 651.811 492.321 658.618 497.937 659.399 502.956 C 659.982 508.02603 662.705 511.505 663.482 505.491 M 632.168 497.13998 C 633.333 500.072 637.615 504.148 639.945 504.148 C 642.275 504.148 645.781 505.888 646.363 508.62 C 646.757 510.95602 648.698 514.236 651.228 514.634 C 653.758 515.032 652.393 516.97 649.281 516.771 C 645.975 516.572 640.921 514.634 640.533 512.298 C 641.698 517.168 640.139 519.306 637.027 515.778 C 634.11 512.498 632.557 507.82504 628.667 507.22903 C 631.585 506.682 631.973 505.887 630.609 502.95496 C 629.444 500.072 630.415 492.319 632.168 497.13998"/>
+            <path fill="#078930" stroke="#000000" d="M 149.888 545.89 C 156.282 542.759 166.148 543.952 169.829 547.232 C 171.763 543.554 174.863 540.821 180.677 541.815 C 185.32999 536.745 189.204 534.211 191.918 536.745 C 194.631 531.725 203.739 530.533 206.84 533.665 C 210.134 528.595 216.721 526.259 221.176 528.992 C 226.99 521.388 237.258 518.704 243.458 522.582 C 248.88501 518.506 255.086 519.302 257.799 521.985 C 260.512 524.52 266.326 519.301 268.652 524.122 C 272.72 523.178 280.468 522.979 282.021 527.252 C 282.988 524.917 286.475 523.526 288.415 525.315 C 288.415 516.369 294.809 509.56 303.723 511.697 C 307.984 505.285 315.351 502.60196 318.838 504.88702 C 322.519 501.21 330.074 503.745 333.367 508.217 C 340.54 508.019 344.027 511.299 347.708 517.71 C 351.389 524.121 362.049 527.998 368.83 525.115 C 375.612 522.581 381.812 521.785 384.138 524.917 C 388.20596 521.239 392.665 522.183 395.37396 524.717 C 400.02698 528.793 404.481 521.587 407.196 524.32 C 411.46103 528.793 415.33496 520.245 422.89 524.718 C 430.257 529.191 444.78598 535.95 456.027 535.95 C 467.268 535.95 476.181 522.183 483.35 531.874 C 490.518 527.054 501.371 524.718 508.927 528.794 C 513.385 524.718 523.654 523.376 527.722 527.252 C 531.79 521.04 539.542 517.312 546.129 519.45 C 549.81 513.088 564.537 512.094 568.992 521.04 C 572.678 521.04 578.487 524.32 578.487 528.396 C 582.173 528.396 587.987 530.731 587.987 535.006 C 592.055 534.012 597.089 536.546 597.868 541.416 C 606.003 540.82 612.595 544.15 616.276 550.909 C 618.989 548.573 617.436 542.559 623.637 541.417 C 629.839 540.423 631.778 542.361 633.518 544.498 C 640.3 539.478 649.798 540.075 657.74 547.231 C 663.554 544.896 668.981 545.89 670.722 548.772 C 673.243 546.436 677.31 545.89 681.382 545.89 C 681.576 559.06 680.41 573.423 677.504 588.184 L 152.779 588.184 C 150.065 573.821 148.905 559.458 149.098 546.238"/>
+            <path fill="#ffffff" stroke="none" d="M 416.28 245.03998 L 411.037 261.938 L 393.18 261.938 L 407.73703 272.424 L 402.3 289.322 L 416.474 278.835 L 430.842 289.322 L 425.404 272.424 L 439.767 262.335 L 422.10403 262.335 L 416.667 245.437 M 348.72 250.66 L 346.19504 268.154 L 328.726 270.887 L 344.646 278.839 L 341.926 296.283 L 354.35202 283.659 L 370.077 291.661 L 361.921 275.906 L 374.541 263.481 L 357.071 266.214 L 348.916 250.459 M 282.72 267.16 L 282.914 284.853 L 266.021 290.469 L 283.108 295.737 L 283.108 313.38 L 293.202 298.818 L 310.095 304.086 L 299.415 289.872 L 309.708 275.509 L 292.815 281.175 L 282.14 266.961 M 220.39998 294.14 L 223.506 311.634 L 207.781 319.984 L 225.444 322.319 L 228.357 339.763 L 235.931 323.859 L 253.40001 326.195 L 240.588 313.77 L 248.356 298.015 L 232.63098 306.365 L 219.81902 294.139 M 484.23 250.66 L 486.755 268.154 L 504.224 270.887 L 488.304 278.839 L 491.024 296.283 L 478.598 283.659 L 462.873 291.661 L 471.023 275.906 L 458.6 263.48 L 476.07404 266.213 L 484.229 250.458 M 550.24 267.16 L 550.046 284.853 L 566.934 290.469 L 549.852 295.737 L 549.852 313.38 L 539.758 298.818 L 522.865 304.086 L 533.545 289.872 L 523.252 275.509 L 539.952 281.175 L 550.626 266.961 M 612.56 294.14 L 609.454 311.634 L 625.179 319.984 L 607.511 322.319 L 604.603 339.763 L 597.029 323.859 L 579.555 326.195 L 592.372 313.77 L 584.604 298.015 L 600.329 306.365 L 613.141 294.139"/>
+            <g>
+                <path fill="#865800" stroke="none" d="M 387.186 672.52 L 389.12396 542.66 C 389.12396 536.448 390.292 535.454 390.48596 542.262 L 390.874 673.912"/>
+            </g>
+            <g>
+                <path fill="#704d25" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" d="M 387.186 672.52 L 389.12396 542.66 C 389.12396 536.448 390.292 535.454 390.48596 542.262 L 390.874 673.912"/>
+            </g>
+            <g>
+                <path fill="#ffffff" stroke="none" d="M 390.68 542.46 C 395.143 538.583 405.43 547.33 411.83698 543.653 C 407.95502 556.227 392.425 546.337 390.68 551.008 L 390.68 542.46"/>
+            </g>
+            <g>
+                <path fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" d="M 390.68 542.46 C 395.143 538.583 405.43 547.33 411.83698 543.653 C 407.95502 556.227 392.425 546.337 390.68 551.008 L 390.68 542.46"/>
+            </g>
+            <g>
+                <path fill="#865800" stroke="none" d="M 431.056 672.72 L 432.994 543.06 C 432.994 536.848 434.162 535.655 434.356 542.861 L 434.744 674.261"/>
+            </g>
+            <g>
+                <path fill="#704d25" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" d="M 431.056 672.72 L 432.994 543.06 C 432.994 536.848 434.162 535.655 434.356 542.861 L 434.744 674.261"/>
+            </g>
+            <g>
+                <path fill="#ffffff" stroke="none" d="M 434.75 542.86 C 439.213 538.983 449.506 547.73 455.912 544.003 C 451.832 556.627 436.495 546.736 434.75 551.408 L 434.75 542.86"/>
+            </g>
+            <g>
+                <path fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" d="M 434.75 542.86 C 439.213 538.983 449.506 547.73 455.912 544.003 C 451.832 556.627 436.495 546.736 434.75 551.408 L 434.75 542.86"/>
+            </g>
+            <g>
+                <path fill="#865800" stroke="none" d="M 472.6 679.93 L 474.54297 550.02 C 474.54297 543.808 475.706 542.863 475.9 549.87 L 476.288 681.27"/>
+            </g>
+            <g>
+                <path fill="#704d25" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" d="M 472.6 679.93 L 474.54297 550.02 C 474.54297 543.808 475.706 542.863 475.9 549.87 L 476.288 681.27"/>
+            </g>
+            <path fill="#ffffff" stroke="none" d="M 476.1 550.02 C 480.568 546.143 490.856 554.89 497.26196 551.014 C 493.18704 563.638 477.85 553.747 476.1 558.369 L 476.1 549.871"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 476.1 550.02 C 480.568 546.143 490.856 554.89 497.26196 551.014 C 493.18704 563.638 477.85 553.747 476.1 558.369 L 476.1 549.871 Z"/>
+            <g>
+                <path fill="#704d25" stroke="none" d="M 487.546 694.84 C 483.07803 694.84 477.452 692.7529 475.89603 689.224 C 472.59598 692.355 458.815 694.094 453.37802 689.423 C 449.69 692.553 438.235 694.6909 432.41 690.963 C 427.753 695.039 413.96698 694.6909 406.78503 690.417 C 403.873 693.49805 395.52298 695.834 391.06 696.232 C 384.65402 687.087 367.373 672.526 356.504 667.108 C 344.273 661.094 319.811 649.415 306.804 643.798 C 299.231 640.518 292.243 634.853 306.611 641.065 L 363.298 664.97 C 387.178 675.457 482.498 673.916 498.218 672.525 C 506.374 671.978 517.243 665.765 524.818 661.094 C 530.642 657.564 530.836 659.702 525.205 662.634 C 518.992 665.914 512.199 668.449 507.34296 675.258 C 500.743 684.403 491.618 688.478 488.123 694.49207"/>
+                <path fill="#704d25" stroke="#000000" stroke-linejoin="round" d="M 487.546 694.84 C 483.07803 694.84 477.452 692.7529 475.89603 689.224 C 472.59598 692.355 458.815 694.094 453.37802 689.423 C 449.69 692.553 438.235 694.6909 432.41 690.963 C 427.753 695.039 413.96698 694.6909 406.78503 690.417 C 403.873 693.49805 395.52298 695.834 391.06 696.232 C 384.65402 687.087 367.373 672.526 356.504 667.108 C 344.273 661.094 319.811 649.415 306.804 643.798 C 299.231 640.518 292.243 634.853 306.611 641.065 L 363.298 664.97 C 387.178 675.457 482.498 673.916 498.218 672.525 C 506.374 671.978 517.243 665.765 524.818 661.094 C 530.642 657.564 530.836 659.702 525.205 662.634 C 518.992 665.914 512.199 668.449 507.34296 675.258 C 500.743 684.403 491.618 688.478 488.123 694.49207 L 487.543 694.84 Z"/>
+            </g>
+            <path fill="#ffffff" stroke="none" d="M 496.47598 572.18 L 465.608 568.85 C 460.171 577.995 459.39603 589.425 462.308 597.427 C 472.208 588.084 490.07 592.954 499.001 597.775 C 496.08902 589.625 491.621 578.591 496.67 572.379"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 496.47598 572.18 L 465.608 568.85 C 460.171 577.995 459.39603 589.425 462.308 597.427 C 472.208 588.084 490.07 592.954 499.001 597.775 C 496.08902 589.625 491.621 578.591 496.67 572.379 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 498.806 597.58 C 489.686 597.779 467.94296 597.232 461.144 597.232 C 453.769 606.725 457.844 621.088 459.59396 626.554 C 467.744 613.534 493.567 620.491 503.467 629.834 C 498.41702 620.292 494.537 612.141 499.004 597.43"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 498.806 597.58 C 489.686 597.779 467.94296 597.232 461.144 597.232 C 453.769 606.725 457.844 621.088 459.59396 626.554 C 467.744 613.534 493.567 620.491 503.467 629.834 C 498.41702 620.292 494.537 612.141 499.004 597.43 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 503.276 630.23 C 494.345 628.64 465.614 626.701 459.78897 625.16 C 455.127 634.852 451.246 647.476 449.307 659.553 C 463.282 644.196 495.706 655.477 502.49997 670.387 C 495.706 657.565 488.907 638.182 503.47 630.23"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 503.276 630.23 C 494.345 628.64 465.614 626.701 459.78897 625.16 C 455.127 634.852 451.246 647.476 449.307 659.553 C 463.282 644.196 495.706 655.477 502.49997 670.387 C 495.706 657.565 488.907 638.182 503.47 630.23 L 503.275 630.23 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 464.84 562.84 L 424.067 557.423 C 418.24704 564.232 413.97296 576.259 414.55502 590.223 C 423.098 582.073 454.354 585.353 462.315 597.033 C 459.59702 584.409 456.103 568.506 465.034 562.641"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 464.836 562.84 L 424.063 557.423 C 418.243 564.232 413.969 576.259 414.551 590.223 C 423.094 582.073 454.34998 585.353 462.311 597.033 C 459.593 584.409 456.09897 568.506 465.02997 562.641 L 464.836 562.839 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 461.73 598.18 L 416.494 592.166 C 409.312 601.311 409.7 614.282 411.44403 628.098 C 421.738 619.55 455.31903 624.222 463.28098 635.653 C 458.42996 618.953 454.34998 609.063 461.924 598.18"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 461.73 598.18 L 416.494 592.166 C 409.312 601.311 409.7 614.282 411.44403 628.098 C 421.738 619.55 455.31903 624.222 463.28098 635.653 C 458.42996 618.953 454.34998 609.063 461.924 598.18 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 463.09 635.65 L 417.079 630.978 C 409.897 639.924 405.04202 649.068 406.597 662.438 C 413.778 650.61 444.259 659.158 457.265 672.328 C 449.502 662.04 448.72202 647.28 463.09 635.65"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 463.09 635.65 L 417.079 630.978 C 409.897 639.924 405.04202 649.068 406.597 662.438 C 413.778 650.61 444.259 659.158 457.265 672.328 C 449.502 662.04 448.72202 647.28 463.09 635.65 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 388.15 562.84 C 383.09998 566.717 375.338 580.135 374.17 583.813 C 382.71298 580.334 400.769 579.34 412.03 587.69 C 408.73 581.278 407.563 570.046 410.47498 565.374 C 406.012 563.436 394.169 562.442 388.345 563.039"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 388.14603 562.84 C 383.096 566.717 375.334 580.135 374.166 583.813 C 382.709 580.334 400.765 579.34 412.02603 587.69 C 408.72598 581.278 407.559 570.046 410.471 565.374 C 406.00803 563.436 394.165 562.442 388.34103 563.039 L 388.147 562.839 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 369.32 590.02 C 381.163 589.821 405.42603 592.753 415.913 595.636 C 409.70102 604.979 410.476 620.883 413.00098 630.773 C 396.889 614.869 370.28998 615.267 354.565 619.939 C 357.47702 612.733 364.65903 597.773 369.127 589.821"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 369.32 590.02 C 381.163 589.821 405.42603 592.753 415.913 595.636 C 409.70102 604.979 410.476 620.883 413.00098 630.773 C 396.889 614.869 370.28998 615.267 354.565 619.939 C 357.47702 612.733 364.65903 597.773 369.127 589.821 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 416.296 634.31 C 404.84 634.708 375.52798 629.638 362.129 623.028 C 357.47195 635.652 355.335 656.625 354.947 664.179 C 367.95303 646.735 399.79498 656.426 409.889 674.268 C 408.92 664.775 405.422 641.467 416.296 634.111"/>
+            <path fill="none" stroke="#000000" stroke-linejoin="round" d="M 416.296 634.31 C 404.84 634.708 375.52798 629.638 362.129 623.028 C 357.47195 635.652 355.335 656.625 354.947 664.179 C 367.95303 646.735 399.79498 656.426 409.889 674.268 C 408.92 664.775 405.422 641.467 416.296 634.111 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 388.15 562.84 C 355.91998 582.272 331.463 621.485 322.338 648.67 C 331.463 648.471 342.913 651.403 346.994 659.554 C 356.506 620.491 369.90002 584.409 388.15 562.641"/>
+            <path fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" d="M 388.15 562.84 C 355.91998 582.272 331.463 621.485 322.338 648.67 C 331.463 648.471 342.913 651.403 346.994 659.554 C 356.506 620.491 369.90002 584.409 388.15 562.641 Z M 389.12 544 C 362.72 570.589 325.252 618.002 311.659 643.796 M 496.47897 572.18 C 503.66 607.118 505.409 654.084 502.498 671.379"/>
+            <path fill="#00009e" stroke="none" d="M 534.69 635.28 C 526.505 639.363 510.99002 627.942 503.666 633.128 L 503.666 628.604 C 510.776 623.638 526.29 635.059 534.69 630.756 L 534.69 635.501"/>
+            <path fill="#001489" stroke="none" d="M 534.69 635.28 C 526.505 639.363 510.99002 627.942 503.666 633.128 L 503.666 628.604 C 510.776 623.638 526.29 635.059 534.69 630.756 L 534.69 635.501 L 534.69 635.281 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 534.69 640.02 C 526.505 644.103 510.99002 632.682 503.666 637.647 L 503.666 632.902 C 510.776 627.936 526.29 639.358 534.69 635.054 L 534.69 639.799"/>
+            <g>
+                <path fill="#ff0016" stroke="none" d="M 534.69 644.77 C 526.505 649.074 510.99002 637.652 503.666 642.618 L 503.666 637.873 C 510.776 632.907 526.29 644.329 534.69 640.246 L 534.69 644.77"/>
+            </g>
+            <g>
+                <path fill="#da291c" stroke="none" d="M 534.69 644.77 C 526.505 649.074 510.99002 637.652 503.666 642.618 L 503.666 637.873 C 510.776 632.907 526.29 644.329 534.69 640.246 L 534.69 644.77"/>
+            </g>
+            <path fill="#ffffff" stroke="none" d="M 534.69 649.51 C 526.505 653.814 510.99002 642.392 503.666 647.358 L 503.666 642.613 C 510.776 637.868 526.29 649.069 534.69 644.765 Z"/>
+            <path fill="#00009e" stroke="none" d="M 534.69 654.04 C 526.505 658.344 510.99002 646.922 503.666 651.888 L 503.666 647.143 C 510.776 642.177 526.29 653.599 534.69 649.295 L 534.69 653.819"/>
+            <path fill="#001489" stroke="none" d="M 534.69 654.04 C 526.505 658.344 510.99002 646.922 503.666 651.888 L 503.666 647.143 C 510.776 642.177 526.29 653.599 534.69 649.295 L 534.69 654.039 Z"/>
+            <g>
+                <path fill="#865800" stroke="none" d="M 404.08398 440.13596 L 404.772 394.055 C 404.772 391.85004 405.18597 391.49698 405.255 393.91296 L 405.39203 440.62997"/>
+            </g>
+            <g>
+                <path fill="#704d25" stroke="#000000" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round" d="M 404.08398 440.13596 L 404.772 394.055 C 404.772 391.85004 405.18597 391.49698 405.255 393.91296 L 405.39203 440.62997"/>
+            </g>
+            <g>
+                <path fill="#ffffff" stroke="none" d="M 405.32196 393.984 C 406.906 392.608 410.55698 395.712 412.83 394.40698 C 411.453 398.86896 405.942 395.35904 405.32196 397.017 L 405.32196 393.984"/>
+            </g>
+            <g>
+                <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round" d="M 405.32196 393.984 C 406.906 392.608 410.55698 395.712 412.83 394.40698 C 411.453 398.86896 405.942 395.35904 405.32196 397.017 L 405.32196 393.984"/>
+            </g>
+            <g>
+                <path fill="#865800" stroke="none" d="M 419.651 440.207 L 420.339 394.197 C 420.339 391.992 420.75397 391.569 420.82196 394.126 L 420.96002 440.754"/>
+            </g>
+            <g>
+                <path fill="#704d25" stroke="#000000" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round" d="M 419.651 440.207 L 420.339 394.197 C 420.339 391.992 420.75397 391.569 420.82196 394.126 L 420.96002 440.754"/>
+            </g>
+            <g>
+                <path fill="#ffffff" stroke="none" d="M 420.96002 394.126 C 422.544 392.75 426.197 395.85397 428.46997 394.531 C 427.022 399.011 421.58 395.501 420.96002 397.15903 L 420.96002 394.126"/>
+            </g>
+            <g>
+                <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round" d="M 420.96002 394.126 C 422.544 392.75 426.197 395.85397 428.46997 394.531 C 427.022 399.011 421.58 395.501 420.96002 397.15903 L 420.96002 394.126"/>
+            </g>
+            <g>
+                <path fill="#865800" stroke="none" d="M 434.39197 442.765 L 435.082 396.666 C 435.082 394.462 435.49396 394.126 435.563 396.613 L 435.701 443.24097"/>
+            </g>
+            <g>
+                <path fill="#704d25" stroke="#000000" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round" d="M 434.39197 442.765 L 435.082 396.666 C 435.082 394.462 435.49396 394.126 435.563 396.613 L 435.701 443.24097"/>
+            </g>
+            <path fill="#ffffff" stroke="none" d="M 435.634 396.666 C 437.219 395.291 440.87003 398.395 443.14404 397.019 C 441.697 401.49902 436.255 397.989 435.634 399.629 L 435.634 396.613"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 435.634 396.666 C 437.219 395.291 440.87003 398.395 443.14404 397.019 C 441.697 401.49902 436.255 397.989 435.634 399.629 L 435.634 396.613 Z"/>
+            <g>
+                <path fill="#704d25" stroke="none" d="M 439.697 448.056 C 438.112 448.056 436.115 447.316 435.563 446.063 C 434.393 447.175 429.502 447.792 427.573 446.13397 C 426.26303 447.245 422.199 448.00403 420.13202 446.681 C 418.47903 448.127 413.587 448.003 411.039 446.48703 C 410.005 447.58 407.042 448.409 405.459 448.54996 C 403.185 445.305 397.053 440.138 393.196 438.215 C 388.85596 436.081 380.17596 431.937 375.56 429.945 C 372.87296 428.78 370.393 426.77 375.491 428.97504 L 395.607 437.45703 C 404.081 441.17798 437.90604 440.631 443.484 440.137 C 446.378 439.944 450.235 437.739 452.92303 436.081 C 454.99 434.82904 455.059 435.58698 453.06 436.628 C 450.856 437.792 448.44498 438.691 446.72195 441.108 C 444.38 444.353 441.142 445.798 439.902 447.93304"/>
+                <path fill="#704d25" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 439.697 448.056 C 438.112 448.056 436.115 447.316 435.563 446.063 C 434.393 447.175 429.502 447.792 427.573 446.13397 C 426.26303 447.245 422.199 448.00403 420.13202 446.681 C 418.47903 448.127 413.587 448.003 411.039 446.48703 C 410.005 447.58 407.042 448.409 405.459 448.54996 C 403.185 445.305 397.053 440.138 393.196 438.215 C 388.85596 436.081 380.17596 431.937 375.56 429.945 C 372.87296 428.78 370.393 426.77 375.491 428.97504 L 395.607 437.45703 C 404.081 441.17798 437.90604 440.631 443.484 440.137 C 446.378 439.944 450.235 437.739 452.92303 436.081 C 454.99 434.82904 455.059 435.58698 453.06 436.628 C 450.856 437.792 448.44498 438.691 446.72195 441.108 C 444.38 444.353 441.142 445.798 439.902 447.93304 L 439.696 448.056 Z"/>
+            </g>
+            <path fill="#ffffff" stroke="none" d="M 442.866 404.53 L 431.912 403.348 C 429.982 406.59302 429.708 410.649 430.742 413.48904 C 434.254 410.173 440.592 411.902 443.762 413.612 C 442.728 410.72 441.143 406.80502 442.935 404.60098"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 442.866 404.53 L 431.912 403.348 C 429.982 406.59302 429.708 410.649 430.742 413.48904 C 434.254 410.173 440.592 411.902 443.762 413.612 C 442.728 410.72 441.143 406.80502 442.935 404.60098 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 443.69296 413.543 C 440.457 413.613 432.741 413.42 430.328 413.42 C 427.711 416.788 429.158 421.885 429.778 423.825 C 432.67 419.205 441.834 421.673 445.347 424.989 C 443.555 421.603 442.177 418.71 443.763 413.48996"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 443.69296 413.543 C 440.457 413.613 432.741 413.42 430.328 413.42 C 427.711 416.788 429.158 421.885 429.778 423.825 C 432.67 419.205 441.834 421.673 445.347 424.989 C 443.555 421.603 442.177 418.71 443.763 413.48996 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 445.279 425.13004 C 442.109 424.56503 431.91397 423.877 429.847 423.33 C 428.19296 426.77 426.816 431.249 426.12704 435.534 C 431.087 430.085 442.593 434.088 445.00397 439.379 C 442.593 434.82904 440.18 427.951 445.347 425.129"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 445.279 425.13004 C 442.109 424.56503 431.91397 423.877 429.847 423.33 C 428.19296 426.77 426.816 431.249 426.12704 435.534 C 431.087 430.085 442.593 434.088 445.00397 439.379 C 442.593 434.82904 440.18 427.951 445.347 425.129 L 445.279 425.129 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 431.638 401.21603 L 417.17 399.293 C 415.105 401.709 413.58804 405.97702 413.794 410.933 C 416.826 408.041 427.917 409.204 430.743 413.349 C 429.778 408.869 428.53796 403.226 431.707 401.145"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 431.638 401.21603 L 417.17 399.293 C 415.105 401.709 413.58804 405.97702 413.794 410.933 C 416.826 408.041 427.917 409.204 430.743 413.349 C 429.778 408.869 428.53796 403.226 431.707 401.145 L 431.638 401.215 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 430.54 413.76 L 414.488 411.626 C 411.93896 414.87103 412.07703 419.47397 412.696 424.376 C 416.348 421.343 428.265 423.001 431.09 427.05698 C 429.369 421.132 427.92 417.622 430.608 413.76"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 430.54 413.76 L 414.488 411.626 C 411.93896 414.87103 412.07703 419.47397 412.696 424.376 C 416.348 421.343 428.265 423.001 431.09 427.05698 C 429.369 421.132 427.92 417.622 430.608 413.76 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 431.02 427.05 L 414.693 425.392 C 412.14502 428.566 410.422 431.81198 410.973 436.555 C 413.522 432.358 424.338 435.39197 428.95297 440.06497 C 426.199 436.415 425.922 431.177 431.02 427.05"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 431.02 427.05 L 414.693 425.392 C 412.14502 428.566 410.422 431.81198 410.973 436.555 C 413.522 432.358 424.338 435.39197 428.95297 440.06497 C 426.199 436.415 425.922 431.177 431.02 427.05 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 404.425 401.21603 C 402.633 402.591 399.878 407.35303 399.464 408.658 C 402.495 407.423 408.902 407.071 412.899 410.033 C 411.728 407.758 411.313 403.77304 412.347 402.11502 C 410.76303 401.427 406.561 401.07498 404.493 401.286"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 404.425 401.21603 C 402.633 402.591 399.878 407.35303 399.464 408.658 C 402.495 407.423 408.902 407.071 412.899 410.033 C 411.728 407.758 411.313 403.77304 412.347 402.11502 C 410.76303 401.427 406.561 401.07498 404.493 401.286 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 397.743 410.86 C 401.94504 410.79 410.555 411.83 414.276 412.853 C 412.072 416.169 412.347 421.813 413.243 425.322 C 407.525 419.678 398.087 419.82 392.507 421.47702 C 393.54 418.91998 396.08798 413.612 397.674 410.79"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 397.743 410.86 C 401.94504 410.79 410.555 411.83 414.276 412.853 C 412.072 416.169 412.347 421.813 413.243 425.322 C 407.525 419.678 398.087 419.82 392.507 421.47702 C 393.54 418.91998 396.08798 413.612 397.674 410.79 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 414.414 426.57697 C 410.34802 426.71802 399.947 424.919 395.192 422.574 C 393.54 427.054 392.78204 434.49603 392.64398 437.176 C 397.259 430.986 408.558 434.425 412.14 440.756 C 411.796 437.388 410.555 429.116 414.414 426.50598"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linejoin="round" d="M 414.414 426.57697 C 410.34802 426.71802 399.947 424.919 395.192 422.574 C 393.54 427.054 392.78204 434.49603 392.64398 437.176 C 397.259 430.986 408.558 434.425 412.14 440.756 C 411.796 437.388 410.555 429.116 414.414 426.50598 L 414.414 426.576 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 404.425 401.21603 C 392.988 408.111 384.309 422.026 381.07104 431.673 C 384.309 431.60303 388.371 432.64297 389.82104 435.535 C 393.196 421.673 397.948 408.869 404.425 401.145"/>
+            <path fill="none" stroke="#000000" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round" d="M 404.425 401.21603 C 392.988 408.111 384.309 422.026 381.07104 431.673 C 384.309 431.60303 388.371 432.64297 389.82104 435.535 C 393.196 421.673 397.948 408.869 404.425 401.145 L 404.425 401.215 Z M 404.769 394.53 C 395.401 403.965 382.10504 420.79004 377.281 429.943 M 442.866 404.53 C 445.414 416.92798 446.036 433.594 445.002 439.731"/>
+            <path fill="#00009e" stroke="none" d="M 456.425 426.921 C 453.52 428.37097 448.01505 424.31696 445.415 426.158 L 445.415 424.552 C 447.939 422.79 453.445 426.84204 456.425 425.316 L 456.425 427"/>
+            <path fill="#001489" stroke="none" d="M 456.425 426.921 C 453.52 428.37097 448.01505 424.31696 445.415 426.158 L 445.415 424.552 C 447.939 422.79 453.445 426.84204 456.425 425.316 L 456.425 427 Z"/>
+            <path fill="#ffffff" stroke="none" d="M 456.42 428.6 C 453.515 430.05 448.00998 425.996 445.41 427.75797 L 445.41 426.07397 C 447.93396 424.312 453.44003 428.365 456.42 426.838 L 456.42 428.522"/>
+            <g>
+                <path fill="#ff0016" stroke="none" d="M 456.425 430.28903 C 453.52 431.816 448.01505 427.763 445.415 429.525 L 445.415 427.841 C 447.939 426.07904 453.445 430.132 456.425 428.683 L 456.425 430.28903"/>
+            </g>
+            <g>
+                <path fill="#da291c" stroke="none" d="M 456.425 430.28903 C 453.52 431.816 448.01505 427.763 445.415 429.525 L 445.415 427.841 C 447.939 426.07904 453.445 430.132 456.425 428.683 L 456.425 430.28903"/>
+            </g>
+            <path fill="#ffffff" stroke="none" d="M 456.425 431.97003 C 453.52 433.498 448.01505 429.445 445.415 431.207 L 445.415 429.52304 C 447.939 427.839 453.445 431.814 456.425 430.28696 Z"/>
+            <path fill="#00009e" stroke="none" d="M 456.425 433.57797 C 453.52 435.106 448.01505 431.053 445.415 432.81503 L 445.415 431.13098 C 447.939 429.369 453.445 433.421 456.425 431.89398 L 456.425 433.5"/>
+            <path fill="#001489" stroke="none" d="M 456.425 433.57797 C 453.52 435.106 448.01505 431.053 445.415 432.81503 L 445.415 431.13098 C 447.939 429.369 453.445 433.421 456.425 431.89398 Z"/>
+            <g>
+                <path fill="none" stroke="#000000" stroke-width="3" d="M 650.12 284.78 C 625.464 382.24 653.032 443.97 672.057 486.66 C 689.919 526.469 693.41296 619.06 628.183 684.51 C 531.31 781.3729 457.533 742.36005 420.453 795.14 M 412.5 795.32996 C 375.42 742.55 301.65 781.57007 204.77 684.7 C 139.54 619.25 143.04 526.66 160.9 486.84998 C 179.92 444.35995 207.49 382.63 182.84 284.97"/>
+                <path fill="#89c5e3" stroke="#000000" stroke-width="3" stroke-linejoin="round" d="M 427.55 39.787 C 428.90704 46.095 430.656 63.108006 421.33804 65.545 C 438.42004 86.62 463.075 89.631 506.368 89.631 L 571.598 89.631 C 571.598 95.031 569.848 100.813995 569.848 107.552 C 569.848 114.052 576.647 117.062004 586.548 114.816 C 596.449 112.57 617.609 106.214 629.06 116.297005 C 648.284 133.501 683.615 136.464 693.127 147.312 C 690.21497 134.218 677.79 120.979996 664.008 109.94201 C 677.014 108.077995 693.902 109.416 699.728 113.86 C 684.968 97.861 658.178 97.478 644.588 89.641 C 630.998 81.804 617.988 74.874 607.898 72.246 C 607.898 67.802 607.311 64.218 603.429 61.637 C 594.886 55.663 578.192 53.609 564.604 52.844 C 566.543 50.789 566.93 48.352 566.93 44.624 L 566.93 23.549997 C 566.93 16.238 567.71 14.375 559.36 9.165 C 527.136 -10.62 487.919 -24.813 416.48 -24.813 C 345.23196 -24.813 306.01 -10.811 273.6 9.165 C 265.058 14.375 266.032 16.238 266.032 23.549997 L 266.032 44.625 C 266.032 48.352997 266.226 50.79 268.358 52.845 C 254.77002 53.418 238.27002 55.473 229.533 61.638 C 225.845 64.218 225.065 67.612 225.065 72.248 C 215.165 74.685 202.159 81.614 188.377 89.64199 C 174.784 97.48001 147.997 97.862 133.241 113.872 C 138.871 109.427 155.76 107.898 168.766 109.952 C 155.178 120.801 142.754 134.039 139.646 147.324 C 149.159 136.475 184.49 133.512 203.90802 116.308 C 215.165 106.22399 236.327 112.39 246.421 114.82701 C 256.321 117.073 263.12 114.254 263.12 107.56301 C 263.12 100.825 261.37 95.042 261.37 89.64199 C 277.29 89.26 299.226 89.64199 326.6 89.64199 C 369.7 89.64199 394.355 86.63201 411.63 65.556 C 402.118 63.119003 403.867 46.297 405.41797 39.798 C 385.23004 35.306 375.13596 27.659998 358.825 27.659998 C 342.713 27.659998 339.8 36.214 339.8 39.416 L 339.8 42.044 C 326.988 42.044 308.932 38.842 304.469 30.431 C 329.319 20.347 366.20496 11.221 416.86902 11.221 C 467.53302 11.221 504.424 20.348 529.269 30.431 C 524.806 38.842 506.74902 42.044 493.938 42.044 L 493.938 39.416 C 493.938 36.406 491.219 27.659998 474.91302 27.659998 C 458.607 27.659998 448.508 35.115 428.31998 39.798 L 427.545 39.798 Z"/>
+                <path fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 260.98 89.965 C 248.36101 90.156 239.43001 90.921 234.575 92.402 C 226.81201 94.83999 226.037 98.949 231.081 101.195 M 339.21 42.176 L 339.21 51.924995 C 339.21 58.233 346.004 66.453 356.49 66.453 C 382.30902 66.453 387.35797 62.009003 406.577 62.534 M 406.38 62.009003 C 388.52 58.998 374.34998 49.488 358.62 49.488 C 343.089 49.488 339.789 56.560997 342.508 59.954 M 224.48 72.809 L 224.48 92.02 C 224.48 97.277 228.16801 104.541 242.14801 101.769 C 254.37901 99.523 262.336 102.295 262.336 107.55101 M 267.96 53.215 C 270.872 56.178 277.279 58.806 291.453 63.872 C 317.465 73.382 377.258 79.881 416.093 62.916 M 528.88 30.420002 C 533.93 32.475 538.586 34.53 542.667 36.585 C 566.93 48.723 568.679 51.543 560.136 56.179 M 571.79 89.965 C 584.409 90.156 593.34 90.921 598.195 92.402 C 605.958 94.83999 606.733 98.949 601.689 101.195 M 493.36002 42.176 L 493.36002 51.924995 C 493.36002 58.233 486.566 66.453 476.08002 66.453 C 450.261 66.453 445.212 62.009003 425.993 62.534 M 426.18 62.009003 C 444.05 58.998 458.22 49.488 473.95 49.488 C 489.476 49.488 492.781 56.560997 489.869 59.954 M 608.09 72.809 L 608.09 92.02 C 608.09 97.277 604.402 104.541 590.422 101.769 C 578.191 99.523 570.229 102.295 570.229 107.55101 M 564.61 53.215 C 561.698 56.178 555.291 58.806 541.117 63.872 C 515.105 73.382 455.312 79.881 416.477 62.916"/>
+                <g>
+                    <path fill="#89c5e3" stroke="#000000" stroke-width="3" stroke-linejoin="round" d="M 416.28 66.453 C 428.123 66.453 428.511 57.516003 428.511 49.296997 C 428.511 41.268 428.123 32.284 416.28 32.284 C 404.43698 32.284 404.049 41.268 404.049 49.296997 C 404.049 57.325996 404.43698 66.453 416.28 66.453 Z"/>
+                    <path fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 304.55 30.437 C 299.381 32.489 294.614 34.542 290.437 36.594 C 265.594 48.717 263.809 51.533 272.554 56.161995"/>
+                </g>
+            </g>
+            <g id="AQ">
+                <path fill="#078930" stroke="#000000" stroke-width="3" d="M 387.93997 192.56 C 404.246 182.074 424.439 164.43 431.814 152.751 C 441.908 136.45 443.27 144.401 451.03302 143.06 C 432.783 163.039 410.07098 184.41 393.959 195.69 L 387.93997 192.56 M 251.46 231.77 C 210.69199 208.66 195.16098 232.764 185.64801 233.907 C 196.905 236.641 206.41699 254.681 251.46 231.77 Z"/>
+                <path fill="#078930" stroke="#000000" stroke-width="3" d="M 269.71 218.4 C 230.88 192.15901 213.60498 215.07 203.89401 215.66702 C 214.962 219.146 223.11798 237.98201 269.71 218.4 Z"/>
+                <path fill="#078930" stroke="#000000" stroke-width="3" d="M 297.47 202.84 C 259.222 175.853 241.365 198.367 231.654 198.765 C 242.722 202.64099 250.291 221.279 297.47 202.84 Z M 320.38 189.08 C 285.243 158.018 265.05 178.594 255.538 177.798 C 266.02 182.86798 271.65 202.25 320.38 189.08 Z"/>
+                <path fill="#078930" stroke="#000000" stroke-width="3" d="M 349.69003 178.99 C 316.108 146.139 294.946 165.77 285.434 164.428 C 295.722 169.845 300.384 189.824 349.69003 178.99 Z"/>
+                <path fill="#078930" stroke="#000000" stroke-width="3" d="M 380.37 175.66002 C 352.608 137.988 328.539 153.743 319.22 151.009 C 328.345 158.215 329.702 178.393 380.37 175.66002 Z"/>
+                <path fill="#078930" stroke="#000000" stroke-width="3" d="M 385.42 177.20001 C 384.058 168.702 368.14 157.817 366.783 153.742 C 370.85797 153.344 371.43997 148.474 369.695 146.734 C 368.334 145.392 365.034 146.138 363.28897 147.927 C 361.539 150.064 359.795 155.084 365.421 159.358 C 371.246 163.632 378.626 171.385 380.957 177.20001"/>
+                <path fill="#078930" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 214.38 234.5 C 225.443 231.17001 239.42299 232.76 249.13 231.767 M 232.43999 218.2 C 243.89102 215.665 257.483 218.2 267.383 218.2 M 260.2 201.85 C 271.651 199.763 285.243 202.44601 295.143 202.44601 M 283.49 184.01 C 295.14 183.066 308.34 187.34 318.046 188.48302 M 313 171.98 C 324.644 171.582 337.656 176.453 347.36203 178.192 M 345.42 163.03 C 357.069 164.223 369.106 171.578 378.231 174.51"/>
+            </g>
+            <g transform="matrix(-1 0 0 1 832.75995 0)">
+                <g>
+                    <path fill="#078930" stroke="#000000" stroke-width="3" d="M 387.93997 192.56 C 404.246 182.074 424.439 164.43 431.814 152.751 C 441.908 136.45 443.27 144.401 451.03302 143.06 C 432.783 163.039 410.07098 184.41 393.959 195.69 L 387.93997 192.56 M 251.46 231.77 C 210.69199 208.66 195.16098 232.764 185.64801 233.907 C 196.905 236.641 206.41699 254.681 251.46 231.77 Z"/>
+                    <path fill="#078930" stroke="#000000" stroke-width="3" d="M 269.71 218.4 C 230.88 192.15901 213.60498 215.07 203.89401 215.66702 C 214.962 219.146 223.11798 237.98201 269.71 218.4 Z"/>
+                    <path fill="#078930" stroke="#000000" stroke-width="3" d="M 297.47 202.84 C 259.222 175.853 241.365 198.367 231.654 198.765 C 242.722 202.64099 250.291 221.279 297.47 202.84 Z M 320.38 189.08 C 285.243 158.018 265.05 178.594 255.538 177.798 C 266.02 182.86798 271.65 202.25 320.38 189.08 Z"/>
+                    <path fill="#078930" stroke="#000000" stroke-width="3" d="M 349.69003 178.99 C 316.108 146.139 294.946 165.77 285.434 164.428 C 295.722 169.845 300.384 189.824 349.69003 178.99 Z"/>
+                    <path fill="#078930" stroke="#000000" stroke-width="3" d="M 380.37 175.66002 C 352.608 137.988 328.539 153.743 319.22 151.009 C 328.345 158.215 329.702 178.393 380.37 175.66002 Z"/>
+                    <path fill="#078930" stroke="#000000" stroke-width="3" d="M 385.42 177.20001 C 384.058 168.702 368.14 157.817 366.783 153.742 C 370.85797 153.344 371.43997 148.474 369.695 146.734 C 368.334 145.392 365.034 146.138 363.28897 147.927 C 361.539 150.064 359.795 155.084 365.421 159.358 C 371.246 163.632 378.626 171.385 380.957 177.20001"/>
+                    <path fill="#078930" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 214.38 234.5 C 225.443 231.17001 239.42299 232.76 249.13 231.767 M 232.43999 218.2 C 243.89102 215.665 257.483 218.2 267.383 218.2 M 260.2 201.85 C 271.651 199.763 285.243 202.44601 295.143 202.44601 M 283.49 184.01 C 295.14 183.066 308.34 187.34 318.046 188.48302 M 313 171.98 C 324.644 171.582 337.656 176.453 347.36203 178.192 M 345.42 163.03 C 357.069 164.223 369.106 171.578 378.231 174.51"/>
+                </g>
+            </g>
+            <g>
+                <g>
+                    <path fill="#ffffff" stroke="#000000" stroke-width="3" stroke-linejoin="round" d="M 416.49 190.46 C 425.615 190.46 433.378 190.46 439.009 189.71501 L 439.009 176.694 C 439.009 172.419 454.15204 167.35 477.059 171.823 C 566.751 189.317 578.979 229.87198 647.129 253.18 C 647.904 253.37898 650.429 254.174 653.341 254.72 L 659.166 241.55 C 660.329 237.823 670.234 238.022 678.966 242.09702 C 689.066 246.967 693.528 252.584 691.783 255.517 C 690.033 259.791 688.284 263.27 686.733 266.748 C 702.653 272.414 731.5771 280.962 722.065 319.181 C 714.689 312.025 696.828 304.222 685.765 304.222 C 673.145 304.222 659.554 299.402 663.828 285.585 C 661.497 284.442 657.417 282.305 655.284 281.908 C 654.897 283.101 654.315 284.244 653.729 285.387 C 650.816 292.593 638.198 295.127 625.579 290.854 C 554.524 266.601 532.587 212.976 448.71902 212.23 L 448.71902 214.565 C 448.71902 221.32501 439.982 227.536 416.494 227.536 C 393.194 227.536 384.269 221.324 384.269 214.566 L 384.269 212.23 C 300.596 212.776 278.459 266.402 207.40898 290.854 C 194.984 295.128 182.366 292.394 179.259 285.387 C 178.866 284.244 178.28499 283.1 177.70299 281.907 C 175.566 282.305 171.491 284.442 169.16 285.585 C 173.24 299.203 160.035 304.222 147.223 304.222 C 136.16 304.222 118.492 312.025 110.923 319.182 C 101.41 281.162 129.948 272.613 146.253 266.748 L 141.204 255.51602 C 139.654 252.584 143.923 246.96799 154.016 242.09702 C 162.754 237.823 172.45901 237.625 173.82098 241.551 L 179.646 254.72098 C 182.559 254.174 184.884 253.37898 185.859 253.18 C 253.808 229.871 266.232 189.317 355.919 171.823 C 378.636 167.35 393.974 172.419 393.974 176.69301 L 393.974 189.71501 C 399.604 190.261 407.368 190.46 416.49298 190.46 Z"/>
+                    <path fill="#ffffff" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 393.78003 189.71 C 387.761 189.114 384.268 187.772 384.268 185.43599 C 384.268 179.621 393.78003 181.559 393.78003 176.689 M 165.27 253.58 L 177.307 281.71 M 156.73 257.85 C 160.224 266 166.829 279.966 168.767 285.781"/>
+                </g>
+                <g>
+                    <path fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 140.62 255.71 C 142.95 259.785 155.182 253.772 156.732 257.648 C 158.094 261.724 154.406 263.861 145.863 266.942 M 173.43 241.55 C 175.174 246.768 162.943 248.90602 165.468 253.577 C 167.024 256.658 173.818 255.71399 179.25401 254.521"/>
+                    <path fill="#ffffff" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 384.06 185.24 L 384.06 212.227 M 439.20004 189.71 C 445.025 189.114 448.712 187.772 448.712 185.43599 C 448.712 179.621 439.20004 181.559 439.20004 176.689 M 667.7 253.58 L 655.663 281.71 M 676.24 257.85 C 672.741 266 666.141 279.966 664.203 285.781"/>
+                    <path fill="none" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 692.36 255.71 C 690.03 259.785 677.798 253.772 676.248 257.648 C 674.886 261.724 678.574 263.861 687.117 266.942 M 659.55 241.55 C 657.806 246.768 670.037 248.90602 667.512 253.577 C 665.956 256.658 659.162 255.71399 653.725 254.521"/>
+                    <path fill="#ffffff" stroke="#000000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M 448.91 185.24 L 448.91 212.227"/>
+                </g>
+            </g>
+            <path fill="#000000" stroke="none" d="M 203.96 281.77 L 196.437 254.88602 L 205.808 252.26399 C 208.204 251.594 209.984 251.356 211.146 251.55098 C 212.30798 251.746 213.386 252.348 214.37901 253.35602 C 215.372 254.364 216.103 255.698 216.568 257.361 C 217.15602 259.463 217.126 261.298 216.476 262.864 C 215.826 264.43 214.61902 265.638 212.853 266.488 C 213.99901 266.905 214.997 267.434 215.84799 268.072 C 216.699 268.71 217.95601 269.931 219.621 271.732 L 223.76602 276.228 L 218.466 277.711 L 213.601 272.764 L 210.125 269.456 C 209.56 269.041 209.018 268.797 208.496 268.726 C 207.97398 268.655 207.20102 268.761 206.174 269.049 L 205.257 269.305 L 208.398 280.528 Z M 204.057 265.014 L 207.357 264.09 C 209.375 263.526 210.63399 263.078 211.13399 262.747 C 211.63402 262.416 211.981 261.933 212.173 261.299 C 212.365 260.665 212.336 259.903 212.086 259.01 C 211.846 258.154 211.48299 257.515 210.996 257.09 C 210.52661 256.6739 209.92776 256.43292 209.301 256.408 C 208.84802 256.39 207.62498 256.659 205.632 257.218 L 202.14801 258.192 Z M 228.67 274.55 L 216.278 249.534 L 231.499 241.99399 L 233.595 246.226 L 222.50302 251.72 L 225.251 257.266 L 235.557 252.16101 L 237.645 256.376 L 227.338 261.481 L 230.71098 268.29 L 242.178 262.61 L 244.266 266.824 Z M 248.81 263.92 L 233.682 240.45699 L 239.924 236.433 C 242.25 234.933 243.84302 234.065 244.702 233.828 C 246.07799 233.455 247.518 233.62099 249.023 234.328 C 250.52798 235.03502 251.88298 236.32 253.087 238.18802 C 254.181 239.884 254.777 241.512 254.877 243.072 C 254.977 244.632 254.695 245.953 254.034 247.03598 C 253.37302 248.119 251.869 249.418 249.52098 250.93199 L 246.976 252.57199 L 252.683 261.422 Z M 240.11502 241.92899 L 244.40698 248.58699 L 246.552 247.20401 C 247.99202 246.276 248.90602 245.54399 249.292 245.00702 C 249.678 244.47 249.868 243.83199 249.858 243.09 C 249.848 242.348 249.596 241.594 249.101 240.826 C 248.599 240.046 248.00499 239.501 247.319 239.18701 C 246.633 238.873 245.98201 238.788 245.364 238.93001 C 244.74599 239.072 243.624 239.66599 242.00398 240.711 Z M 250.55 229.76999 L 254.32802 227.13 L 262.988 239.52602 L 265.757 243.19 C 266.628 244.083 267.572 244.585 268.587 244.697 C 269.602 244.809 270.624 244.504 271.655 243.78398 C 272.529 243.174 273.105 242.48001 273.385 241.704 C 273.665 240.928 273.662 240.124 273.381 239.291 C 273.1 238.458 272.164 236.901 270.571 234.62102 L 261.727 221.96098 L 265.52 219.311 L 273.918 231.331 C 276.063 234.40099 277.45 236.735 278.078 238.332 C 278.706 239.929 278.742 241.554 278.184 243.206 C 277.626 244.858 276.407 246.341 274.523 247.657 C 272.566 249.024 270.793 249.74 269.205 249.80498 C 267.617 249.87 266.13 249.437 264.745 248.50798 C 263.36 247.579 261.471 245.402 259.079 241.978 Z M 269.82 215.83 L 277.523 210.873 C 279.626 209.52 281.228 208.761 282.329 208.595 C 283.43 208.429 284.588 208.644 285.8 209.23802 C 287.012 209.832 288.014 210.742 288.804 211.97 C 289.532 213.101 289.939 214.285 290.024 215.52 C 290.109 216.75499 289.894 217.85 289.374 218.804 C 290.778 218.474 292.118 218.59299 293.396 219.159 C 294.674 219.725 295.766 220.714 296.674 222.123 C 297.773 223.831 298.291 225.53902 298.228 227.248 C 298.165 228.957 297.663 230.31102 296.72 231.309 C 296.065 232.003 294.317 233.264 291.477 235.091 L 284.927 239.306 Z M 276.21 217.243 L 279.703 222.673 L 282.265 221.02298 L 285.065 219.109 C 285.658 218.57599 285.995 217.96298 286.077 217.269 C 286.159 216.575 285.948 215.838 285.447 215.059 C 285 214.364 284.486 213.899 283.903 213.66298 C 283.32 213.427 282.779 213.393 282.278 213.565 C 281.777 213.737 280.501 214.482 278.452 215.801 Z M 282.218 226.58 L 286.258 232.85698 L 289.86 230.538 C 291.44 229.521 292.401 228.786 292.743 228.33199 C 293.085 227.878 293.253 227.31 293.243 226.629 C 293.233 225.948 292.991 225.233 292.51 224.485 C 292.015 223.71698 291.445 223.189 290.8 222.902 C 290.18845 222.61855 289.49866 222.55156 288.844 222.712 C 288.184 222.87201 287.022 223.488 285.356 224.56 Z M 302.8 227.14 L 290.01 202.583 L 294.097 200.454 L 304.714 220.84 L 314.915 215.527 L 317.088 219.69899 Z M 320.09 217.81 L 309.295 192.064 L 313.545 190.282 L 324.34 216.028 Z M 338.51 201.14 L 343.294 201.517 C 343.52 204.70901 343.062 207.229 341.918 209.075 C 340.774 210.921 339.065 212.18501 336.791 212.865 C 333.932 213.72 331.286 213.313 328.851 211.643 C 326.048 209.71298 324 206.58801 322.708 202.27098 C 321.343 197.71 321.303 193.832 322.587 190.639 C 323.705 187.86598 325.772 186.02798 328.789 185.125 C 331.245 184.39 333.552 184.61502 335.709 185.798 C 337.245 186.63698 338.638 188.148 339.887 190.332 L 335.891 192.919 C 335.178 191.555 334.29 190.61201 333.225 190.089 C 332.16 189.566 331.064 189.474 329.932 189.812 C 328.315 190.296 327.206 191.39601 326.607 193.112 C 326.008 194.828 326.193 197.312 327.165 200.559 C 328.173 203.92801 329.389 206.175 330.812 207.299 C 332.235 208.42299 333.743 208.74799 335.337 208.271 C 336.504 207.921 337.378 207.166 337.958 206.00601 C 338.538 204.846 338.722 203.22299 338.51 201.14 Z M 368.64 204.55 L 363.698 205.474 L 360.56802 199.60799 L 351.582 201.288 L 350.895 207.86801 L 346.06503 208.771 L 349.695 179.69202 L 354.505 178.79199 Z M 358.243 195.258 L 353.25003 185.652 L 352.10303 196.405 Z M 397.3 193.94 L 405.50803 194.564 C 407.58405 194.721 409.132 195.072 410.153 195.615 C 411.174 196.15802 412.087 197.01402 412.893 198.181 C 413.699 199.34799 414.28903 200.827 414.662 202.61998 C 415.03503 204.413 415.122 206.61201 414.92502 209.218 C 414.746 211.566 414.325 213.587 413.663 215.282 C 413.00098 216.977 412.223 218.3 411.33 219.252 C 410.46857 220.18228 409.3946 220.8901 408.20004 221.31502 C 407.007 221.74 405.50204 221.884 403.686 221.745 L 395.236 221.104 Z M 401.435 198.87602 L 400.068 216.868 L 403.441 217.12398 C 404.886 217.23401 405.94302 217.177 406.612 216.954 C 407.26416 216.7429 407.84708 216.35939 408.29904 215.84401 C 408.755 215.325 409.16403 214.484 409.52597 213.318 C 409.888 212.152 410.14197 210.601 410.289 208.662 C 410.442 206.648 410.42398 205.05 410.234 203.868 C 410.044 202.68602 409.68103 201.73802 409.145 201.028 C 408.6352 200.335 407.92215 199.81807 407.105 199.549 C 406.487 199.34099 405.277 199.168 403.473 199.031 Z M 420.77 222.48 L 419.04703 195.29202 L 435.589 194.243 L 435.88 198.843 L 423.826 199.607 L 424.208 205.634 L 435.40897 204.92398 L 435.699 209.50398 L 424.499 210.214 L 424.968 217.61401 L 437.43 216.82402 L 437.71997 221.40402 Z M 471.17 196.46 L 475.548 198.425 C 474.688 201.507 473.408 203.725 471.71 205.079 C 470.012 206.433 467.978 207.048 465.607 206.924 C 462.627 206.768 460.27197 205.494 458.542 203.102 C 456.55 200.34102 455.67203 196.71 455.908 192.209 C 456.158 187.455 457.42398 183.789 459.70697 181.214 C 461.69302 178.979 464.257 177.944 467.402 178.108 C 469.962 178.242 472.06 179.229 473.692 181.069 C 474.857 182.37599 475.66 184.268 476.102 186.745 L 471.46896 187.837 C 471.256 186.31302 470.73703 185.126 469.911 184.27498 C 469.126 183.44286 468.04608 182.95174 466.90298 182.907 C 465.21603 182.818 463.803 183.482 462.66 184.897 C 461.517 186.31198 460.859 188.711 460.682 192.097 C 460.49802 195.608 460.887 198.133 461.848 199.671 C 462.80902 201.209 464.122 202.02098 465.783 202.108 C 467 202.171 468.077 201.75398 469.013 200.856 C 469.94897 199.958 470.66904 198.493 471.17 196.45901 Z M 481.46 193.93 C 482.254 190.7 483.386 188.15802 484.85596 186.303 C 486.326 184.448 487.956 183.199 489.74902 182.555 C 491.542 181.911 493.53497 181.859 495.729 182.399 C 498.91 183.181 501.20297 185.033 502.609 187.954 C 504.015 190.875 504.166 194.58 503.06198 199.06699 C 501.946 203.604 500.014 206.887 497.266 208.917 C 494.85 210.716 492.04602 211.222 488.852 210.437 C 485.63498 209.64499 483.37 207.905 482.057 205.216 C 480.56396 202.142 480.365 198.38 481.46 193.93 Z M 486.128 194.882 C 485.36102 198.002 485.37802 200.486 486.178 202.33702 C 486.978 204.188 488.252 205.327 490.003 205.758 C 491.766 206.192 493.417 205.778 494.95602 204.516 C 496.495 203.25401 497.65997 201.02 498.44803 197.815 C 499.221 194.671 499.229 192.209 498.471 190.42699 C 497.71304 188.645 496.421 187.53 494.597 187.082 C 492.773 186.63399 491.101 187.026 489.581 188.26001 C 488.061 189.494 486.911 191.702 486.128 194.882 Z M 505.57 205.26999 L 509.93298 206.542 C 509.00696 210.025 509.841 212.316 512.435 213.417 C 513.721 213.963 514.875 214.056 515.895 213.697 C 516.915 213.33798 517.639 212.66 518.06 211.667 C 518.308 211.083 518.39 210.531 518.307 210.013 C 518.224 209.495 517.974 208.993 517.56 208.507 C 517.146 208.021 516.06 207.039 514.3 205.562 C 512.722 204.244 511.64804 203.085 511.08 202.085 C 510.512 201.085 510.2 199.95699 510.14798 198.7 C 510.0971 197.43402 510.33194 196.17284 510.83496 195.00998 C 511.43 193.60701 512.284 192.48 513.397 191.628 C 514.51 190.77599 515.749 190.303 517.114 190.206 C 518.479 190.109 519.985 190.411 521.633 191.11 C 524.11 192.162 525.759 193.65498 526.58 195.589 C 527.401 197.52298 527.32 199.75798 526.34 202.293 L 521.985 200.713 C 522.383 199.255 522.389 198.12 522.002 197.30801 C 521.615 196.496 520.85 195.847 519.705 195.361 C 518.56 194.875 517.575 194.74 516.753 194.956 C 515.931 195.172 515.368 195.636 515.065 196.35 C 514.768 197.05101 514.798 197.76 515.155 198.477 C 515.512 199.19402 516.581 200.268 518.36 201.699 C 520.236 203.22598 521.505 204.53401 522.167 205.621 C 522.829 206.708 523.182 207.901 523.227 209.195 C 523.272 210.489 522.964 211.907 522.31 213.45 C 521.363 215.682 519.88 217.266 517.862 218.20302 C 515.844 219.14 513.374 218.988 510.452 217.74802 C 505.287 215.556 503.66 211.396 505.57 205.26999 Z M 527.08 225.29 L 538.38 205.035 L 532.443 201.723 L 534.744 197.59901 L 550.626 206.459 L 548.326 210.583 L 542.405 207.28 L 531.105 227.53502 Z M 556.83 243.82 L 552.625 241.064 L 554.43 234.664 L 546.785 229.65402 L 541.732 233.924 L 537.623 231.23 L 560.381 212.768 L 564.474 215.45102 Z M 555.766 229.916 L 558.817 219.53 L 550.542 226.492 Z M 566.04 250.48001 L 581.973 227.556 L 589.963 233.11 C 592.007 234.53 593.323 235.74998 593.913 236.77 C 594.503 237.79001 594.725 239.005 594.582 240.413 C 594.439 241.821 593.874 243.23299 592.888 244.651 C 591.642 246.44398 590.208 247.589 588.588 248.085 C 586.968 248.581 585.266 248.421 583.486 247.60098 C 583.893 248.75 584.122 249.856 584.172 250.91798 C 584.222 251.98 584.082 253.728 583.753 256.158 L 582.928 262.218 L 578.409 259.077 L 579.124 252.176 C 579.387 249.684 579.499 248.088 579.46 247.388 C 579.421 246.688 579.262 246.115 578.986 245.668 C 578.71 245.221 578.133 244.692 577.258 244.084 L 576.476 243.54 L 569.824 253.11 Z M 579.019 239.881 L 581.834 241.83702 C 583.554 243.033 584.701 243.718 585.275 243.893 C 585.849 244.06798 586.442 244.02701 587.052 243.772 C 587.662 243.51698 588.232 243.007 588.762 242.246 C 589.269 241.516 589.531 240.829 589.547 240.18298 C 589.56903 239.55624 589.37366 238.94116 588.994 238.442 C 588.719 238.08101 587.732 237.31 586.034 236.129 L 583.062 234.064 Z M 584.91 263.5 L 600.272 240.18999 L 604.12 242.726 L 588.758 266.036 Z M 610.21 266.99 L 613.234 270.716 C 611.078 273.08 608.936 274.484 606.81 274.929 C 604.684 275.374 602.591 275.005 600.53 273.827 C 597.94 272.345 596.412 270.147 595.944 267.232 C 595.409 263.87 596.261 260.233 598.499 256.322 C 600.862 252.189 603.643 249.48698 606.842 248.216 C 609.622 247.11499 612.378 247.346 615.112 248.90901 C 617.337 250.182 618.765 252.008 619.394 254.38599 C 619.844 256.077 619.71 258.128 618.99 260.539 L 614.36 259.427 C 614.857 257.97 614.928 256.677 614.573 255.545 C 614.24725 254.44829 613.5044 253.52304 612.504 252.968 C 611.038 252.12999 609.477 252.085 607.82 252.834 C 606.163 253.583 604.494 255.429 602.81 258.371 C 601.065 261.424 600.275 263.853 600.441 265.659 C 600.607 267.465 601.412 268.781 602.856 269.607 C 603.914 270.212 605.063 270.325 606.304 269.945 C 607.545 269.565 608.847 268.58 610.21 266.99 Z M 631.84 287.24 L 627.131 285.478 L 627.481 278.838 L 618.92 275.635 L 614.932 280.914 L 610.33 279.192 L 628.46 256.168 L 633.044 257.883 Z M 627.738 273.913 L 628.425 263.109 L 621.888 271.724 Z M 307.368 23.483 L 303.492 25.235 L 299.74 21.043 L 292.692 24.228 L 293.449 29.775 L 289.66 31.487 L 286.804 6.8550005 L 290.577 5.149 Z M 296.956 17.933 L 290.923 11.041001 L 292.14 20.111 Z M 309.313 22.888 L 301.914 0.455 L 307.469 -1.378 L 315.852 12.825 L 314.11 -3.568 L 319.68 -5.405 L 327.08 17.028 L 323.636 18.164 L 317.812 0.505 L 319.979 19.371 L 316.399 20.551 L 306.947 4.089 L 312.772 21.747 Z M 330.88 16.058 L 325.228 -6.878 L 339.183 -10.317 L 340.139 -6.437 L 329.969 -3.931 L 331.222 1.154 L 340.672 -1.175 L 341.624 2.69 L 332.174 5.018 L 333.713 11.261 L 344.22598 8.67 L 345.17798 12.534 Z M 348.434 11.851001 L 344.238 -11.396 L 352.341 -12.858 C 354.413 -13.232 355.931 -13.289999 356.894 -13.033 C 357.857 -12.776 358.71704 -12.182999 359.474 -11.256 C 360.231 -10.329 360.739 -9.146 360.999 -7.708 C 361.327 -5.8889995 361.155 -4.347 360.48303 -3.079 C 359.811 -1.811 358.698 -0.89 357.143 -0.315 C 358.074 0.128 358.87302 0.653 359.539 1.258 C 360.205 1.863 361.16702 2.992 362.426 4.643 L 365.559 8.76 L 360.977 9.587 L 357.27304 5.032 L 354.608 1.968 C 354.165 1.573 353.72797 1.325 353.294 1.223 C 352.86 1.121 352.2 1.15 351.313 1.311 L 350.52 1.454 L 352.271 11.157999 Z M 349.85 -2.257 L 352.704 -2.772 C 354.44803 -3.087 355.54404 -3.364 355.992 -3.603 C 356.43997 -3.842 356.77 -4.221 356.982 -4.74 C 357.194 -5.259 357.231 -5.903 357.092 -6.675 C 356.958 -7.4149995 356.702 -7.983 356.326 -8.379 C 355.96396 -8.766973 355.47888 -9.017813 354.953 -9.089 C 354.573 -9.14 353.521 -9.01 351.79797 -8.699 L 348.785 -8.156 Z M 367.56 8.612 L 364.358 -14.791 L 368.22202 -15.321 L 371.424 8.084 Z M 386.67 -2.294 L 390.579 -1.195 C 390.243 1.491 389.449 3.507 388.196 4.852 C 386.94296 6.1970005 385.31802 6.966 383.31796 7.1570005 C 380.80597 7.398 378.67596 6.626 376.929 4.84 C 374.919 2.777 373.731 -0.152 373.36697 -3.948 C 372.982 -7.958 373.585 -11.182999 375.17502 -13.623 C 376.558 -15.740999 378.575 -16.928 381.22702 -17.182 C 383.387 -17.389 385.265 -16.824 386.86096 -15.488 C 387.999 -14.54 388.907 -13.056999 389.586 -11.038999 L 385.84396 -9.547 C 385.47598 -10.797 384.89398 -11.725001 384.096 -12.334 C 383.33508 -12.932181 382.3702 -13.208587 381.40796 -13.104 C 379.986 -12.968 378.885 -12.236 378.106 -10.909999 C 377.327 -9.584 377.074 -7.492 377.34796 -4.637 C 377.632 -1.675 378.272 0.389 379.268 1.556 C 380.264 2.723 381.464 3.24 382.865 3.106 C 383.892 3.007 384.741 2.524 385.413 1.656 C 386.085 0.788 386.504 -0.529 386.669 -2.294 Z M 412.05 5.091 L 407.79996 5.261 L 405.895 -0.033 L 398.167 0.276 L 396.787 5.701 L 392.63297 5.867 L 399.226 -18.038 L 403.363 -18.203 Z M 404.48 -3.959 L 401.474 -12.612 L 399.2 -3.749 Z M 434.35797 -3.13 L 438.09302 -1.536 C 437.413 1.085 436.366 2.982 434.95102 4.154 C 433.536 5.326 431.824 5.878 429.816 5.81 C 427.293 5.725 425.281 4.685 423.779 2.689 C 422.051 0.384 421.25098 -2.674 421.379 -6.485 C 421.515 -10.511 422.529 -13.632 424.42 -15.847 C 426.06503 -17.769 428.219 -18.685 430.881 -18.595 C 433.04996 -18.522 434.839 -17.72 436.249 -16.189 C 437.255 -15.102 437.965 -13.513999 438.379 -11.426 L 434.475 -10.429 C 434.271 -11.715 433.81296 -12.711 433.101 -13.418 C 432.42337 -14.109412 431.5019 -14.507875 430.534 -14.528 C 429.107 -14.576 427.921 -13.993 426.977 -12.777999 C 426.033 -11.563001 425.513 -9.522 425.417 -6.656 C 425.316 -3.682 425.685 -1.552 426.52298 -0.266 C 427.361 1.02 428.483 1.686 429.889 1.734 C 430.91904 1.769 431.825 1.399 432.60303 0.624 C 433.381 -0.151 433.967 -1.401 434.35797 -3.129 Z M 441.19498 5.91 L 443.237 -17.623 L 457.557 -16.381 L 457.211 -12.4 L 446.777 -13.304999 L 446.324 -8.088 L 456.02002 -7.247 L 455.676 -3.282 L 445.98 -4.122 L 445.424 2.282 L 456.21198 3.218 L 455.868 7.183 Z M 459.202 7.557 L 462.545 -15.826999 L 466.309 -15.289 L 471.925 1.449 L 474.157 -14.168 L 477.762 -13.653 L 474.42 9.732 L 470.527 9.176 L 464.987 -7.1770005 L 462.807 8.071 Z M 482.743 11.316 L 486.606 -7.926 L 480.966 -9.058 L 481.75302 -12.976 L 496.84 -9.947 L 496.053 -6.029 L 490.429 -7.1589994 L 486.566 12.084 Z M 494.71298 13.784 L 500.749 -9.054 L 508.709 -6.95 C 510.745 -6.412 512.145 -5.822 512.909 -5.181 C 513.673 -4.54 514.201 -3.64 514.495 -2.479 C 514.789 -1.318 514.748 -0.032 514.375 1.381 C 513.902 3.167 513.094 4.492 511.949 5.356 C 510.80396 6.22 509.40497 6.584 507.75198 6.4470005 C 508.409 7.2430005 508.91 8.056 509.257 8.887 C 509.604 9.718 509.999 11.147 510.441 13.174 L 511.53802 18.231 L 507.036 17.041 L 505.607 11.347 L 504.479 7.443 C 504.253 6.898 503.957 6.4869995 503.609 6.212 C 503.261 5.937 502.643 5.682 501.775 5.452 L 500.995 5.246 L 498.47604 14.78 Z M 501.96597 1.602 L 504.77 2.342 C 506.484 2.796 507.59396 3.008 508.101 2.982 C 508.60803 2.956 509.068 2.751 509.48 2.371 C 509.892 1.991 510.197 1.421 510.397 0.663 C 510.59 -0.06400001 510.599 -0.687 510.424 -1.205 C 510.26022 -1.7095355 509.92706 -2.1419504 509.481 -2.429 C 509.158 -2.636 508.151 -2.964 506.45798 -3.411 L 503.498 -4.194 Z M 530.077 24.562 L 526.054 23.180002 L 526.197 17.555 L 518.882 15.043 L 515.63 19.6 L 511.698 18.25 L 526.504 -1.642 L 530.42 -0.297 Z M 526.301 13.381999 L 526.634 4.229 L 521.302 11.666 Z M 532.07 25.433 L 541.475 3.975 L 545.047 5.54 L 537.239 23.353 L 546.153 27.260002 L 544.555 30.905 Z"/>
+        </g>
+    </g>
+</svg>

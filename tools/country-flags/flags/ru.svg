@@ -1,0 +1,7 @@
+<svg width="900" height="600" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(100 0 0 100 0 0)">
+        <path fill="#ffffff" stroke="none" d="M 0 0 L 9 0 L 9 3 L 0 3 Z"/>
+        <path fill="#d52b1e" stroke="none" d="M 0 3 L 9 3 L 9 6 L 0 6 Z"/>
+        <path fill="#0039a6" stroke="none" d="M 0 2 L 9 2 L 9 4 L 0 4 Z"/>
+    </g>
+</svg>

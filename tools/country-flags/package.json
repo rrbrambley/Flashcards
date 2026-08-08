@@ -1,0 +1,11 @@
+{
+  "name": "country-flags-generator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Normalises the Flags of the World seed images so every client's SVG renderer draws them the same (#369).",
+  "scripts": {
+    "generate": "node generate.mjs",
+    "check": "node generate.mjs --check"
+  }
+}

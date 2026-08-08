@@ -1,0 +1,47 @@
+<svg width="600" height="300" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <clipPath id="a">
+            <path fill="#000000" stroke="none" d="M 0 0 L 0 15 L 70 15 L 70 30 L 60 30 Z M 0 30 L 0 40 L 30 40 L 30 0 L 60 0 Z"/>
+        </clipPath>
+    </defs>
+    <g transform="matrix(5 0 0 5 0 0)">
+        <path fill="#012169" stroke="none" d="M 0 0 L 120 0 L 120 60 L 0 60 Z"/>
+        <g>
+            <path fill="#000000" stroke="#ffffff" stroke-width="6" d="M 0 0 L 60 30 M 60 0 L 0 30"/>
+            <g clip-path="url(#a)">
+                <path fill="#000000" stroke="#c8102e" stroke-width="4" d="M 0 0 L 60 30 M 60 0 L 0 30"/>
+            </g>
+            <path fill="#000000" stroke="#ffffff" stroke-width="10" d="M 30 0 L 30 40 M 0 15 L 70 15"/>
+            <path fill="#000000" stroke="#c8102e" stroke-width="6" d="M 30 0 L 30 40 M 0 15 L 70 15"/>
+        </g>
+        <path fill="#fedd00" stroke="none" d="M 60 0 L 120 0 L 120 60 L 0 60 L 0 30 L 60 30 Z"/>
+        <g transform="matrix(1 0 0 1 30 15)">
+            <g transform="matrix(5.1039047 0 0 5.1039047 0 0)">
+                <path fill="#012169" stroke="none" d="M 1 0 C 1 0.5522848 0.5522848 1 0 1 C -0.5522848 1 -1 0.5522848 -1 0 C -1 -0.5522848 -0.5522848 -1 -0 -1 C 0.5522848 -1 1 -0.5522848 1 0 Z"/>
+                <g transform="matrix(0.00000195 0 0 0.00000195 0 0)">
+                    <path id="b" fill="#fedd00" stroke="none" d="M 0 -513674 L 301930 415571 L -488533 -158734 L 488533 -158734 L -301930 415571"/>
+                </g>
+            </g>
+            <g transform="matrix(3 0 0 3 -17.5 0.29)">
+                <g transform="matrix(0.00000195 0 0 0.00000195 0 0)">
+                    <path fill="#fedd00" stroke="none" d="M 0 -513674 L 301930 415571 L -488533 -158734 L 488533 -158734 L -301930 415571"/>
+                </g>
+            </g>
+            <g transform="matrix(3 0 0 3 17.5 0.29)">
+                <g transform="matrix(0.00000195 0 0 0.00000195 0 0)">
+                    <path fill="#fedd00" stroke="none" d="M 0 -513674 L 301930 415571 L -488533 -158734 L 488533 -158734 L -301930 415571"/>
+                </g>
+            </g>
+            <g transform="matrix(3 0 0 3 0 10.29)">
+                <g transform="matrix(0.00000195 0 0 0.00000195 0 0)">
+                    <path fill="#fedd00" stroke="none" d="M 0 -513674 L 301930 415571 L -488533 -158734 L 488533 -158734 L -301930 415571"/>
+                </g>
+            </g>
+            <g transform="matrix(3 0 0 3 0 -9.71)">
+                <g transform="matrix(0.00000195 0 0 0.00000195 0 0)">
+                    <path fill="#fedd00" stroke="none" d="M 0 -513674 L 301930 415571 L -488533 -158734 L 488533 -158734 L -301930 415571"/>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

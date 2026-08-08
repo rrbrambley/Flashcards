@@ -20,7 +20,9 @@ import com.rrbrambley.flashcards.backend.cli.UserCreateCommand
 import com.rrbrambley.flashcards.backend.cli.UserDeleteCommand
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.db.Decks
 import com.rrbrambley.flashcards.backend.db.DiscussionThreads
+import com.rrbrambley.flashcards.backend.db.Flashcards
 import com.rrbrambley.flashcards.backend.db.PracticeSessions
 import com.rrbrambley.flashcards.backend.db.Roles
 import com.rrbrambley.flashcards.backend.db.UserRoles
@@ -96,6 +98,7 @@ import io.ktor.server.routing.routing
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
@@ -989,15 +992,62 @@ class ApplicationFlowTest {
         val decks = response.decode<Page<FlashcardDeckDto>>().items
 
         val flags = decks.single { it.title == "Flags of the World" }
+        val flagsCdnPrefix = "https://cdn.jsdelivr.net/gh/rrbrambley/Flashcards@main/tools/country-flags/"
         // Seeded from the full flagcdn country/territory set (a couple hundred).
         assertTrue(flags.flashcards.size >= 200)
-        // Each card is image-only: empty front, a country name on the back, a flagcdn image.
+        // Each card is image-only: empty front, a country name on the back, and a flag served from
+        // this repo via jsDelivr — the normalised copies from tools/country-flags, not flagcdn's
+        // originals, which render differently on every client's SVG implementation (#369).
         assertTrue(flags.flashcards.all { it.question.isEmpty() })
         assertTrue(flags.flashcards.all { it.answer.isNotBlank() })
-        assertTrue(flags.flashcards.all { it.imageUrl?.startsWith("https://flagcdn.com/") == true })
+        assertTrue(
+            flags.flashcards.all {
+                it.imageUrl?.startsWith(flagsCdnPrefix) == true && it.imageUrl?.endsWith(".svg") == true
+            },
+        )
+        assertTrue(flags.flashcards.none { it.imageUrl?.contains("flagcdn.com") == true })
         assertTrue(flags.flashcards.any { it.answer == "United States" })
         // The global catalog deck has no owner, so it is read-only for every user.
         assertFalse(flags.editable)
+    }
+
+    /**
+     * A database seeded before #369 already has the Flags deck, so `seedGlobalDeck` skips it and the
+     * cards would keep pointing at flagcdn's originals forever. The backfill repoints them.
+     */
+    @Test
+    fun flagImageUrls_areRepointed_whenTheDeckPredatesTheNormalisedFlags() = runApp { client ->
+        val auth = client.register("flagfan", "password1")
+        val deckId = transaction {
+            Decks.selectAll()
+                .where { (Decks.isGlobal eq true) and (Decks.title eq DatabaseFactory.FLAGS_TITLE) }
+                .single()[Decks.id].value
+        }
+
+        // Rewind to the pre-#369 state, keeping each card's own {code}.svg filename.
+        transaction {
+            Flashcards.selectAll().where { Flashcards.deckId eq deckId }
+                .map { it[Flashcards.id].value to it[Flashcards.imageUrl].orEmpty().substringAfterLast('/') }
+                .forEach { (cardId, file) ->
+                    Flashcards.update({ Flashcards.id eq cardId }) { it[imageUrl] = "https://flagcdn.com/$file" }
+                }
+        }
+
+        // Running it twice also pins idempotency: a second pass must not re-prefix an already-good URL.
+        transaction { DatabaseFactory.backfillFlagImageUrls() }
+        transaction { DatabaseFactory.backfillFlagImageUrls() }
+
+        val flagsCdnPrefix = "https://cdn.jsdelivr.net/gh/rrbrambley/Flashcards@main/tools/country-flags/"
+        val flags = client.get("/decks") { bearerAuth(auth.accessToken) }
+            .decode<Page<FlashcardDeckDto>>().items
+            .single { it.title == "Flags of the World" }
+        assertTrue(flags.flashcards.none { it.imageUrl?.contains("flagcdn.com") == true })
+        assertTrue(
+            flags.flashcards.all { it.imageUrl?.startsWith(flagsCdnPrefix) == true },
+        )
+        // The per-card filename survives the rewrite — every card keeps its own flag, not a shared one.
+        assertTrue(flags.flashcards.any { it.imageUrl?.endsWith("/us.svg") == true })
+        assertEquals(flags.flashcards.size, flags.flashcards.mapNotNull { it.imageUrl }.distinct().size)
     }
 
     @Test
