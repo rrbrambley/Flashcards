@@ -1,0 +1,21 @@
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(4.1666665 0 0 4.1666665 0 0)">
+        <path fill="#ce1126" stroke="none" d="M 0 0 L 288 0 L 288 144 L 0 144 Z"/>
+        <path fill="#002b7f" stroke="none" d="M 0 0 L 144 0 L 144 72 L 0 72 Z"/>
+        <g transform="matrix(20 0 0 20 72 69)">
+            <path fill="#ffffff" stroke="none" d="M 0 -0.951 L 0.309 0 L -0.5 -0.588 L 0.5 -0.588 L -0.309 0 Z"/>
+        </g>
+        <g transform="matrix(16 0 0 16 50 21)">
+            <path fill="#ffffff" stroke="none" d="M 0 0 L 0.309 0.951 L -0.5 0.363 L 0.5 0.363 L -0.309 0.951 Z"/>
+        </g>
+        <g transform="matrix(16 0 0 16 72 3)">
+            <path fill="#ffffff" stroke="none" d="M 0 0 L 0.309 0.951 L -0.5 0.363 L 0.5 0.363 L -0.309 0.951 Z"/>
+        </g>
+        <g transform="matrix(15 0 0 15 94.50001 18)">
+            <path fill="#ffffff" stroke="none" d="M 0 0 L 0.309 0.951 L -0.5 0.363 L 0.5 0.363 L -0.309 0.951 Z"/>
+        </g>
+        <g transform="matrix(10 0 0 10 83 46)">
+            <path fill="#ffffff" stroke="none" d="M 0 -0.951 L 0.309 0 L -0.5 -0.588 L 0.5 -0.588 L -0.309 0 Z"/>
+        </g>
+    </g>
+</svg>

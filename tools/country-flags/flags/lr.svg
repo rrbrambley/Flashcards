@@ -1,0 +1,74 @@
+<svg width="1140" height="600" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(5.4545455 0 0 5.4545455 0 0)">
+        <path fill="#bf0a30" stroke="none" d="M 0 0 L 209 0 L 209 110 L 0 110 Z"/>
+        <path fill="#000000" stroke="#ffffff" stroke-width="10" d="M 0 15 L 209 15 M 209 35 L 0 35"/>
+        <path fill="#002868" stroke="none" d="M 0 0 L 50 0 L 50 55 L 0 55 Z"/>
+        <path fill="#000000" stroke="#ffffff" stroke-width="10" d="M 0 55 L 209 55 M 209 75 L 0 75 M 0 95 L 209 95"/>
+        <g transform="matrix(15 0 0 15 25 25)">
+            <g id="b">
+                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                    <path id="a" fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 0 0)">
+                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                        <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                    </g>
+                </g>
+            </g>
+            <g id="c">
+                <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                    <g>
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g transform="matrix(-0.80901706 -0.58778524 0.58778524 -0.80901706 0 0)">
+                    <g>
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                <g>
+                    <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                    <g transform="matrix(-0.80901706 -0.58778524 0.58778524 -0.80901706 0 0)">
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffffff" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

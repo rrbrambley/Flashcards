@@ -1,0 +1,8 @@
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(0.11904762 0 0 0.11904762 0 0)">
+        <path fill="#ffffff" stroke="none" d="M 0 0 L 10080 0 L 10080 5040 L 0 5040 Z"/>
+        <path fill="#000000" stroke="none" d="M 0 0 L 10080 0 L 10080 1680 L 0 1680 Z"/>
+        <path fill="#007a3d" stroke="none" d="M 0 3360 L 10080 3360 L 10080 5040 L 0 5040 Z"/>
+        <path fill="#ce1126" stroke="none" d="M 5040 2520 L 0 5040 L 0 0 M 1557 2160 L 1479 2358 L 1276 2296 L 1382 2480 L 1206 2600 L 1417 2632 L 1401 2844 L 1557 2700 L 1714 2844 L 1698 2632 L 1908 2600 L 1733 2480 L 1839 2296 L 1636 2358 Z"/>
+    </g>
+</svg>

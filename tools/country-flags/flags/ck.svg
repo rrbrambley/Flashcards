@@ -1,0 +1,77 @@
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <clipPath id="a">
+            <path fill="#000000" stroke="none" d="M 0 0 L 12 0 L 12 6 L 0 6 Z"/>
+        </clipPath>
+        <clipPath id="b">
+            <path fill="#000000" stroke="none" d="M 0 0 L 0 1.5 L 8 1.5 L 8 4 Z M 6 0 L 3 0 L 3 4 L -2 4 Z"/>
+        </clipPath>
+    </defs>
+    <g transform="matrix(0.125 0 0 0.125 0 0)">
+        <g clip-path="url(#a)" transform="matrix(800 0 0 800 0 0)">
+            <path fill="#012169" stroke="none" d="M 0 0 L 12 0 L 12 6 L 0 6 Z"/>
+            <path fill="#012169" stroke="#ffffff" stroke-width="0.6" d="M 0 0 L 6 3 M 0 3 L 6 0"/>
+            <g clip-path="url(#b)">
+                <path fill="#012169" stroke="#c8102e" stroke-width="0.4" d="M 0 0 L 6 3 M 0 3 L 6 0"/>
+            </g>
+            <path fill="#012169" stroke="#ffffff" d="M 3 0 L 3 4 M 0 1.5 L 7 1.5"/>
+            <path fill="#012169" stroke="#c8102e" stroke-width="0.6" d="M 3 0 L 3 4 M 0 1.5 L 7 1.5"/>
+            <path fill="#012169" stroke="none" d="M 0 3 L 6 3 L 6 0 L 12 0 L 12 6 L 0 6 Z"/>
+        </g>
+        <g transform="matrix(1 0 0 1 7200 2400)">
+            <g id="d">
+                <path id="c" fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                <g transform="matrix(0.9135454 0.40673664 -0.40673664 0.9135454 0 0)">
+                    <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                </g>
+                <g transform="matrix(0.6691306 0.7431448 -0.7431448 0.6691306 0 0)">
+                    <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                </g>
+            </g>
+            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                <g>
+                    <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    <g transform="matrix(0.9135454 0.40673664 -0.40673664 0.9135454 0 0)">
+                        <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    </g>
+                    <g transform="matrix(0.6691306 0.7431448 -0.7431448 0.6691306 0 0)">
+                        <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    </g>
+                </g>
+            </g>
+            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                <g>
+                    <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    <g transform="matrix(0.9135454 0.40673664 -0.40673664 0.9135454 0 0)">
+                        <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    </g>
+                    <g transform="matrix(0.6691306 0.7431448 -0.7431448 0.6691306 0 0)">
+                        <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    </g>
+                </g>
+            </g>
+            <g transform="matrix(-0.80901706 -0.58778524 0.58778524 -0.80901706 0 0)">
+                <g>
+                    <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    <g transform="matrix(0.9135454 0.40673664 -0.40673664 0.9135454 0 0)">
+                        <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    </g>
+                    <g transform="matrix(0.6691306 0.7431448 -0.7431448 0.6691306 0 0)">
+                        <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    </g>
+                </g>
+            </g>
+            <g transform="matrix(0.309017 -0.95105654 0.95105654 0.309017 0 0)">
+                <g>
+                    <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    <g transform="matrix(0.9135454 0.40673664 -0.40673664 0.9135454 0 0)">
+                        <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    </g>
+                    <g transform="matrix(0.6691306 0.7431448 -0.7431448 0.6691306 0 0)">
+                        <path fill="#ffffff" stroke="none" d="M 0 -1992 L 81 -1743 L 342 -1743 L 131 -1590 L 212 -1341 L 0 -1494 L -212 -1341 L -131 -1590 L -342 -1743 L -81 -1743 Z"/>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

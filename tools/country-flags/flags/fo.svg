@@ -1,0 +1,13 @@
+<svg width="1100" height="800" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(50 0 0 50 0 0)">
+        <path fill="#ffffff" stroke="none" d="M 0 0 L 22 0 L 22 16 L 0 16 Z"/>
+        <g>
+            <path fill="#005eb8" stroke="none" d="M 6 0 L 10 0 L 10 16 L 6 16 Z"/>
+            <path fill="#005eb8" stroke="none" d="M 0 6 L 22 6 L 22 10 L 0 10 Z"/>
+        </g>
+        <g>
+            <path fill="#ef3340" stroke="none" d="M 7 0 L 9 0 L 9 16 L 7 16 Z"/>
+            <path fill="#ef3340" stroke="none" d="M 0 7 L 22 7 L 22 9 L 0 9 Z"/>
+        </g>
+    </g>
+</svg>
