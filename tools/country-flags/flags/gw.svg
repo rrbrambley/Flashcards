@@ -1,0 +1,65 @@
+<svg width="1200" height="600" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(100 0 0 100 200 300)">
+        <path fill="#fcd116" stroke="none" d="M -2 -3 L 10 -3 L 10 3 L -2 3 Z"/>
+        <path fill="#009e49" stroke="none" d="M -2 0 L 10 0 L 10 3 L -2 3 Z"/>
+        <path fill="#ce1126" stroke="none" d="M -2 -3 L 2 -3 L 2 3 L -2 3 Z"/>
+        <g id="b">
+            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                <path id="a" fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+            </g>
+            <g transform="matrix(-1 0 0 1 0 0)">
+                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                    <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                </g>
+            </g>
+        </g>
+        <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+            <g>
+                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                    <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 0 0)">
+                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                        <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                    </g>
+                </g>
+            </g>
+        </g>
+        <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+            <g>
+                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                    <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 0 0)">
+                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                        <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                    </g>
+                </g>
+            </g>
+        </g>
+        <g transform="matrix(-0.80901706 -0.58778524 0.58778524 -0.80901706 0 0)">
+            <g>
+                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                    <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 0 0)">
+                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                        <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                    </g>
+                </g>
+            </g>
+        </g>
+        <g transform="matrix(0.309017 -0.95105654 0.95105654 0.309017 0 0)">
+            <g>
+                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                    <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                </g>
+                <g transform="matrix(-1 0 0 1 0 0)">
+                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 -0.309017 -0.04894348)">
+                        <path fill="#000000" stroke="none" d="M 0 -1 L 0 0 L 0.5 0"/>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

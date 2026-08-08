@@ -1,0 +1,14 @@
+<svg width="900" height="600" xmlns="http://www.w3.org/2000/svg">
+    <g transform="matrix(7.5 0 0 7.5 0 0)">
+        <path fill="#fe0000" stroke="none" d="M 0 0 L 120 0 L 120 80 L 0 80 Z"/>
+        <path fill="#000094" stroke="none" d="M 0 0 L 60 0 L 60 40 L 0 40 Z"/>
+        <path id="a" fill="#ffffff" stroke="none" d="M 30 5 L 34 20 L 30 35 L 26 20 Z M 15 20 L 30 24 L 45 20 L 30 16 Z"/>
+        <g transform="matrix(0.8660254 0.5 -0.5 0.8660254 14.0192375 -12.320508)">
+            <path fill="#ffffff" stroke="none" d="M 30 5 L 34 20 L 30 35 L 26 20 Z M 15 20 L 30 24 L 45 20 L 30 16 Z"/>
+        </g>
+        <g transform="matrix(0.5 0.8660254 -0.8660254 0.5 32.320507 -15.9807625)">
+            <path fill="#ffffff" stroke="none" d="M 30 5 L 34 20 L 30 35 L 26 20 Z M 15 20 L 30 24 L 45 20 L 30 16 Z"/>
+        </g>
+        <path fill="#ffffff" stroke="#000094" d="M 38 20 C 38 24.418278 34.418278 28 30 28 C 25.581722 28 22 24.418278 22 20 C 22 15.581723 25.581722 12 30 12 C 34.418278 12 38 15.581723 38 20 Z"/>
+    </g>
+</svg>

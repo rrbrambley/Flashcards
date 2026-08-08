@@ -1,0 +1,827 @@
+<svg width="810" height="540" xmlns="http://www.w3.org/2000/svg">
+    <path fill="#003399" stroke="none" d="M 0 0 L 810 0 L 810 540 L 0 540 Z"/>
+    <g transform="matrix(30 0 0 30 405 270)">
+        <g transform="matrix(1 0 0 1 0 -6)">
+            <g>
+                <g>
+                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 0 0)">
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                    </g>
+                </g>
+                <g>
+                    <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                    <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g transform="matrix(-1 0 0 1 0 0)">
+                    <g>
+                        <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+        <g transform="matrix(1 0 0 1 0 6)">
+            <g>
+                <g>
+                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 0 0)">
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                    </g>
+                </g>
+                <g>
+                    <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                    <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g transform="matrix(-1 0 0 1 0 0)">
+                    <g>
+                        <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+        <g id="e">
+            <g transform="matrix(1 0 0 1 -6 0)">
+                <g>
+                    <g>
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                        </g>
+                    </g>
+                    <g>
+                        <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 0 0)">
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+            <g transform="matrix(-0.80901706 -0.58778524 0.58778524 -0.80901706 -3.0001087 -5.1947947)">
+                <g>
+                    <g>
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                        </g>
+                    </g>
+                    <g>
+                        <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 0 0)">
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 -5.1947947 -3.0001087)">
+                <g>
+                    <g>
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                        </g>
+                    </g>
+                    <g>
+                        <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 0 0)">
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 -5.196447 3.000296)">
+                <g>
+                    <g>
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                        </g>
+                    </g>
+                    <g>
+                        <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 0 0)">
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 -2.9995658 5.196548)">
+                <g>
+                    <g>
+                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                        </g>
+                    </g>
+                    <g>
+                        <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                            <g>
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                                <g transform="matrix(-1 0 0 1 0 0)">
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                    <g transform="matrix(-1 0 0 1 0 0)">
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+        <g transform="matrix(-1 0 0 1 0 0)">
+            <g>
+                <g transform="matrix(1 0 0 1 -6 0)">
+                    <g>
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g>
+                                <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                                <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g transform="matrix(-0.80901706 -0.58778524 0.58778524 -0.80901706 -3.0001087 -5.1947947)">
+                    <g>
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g>
+                                <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                                <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 -5.1947947 -3.0001087)">
+                    <g>
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g>
+                                <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                                <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 -5.196447 3.000296)">
+                    <g>
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g>
+                                <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                                <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 -2.9995658 5.196548)">
+                    <g>
+                        <g>
+                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                            </g>
+                            <g transform="matrix(-1 0 0 1 0 0)">
+                                <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                    <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                </g>
+                            </g>
+                        </g>
+                        <g>
+                            <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                            <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                <g>
+                                    <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                        <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                    </g>
+                                    <g transform="matrix(-1 0 0 1 0 0)">
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                        <g transform="matrix(-1 0 0 1 0 0)">
+                            <g>
+                                <g transform="matrix(0.309017 0.95105654 -0.95105654 0.309017 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                                <g transform="matrix(-0.80901706 0.58778524 -0.58778524 -0.80901706 0 0)">
+                                    <g>
+                                        <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                            <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                        </g>
+                                        <g transform="matrix(-1 0 0 1 0 0)">
+                                            <g transform="matrix(0.95105654 0.309017 -0.309017 0.95105654 0.00000608 -1.0000384)">
+                                                <path fill="#ffcc00" stroke="none" d="M 0 0 L 0 1 L 0.5 1 Z"/>
+                                            </g>
+                                        </g>
+                                    </g>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
