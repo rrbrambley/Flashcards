@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -369,7 +371,7 @@ private fun LibraryDeckCard(deck: FlashcardDeck, modifier: Modifier = Modifier, 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun LibraryDeckActionsSheet(
+internal fun LibraryDeckActionsSheet(
     deck: FlashcardDeck,
     availableModes: List<PracticeMode>,
     questionCountEnabled: Boolean,
@@ -403,11 +405,21 @@ private fun LibraryDeckActionsSheet(
         null
     }
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
+        // The configure step can outgrow the sheet — every mode card, Questions, Shuffle, Grade at the
+        // end, Timed and the mm:ss fields at once — and a non-scrolling Column squeezes whatever is
+        // last into the leftover space. That clipped "Start practice" down to an illegible sliver
+        // (#367). So the body scrolls, and the primary action is pinned below it (see the Button after
+        // this Column) where it keeps its full height and stays reachable at any font scale.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // `fill = false` so a short sheet still wraps its content instead of stretching to the
+                // full height; it only gives up space to the pinned action once there isn't enough.
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
+                // The pinned action carries the bottom inset when it's showing.
+                .padding(bottom = if (choosingMode) 0.dp else 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
@@ -482,21 +494,6 @@ private fun LibraryDeckActionsSheet(
                         }
                     }
                 }
-
-                Button(
-                    onClick = {
-                        selectedMode?.let { mode ->
-                            // Clamp to 1..max; a real subset (< the whole deck) sends a count, else null.
-                            val n = questionsText.toIntOrNull()?.coerceIn(1, maxQuestions) ?: maxQuestions
-                            val count = if (questionCountEnabled && n < maxQuestions) n else null
-                            onPracticeWithMode(mode, shuffle, count, canGradeAtEnd && gradeAtEnd, timeLimitSeconds)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = selectedMode != null,
-                ) {
-                    Text(stringResource(R.string.practice_start))
-                }
             } else {
                 Text(
                     text = pluralStringResource(
@@ -532,6 +529,26 @@ private fun LibraryDeckActionsSheet(
                         Text(stringResource(R.string.library_delete_deck))
                     }
                 }
+            }
+        }
+        // Pinned outside the scrolling body so it can't be squeezed by tall settings (#367).
+        if (choosingMode) {
+            Button(
+                onClick = {
+                    selectedMode?.let { mode ->
+                        // Clamp to 1..max; a real subset (< the whole deck) sends a count, else null.
+                        val n = questionsText.toIntOrNull()?.coerceIn(1, maxQuestions) ?: maxQuestions
+                        val count = if (questionCountEnabled && n < maxQuestions) n else null
+                        onPracticeWithMode(mode, shuffle, count, canGradeAtEnd && gradeAtEnd, timeLimitSeconds)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 12.dp, bottom = 32.dp),
+                enabled = selectedMode != null,
+            ) {
+                Text(stringResource(R.string.practice_start))
             }
         }
     }
