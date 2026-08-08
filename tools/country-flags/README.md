@@ -34,9 +34,23 @@ removes what they disagree about. Across the 252 seeded flags, `usvg`:
 | files with a non-zero viewBox origin | 19 | 0 |
 | files whose viewBox ratio ≠ declared ratio (the #363 trap) | 1 | 0 |
 
-The output is plain paths with a `0 0` origin, so there is nothing left for a partial implementation
-to get wrong. Geometry is preserved exactly — Qatar's `preserveAspectRatio="none"` stretch, for
-instance, is baked into an explicit `transform="matrix(…)"` rather than dropped.
+The output is plain paths with a `0 0` origin. Geometry is preserved exactly — Qatar's
+`preserveAspectRatio="none"` stretch, for instance, is baked into an explicit `transform="matrix(…)"`
+rather than dropped.
+
+`usvg` does **not** resolve clip paths, and that leaves one more incompatibility: iOS mis-clips a
+group carrying a clip *and* its own transform. Cook Islands lost its entire field and canton (only the
+ring of stars drew); Pitcairn and Turks & Caicos drew a malformed Union Jack. A group carrying only a
+clip is fine — the UK and South Africa are exactly that shape and both render correctly. So
+`generate` also rewrites
+
+```
+<g clip-path="C" transform="M">   →   <g transform="M"><g clip-path="C">
+```
+
+for the 11 flags that combine them (`au bo by ck eg hm mp pf pn tc zw`). The two forms are equivalent
+— the clip already resolves in the space the transform establishes — but rather than rely on that,
+the generator renders both with `resvg` and fails unless the output is byte-identical.
 
 Cost is size: expanding `<use>` duplicates geometry, so the set grows from ~4.4 MB to ~8.1 MB
 (~32 KB/flag). It's static CDN content, so that's an acceptable trade for rendering the same
