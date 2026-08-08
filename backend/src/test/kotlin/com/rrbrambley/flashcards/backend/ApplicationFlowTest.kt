@@ -1024,12 +1024,17 @@ class ApplicationFlowTest {
                 .single()[Decks.id].value
         }
 
-        // Rewind to the pre-#369 state, keeping each card's own {code}.svg filename.
+        // Rewind to the pre-#369 state, keeping each card's own {code}.svg filename. Half the cards get
+        // flagcdn originals; the other half get this repo's flags on a *different* ref, which is what a
+        // database left over from verifying an unmerged branch looks like — those 404 once the branch
+        // is deleted, so they have to be repointed too.
+        val branchBase = "https://cdn.jsdelivr.net/gh/rrbrambley/Flashcards@some-branch/tools/country-flags/flags"
         transaction {
             Flashcards.selectAll().where { Flashcards.deckId eq deckId }
                 .map { it[Flashcards.id].value to it[Flashcards.imageUrl].orEmpty().substringAfterLast('/') }
-                .forEach { (cardId, file) ->
-                    Flashcards.update({ Flashcards.id eq cardId }) { it[imageUrl] = "https://flagcdn.com/$file" }
+                .forEachIndexed { index, (cardId, file) ->
+                    val stale = if (index % 2 == 0) "https://flagcdn.com/$file" else "$branchBase/$file"
+                    Flashcards.update({ Flashcards.id eq cardId }) { it[imageUrl] = stale }
                 }
         }
 
