@@ -21,6 +21,10 @@ interface BatchPracticeRunnerProps {
   isGuest: boolean;
   // Wall-clock deadline (epoch millis) for a timed session (#289), or null when untimed.
   deadline: number | null;
+  // The configured budget. The deadline derives from the session's stored createdAt — the server's
+  // clock — so a client running behind it can compute a remainder above the budget, which the ceiling
+  // rounds up: a 60s run opening on "1:01" (#374 review). Caps the display so it can't.
+  timeLimitSeconds: number | null;
   // Fired once the batch is submitted + results shown, so the parent can lift its exit guard (#307).
   onCompleted: () => void;
   onAgain: () => void;
@@ -58,6 +62,7 @@ export function BatchPracticeRunner({
   isGlobal,
   isGuest,
   deadline,
+  timeLimitSeconds,
   onCompleted,
   onAgain,
   onExit,
@@ -95,7 +100,9 @@ export function BatchPracticeRunner({
   const onImageSettled = (i: number) => setSettledImages((prev) => (prev.has(i) ? prev : new Set(prev).add(i)));
 
   // Timed session (#289): count down to the deadline; on expiry, auto-submit whatever's been answered.
-  const { remainingMs, expired } = useCountdown(deadline, holdingForImages);
+  const { remainingMs: rawRemainingMs, expired } = useCountdown(deadline, holdingForImages);
+  const remainingMs =
+    timeLimitSeconds != null ? Math.min(rawRemainingMs, timeLimitSeconds * 1000) : rawRemainingMs;
 
   const isAnswered = (i: number) => (isTest ? (entries[i] as string).trim() !== '' : entries[i] != null);
   const answeredCount = cards.filter((_, i) => isAnswered(i)).length;

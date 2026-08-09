@@ -78,6 +78,8 @@ interface LoadedPractice {
   // Wall-clock deadline (epoch millis) for a timed session (#289), or null when untimed. Derived once
   // from the session's `createdAt + timeLimitSeconds` (signed-in) / mint time (guest) so it's stable.
   deadline: number | null;
+  // The configured budget, so the runner can cap what it displays (#374 review).
+  timeLimitSeconds: number | null;
 }
 
 const ZERO_PROGRESS: Progress = { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 };
@@ -109,10 +111,19 @@ function PracticeSession({
   // stored shuffle/seed (resume-authoritative); guests use the URL choice + a seed minted once here.
   const loadRef = useRef<{
     key: string;
-    // ...plus the effective question count (null = whole deck, FLA-219), grade-at-end flag (#293), and
-    // timed deadline (epoch millis, null = untimed, #289).
+    // ...plus the effective question count (null = whole deck, FLA-219), grade-at-end flag (#293),
+    // timed deadline (epoch millis, null = untimed, #289) and the budget it was derived from (#372).
     promise: Promise<
-      [PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null, boolean, number | null]
+      [
+        PracticeSessionDto | null,
+        FlashcardDeckDto,
+        boolean,
+        number,
+        number | null,
+        boolean,
+        number | null,
+        number | null,
+      ]
     >;
   } | null>(null);
 
@@ -139,7 +150,16 @@ function PracticeSession({
       // The timed deadline (#289) is likewise fixed once: a guest's from the mint time, a signed-in
       // run's from the session's stored createdAt (resume-stable — the clock keeps running while away).
       const promise: Promise<
-        [PracticeSessionDto | null, FlashcardDeckDto, boolean, number, number | null, boolean, number | null]
+        [
+          PracticeSessionDto | null,
+          FlashcardDeckDto,
+          boolean,
+          number,
+          number | null,
+          boolean,
+          number | null,
+          number | null,
+        ]
       > = isGuest
         ? api
             .getCatalogDeck(deckId)
@@ -151,6 +171,7 @@ function PracticeSession({
               questionCount,
               gradeAtEnd,
               timeLimit != null ? Date.now() + timeLimit * 1000 : null,
+              timeLimit,
             ])
         : Promise.all([
             api.createSession(deckId, mode.key, shuffle, questionCount, gradeAtEnd, timeLimit),
@@ -165,12 +186,23 @@ function PracticeSession({
               session.questionCount,
               session.gradeAtEnd,
               session.timeLimitSeconds != null ? session.createdAtMillis + session.timeLimitSeconds * 1000 : null,
+              session.timeLimitSeconds,
             ],
           );
       loadRef.current = { key, promise };
     }
     loadRef.current.promise
-      .then(async ([session, deck, effectiveShuffle, effectiveSeed, effectiveCount, effectiveGradeAtEnd, effectiveDeadline]) => {
+      .then(
+        async ([
+          session,
+          deck,
+          effectiveShuffle,
+          effectiveSeed,
+          effectiveCount,
+          effectiveGradeAtEnd,
+          effectiveDeadline,
+          effectiveTimeLimit,
+        ]) => {
         if (!active) return;
         if (deck.flashcards.length === 0) {
           setError('This deck has no cards to practice.');
@@ -197,6 +229,7 @@ function PracticeSession({
             isGlobal: deck.isGlobal ?? false,
             gradeAtEnd: effectiveGradeAtEnd,
             deadline: effectiveDeadline,
+            timeLimitSeconds: effectiveTimeLimit,
           });
         }
         setLoadedToken(reloadToken);
@@ -286,6 +319,7 @@ function PracticeSession({
             isGlobal={data.isGlobal}
             isGuest={isGuest}
             deadline={data.deadline}
+            timeLimitSeconds={data.timeLimitSeconds}
             onCompleted={() => setRunCompleted(true)}
             onAgain={practiceAgain}
             onExit={() => navigate(exit.to)}

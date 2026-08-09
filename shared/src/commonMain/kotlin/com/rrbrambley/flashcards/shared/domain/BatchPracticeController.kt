@@ -121,7 +121,7 @@ class BatchPracticeController(
         cards = SessionOrdering.order(deckCards, session.shuffle, session.shuffleSeed)
             .let { ordered -> session.questionCount?.let(ordered::take) ?: ordered }
         _state.update { BatchPracticeUiState.Answering(cards = cards, mode = mode) }
-        startTimer(session.timeLimitSeconds?.let { session.createdAtMillis + it * 1000L })
+        startTimer(session.timeLimitSeconds?.let { session.createdAtMillis + it * 1000L }, session.timeLimitSeconds)
     }
 
     private suspend fun loadGuestDeck(e: PracticeEntry.GuestDeck) {
@@ -143,7 +143,7 @@ class BatchPracticeController(
             .let { ordered -> e.questionCount?.let(ordered::take) ?: ordered }
         _state.update { BatchPracticeUiState.Answering(cards = cards, mode = mode) }
         // Guests have no persisted createdAt, so the timed deadline is minted here (once) from now().
-        startTimer(e.timeLimitSeconds?.let { now() + it * 1000L })
+        startTimer(e.timeLimitSeconds?.let { now() + it * 1000L }, e.timeLimitSeconds)
     }
 
     /**
@@ -157,7 +157,7 @@ class BatchPracticeController(
      * shifts the deadline forward, exactly as the card-by-card runner's pause does (#311); that's safe
      * with the wall-clock model because timed runs are single-sitting (#306).
      */
-    private fun startTimer(deadline: Long?) {
+    private fun startTimer(deadline: Long?, limitSeconds: Int?) {
         timerJob?.cancel()
         holdTimeoutJob?.cancel()
         pausedAtMillis = null
@@ -189,7 +189,14 @@ class BatchPracticeController(
                     _remainingSeconds.value = 0
                     break
                 }
-                _remainingSeconds.value = ((remainingMs.coerceAtLeast(0) + 999) / 1000).toInt()
+                // Never report more than the configured budget. The deadline is derived from the
+                // session's stored createdAt, which is the *server's* clock, so a device running a
+                // shade behind it makes the first remainder round up — a 60s run opening on "1:01"
+                // (#374 review). Harmless when the clock ticks immediately, but the hold above freezes
+                // that first value on screen for the whole load, which is where it became visible.
+                val budgetMs = limitSeconds?.let { it * 1000L } ?: Long.MAX_VALUE
+                val shownMs = remainingMs.coerceIn(0, budgetMs)
+                _remainingSeconds.value = ((shownMs + 999) / 1000).toInt()
                 delay(1000)
             }
         }

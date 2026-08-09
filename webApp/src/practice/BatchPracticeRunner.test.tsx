@@ -18,7 +18,7 @@ describe('BatchPracticeRunner timed start gate', () => {
   const card = (uid: string, imageUrl?: string): FlashcardDto =>
     ({ cardUid: uid, question: '', answer: `a-${uid}`, imageUrl }) as FlashcardDto;
 
-  const renderRunner = (cards: FlashcardDto[]) =>
+  const renderRunner = (cards: FlashcardDto[], deadline = 60_000) =>
     render(
       <BatchPracticeRunner
         sessionId={1}
@@ -26,7 +26,8 @@ describe('BatchPracticeRunner timed start gate', () => {
         mode={testMode}
         isGlobal={false}
         isGuest
-        deadline={60_000}
+        deadline={deadline}
+        timeLimitSeconds={60}
         onCompleted={() => {}}
         onAgain={() => {}}
         onExit={() => {}}
@@ -58,6 +59,14 @@ describe('BatchPracticeRunner timed start gate', () => {
 
     // 10s of answering elapsed since release; the 5s of loading was credited back.
     expect(clock()).toContain('0:50');
+  });
+
+  it('never shows more than the configured budget', () => {
+    // The deadline derives from the session's stored createdAt — the server's clock — so a client
+    // running behind it computes a remainder above the budget, which the ceiling rounds up to "1:01".
+    // Held, that wrong value would sit on screen for the whole load (#374 review).
+    renderRunner([card('a', 'http://img/a.svg')], 60_800);
+    expect(clock()).toContain('1:00');
   });
 
   it('starts immediately when the opening cards have no images', () => {

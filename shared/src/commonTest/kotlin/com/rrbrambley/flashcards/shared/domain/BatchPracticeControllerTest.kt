@@ -301,6 +301,24 @@ class BatchPracticeControllerTest {
     }
 
     @Test
+    fun timedRun_neverShowsMoreThanTheConfiguredBudget() = runTest {
+        // createdAt is the server's clock; a device a shade behind it makes the first remainder round
+        // up, so a 60s run opened on "1:01" (#374 review). Held, that wrong value sat on screen.
+        var fakeNow = 0L
+        val cards = listOf(card("a", imageUrl = "http://img/a.svg"))
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 60, createdAtMillis = 800))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, FakeDeckRepo(deck(1, cards))) { fakeNow }
+        try {
+            c.start()
+            advanceTimeBy(100)
+
+            assertEquals(60, c.remainingSeconds.value, "a 60s run must open on 1:00, not 1:01")
+        } finally {
+            c.close()
+        }
+    }
+
+    @Test
     fun timedRun_startsImmediately_whenTheOpeningCardsHaveNoImages() = runTest {
         var fakeNow = 0L
         val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 60))
