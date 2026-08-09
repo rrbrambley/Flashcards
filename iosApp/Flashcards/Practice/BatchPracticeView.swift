@@ -89,7 +89,8 @@ struct BatchPracticeView: View {
             BatchAnsweringView(
                 cards: cards,
                 mode: mode,
-                remainingSeconds: viewModel.remainingSeconds
+                remainingSeconds: viewModel.remainingSeconds,
+                onPromptImageSettled: { viewModel.onPromptImageSettled(index: $0) }
             ) { answers in viewModel.submit(answers) }
         case let .completed(numCorrect, numIncorrect):
             CompletionView(
@@ -124,6 +125,9 @@ private struct BatchAnsweringView: View {
     /// Timed batch countdown (#289); nil = untimed. When it hits 0 the view auto-submits.
     let remainingSeconds: Int?
     let onSubmit: ([String?]) -> Void
+    /// Reports an opening card's prompt image settling, so a timed run doesn't spend its budget while
+    /// the first cards are still spinners (#372).
+    let onPromptImageSettled: (Int) -> Void
 
     private let isTest: Bool
     /// Multiple-choice options per card, built once so they don't reshuffle on recomposition.
@@ -133,9 +137,16 @@ private struct BatchAnsweringView: View {
     /// Guards against a double auto-submit if `remainingSeconds` re-emits 0.
     @State private var didAutoSubmit = false
 
-    init(cards: [Flashcard], mode: String, remainingSeconds: Int?, onSubmit: @escaping ([String?]) -> Void) {
+    init(
+        cards: [Flashcard],
+        mode: String,
+        remainingSeconds: Int?,
+        onPromptImageSettled: @escaping (Int) -> Void,
+        onSubmit: @escaping ([String?]) -> Void
+    ) {
         self.cards = cards
         self.remainingSeconds = remainingSeconds
+        self.onPromptImageSettled = onPromptImageSettled
         self.onSubmit = onSubmit
         let test = PracticeMode.companion.fromKey(key: mode) == .test
         self.isTest = test
@@ -194,7 +205,8 @@ private struct BatchAnsweringView: View {
                 Text(cards[i].question).font(.body.weight(.semibold))
             }
             if let url = cards[i].imageUrl, !url.isEmpty {
-                RemoteCardImage(url: url).frame(maxHeight: 160)
+                RemoteCardImage(url: url, onReady: { onPromptImageSettled(i) })
+                    .frame(maxHeight: 160)
             }
             if isTest {
                 TextField("Answer", text: $typed[i])

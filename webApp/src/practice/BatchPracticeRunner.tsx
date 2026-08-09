@@ -43,6 +43,14 @@ interface BatchResult {
  * Single sitting — answers live in memory; leaving before Submit discards them. Signed-in runs record
  * the answer batch + complete the session on Submit; guests grade locally only.
  */
+/**
+ * How many leading cards count as "the opening screenful" for the timed start gate, and how long the
+ * clock waits for them before starting regardless. Mirrors `BatchPracticeController` on mobile (#372) —
+ * the two runners are separate implementations, so the policy is duplicated by design, like grading.
+ */
+const PROMPT_CARDS_BEFORE_START = 3;
+const MAX_PROMPT_HOLD_MS = 10_000;
+
 export function BatchPracticeRunner({
   sessionId,
   cards,
@@ -61,8 +69,33 @@ export function BatchPracticeRunner({
   const [entries, setEntries] = useState<(string | number | null)[]>(() => cards.map(() => (isTest ? '' : null)));
   // Null until Submit; then the per-card grade that drives the results screen.
   const [results, setResults] = useState<BatchResult[] | null>(null);
+  // Hold the countdown until the opening prompt images have drawn (#372). A batch run puts the whole
+  // deck on screen at once, so without this the clock burns while the first cards are still loading —
+  // on a slow connection much of the budget can go before anything is answerable. `useCountdown`
+  // credits a paused span back (#317), so the wait costs nothing rather than merely stopping the clock.
+  const awaitedImages = cards
+    .slice(0, PROMPT_CARDS_BEFORE_START)
+    .map((card, i) => (card.imageUrl ? i : -1))
+    .filter((i) => i >= 0);
+  const [settledImages, setSettledImages] = useState<Set<number>>(new Set());
+  const [holdLapsed, setHoldLapsed] = useState(false);
+  const holdingForImages =
+    deadline != null && !holdLapsed && awaitedImages.some((i) => !settledImages.has(i));
+
+  // An image that never reports — a cached-but-broken URL, a request that hangs — must not freeze a
+  // timed run indefinitely, so the hold lapses regardless after a bounded wait.
+  useEffect(() => {
+    if (!holdingForImages) return;
+    const id = setTimeout(() => setHoldLapsed(true), MAX_PROMPT_HOLD_MS);
+    return () => clearTimeout(id);
+  }, [holdingForImages]);
+
+  // Settled means drawn OR failed: the flags 404'd once already, and a hold that only ended on success
+  // would have frozen those sessions outright.
+  const onImageSettled = (i: number) => setSettledImages((prev) => (prev.has(i) ? prev : new Set(prev).add(i)));
+
   // Timed session (#289): count down to the deadline; on expiry, auto-submit whatever's been answered.
-  const { remainingMs, expired } = useCountdown(deadline);
+  const { remainingMs, expired } = useCountdown(deadline, holdingForImages);
 
   const isAnswered = (i: number) => (isTest ? (entries[i] as string).trim() !== '' : entries[i] != null);
   const answeredCount = cards.filter((_, i) => isAnswered(i)).length;
@@ -187,7 +220,15 @@ export function BatchPracticeRunner({
             <div className="batch-prompt">
               <span className="batch-number">{i + 1}</span>
               {card.question && <span className="batch-question">{card.question}</span>}
-              {card.imageUrl && <img src={card.imageUrl} alt="" className="batch-image" />}
+              {card.imageUrl && (
+                <img
+                  src={card.imageUrl}
+                  alt=""
+                  className="batch-image"
+                  onLoad={() => onImageSettled(i)}
+                  onError={() => onImageSettled(i)}
+                />
+              )}
             </div>
 
             {isTest ? (

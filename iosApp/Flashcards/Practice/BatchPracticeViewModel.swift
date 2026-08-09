@@ -63,6 +63,13 @@ final class BatchPracticeViewModel: ObservableObject {
         try? await c.start()
     }
 
+    /// Reports an opening card's prompt image settling — loaded or failed (#372). The batch runner puts
+    /// the whole deck on screen at once, so rather than pausing per card the controller holds the clock
+    /// until the first few have drawn, then credits the wait back.
+    func onPromptImageSettled(index: Int) {
+        controller.onPromptImageSettled(index: Int32(index))
+    }
+
     /// Stops observing + tears down the controller — call when the batch screen goes away.
     func stopObserving() {
         stateTask?.cancel()

@@ -107,6 +107,7 @@ fun FlashcardsScreen(
                 state = screen.state,
                 remainingSeconds = flashcardsViewModel.remainingSeconds.collectAsState().value,
                 onSubmit = flashcardsViewModel::submitBatch,
+                onPromptImageSettled = flashcardsViewModel::onBatchPromptImageSettled,
                 sharedDeck = flashcardsViewModel::sharedDeck,
                 isGuest = isGuest,
                 onBack = onBack,
@@ -872,6 +873,9 @@ internal fun BatchPracticeScreen(
     state: BatchPracticeUiState,
     remainingSeconds: Int?,
     onSubmit: (List<String?>) -> Unit,
+    // Reports each opening card's prompt image settling, so a timed run doesn't spend its budget on
+    // image loading (#372). Defaulted so previews/tests can skip it.
+    onPromptImageSettled: (Int) -> Unit = {},
     sharedDeck: () -> Pair<Long, String>?,
     isGuest: Boolean,
     onBack: () -> Unit,
@@ -935,6 +939,7 @@ internal fun BatchPracticeScreen(
                         mode = state.mode,
                         remainingSeconds = remainingSeconds,
                         onSubmit = onSubmit,
+                        onPromptImageSettled = onPromptImageSettled,
                     )
 
                 is BatchPracticeUiState.Completed ->
@@ -966,6 +971,7 @@ private fun BatchAnswering(
     mode: String,
     remainingSeconds: Int?,
     onSubmit: (List<String?>) -> Unit,
+    onPromptImageSettled: (Int) -> Unit = {},
 ) {
     val isTest = mode == PracticeMode.Test.key
     // Multiple-choice options per card, built once so they don't reshuffle on recomposition.
@@ -1011,6 +1017,7 @@ private fun BatchAnswering(
                     onType = { typed[i] = it },
                     pickedIndex = picked[i],
                     onPick = { picked[i] = it },
+                    onImageSettled = { onPromptImageSettled(i) },
                 )
             }
         }
@@ -1039,6 +1046,7 @@ private fun BatchCardItem(
     onType: (String) -> Unit,
     pickedIndex: Int,
     onPick: (Int) -> Unit,
+    onImageSettled: () -> Unit = {},
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1056,7 +1064,7 @@ private fun BatchCardItem(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
             )
-            CardPrompt(flashcard = card)
+            CardPrompt(flashcard = card, onImageReady = onImageSettled)
             if (isTest) {
                 OutlinedTextField(
                     value = typedValue,

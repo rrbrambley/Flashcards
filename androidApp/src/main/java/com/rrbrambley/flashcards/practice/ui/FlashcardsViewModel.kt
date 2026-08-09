@@ -164,6 +164,14 @@ class FlashcardsViewModel @Inject constructor(
         batchController?.submit(answers)
     }
 
+    /**
+     * Reports an opening batch card's prompt image settling (#372). The batch runner shows the whole
+     * deck at once, so instead of pausing per card it holds the clock until the first few have drawn.
+     */
+    fun onBatchPromptImageSettled(index: Int) {
+        batchController?.onPromptImageSettled(index)
+    }
+
     /** Pause/resume the timed countdown (#311) while the current card's prompt image loads. No-op untimed. */
     fun pauseTimer() {
         controller?.pauseTimer()
