@@ -48,6 +48,16 @@ class BatchPracticeController(
     private val _remainingSeconds = MutableStateFlow<Int?>(null)
     val remainingSeconds: StateFlow<Int?> = _remainingSeconds.asStateFlow()
 
+    // Timed deadline (epoch millis; null = untimed) + the instant the clock was frozen, mirroring the
+    // card-by-card runner (#311). Used here to hold the countdown while the opening prompt images load
+    // (#372) rather than per card.
+    private var deadlineMillis: Long? = null
+    private var pausedAtMillis: Long? = null
+
+    // Leading cards whose prompt image the clock is waiting on; emptied as each settles.
+    private val awaitedPromptCards = mutableSetOf<Int>()
+    private var holdTimeoutJob: Job? = null
+
     private var sessionId: Long? = null
     var deckId: Long? = null
         private set
@@ -111,7 +121,7 @@ class BatchPracticeController(
         cards = SessionOrdering.order(deckCards, session.shuffle, session.shuffleSeed)
             .let { ordered -> session.questionCount?.let(ordered::take) ?: ordered }
         _state.update { BatchPracticeUiState.Answering(cards = cards, mode = mode) }
-        startTimer(session.timeLimitSeconds?.let { session.createdAtMillis + it * 1000L })
+        startTimer(session.timeLimitSeconds?.let { session.createdAtMillis + it * 1000L }, session.timeLimitSeconds)
     }
 
     private suspend fun loadGuestDeck(e: PracticeEntry.GuestDeck) {
@@ -133,28 +143,84 @@ class BatchPracticeController(
             .let { ordered -> e.questionCount?.let(ordered::take) ?: ordered }
         _state.update { BatchPracticeUiState.Answering(cards = cards, mode = mode) }
         // Guests have no persisted createdAt, so the timed deadline is minted here (once) from now().
-        startTimer(e.timeLimitSeconds?.let { now() + it * 1000L })
+        startTimer(e.timeLimitSeconds?.let { now() + it * 1000L }, e.timeLimitSeconds)
     }
 
     /**
      * Runs the timed countdown (#289) to [deadline] (epoch millis; null = untimed). Ticks the remaining
      * seconds ~1×/sec to 0. The view owns the per-card entries, so it watches [remainingSeconds] and
      * submits whatever's answered when it reaches 0 (a wall-clock deadline already past → 0 at once).
+     *
+     * Starts **held** when the leading cards have prompt images still to load (#372): a batch run puts
+     * the whole deck on screen at once, so otherwise the clock burns while the first cards are still
+     * spinners — a slow connection could eat much of the budget before anything is answerable. The hold
+     * shifts the deadline forward, exactly as the card-by-card runner's pause does (#311); that's safe
+     * with the wall-clock model because timed runs are single-sitting (#306).
      */
-    private fun startTimer(deadline: Long?) {
+    private fun startTimer(deadline: Long?, limitSeconds: Int?) {
         timerJob?.cancel()
+        holdTimeoutJob?.cancel()
+        pausedAtMillis = null
+        deadlineMillis = deadline
         if (deadline == null) return
+
+        awaitedPromptCards.clear()
+        cards.take(PROMPT_CARDS_BEFORE_START).forEachIndexed { index, card ->
+            if (!card.imageUrl.isNullOrBlank()) awaitedPromptCards += index
+        }
+        if (awaitedPromptCards.isNotEmpty()) {
+            pausedAtMillis = now()
+            // A card that never reports — a list too short to compose it, a view that never appears —
+            // would otherwise hold the clock indefinitely, so release regardless after a bounded wait.
+            holdTimeoutJob = scope.launch {
+                delay(MAX_PROMPT_HOLD_MILLIS)
+                releasePromptHold()
+            }
+        }
+
         timerJob = scope.launch {
             while (true) {
-                val remainingMs = deadline - now()
-                if (remainingMs <= 0) {
+                val d = deadlineMillis ?: break
+                // While held, measure from the frozen instant so the clock holds; releasing has already
+                // shifted the deadline forward, so it picks up where it left off.
+                val paused = pausedAtMillis
+                val remainingMs = d - (paused ?: now())
+                if (remainingMs <= 0 && paused == null) {
                     _remainingSeconds.value = 0
                     break
                 }
-                _remainingSeconds.value = ((remainingMs + 999) / 1000).toInt()
+                // Never report more than the configured budget. The deadline is derived from the
+                // session's stored createdAt, which is the *server's* clock, so a device running a
+                // shade behind it makes the first remainder round up — a 60s run opening on "1:01"
+                // (#374 review). Harmless when the clock ticks immediately, but the hold above freezes
+                // that first value on screen for the whole load, which is where it became visible.
+                val budgetMs = limitSeconds?.let { it * 1000L } ?: Long.MAX_VALUE
+                val shownMs = remainingMs.coerceIn(0, budgetMs)
+                _remainingSeconds.value = ((shownMs + 999) / 1000).toInt()
                 delay(1000)
             }
         }
+    }
+
+    /**
+     * Reported by the view when the card at [index]'s prompt image settles — **loaded or failed** (#372).
+     * Failure has to count: the flags 404'd once already, and a hold that only ends on success would
+     * have frozen those sessions outright. Cards past the opening screenful are ignored; they load in
+     * the background while the early ones are answered.
+     */
+    fun onPromptImageSettled(index: Int) {
+        if (awaitedPromptCards.remove(index) && awaitedPromptCards.isEmpty()) releasePromptHold()
+    }
+
+    /** Ends the hold, moving the deadline on by however long it lasted so no budget was spent. */
+    private fun releasePromptHold() {
+        holdTimeoutJob?.cancel()
+        holdTimeoutJob = null
+        awaitedPromptCards.clear()
+        val pausedAt = pausedAtMillis ?: return
+        val deadline = deadlineMillis ?: return
+        deadlineMillis = deadline + (now() - pausedAt)
+        pausedAtMillis = null
     }
 
     /**
@@ -166,6 +232,7 @@ class BatchPracticeController(
     fun submit(answers: List<String?>) {
         if (cards.isEmpty()) return
         timerJob?.cancel()
+        holdTimeoutJob?.cancel()
         val graded = cards.mapIndexed { i, card -> gradeCard(card, answers.getOrNull(i)) }
         val numCorrect = graded.count { it.correct }
         val review = graded.mapIndexed { i, g ->
@@ -227,5 +294,17 @@ class BatchPracticeController(
     /** Cancels the controller's coroutines (record/complete/streak). Call on teardown. */
     fun close() {
         scope.cancel()
+    }
+
+    companion object {
+        /**
+         * How many leading cards count as "the opening screenful" for the start gate (#372). Roughly
+         * what fits on a phone at this card size; small enough that a list shorter than the whole deck
+         * still composes them, so the hold ends on their reports rather than on the timeout.
+         */
+        internal const val PROMPT_CARDS_BEFORE_START = 3
+
+        /** Longest the clock is held waiting for those images before it starts regardless. */
+        internal const val MAX_PROMPT_HOLD_MILLIS = 10_000L
     }
 }

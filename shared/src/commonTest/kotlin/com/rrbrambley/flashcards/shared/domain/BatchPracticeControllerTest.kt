@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.shared.domain
 
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
+import com.rrbrambley.flashcards.shared.nowMillis
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -25,8 +27,8 @@ class BatchPracticeControllerTest {
 
     private val jsonHeaders = headersOf(HttpHeaders.ContentType, "application/json")
 
-    private fun card(uid: String, q: String = "q-$uid", a: String = "a-$uid") =
-        Flashcard(question = q, answer = a, cardUid = uid)
+    private fun card(uid: String, q: String = "q-$uid", a: String = "a-$uid", imageUrl: String? = null) =
+        Flashcard(question = q, answer = a, imageUrl = imageUrl, cardUid = uid)
 
     private fun deck(id: Long, cards: List<Flashcard>) = FlashcardDeck(id = id, title = "Deck $id", flashcards = cards)
 
@@ -37,6 +39,8 @@ class BatchPracticeControllerTest {
         shuffle: Boolean = false,
         shuffleSeed: Long = 0L,
         questionCount: Int? = null,
+        timeLimitSeconds: Int? = null,
+        createdAtMillis: Long = 0L,
     ) = PracticeSession(
         id = SESSION_ID,
         deckId = deckId,
@@ -47,6 +51,8 @@ class BatchPracticeControllerTest {
         shuffleSeed = shuffleSeed,
         questionCount = questionCount,
         gradeAtEnd = true,
+        timeLimitSeconds = timeLimitSeconds,
+        createdAtMillis = createdAtMillis,
     )
 
     /** MockEngine for the few endpoints the batch controller touches (streaks / catalog). */
@@ -70,13 +76,21 @@ class BatchPracticeControllerTest {
         entry: PracticeEntry,
         sessions: FakeSessionRepo = FakeSessionRepo(),
         decks: FakeDeckRepo = FakeDeckRepo(),
+        now: () -> Long = ::nowMillis,
     ): BatchPracticeController {
         val apiClient = FlashcardApiClient(
             createFlashcardHttpClient(engine()),
             baseUrl = "http://localhost",
             tokenProvider = { "t" },
         )
-        return BatchPracticeController(decks, sessions, apiClient, entry, StandardTestDispatcher(scope.testScheduler))
+        return BatchPracticeController(
+            decks,
+            sessions,
+            apiClient,
+            entry,
+            StandardTestDispatcher(scope.testScheduler),
+            now,
+        )
     }
 
     private fun answering(state: BatchPracticeUiState) = state as BatchPracticeUiState.Answering
@@ -250,6 +264,99 @@ class BatchPracticeControllerTest {
         override suspend fun saveFlashcardDeck(deck: FlashcardDeck) {}
         override suspend fun updateFlashcardDeck(deck: FlashcardDeck) {}
         override suspend fun deleteFlashcardDeck(deckId: Long) {}
+    }
+
+    // The timed tests hold a live countdown, so they step the clock with advanceTimeBy (never
+    // advanceUntilIdle — the tick loop is endless and would never go idle) and always close the
+    // controller in a finally: leaving the job running turns a failed assertion into a hung run.
+
+    @Test
+    fun timedRun_holdsTheClockUntilTheOpeningPromptImagesSettle() = runTest {
+        // deadline = createdAt(0) + 60s. The whole deck is on screen at once, so the clock must not run
+        // while the opening cards are still spinners (#372).
+        var fakeNow = 0L
+        val cards = listOf(card("a", imageUrl = "http://img/a.svg"), card("b", imageUrl = "http://img/b.svg"))
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 60))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, FakeDeckRepo(deck(1, cards))) { fakeNow }
+        try {
+            c.start()
+            advanceTimeBy(100)
+            assertEquals(60, c.remainingSeconds.value)
+
+            fakeNow = 5_000 // five seconds of loading
+            advanceTimeBy(5_000)
+            assertEquals(60, c.remainingSeconds.value, "loading time came out of the budget")
+
+            c.onPromptImageSettled(0)
+            c.onPromptImageSettled(1)
+            advanceTimeBy(100)
+            assertEquals(60, c.remainingSeconds.value, "the hold should be credited back, not merely stopped")
+
+            fakeNow = 15_000
+            advanceTimeBy(10_000)
+            assertEquals(50, c.remainingSeconds.value, "the clock should run normally once released")
+        } finally {
+            c.close()
+        }
+    }
+
+    @Test
+    fun timedRun_neverShowsMoreThanTheConfiguredBudget() = runTest {
+        // createdAt is the server's clock; a device a shade behind it makes the first remainder round
+        // up, so a 60s run opened on "1:01" (#374 review). Held, that wrong value sat on screen.
+        var fakeNow = 0L
+        val cards = listOf(card("a", imageUrl = "http://img/a.svg"))
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 60, createdAtMillis = 800))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, FakeDeckRepo(deck(1, cards))) { fakeNow }
+        try {
+            c.start()
+            advanceTimeBy(100)
+
+            assertEquals(60, c.remainingSeconds.value, "a 60s run must open on 1:00, not 1:01")
+        } finally {
+            c.close()
+        }
+    }
+
+    @Test
+    fun timedRun_startsImmediately_whenTheOpeningCardsHaveNoImages() = runTest {
+        var fakeNow = 0L
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 60))
+        val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"))))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks) { fakeNow }
+        try {
+            c.start()
+            advanceTimeBy(100)
+            fakeNow = 4_000
+            advanceTimeBy(4_000)
+
+            assertEquals(56, c.remainingSeconds.value, "a text-only deck has nothing to wait for")
+        } finally {
+            c.close()
+        }
+    }
+
+    /** A card that never reports — never composed, say — must not freeze a timed run indefinitely. */
+    @Test
+    fun timedRun_releasesTheHold_whenNothingEverReports() = runTest {
+        var fakeNow = 0L
+        val cards = listOf(card("a", imageUrl = "http://img/a.svg"))
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 60))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, FakeDeckRepo(deck(1, cards))) { fakeNow }
+        try {
+            c.start()
+            advanceTimeBy(100)
+
+            fakeNow = BatchPracticeController.MAX_PROMPT_HOLD_MILLIS
+            advanceTimeBy(BatchPracticeController.MAX_PROMPT_HOLD_MILLIS)
+            assertEquals(60, c.remainingSeconds.value, "the lapsed hold is still credited back")
+
+            fakeNow += 3_000
+            advanceTimeBy(3_000)
+            assertEquals(57, c.remainingSeconds.value, "the clock runs once the hold lapses")
+        } finally {
+            c.close()
+        }
     }
 
     private data class Recorded(val cardUid: String, val correct: Boolean, val submittedText: String?)
