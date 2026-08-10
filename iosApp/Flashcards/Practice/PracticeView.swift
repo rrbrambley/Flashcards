@@ -162,6 +162,8 @@ struct PracticeView: View {
                 .frame(maxHeight: .infinity)
             }
             .padding(Spacing.lg)
+        case let .timeUp(card, _):
+            TimeUpView(card: card) { viewModel.continueAfterTimeUp() }
         case let .completed(numCorrect, numIncorrect):
             CompletionView(
                 numCorrect: numCorrect,

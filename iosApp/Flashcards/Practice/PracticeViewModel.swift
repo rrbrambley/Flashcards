@@ -16,6 +16,8 @@ enum PracticeState {
         isGlobal: Bool,
         streak: Int
     )
+    /// The clock expired on this card (#375) — its answer is revealed before the recap.
+    case timeUp(card: Flashcard, mode: String)
     case completed(numCorrect: Int, numIncorrect: Int)
     case failed
 }
@@ -223,6 +225,8 @@ final class PracticeViewModel: ObservableObject {
                 isGlobal: show.isGlobal,
                 streak: Int(show.streak)
             )
+        case let up as PracticeUiState.TimeUp:
+            state = .timeUp(card: up.card, mode: up.mode)
         case let done as PracticeUiState.Completed:
             streak = done.streak.map { Int($0.intValue) }
             review = (done.review as? [ReviewItem]) ?? []
@@ -234,6 +238,11 @@ final class PracticeViewModel: ObservableObject {
         default:
             state = .loading
         }
+    }
+
+    /// Leaves the "Time's up" reveal for the completion recap (#375).
+    func continueAfterTimeUp() {
+        controller.continueAfterTimeUp()
     }
 
     private func applySave(_ shared: Shared.GuestSaveState) {

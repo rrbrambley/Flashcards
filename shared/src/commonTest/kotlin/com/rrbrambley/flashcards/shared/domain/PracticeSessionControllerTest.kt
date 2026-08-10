@@ -231,6 +231,57 @@ class PracticeSessionControllerTest {
     }
 
     @Test
+    fun expiry_revealsTheCardsAnswer_thenCompletesOnContinue() = runTest {
+        // #375: the clock running out used to jump straight to the recap, so the card the user was
+        // working on was the one card whose answer they never saw.
+        var fakeNow = 0L
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 1)) // deadline = 1000ms
+        val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"))))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks, now = { fakeNow })
+        try {
+            c.start()
+            advanceTimeBy(100)
+            val showing = assertIs<PracticeUiState.ShowCard>(c.state.value)
+
+            fakeNow = 2_000 // past the deadline
+            advanceTimeBy(2_000)
+
+            val timeUp = assertIs<PracticeUiState.TimeUp>(c.state.value)
+            assertEquals(showing.card.cardUid, timeUp.card.cardUid, "the reveal should hold the card that was up")
+            assertEquals("a-a", timeUp.card.answer)
+
+            c.continueAfterTimeUp()
+            advanceTimeBy(100)
+            assertIs<PracticeUiState.Completed>(c.state.value)
+        } finally {
+            c.close()
+        }
+    }
+
+    /** The recap is built from the answer log, so an unrecorded card produces no row at all (#375). */
+    @Test
+    fun expiry_recordsTheUnansweredCard_soItReachesTheRecap() = runTest {
+        var fakeNow = 0L
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 1))
+        val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"))))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks, now = { fakeNow })
+        try {
+            c.start()
+            advanceTimeBy(100)
+            fakeNow = 2_000
+            advanceTimeBy(2_000)
+
+            assertEquals(
+                listOf(Triple("a", false, null as String?)),
+                sessions.recorded,
+                "the expired card should be logged as unanswered, the way a blank is graded at the end",
+            )
+        } finally {
+            c.close()
+        }
+    }
+
+    @Test
     fun emptyDeck_fails() = runTest {
         val sessions = FakeSessionRepo(session(deckId = 1))
         val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, FakeDeckRepo(deck(1, emptyList())))
@@ -386,7 +437,10 @@ class PracticeSessionControllerTest {
         override suspend fun completeSession(sessionId: Long) {
             completed = true
         }
-        override suspend fun recordAnswer(sessionId: Long, cardUid: String, correct: Boolean, submittedText: String?) {}
+        val recorded = mutableListOf<Triple<String, Boolean, String?>>()
+        override suspend fun recordAnswer(sessionId: Long, cardUid: String, correct: Boolean, submittedText: String?) {
+            recorded.add(Triple(cardUid, correct, submittedText))
+        }
         override fun observeAnswers(sessionId: Long): Flow<List<PracticeAnswer>> = answers
     }
 

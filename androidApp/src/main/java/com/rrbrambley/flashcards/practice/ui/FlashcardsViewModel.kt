@@ -172,6 +172,11 @@ class FlashcardsViewModel @Inject constructor(
         batchController?.onPromptImageSettled(index)
     }
 
+    /** Leaves the "Time's up" reveal for the completion recap (#375). */
+    fun continueAfterTimeUp() {
+        controller?.continueAfterTimeUp()
+    }
+
     /** Pause/resume the timed countdown (#311) while the current card's prompt image loads. No-op untimed. */
     fun pauseTimer() {
         controller?.pauseTimer()

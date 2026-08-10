@@ -73,4 +73,37 @@ describe('practiceReducer', () => {
   it('starts a resumed session at streak 0', () => {
     expect(initPractice(cards, { currentCardIndex: 1, numCorrect: 2, numIncorrect: 1 }).streak).toBe(0);
   });
+
+  it('ends outright when the deadline had already passed before play began (#289)', () => {
+    const s = initPractice(cards, { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 });
+    const done = practiceReducer(s, { type: 'EXPIRE' });
+    // Resuming a run whose time ran out while away: no card was up, so nothing to reveal or mark wrong.
+    expect(done.status).toBe('completed');
+    expect(done.numIncorrect).toBe(0);
+  });
+
+  it('holds the expired card with its answer before completing, counting it as a miss (#375)', () => {
+    const s = initPractice(cards, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 });
+
+    const expired = practiceReducer(s, { type: 'TIME_UP' });
+    // Not 'completed': the card is held so its answer can be shown before the recap.
+    expect(expired.status).toBe('timeUp');
+    expect(expired.index).toBe(1);
+    // It went unanswered, so it counts as a miss — which is also what puts it in the recap, built
+    // from recorded answers.
+    expect(expired.numIncorrect).toBe(1);
+    expect(expired.streak).toBe(0);
+
+    expect(practiceReducer(expired, { type: 'CONTINUE' }).status).toBe('completed');
+  });
+
+  it('ignores further grading once the clock has expired', () => {
+    const expired = practiceReducer(
+      initPractice(cards, { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 }),
+      { type: 'TIME_UP' },
+    );
+    // GRADE/ADVANCE after expiry must not score again or move on — only CONTINUE applies.
+    expect(practiceReducer(expired, { type: 'GRADE', correct: true }).numCorrect).toBe(0);
+    expect(practiceReducer(expired, { type: 'ADVANCE' }).index).toBe(0);
+  });
 });

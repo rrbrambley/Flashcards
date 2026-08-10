@@ -27,6 +27,17 @@ sealed class PracticeUiState {
         val streak: Int,
     ) : PracticeUiState()
 
+    /**
+     * The clock ran out on [card] (#375). The run is over, but the card the user was working on is held
+     * up with its answer revealed before the recap — otherwise the one question they were actively
+     * thinking about is the one question whose answer they never see. [onContinue] moves on.
+     */
+    data class TimeUp(
+        val card: Flashcard,
+        /** The session's mode key, so the reveal can present a Test answer the way that mode does. */
+        val mode: String,
+    ) : PracticeUiState()
+
     data class Completed(
         val numCorrect: Int,
         val numIncorrect: Int,
