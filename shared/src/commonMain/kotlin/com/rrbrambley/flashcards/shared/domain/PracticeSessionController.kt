@@ -245,6 +245,30 @@ class PracticeSessionController(
         }
     }
 
+    /**
+     * The countdown reached 0 while a card was up (#289). Rather than jumping straight to the recap,
+     * hold that card with its answer revealed (#375) — it's the question the user was actively working
+     * on, so it's the one they most want to see.
+     *
+     * The card is also recorded as unanswered-and-wrong, which is what makes it appear in the recap:
+     * that list is built from the answer log, so a card that was never recorded produces no row at all.
+     * Grade-at-the-end already treats a blank this way, so the two runners now agree.
+     */
+    private fun expireRun() {
+        val showing = _state.value as? PracticeUiState.ShowCard ?: return
+        timerJob?.cancel()
+        numIncorrect++
+        answerStreak = 0
+        recordAnswer(correct = false, submittedText = null)
+        _state.update { PracticeUiState.TimeUp(card = showing.card, mode = mode) }
+    }
+
+    /** Leaves the [PracticeUiState.TimeUp] reveal for the recap (#375). No-op from any other state. */
+    fun continueAfterTimeUp() {
+        if (_state.value !is PracticeUiState.TimeUp) return
+        completeRun()
+    }
+
     /** Ends the run wherever it is — the last card finishing, or the timed countdown hitting 0 (#289). */
     private fun completeRun() {
         timerJob?.cancel()
@@ -272,6 +296,10 @@ class PracticeSessionController(
         deadlineMillis = deadline
         if (deadline == null) return
         timerJob = scope.launch {
+            // Whether the countdown was ever actually live. A deadline already past at load means the
+            // run is simply over — resuming lands on the recap, as it always has — whereas expiring
+            // after a tick means a card was up and its answer is worth revealing (#375).
+            var wasRunning = false
             while (true) {
                 val d = deadlineMillis ?: break
                 // While paused (#311), measure remaining from the frozen pause instant so it holds; when
@@ -280,11 +308,14 @@ class PracticeSessionController(
                 val remainingMs = d - (paused ?: now())
                 if (remainingMs <= 0 && paused == null) {
                     _remainingSeconds.value = 0
-                    if (_state.value is PracticeUiState.ShowCard) completeRun()
+                    if (_state.value is PracticeUiState.ShowCard) {
+                        if (wasRunning) expireRun() else completeRun()
+                    }
                     break
                 }
                 // Ceil so the clock reads 1 until it truly hits 0 (matches the web's formatRemaining).
                 _remainingSeconds.value = ((remainingMs.coerceAtLeast(0) + 999) / 1000).toInt()
+                wasRunning = true
                 delay(1000)
             }
         }

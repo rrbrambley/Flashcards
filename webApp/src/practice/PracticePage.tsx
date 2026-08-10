@@ -415,7 +415,12 @@ function PracticeRunner({
 
   // Mirror progress up so the parent's leave-guard can read it (and persist on guest save).
   useEffect(() => {
-    onProgress({ currentCardIndex: state.index, numCorrect: state.numCorrect, numIncorrect: state.numIncorrect }, state.status);
+    // The reveal (#375) reads as finished to the parent: answering is over and the answers are
+    // recorded, so the single-sitting leave-guard should already be lifted behind it.
+    onProgress(
+      { currentCardIndex: state.index, numCorrect: state.numCorrect, numIncorrect: state.numIncorrect },
+      state.status === 'practicing' ? 'practicing' : 'completed',
+    );
   }, [state, onProgress]);
 
   // Append this answer to the session's log (FLA-99) — backs the in-session streak + an end-of-session
@@ -469,13 +474,34 @@ function PracticeRunner({
     [sessionId, completeNow],
   );
 
-  // Timed session (#289): when the countdown expires, end the run wherever it is + complete it.
+  // Timed session (#289): when the countdown expires, hold the card that was up with its answer
+  // revealed (#375) rather than jumping to the recap. The card is recorded as an unanswered miss,
+  // which is also what puts it in the review list — that list is built from recorded answers, so a
+  // card that was never recorded produces no row.
+  // Whether the countdown was ever actually live. A deadline already past at load means the run is
+  // simply over — resuming lands on the recap, as it always has — whereas expiring after play began
+  // means a card was up and its answer is worth revealing. Mirrors the shared controller.
+  const wasRunningRef = useRef(false);
   useEffect(() => {
-    if (expired && state.status === 'practicing') {
+    if (deadline != null && !expired && state.status === 'practicing') wasRunningRef.current = true;
+  }, [deadline, expired, state.status]);
+
+  useEffect(() => {
+    if (!expired || state.status !== 'practicing') return;
+    if (wasRunningRef.current) {
+      recordAnswer(state.cards[state.index], false, undefined);
+      dispatch({ type: 'TIME_UP' });
+    } else {
       dispatch({ type: 'EXPIRE' });
       completeNow();
     }
-  }, [expired, state.status, completeNow]);
+  }, [expired, state.status, state.cards, state.index, recordAnswer, completeNow]);
+
+  // Leaving the reveal ends the run for real.
+  const continueAfterTimeUp = useCallback(() => {
+    dispatch({ type: 'CONTINUE' });
+    completeNow();
+  }, [completeNow]);
 
   // Classic: grade + advance in one motion (its swipe has no verdict to dwell on). State is stale
   // this tick, so the persisted score is computed from `correct`.
@@ -514,6 +540,22 @@ function PracticeRunner({
     dispatch({ type: 'ADVANCE' });
     persistProgress(wasLast, state.index + 1, state.numCorrect, state.numIncorrect);
   }, [state, persistProgress]);
+
+  if (state.status === 'timeUp') {
+    const card = state.cards[state.index];
+    return (
+      <div className="practice-complete">
+        <h2>Time's up</h2>
+        {card.question && <p className="time-up-question">{card.question}</p>}
+        {card.imageUrl && <img src={card.imageUrl} alt="" className="time-up-image" />}
+        <p className="muted">The answer was</p>
+        <p className="time-up-answer">{card.answer}</p>
+        <button type="button" className="primary" onClick={continueAfterTimeUp}>
+          See results
+        </button>
+      </div>
+    );
+  }
 
   if (state.status === 'completed') {
     return (

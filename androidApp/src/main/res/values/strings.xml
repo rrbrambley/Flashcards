@@ -128,6 +128,10 @@
     <string name="practice_help_swipe_right">Swipe right when you know the answer.</string>
     <string name="practice_help_swipe_left">Swipe left when you want more practice.</string>
     <string name="practice_help_got_it">Got it</string>
+    <!-- Shown when a timed run's clock expires on a card, before the completion recap (#375). -->
+    <string name="practice_time_up_title">Time\'s up</string>
+    <string name="practice_time_up_answer_label">The answer was</string>
+    <string name="practice_time_up_continue">See results</string>
     <string name="practice_complete_title">Practice complete</string>
     <string name="practice_complete_subtitle">Nice work reviewing this deck.</string>
     <!-- Practice streak pill (FLA-106), shown on Home + the completion screen. %1$d = day count. -->

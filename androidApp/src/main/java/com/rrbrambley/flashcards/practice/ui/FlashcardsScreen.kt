@@ -277,6 +277,13 @@ private fun CardByCardPractice(
                     PracticeUiState.Loading, PracticeUiState.Failed ->
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
+                    is PracticeUiState.TimeUp ->
+                        TimeUpContent(
+                            card = state.card,
+                            onContinue = flashcardsViewModel::continueAfterTimeUp,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
                     is PracticeUiState.Completed ->
                         FlashcardsCompletionContent(
                             streak = state.streak,
@@ -429,12 +436,12 @@ fun ScoreRow(flashcardsState: PracticeUiState) {
     val numIncorrect = when (flashcardsState) {
         is PracticeUiState.ShowCard -> flashcardsState.numIncorrect
         is PracticeUiState.Completed -> flashcardsState.numIncorrect
-        PracticeUiState.Loading, PracticeUiState.Failed -> 0
+        is PracticeUiState.TimeUp, PracticeUiState.Loading, PracticeUiState.Failed -> 0
     }
     val numCorrect = when (flashcardsState) {
         is PracticeUiState.ShowCard -> flashcardsState.numCorrect
         is PracticeUiState.Completed -> flashcardsState.numCorrect
-        PracticeUiState.Loading, PracticeUiState.Failed -> 0
+        is PracticeUiState.TimeUp, PracticeUiState.Loading, PracticeUiState.Failed -> 0
     }
     Row(
         modifier = Modifier
@@ -844,6 +851,35 @@ internal fun CardImage(
                 }
             },
         )
+    }
+}
+
+/**
+ * The "Time's up" reveal (#375): the card the clock expired on, with its answer, before the recap.
+ * Without it the one question the user was actively working on is the one whose answer they never see.
+ */
+@Composable
+internal fun TimeUpContent(card: Flashcard, onContinue: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(R.string.practice_time_up_title),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        CardPrompt(flashcard = card)
+        Text(
+            text = stringResource(R.string.practice_time_up_answer_label),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        FlashcardText(text = card.answer, modifier = Modifier.fillMaxWidth())
+        Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.practice_time_up_continue))
+        }
     }
 }
 
