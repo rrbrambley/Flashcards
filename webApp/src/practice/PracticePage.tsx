@@ -550,7 +550,7 @@ function PracticeRunner({
         {card.imageUrl && <img src={card.imageUrl} alt="" className="time-up-image" />}
         <p className="muted">The answer was</p>
         <p className="time-up-answer">{card.answer}</p>
-        <button type="button" className="primary" onClick={continueAfterTimeUp}>
+        <button type="button" onClick={continueAfterTimeUp}>
           See results
         </button>
       </div>

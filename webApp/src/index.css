@@ -879,6 +879,27 @@ button.danger:hover:not(:disabled) {
   padding: 2rem 0;
 }
 
+/* The "Time's up" reveal (#375) reuses the .practice-complete panel, but its own elements needed
+   styling of their own: without these the image rendered at its natural size and swamped the screen,
+   which is exactly what shipped (#376 follow-up). Bounded by a fixed max-height rather than a
+   percentage, since this panel's height is content-driven and a % of it resolves to nothing. */
+.time-up-image {
+  max-width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 12px;
+}
+.time-up-question {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+.time-up-answer {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
 /* Grade-at-the-end batch runner (#293): all cards in a scrollable list, answered then submitted;
    Submit swaps in the shared "Practice complete" results screen (#298), so there's no inline grade. */
 .batch-practice {
