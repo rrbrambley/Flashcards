@@ -36,6 +36,10 @@ export function DeckLibrary({
   // deckId -> most recent practice time; loaded lazily the first time "Recently practiced" is picked.
   const [lastPracticed, setLastPracticed] = useState<Record<number, number>>({});
   const [sessionsLoaded, setSessionsLoaded] = useState(false);
+  // The deck whose actions sheet is open (#380). Clicking a row used to navigate straight to Edit —
+  // the biggest target on the row going somewhere people rarely want — so it now offers the choice,
+  // matching what Android and iOS already do on a deck tap.
+  const [actionsFor, setActionsFor] = useState<FlashcardDeckDto | null>(null);
 
   // "Recently practiced" needs per-deck session times; fetch them once, only when first selected.
   useEffect(() => {
@@ -141,10 +145,7 @@ export function DeckLibrary({
         <ul className="deck-list">
           {sortedDecks.map((deck) => (
             <li key={deck.id} className="deck-row">
-              <button
-                className="deck-row-main"
-                onClick={() => navigate(`/decks/${deck.id}/edit`, { state: { from: origin } })}
-              >
+              <button className="deck-row-main" onClick={() => setActionsFor(deck)}>
                 <span className="deck-row-text">
                   <span className="deck-title">{deck.title}</span>
                   {deck.tags?.[0] && <span className="deck-category">{deck.tags[0]}</span>}
@@ -165,6 +166,40 @@ export function DeckLibrary({
             </li>
           ))}
         </ul>
+      )}
+
+      {actionsFor && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Actions for ${actionsFor.title}`}
+          onClick={() => setActionsFor(null)}
+        >
+          <div className="modal-card deck-actions" onClick={(e) => e.stopPropagation()}>
+            <h2>{actionsFor.title}</h2>
+            {showPractice && actionsFor.flashcards.length > 0 && (
+              <button
+                onClick={() => navigate(`/decks/${actionsFor.id}/practice`, { state: { from: origin } })}
+              >
+                Practice
+              </button>
+            )}
+            {/* A global catalog deck is read-only for anyone without manage_global_decks, so don't
+                offer Edit there — it used to land on a form nothing could be changed on (#380). */}
+            {actionsFor.editable !== false && (
+              <button
+                className="secondary"
+                onClick={() => navigate(`/decks/${actionsFor.id}/edit`, { state: { from: origin } })}
+              >
+                Edit
+              </button>
+            )}
+            <button className="link-btn" onClick={() => setActionsFor(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
 
       {!loading && !error && cursor && (
