@@ -7,7 +7,7 @@ import { api } from '../api/client';
 
 const authState = vi.hoisted(() => ({ canManageGlobal: false, canManageRoles: false }));
 
-vi.mock('../api/client', () => ({ api: { getDecks: vi.fn(), getAllSessions: vi.fn() } }));
+vi.mock('../api/client', () => ({ api: { getDecks: vi.fn(), getAllSessions: vi.fn(), deleteDeck: vi.fn() } }));
 vi.mock('../auth/auth-context', () => ({
   useAuth: () => ({
     signOut: vi.fn(),
@@ -227,6 +227,72 @@ describe('LibraryPage', () => {
       await openSheet();
       await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  // #382: Delete from the library sheet, for parity with Android/iOS — web previously only offered it
+  // from inside Edit. Confirmed in place rather than by stacking a second overlay.
+  describe('deleting from the actions sheet', () => {
+    const owned = {
+      id: 1,
+      title: 'Spanish',
+      editable: true,
+      flashcards: [{ question: 'q', answer: 'a' }],
+      tags: [],
+    };
+
+    const openSheet = async (deck = owned) => {
+      vi.mocked(api.getDecks).mockResolvedValue({ items: [deck], nextCursor: null });
+      renderPage();
+      await userEvent.click(await screen.findByRole('button', { name: new RegExp(deck.title) }));
+    };
+
+    it('confirms before deleting, and only then calls the API', async () => {
+      await openSheet();
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+
+      // Still nothing deleted — the sheet swapped to the confirmation.
+      expect(api.deleteDeck).not.toHaveBeenCalled();
+      expect(screen.getByRole('dialog', { name: /Delete Spanish\?/ })).toBeInTheDocument();
+
+      vi.mocked(api.deleteDeck).mockResolvedValue(undefined);
+      await userEvent.click(screen.getByRole('button', { name: 'Delete deck' }));
+      await waitFor(() => expect(api.deleteDeck).toHaveBeenCalledWith(1));
+    });
+
+    it('removes the deck from the list once deleted', async () => {
+      await openSheet();
+      vi.mocked(api.deleteDeck).mockResolvedValue(undefined);
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete deck' }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(screen.queryByText('Spanish')).not.toBeInTheDocument();
+    });
+
+    it('keeps the deck and shows why when the delete fails', async () => {
+      await openSheet();
+      vi.mocked(api.deleteDeck).mockRejectedValue(new Error('Deck is in use'));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Delete deck' }));
+
+      expect(await screen.findByText('Deck is in use')).toBeInTheDocument();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    it('backs out of the confirmation without deleting', async () => {
+      await openSheet();
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      // Back to the actions, deck untouched.
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+      expect(api.deleteDeck).not.toHaveBeenCalled();
+    });
+
+    it('does not offer Delete on a deck the user cannot edit', async () => {
+      await openSheet({ ...owned, title: 'Flags of the World', editable: false });
+      expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument();
     });
   });
 });
