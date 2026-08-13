@@ -1429,6 +1429,17 @@ button.danger:hover:not(:disabled) {
   margin-top: 1rem;
 }
 
+/* The deck-actions sheet (#380): stacked full-width choices, matching the Practice/Edit sheet the
+   mobile clients show on a deck tap. .modal-actions is a row; these read better as a column. */
+.deck-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.deck-actions button {
+  width: 100%;
+}
+
 /* Card discussions (FLA-116) */
 .discuss-btn {
   display: inline-block;

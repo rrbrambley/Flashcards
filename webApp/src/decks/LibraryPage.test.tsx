@@ -171,4 +171,62 @@ describe('LibraryPage', () => {
     expect(api.getDecks).toHaveBeenNthCalledWith(2, { cursor: 'c1' });
     expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument();
   });
+
+  // #380: the row's main area used to navigate straight to Edit — the biggest target on the row going
+  // where people rarely want. It now offers the choice, matching the deck-tap sheet on Android/iOS.
+  describe('deck actions sheet', () => {
+    const deck = (over: Partial<{ id: number; title: string; editable: boolean; cards: number }> = {}) => ({
+      id: over.id ?? 1,
+      title: over.title ?? 'Spanish',
+      editable: over.editable ?? true,
+      flashcards: Array.from({ length: over.cards ?? 2 }, () => ({ question: 'q', answer: 'a' })),
+      tags: [],
+    });
+
+    const openSheet = async (title = 'Spanish') => {
+      renderPage();
+      const row = await screen.findByRole('button', { name: new RegExp(title) });
+      await userEvent.click(row);
+    };
+
+    it('opens the actions sheet rather than navigating to Edit', async () => {
+      vi.mocked(api.getDecks).mockResolvedValue({ items: [deck()], nextCursor: null });
+      await openSheet();
+
+      expect(screen.getByRole('dialog', { name: /Actions for Spanish/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument();
+    });
+
+    it('offers Practice for a deck that has cards', async () => {
+      vi.mocked(api.getDecks).mockResolvedValue({ items: [deck()], nextCursor: null });
+      await openSheet();
+      // Two: the row shortcut and the sheet's own.
+      expect(screen.getAllByRole('button', { name: 'Practice' }).length).toBeGreaterThan(1);
+    });
+
+    it('omits Edit for a deck the user cannot edit', async () => {
+      // A global catalog deck: clicking the row used to land on a form nothing could be changed on.
+      vi.mocked(api.getDecks).mockResolvedValue({
+        items: [deck({ title: 'Flags of the World', editable: false })],
+        nextCursor: null,
+      });
+      await openSheet('Flags of the World');
+
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    });
+
+    it('omits Practice for an empty deck', async () => {
+      vi.mocked(api.getDecks).mockResolvedValue({ items: [deck({ cards: 0 })], nextCursor: null });
+      await openSheet();
+      expect(screen.queryByRole('button', { name: 'Practice' })).not.toBeInTheDocument();
+    });
+
+    it('closes on Cancel', async () => {
+      vi.mocked(api.getDecks).mockResolvedValue({ items: [deck()], nextCursor: null });
+      await openSheet();
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
 });
