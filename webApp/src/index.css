@@ -1429,6 +1429,13 @@ button.danger:hover:not(:disabled) {
   margin-top: 1rem;
 }
 
+/* The sheet's Delete entry point (#382): a secondary button that reads as destructive without being
+   the filled .danger treatment, which is reserved for the confirmation's final action. */
+.danger-text {
+  color: var(--error);
+  border-color: var(--error);
+}
+
 /* The deck-actions sheet (#380): stacked full-width choices, matching the Practice/Edit sheet the
    mobile clients show on a deck tap. .modal-actions is a row; these read better as a column. */
 .deck-actions {

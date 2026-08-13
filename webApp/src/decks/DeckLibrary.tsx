@@ -40,6 +40,34 @@ export function DeckLibrary({
   // the biggest target on the row going somewhere people rarely want — so it now offers the choice,
   // matching what Android and iOS already do on a deck tap.
   const [actionsFor, setActionsFor] = useState<FlashcardDeckDto | null>(null);
+  // Delete is confirmed *inside* the same sheet rather than by stacking a second overlay on the
+  // first (#382) — the actions swap out for the confirmation and back again on Cancel.
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const closeSheet = useCallback(() => {
+    setActionsFor(null);
+    setConfirmingDelete(false);
+    setDeleting(false);
+    setDeleteError(null);
+  }, []);
+
+  const handleDelete = useCallback(async () => {
+    if (actionsFor == null) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.deleteDeck(actionsFor.id);
+      // Drop it locally rather than refetching: the list is paginated, and a refetch would reset
+      // whatever the user has already loaded via "Load more".
+      setDecks((prev) => prev.filter((d) => d.id !== actionsFor.id));
+      closeSheet();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Could not delete the deck.');
+      setDeleting(false);
+    }
+  }, [actionsFor, closeSheet]);
 
   // "Recently practiced" needs per-deck session times; fetch them once, only when first selected.
   useEffect(() => {
@@ -173,31 +201,56 @@ export function DeckLibrary({
           className="modal-overlay"
           role="dialog"
           aria-modal="true"
-          aria-label={`Actions for ${actionsFor.title}`}
-          onClick={() => setActionsFor(null)}
+          aria-label={confirmingDelete ? `Delete ${actionsFor.title}?` : `Actions for ${actionsFor.title}`}
+          onClick={deleting ? undefined : closeSheet}
         >
           <div className="modal-card deck-actions" onClick={(e) => e.stopPropagation()}>
-            <h2>{actionsFor.title}</h2>
-            {showPractice && actionsFor.flashcards.length > 0 && (
-              <button
-                onClick={() => navigate(`/decks/${actionsFor.id}/practice`, { state: { from: origin } })}
-              >
-                Practice
-              </button>
+            {confirmingDelete ? (
+              <>
+                <h2>Delete “{actionsFor.title}”?</h2>
+                <p className="muted">
+                  Its {actionsFor.flashcards.length} card{actionsFor.flashcards.length === 1 ? '' : 's'} and
+                  practice history will be gone. This can't be undone.
+                </p>
+                {deleteError && <p className="error">{deleteError}</p>}
+                <button className="danger" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? 'Deleting…' : 'Delete deck'}
+                </button>
+                <button className="link-btn" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <h2>{actionsFor.title}</h2>
+                {showPractice && actionsFor.flashcards.length > 0 && (
+                  <button
+                    onClick={() => navigate(`/decks/${actionsFor.id}/practice`, { state: { from: origin } })}
+                  >
+                    Practice
+                  </button>
+                )}
+                {/* A global catalog deck is read-only for anyone without manage_global_decks, so don't
+                    offer Edit or Delete there — Edit used to land on a form nothing could be changed
+                    on (#380), and the backend refuses the delete anyway. Same gate as Android's sheet. */}
+                {actionsFor.editable !== false && (
+                  <>
+                    <button
+                      className="secondary"
+                      onClick={() => navigate(`/decks/${actionsFor.id}/edit`, { state: { from: origin } })}
+                    >
+                      Edit
+                    </button>
+                    <button className="secondary danger-text" onClick={() => setConfirmingDelete(true)}>
+                      Delete
+                    </button>
+                  </>
+                )}
+                <button className="link-btn" onClick={closeSheet}>
+                  Cancel
+                </button>
+              </>
             )}
-            {/* A global catalog deck is read-only for anyone without manage_global_decks, so don't
-                offer Edit there — it used to land on a form nothing could be changed on (#380). */}
-            {actionsFor.editable !== false && (
-              <button
-                className="secondary"
-                onClick={() => navigate(`/decks/${actionsFor.id}/edit`, { state: { from: origin } })}
-              >
-                Edit
-              </button>
-            )}
-            <button className="link-btn" onClick={() => setActionsFor(null)}>
-              Cancel
-            </button>
           </div>
         </div>
       )}
