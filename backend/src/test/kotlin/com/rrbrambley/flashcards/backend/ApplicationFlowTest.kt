@@ -116,7 +116,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -1812,7 +1811,7 @@ class ApplicationFlowTest {
         assertEquals("Flags of the World", homeBefore.first().title)
         assertEquals("Continue studying", homeBefore.first().section)
         assertEquals("Resume", homeBefore.first().button?.message)
-        assertEquals(3, homeBefore.size) // 1 continue + 2 static
+        assertEquals(2, homeBefore.size) // 1 continue + create (the practice card went in #384)
 
         // The continue item carries session detail (mode + score + progress) for the UI (FLA-92).
         val continueSession = homeBefore.first().session
@@ -1836,15 +1835,11 @@ class ApplicationFlowTest {
         assertTrue(activeAfter.isEmpty())
 
         val homeAfter = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
-        assertEquals(2, homeAfter.size) // practice (featured global deck) + create
-        assertEquals(
-            listOf("Practice Flags of the World", "Create a new flashcard set"),
-            homeAfter.map { it.title },
-        )
-        // The "Practice" item carries the featured global deck's id (resolved from the DB).
-        val practiceAction = homeAfter.first().button?.action
-        assertIs<HomeButtonActionDto.NavigateToPractice>(practiceAction)
-        assertTrue(practiceAction.deckId > 0)
+        // Just "create": the "Practice <featured global deck>" card was dropped (#384) — it launched
+        // straight into Classic rather than the mode picker, so it was a shortcut into the one mode
+        // people didn't want.
+        assertEquals(listOf("Create a new flashcard set"), homeAfter.map { it.title })
+        assertTrue(homeAfter.none { it.button?.action is HomeButtonActionDto.NavigateToPractice })
     }
 
     @Test
@@ -1977,7 +1972,7 @@ class ApplicationFlowTest {
         }
 
         val home = client.get("/home") { bearerAuth(auth.accessToken) }.decode<List<HomeDataDto>>()
-        assertEquals(4, home.size) // 2 continue + 2 static
+        assertEquals(3, home.size) // 2 continue + create (the practice card went in #384)
         assertEquals("World Capitals", home.first().title) // bare deck name (FLA-96)
     }
 
