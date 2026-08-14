@@ -90,24 +90,11 @@ object HomeService {
             )
         }
 
-        // Featured global deck = the first global catalog deck (could be any number; the DB is
-        // the source of truth for its name + id).
-        val practiceItem = Decks.selectAll()
-            .where { Decks.isGlobal eq true }
-            .orderBy(Decks.id to SortOrder.ASC)
-            .firstOrNull()
-            ?.let { row ->
-                HomeDataDto(
-                    title = "Practice ${row[Decks.title]}",
-                    section = STUDY_SOMETHING_NEW_SECTION,
-                    button = HomeButtonDto(
-                        message = "Practice",
-                        action = HomeButtonActionDto.NavigateToPractice(row[Decks.id].value),
-                    ),
-                )
-            }
-
-        continueItems + listOfNotNull(practiceItem) + CREATE_ITEM
+        // "Study something new" used to lead with a "Practice <first catalog deck>" card. It was
+        // dropped (#384): it launched straight into Classic rather than the mode picker every other
+        // entry point uses, so it was a shortcut into the one mode people didn't want. The section is
+        // just "Create a new flashcard set" until something better is designed for it.
+        continueItems + CREATE_ITEM
     }
 
     // Section headers (FLA-96). Plain English here; the offline feed localizes via HomeFeedStrings.

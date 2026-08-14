@@ -58,7 +58,7 @@ class HomeRepositoryImpl(
                 // Offline-first: show the local (Room-derived) feed instantly, so this cache change
                 // (e.g. a removed session) is reflected immediately even with the backend unreachable.
                 val localFeed =
-                    activeSessions.map { it.toContinueItem(decks, streaks[it.id] ?: 0) } + offlineItems(decks)
+                    activeSessions.map { it.toContinueItem(decks, streaks[it.id] ?: 0) } + offlineItems()
                 send(HomeFeed(cards = localFeed))
                 // Best-effort backend refresh. A failure keeps the local feed and just flags the
                 // banner — it must NOT terminate this flow, or later cache changes would stop
@@ -92,28 +92,21 @@ class HomeRepositoryImpl(
     )
 
     /**
-     * The fallback feed when the backend is unavailable: a "Practice" item for the cached global
-     * catalog deck (the first read-only deck — omitted if none is cached yet) + "Create a new set".
+     * The fallback feed when the backend is unavailable: just "Create a new set".
+     *
+     * This used to lead with a "Practice <cached catalog deck>" item, mirroring the backend feed. Both
+     * were dropped in #384 — the card launched straight into Classic rather than the mode picker, so
+     * it was a shortcut into the one mode people didn't want. Kept in step with `HomeService` so the
+     * offline and online feeds still match (FLA-93).
      */
-    private fun offlineItems(decks: List<FlashcardDeck>): List<HomeData> {
-        val globalDeck = decks.firstOrNull { !it.isEditable }
-        val practiceItem = globalDeck?.let { deck ->
-            HomeData(
-                title = strings.practiceDeckTitle(deck.title),
-                section = strings.studySomethingNewSection,
-                button = HomeButton(
-                    message = strings.practiceButton,
-                    action = HomeButtonAction.NavigateToPractice(deck.id),
-                ),
-            )
-        }
-        return listOfNotNull(practiceItem) + HomeData(
+    private fun offlineItems(): List<HomeData> = listOf(
+        HomeData(
             title = strings.createNewSetTitle,
             section = strings.studySomethingNewSection,
             button = HomeButton(
                 message = strings.createNewSetButton,
                 action = HomeButtonAction.CreateNewFlashcardSet,
             ),
-        )
-    }
+        ),
+    )
 }

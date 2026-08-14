@@ -46,28 +46,27 @@ class HomeRepositoryTest {
     )
 
     @Test
-    fun observeHomeData_practiceCardPointsAtTheCachedGlobalDeck() = runTest {
+    fun observeHomeData_offersOnlyTheCreateCard() = runTest {
         val homeData = repository().observeHomeData().first().cards
 
-        assertEquals("Practice Flags of the World", homeData.first().title)
+        // The "Practice <cached catalog deck>" card was dropped (#384) — it launched straight into
+        // Classic rather than the mode picker — so the offline section is just "Create a set".
+        assertEquals(1, homeData.size)
+        assertEquals("Create a set", homeData.first().title)
         assertEquals("Study something new", homeData.first().section)
-        assertNotNull(homeData.first().button)
-        assertEquals("Practice", homeData.first().button?.message)
-        // The deck id comes from the cached global deck — never a hardcoded title.
-        assertEquals(HomeButtonAction.NavigateToPractice(deckId = 5L), homeData.first().button?.action)
+        assertTrue(homeData.none { it.button?.action is HomeButtonAction.NavigateToPractice })
     }
 
     @Test
-    fun observeHomeData_createCardFollowsPractice() = runTest {
+    fun observeHomeData_createCardCarriesItsButton() = runTest {
         val homeData = repository().observeHomeData().first().cards
 
-        assertEquals("Create a set", homeData[1].title)
-        assertEquals("Create", homeData[1].button?.message)
-        assertEquals(HomeButtonAction.CreateNewFlashcardSet, homeData[1].button?.action)
+        assertEquals("Create", homeData.first().button?.message)
+        assertEquals(HomeButtonAction.CreateNewFlashcardSet, homeData.first().button?.action)
     }
 
     @Test
-    fun observeHomeData_omitsPracticeCardWhenNoGlobalDeckCached() = runTest {
+    fun observeHomeData_omitsPracticeCardWhateverIsCached() = runTest {
         val homeData = repository(decks = emptyList()).observeHomeData().first().cards
 
         assertTrue(homeData.none { it.button?.action is HomeButtonAction.NavigateToPractice })
