@@ -67,6 +67,43 @@ function splitClipAndTransform(svg) {
 }
 
 /**
+ * Floor for a normalised flag's declared width: below this a browser draws it uselessly small (#392).
+ * Set at the width browsers fall back to for a sizeless SVG, and comfortably clear of the smallest
+ * flag that declares a real size (~425px) — so a legitimate file is never rewritten.
+ */
+const MIN_DECLARED_WIDTH = 300
+
+/** What a too-small canvas is scaled up to, so it clears the floor with room to spare. */
+const SCALED_TARGET_WIDTH = 600
+
+/**
+ * Enlarges the declared canvas of a flag whose source gave only a view box.
+ *
+ * `usvg` emits the view-box units as the literal pixel size for those files, so Norway arrived as
+ * `width="22" height="16"`. On web an `<img>` draws an SVG at its *intrinsic* size and CSS `max-width`
+ * only ever caps a size — it never scales one up — so those flags rendered about 20px wide (#392).
+ * Mobile was unaffected: Coil and SDWebImage rasterise to whatever size the layout asks for, which is
+ * why this only ever showed in a browser.
+ *
+ * Scales by a whole number and restates the original units as a view box, so the geometry and the
+ * aspect ratio are exactly preserved — `generate` proves that by re-rendering (see the caller).
+ */
+function scaleUpSmallCanvas(svg) {
+  const root = svg.match(/<svg\b[^>]*?\bwidth="([\d.]+)"[^>]*?\bheight="([\d.]+)"/)
+  if (!root) return svg
+  const [, widthText, heightText] = root
+  const width = Number(widthText)
+  const height = Number(heightText)
+  if (!(width > 0) || width >= MIN_DECLARED_WIDTH) return svg
+
+  const factor = Math.ceil(SCALED_TARGET_WIDTH / width)
+  return svg.replace(
+    `<svg width="${widthText}" height="${heightText}"`,
+    `<svg width="${width * factor}" height="${height * factor}" viewBox="0 0 ${widthText} ${heightText}"`,
+  )
+}
+
+/**
  * The constructs that make a flag render differently across SVG implementations (#369). `usvg`
  * resolves the first three; [splitClipAndTransform] handles the fourth. Anything left is a
  * normalisation failure, not a cosmetic nit.
@@ -80,6 +117,9 @@ function unnormalisedReasons(svg) {
   const clipWithTransform = /<g[^>]*clip-path="[^"]*"[^>]*transform="/.test(svg) ||
     /<g[^>]*transform="[^"]*"[^>]*clip-path="/.test(svg)
   if (clipWithTransform) reasons.push('clip-path and transform on one group')
+  // A canvas the browser would draw at its intrinsic size, i.e. tiny (#392).
+  const declaredWidth = Number(svg.match(/<svg\b[^>]*?\bwidth="([\d.]+)"/)?.[1])
+  if (!(declaredWidth >= MIN_DECLARED_WIDTH)) reasons.push(`declared width ${declaredWidth} below ${MIN_DECLARED_WIDTH}`)
   return reasons
 }
 
@@ -128,13 +168,13 @@ async function normalise(code) {
   const result = spawnSync('usvg', ['-', '-c'], { input: source, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
   if (result.status !== 0) throw new Error(`usvg failed: ${(result.stderr || '').trim()}`)
 
-  const normalised = splitClipAndTransform(result.stdout)
+  const normalised = scaleUpSmallCanvas(splitClipAndTransform(result.stdout))
   const reasons = unnormalisedReasons(normalised)
   if (reasons.length > 0) throw new Error(`still not normalised (${reasons.join(', ')})`)
 
-  // The split is only safe if it's invisible: prove it by rendering both with resvg (the reference
-  // implementation) and requiring identical bytes, rather than trusting the reasoning about clip
-  // coordinate spaces.
+  // Both rewrites are only safe if they're invisible: prove it by rendering before and after with
+  // resvg (the reference implementation) at the same width and requiring identical bytes, rather than
+  // trusting the reasoning about clip coordinate spaces and view-box scaling.
   if (normalised !== result.stdout) assertRendersIdentically(code, result.stdout, normalised)
 
   writeFileSync(join(OUT_DIR, `${code}.svg`), normalised)
