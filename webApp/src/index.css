@@ -1438,6 +1438,13 @@ button.danger:hover:not(:disabled) {
 
 /* Answering by voice (#387): a panel above the mode's normal input, which stays put — so a blocked
    mic or an unsupported browser never strands the card. */
+.test-advancing {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
 .voice-input {
   display: flex;
   flex-direction: column;

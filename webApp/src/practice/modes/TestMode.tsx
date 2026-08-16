@@ -13,6 +13,15 @@ import type { PracticeModeProps } from './types';
  * user proceeds (Next / Enter), which reports the outcome. The runner remounts this per card, so the
  * two-phase state resets on its own.
  */
+/**
+ * How long a verdict stays up before a voice run moves on by itself.
+ *
+ * A wrong answer dwells longer: the correct answer only just appeared, and reading it is the entire
+ * value of getting it wrong. A right answer has nothing left to read.
+ */
+const ADVANCE_DELAY_MS = 1500;
+const ADVANCE_DELAY_INCORRECT_MS = 4000;
+
 export function TestMode({
   card,
   onGraded,
@@ -25,6 +34,8 @@ export function TestMode({
   onDisableVoice,
 }: PracticeModeProps) {
   const [graded, setGraded] = useState<{ input: string; correct: boolean } | null>(null);
+  // Set when the user takes over during the auto-advance dwell, which pins the card until they act.
+  const [advanceCancelled, setAdvanceCancelled] = useState(false);
 
   // One grading call site, so a spoken answer and a typed one are scored by exactly the same code.
   const submit = useCallback(
@@ -49,6 +60,25 @@ export function TestMode({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [graded, onAdvance]);
+
+  // Auto-advance past the verdict, but only in a voice run (#387). Reaching for "Next" is exactly
+  // the reach the feature exists to avoid — the point is answering from across the room without
+  // touching anything. A typed run leaves it alone: that user's hand is already on the keyboard, and
+  // taking the pause away from them would be a change nobody asked for.
+  useEffect(() => {
+    if (!graded || !voiceInput || advanceCancelled) return;
+    const id = setTimeout(onAdvance, graded.correct ? ADVANCE_DELAY_MS : ADVANCE_DELAY_INCORRECT_MS);
+    return () => clearTimeout(id);
+  }, [graded, voiceInput, advanceCancelled, onAdvance]);
+
+  // Any deliberate interaction means they want to stay on this card — reading the right answer,
+  // or reaching for "This should be correct". Cancelling restores the normal Next button.
+  useEffect(() => {
+    if (!graded || !voiceInput || advanceCancelled) return;
+    const cancel = () => setAdvanceCancelled(true);
+    window.addEventListener('pointerdown', cancel);
+    return () => window.removeEventListener('pointerdown', cancel);
+  }, [graded, voiceInput, advanceCancelled]);
 
   const hasImage = card.imageUrl != null && card.imageUrl !== '';
 
@@ -97,9 +127,17 @@ export function TestMode({
             <SuggestAnswerButton cardUid={card.cardUid} answer={graded.input} isGuest={!!isGuest} />
           )}
           <div className="practice-actions">
-            <button className="mark-correct" onClick={() => onAdvance()}>
-              Next
-            </button>
+            {voiceInput && !advanceCancelled ? (
+              // Not a button: pressing it is the thing we're removing. Announced politely so a
+              // screen-reader user knows the card is about to change rather than being surprised.
+              <p className="test-advancing" aria-live="polite">
+                Next question…
+              </p>
+            ) : (
+              <button className="mark-correct" onClick={() => onAdvance()}>
+                Next
+              </button>
+            )}
           </div>
           {onDiscuss && <DiscussButton onClick={onDiscuss} />}
         </>

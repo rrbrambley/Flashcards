@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TestMode } from './TestMode';
 import { FakeSpeechRecognition, installFakeSpeechRecognition } from '../../test/fakeSpeechRecognition';
@@ -184,6 +184,73 @@ describe('TestMode', () => {
 
       expect(onGraded).toHaveBeenCalledWith(true, 'paris');
       expect(screen.getByText('✓ Correct')).toBeInTheDocument();
+    });
+
+    /**
+     * The whole point: you can answer from across the room. Reaching for "Next" is exactly the reach
+     * the feature exists to remove, so the verdict clears itself.
+     */
+    it('moves to the next card by itself, with no Next button to press', () => {
+      const onAdvance = vi.fn();
+      render(<TestMode card={card} cards={[card]} {...noopProps} onAdvance={onAdvance} voiceInput />);
+
+      act(() => FakeSpeechRecognition.last.say('paris'));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+
+      expect(screen.getByText('Next question…')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Next' })).not.toBeInTheDocument();
+      expect(onAdvance).not.toHaveBeenCalled();
+
+      act(() => vi.advanceTimersByTime(1500));
+      expect(onAdvance).toHaveBeenCalledOnce();
+    });
+
+    // Reading the right answer is the entire value of getting it wrong, so it can't flash past.
+    it('dwells longer on a wrong answer than on a right one', () => {
+      const onAdvance = vi.fn();
+      render(<TestMode card={card} cards={[card]} {...noopProps} onAdvance={onAdvance} voiceInput />);
+
+      act(() => FakeSpeechRecognition.last.say('lyon'));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+      expect(screen.getByText('Paris')).toBeInTheDocument();
+
+      // The delay a correct answer would have used isn't enough here.
+      act(() => vi.advanceTimersByTime(1500));
+      expect(onAdvance).not.toHaveBeenCalled();
+
+      act(() => vi.advanceTimersByTime(2500));
+      expect(onAdvance).toHaveBeenCalledOnce();
+    });
+
+    // Auto-advance must never yank a card away from someone who's reaching for it — to read the
+    // answer, or to hit "This should be correct".
+    it('stops advancing and restores Next once the user interacts', () => {
+      const onAdvance = vi.fn();
+      render(<TestMode card={card} cards={[card]} {...noopProps} onAdvance={onAdvance} voiceInput />);
+
+      act(() => FakeSpeechRecognition.last.say('paris'));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+      act(() => {
+        fireEvent.pointerDown(document.body);
+      });
+
+      act(() => vi.advanceTimersByTime(10_000));
+      expect(onAdvance).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+    });
+
+    // A typed run's user already has a hand on the keyboard; taking the pause away is a change
+    // nobody asked for.
+    it('leaves a typed run to advance at its own pace', async () => {
+      vi.useRealTimers();
+      const onAdvance = vi.fn();
+      render(<TestMode card={card} cards={[card]} {...noopProps} onAdvance={onAdvance} />);
+
+      await userEvent.type(screen.getByLabelText('Your answer'), 'paris');
+      await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+
+      expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+      expect(screen.queryByText('Next question…')).not.toBeInTheDocument();
     });
 
     it('keeps the text field, so a misrecognition or a blocked mic is still answerable', () => {

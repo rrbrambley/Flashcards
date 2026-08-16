@@ -535,13 +535,14 @@ describe('PracticePage', () => {
     });
 
     /**
-     * Chrome's final result lags ~1s behind end-of-speech, and the grace window adds 1.5s more — so a
-     * timed run would spend ~2.5s a card on the *recogniser*, not the user (#289).
+     * Timed runs get voice too. It costs the clock ~2.5s a card (Chrome's final transcript lags ~1s
+     * behind end-of-speech, plus the grace window), but silently dropping a feature the user
+     * explicitly switched on is worse than a slightly generous timer.
      */
-    it('suppresses voice in a timed run, where the recogniser would eat the budget', async () => {
+    it('offers voice in a timed run too, rather than silently dropping it', async () => {
       startTestRun('&timeLimit=300');
       await screen.findByLabelText('time remaining');
-      expect(screen.queryByText(/Speech is processed/)).not.toBeInTheDocument();
+      expect(await screen.findByText(/Speech is processed/)).toBeInTheDocument();
     });
 
     it('offers nothing when the flag is off, even with the preference on', async () => {

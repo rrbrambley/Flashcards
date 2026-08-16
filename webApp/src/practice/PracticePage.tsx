@@ -627,12 +627,15 @@ function PracticeRunner({
   // idiom used elsewhere: that exists because guests carry no flags and every other flag is a
   // default-ON kill switch, so failing open is right for them. This flag is default-OFF, so the same
   // idiom would ship a dark feature to every signed-out visitor while hiding it from signed-in users.
-  // Suppressed in timed runs: the recogniser's own latency would eat the budget, not the user (#289).
+  //
+  // Timed runs (#289) get voice too. It does cost the clock ~2.5s a card (Chrome's final transcript
+  // lags ~1s behind end-of-speech, plus the grace window), but silently deleting a feature someone
+  // explicitly switched on is worse than a slightly generous timer — and speaking is often quicker
+  // than typing, so it may not cost anything at all.
   const voiceInput =
     !isGuest &&
     isEnabled('practice_voice_input') &&
     voicePreference &&
-    deadline == null &&
     // Test only until Multiple Choice's voice wiring lands (#388).
     mode.key === 'test';
   return (
