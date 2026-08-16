@@ -254,9 +254,17 @@ object SessionRepository {
                     this[PracticeAnswers.correct] = answer.correct
                     this[PracticeAnswers.sequence] = answer.sequence
                     this[PracticeAnswers.answeredAtMillis] = answer.answeredAtMillis
-                    this[PracticeAnswers.submittedText] = answer.submittedText
+                    // Clamp rather than reject (#391). An over-long answer used to overflow the
+                    // column and throw, and because this is a *batch* insert that failed every answer
+                    // in the request — for a grade-at-the-end run, a whole session's worth — which the
+                    // web client then swallowed, so the answers vanished with no error anywhere. The
+                    // log is diagnostic data; keeping a clipped answer beats losing the batch.
+                    val submitted = answer.submittedText?.take(PracticeAnswers.MAX_SUBMITTED_TEXT)
+                    this[PracticeAnswers.submittedText] = submitted
                     // Canonical grouping key for the per-card "most common answers" aggregation (#346).
-                    this[PracticeAnswers.normalizedAnswer] = normalizeAnswer(answer.submittedText)
+                    // Normalised from the clamped text so both columns stay within the same bound
+                    // (normalising only trims/collapses, so it can never grow past it).
+                    this[PracticeAnswers.normalizedAnswer] = normalizeAnswer(submitted)
                 }
             }
 
