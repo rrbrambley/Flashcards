@@ -796,6 +796,50 @@ class ApplicationFlowTest {
         )
     }
 
+    /**
+     * #391: an answer longer than the column used to overflow and throw. Because this is a *batch*
+     * insert, that failed every answer in the request — a whole grade-at-the-end session's worth —
+     * and the web client swallows record failures, so they vanished with no error anywhere.
+     */
+    @Test
+    fun an_over_long_answer_is_clamped_and_does_not_lose_the_rest_of_the_batch() = runApp { client ->
+        val auth = client.register("verbose", "password1")
+        val deck = client.post("/decks") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateDeckRequest("Deck", listOf(FlashcardDto("Q", "A")))))
+        }.decode<FlashcardDeckDto>()
+        val session = client.post("/sessions") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(CreateSessionRequest(deck.id, "test")))
+        }.decode<PracticeSessionDto>()
+
+        val tooLong = "x".repeat(5_000)
+        val response = client.post("/sessions/${session.id}/answers") {
+            bearerAuth(auth.accessToken)
+            contentType(ContentType.Application.Json)
+            setBody(
+                json.encodeToString(
+                    RecordAnswersRequest(
+                        listOf(
+                            PracticeAnswerDto("a-0", "card-1", true, 0, 100, submittedText = tooLong),
+                            PracticeAnswerDto("a-1", "card-2", true, 1, 200, submittedText = "paris"),
+                        ),
+                    ),
+                ),
+            )
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+
+        val log = client.get("/sessions/${session.id}/answers") { bearerAuth(auth.accessToken) }
+            .decode<List<PracticeAnswerDto>>()
+        // Both survive: the long one clipped to the column width, the ordinary one untouched.
+        assertEquals(2, log.size)
+        assertEquals(1000, log.first { it.answerUid == "a-0" }.submittedText?.length)
+        assertEquals("paris", log.first { it.answerUid == "a-1" }.submittedText)
+    }
+
     @Test
     fun create_deck_round_trips_alternative_answers() = runApp { client ->
         val auth = client.register("altans", "password1")

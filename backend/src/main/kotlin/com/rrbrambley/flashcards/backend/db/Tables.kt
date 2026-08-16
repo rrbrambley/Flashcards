@@ -224,14 +224,20 @@ object PracticeSessions : LongIdTable("practice_sessions") {
  * ([AnswerStatsRepository], #346). Null when there's no typed/selected answer (e.g. Classic mode).
  */
 object PracticeAnswers : LongIdTable("practice_answers") {
+    /**
+     * Width of [submittedText]/[normalizedAnswer], and the length the repository clamps an incoming
+     * answer to (#391). Declared here so the clamp can't drift from the column it protects.
+     */
+    const val MAX_SUBMITTED_TEXT = 1000
+
     val sessionId = reference("session_id", PracticeSessions, onDelete = ReferenceOption.CASCADE)
     val answerUid = varchar("answer_uid", 36)
     val cardUid = varchar("card_uid", 36)
     val correct = bool("correct")
     val sequence = integer("sequence")
     val answeredAtMillis = long("answered_at_millis")
-    val submittedText = varchar("submitted_text", 1000).nullable()
-    val normalizedAnswer = varchar("normalized_answer", 1000).nullable()
+    val submittedText = varchar("submitted_text", MAX_SUBMITTED_TEXT).nullable()
+    val normalizedAnswer = varchar("normalized_answer", MAX_SUBMITTED_TEXT).nullable()
 
     init {
         // Idempotent recording: re-sending an answer (flaky connection) can't double-insert.
