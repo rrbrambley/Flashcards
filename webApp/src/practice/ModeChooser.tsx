@@ -70,8 +70,10 @@ export function ModeChooser({ deckId }: { deckId: number }) {
 
   // Grade-at-the-end only applies to the objectively-graded modes (#293) — not Classic's self-graded flip.
   const canGradeAtEnd = gradeAtEndEnabled && (selectedMode === 'test' || selectedMode === 'multiple_choice');
-  // Same two modes: they're the ones with an answer to speak (#387).
-  const voiceModeSelected = selectedMode === 'test' || selectedMode === 'multiple_choice';
+  // Test only for now. Multiple Choice has an answer to speak too, but its voice wiring is #388 —
+  // offering the toggle here before that lands would switch voice "on" for a mode that then never
+  // listens.
+  const voiceModeSelected = selectedMode === 'test';
 
   // Total seconds from the mm:ss fields (#289), at least 1 (the backend rejects < 1); null when off.
   const timeLimitSeconds =
@@ -161,7 +163,7 @@ export function ModeChooser({ deckId }: { deckId: number }) {
               {!voiceSupported
                 ? 'Not supported in this browser'
                 : !voiceModeSelected
-                  ? 'Available for Test & Multiple Choice'
+                  ? 'Available in Test mode'
                   : "Say your answer instead of typing. Speech is processed by your browser's speech service."}
             </span>
           </label>

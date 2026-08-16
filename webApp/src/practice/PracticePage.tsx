@@ -633,7 +633,8 @@ function PracticeRunner({
     isEnabled('practice_voice_input') &&
     voicePreference &&
     deadline == null &&
-    (mode.key === 'test' || mode.key === 'multiple_choice');
+    // Test only until Multiple Choice's voice wiring lands (#388).
+    mode.key === 'test';
   return (
     <div className="practice">
       {/* Timed session (#289): a live m:ss countdown, urgent styling in the last 10s. */}
