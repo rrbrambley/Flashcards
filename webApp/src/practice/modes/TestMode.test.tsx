@@ -1,7 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TestMode } from './TestMode';
+import { FakeSpeechRecognition, installFakeSpeechRecognition } from '../../test/fakeSpeechRecognition';
+import { VOICE_SUBMIT_DELAY_MS } from '../components/VoiceAnswerInput';
 
 // Stub the suggest button (it needs auth context); we only assert whether it renders.
 vi.mock('../SuggestAnswerButton', () => ({
@@ -156,5 +158,48 @@ describe('TestMode', () => {
 
     expect(screen.getByText('✗ Incorrect')).toBeInTheDocument();
     expect(screen.queryByText('This should be correct')).not.toBeInTheDocument();
+  });
+
+  describe('answering by voice (#387)', () => {
+    let uninstall: () => void;
+    beforeEach(() => {
+      uninstall = installFakeSpeechRecognition();
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      uninstall();
+    });
+
+    /**
+     * The point of the whole design: a transcript is just text, so it rides the *existing* grading
+     * path. If this passes, spoken and typed answers cannot grade differently.
+     */
+    it('grades a spoken answer through the same path as a typed one', () => {
+      const onGraded = vi.fn();
+      render(<TestMode card={card} cards={[card]} {...noopProps} onGraded={onGraded} voiceInput />);
+
+      act(() => FakeSpeechRecognition.last.say('paris'));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+
+      expect(onGraded).toHaveBeenCalledWith(true, 'paris');
+      expect(screen.getByText('✓ Correct')).toBeInTheDocument();
+    });
+
+    it('keeps the text field, so a misrecognition or a blocked mic is still answerable', () => {
+      render(<TestMode card={card} cards={[card]} {...noopProps} voiceInput />);
+
+      expect(screen.getByLabelText('Your answer')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Check' })).toBeInTheDocument();
+    });
+
+    // Guards every pre-existing test in this file: without the prop, nothing about the card changes.
+    it('renders no voice control at all without the prop', () => {
+      render(<TestMode card={card} cards={[card]} {...noopProps} />);
+
+      expect(screen.queryByText(/Speech is processed/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /🎤/ })).not.toBeInTheDocument();
+      expect(FakeSpeechRecognition.instances).toHaveLength(0);
+    });
   });
 });

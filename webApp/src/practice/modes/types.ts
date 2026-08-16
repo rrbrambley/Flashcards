@@ -43,6 +43,17 @@ export interface PracticeModeProps {
    * cards as ready immediately).
    */
   onImageReady?: () => void;
+  /**
+   * Answer by speaking as well as typing (#387). Additive — the mode still renders its normal input,
+   * so a denied microphone or an unsupported browser leaves the card fully answerable. Gated by the
+   * `practice_voice_input` flag plus a local preference; absent/false is today's behaviour.
+   */
+  voiceInput?: boolean;
+  /**
+   * Turns voice answering off for good (writes the local preference). Offered by the voice panel when
+   * the microphone is blocked or missing, so a stuck user isn't re-prompted on every card.
+   */
+  onDisableVoice?: () => void;
 }
 
 /** A selectable practice mode: its persisted key, display copy, and the component that runs it. */

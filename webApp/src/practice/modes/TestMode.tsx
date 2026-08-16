@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { TextAnswerInput } from '../components/TextAnswerInput';
+import { VoiceAnswerInput } from '../components/VoiceAnswerInput';
 import { DiscussButton } from '../components/DiscussButton';
 import { PromptImage } from '../components/PromptImage';
 import { SuggestAnswerButton } from '../SuggestAnswerButton';
@@ -12,8 +13,29 @@ import type { PracticeModeProps } from './types';
  * user proceeds (Next / Enter), which reports the outcome. The runner remounts this per card, so the
  * two-phase state resets on its own.
  */
-export function TestMode({ card, onGraded, onAdvance, onDiscuss, canSuggest, isGuest, onImageReady }: PracticeModeProps) {
+export function TestMode({
+  card,
+  onGraded,
+  onAdvance,
+  onDiscuss,
+  canSuggest,
+  isGuest,
+  onImageReady,
+  voiceInput,
+  onDisableVoice,
+}: PracticeModeProps) {
   const [graded, setGraded] = useState<{ input: string; correct: boolean } | null>(null);
+
+  // One grading call site, so a spoken answer and a typed one are scored by exactly the same code.
+  const submit = useCallback(
+    (input: string) => {
+      const correct = gradeTextAnswer(input, card.answer, card.alternativeAnswers ?? []).correct;
+      setGraded({ input, correct });
+      // Score it now (the verdict is on screen) so the streak badge shows on this answer.
+      onGraded(correct, input);
+    },
+    [card, onGraded],
+  );
 
   // Once revealed, Enter advances (mirrors the submit-with-Enter flow).
   useEffect(() => {
@@ -45,15 +67,10 @@ export function TestMode({ card, onGraded, onAdvance, onDiscuss, canSuggest, isG
       </div>
 
       {!graded ? (
-        <TextAnswerInput
-          confirmBlankSubmit
-          onSubmit={(input) => {
-            const correct = gradeTextAnswer(input, card.answer, card.alternativeAnswers ?? []).correct;
-            setGraded({ input, correct });
-            // Score it now (the verdict is on screen) so the streak badge shows on this answer.
-            onGraded(correct, input);
-          }}
-        />
+        <>
+          {voiceInput && <VoiceAnswerInput onSubmit={submit} onDisableVoice={onDisableVoice} />}
+          <TextAnswerInput confirmBlankSubmit onSubmit={submit} />
+        </>
       ) : (
         <>
           {/* Keep the typed answer where the input was, with the verdict beside it. */}

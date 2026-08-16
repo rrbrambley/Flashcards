@@ -1687,6 +1687,9 @@ class ApplicationFlowTest {
         assertEquals(true, flags["practice_grade_at_end"])
         // The timed-practice toggle (#289) is seeded default-on too.
         assertEquals(true, flags["practice_timer"])
+        // Voice input (#386) is the exception: seeded default-OFF so it dark-launches, and switched
+        // on per user/role once it's ready.
+        assertEquals(false, flags["practice_voice_input"])
         // The notifications-center visibility switch (#321) is seeded default-on too.
         assertEquals(true, flags["notifications"])
         // The streak-details popup switch (#353) is seeded default-on too.

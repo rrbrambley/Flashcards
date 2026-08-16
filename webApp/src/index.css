@@ -1436,6 +1436,65 @@ button.danger:hover:not(:disabled) {
   border-color: var(--error);
 }
 
+/* Answering by voice (#387): a panel above the mode's normal input, which stays put — so a blocked
+   mic or an unsupported browser never strands the card. */
+.voice-input {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+}
+.voice-status {
+  min-height: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.voice-interim {
+  color: var(--muted);
+  font-style: italic;
+}
+.voice-heard {
+  font-weight: 600;
+}
+.voice-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.voice-error {
+  color: var(--error);
+  font-size: 0.9rem;
+}
+.voice-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.voice-privacy,
+.voice-unsupported {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.voice-mic.listening {
+  border-color: var(--primary);
+  animation: voice-pulse 1.4s ease-in-out infinite;
+}
+@keyframes voice-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+/* A pulsing control is exactly what motion sensitivity flags; the border still marks the state. */
+@media (prefers-reduced-motion: reduce) {
+  .voice-mic.listening {
+    animation: none;
+  }
+}
+
 /* The deck-actions sheet (#380): stacked full-width choices, matching the Practice/Edit sheet the
    mobile clients show on a deck tap. .modal-actions is a row; these read better as a column. */
 .deck-actions {

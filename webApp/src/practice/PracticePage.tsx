@@ -17,6 +17,7 @@ import { trailingCorrectStreak } from './grading/streak';
 import { orderCards } from './shuffle';
 import { exitTarget, fromState } from './exitTarget';
 import { formatRemaining, useCountdown } from './useCountdown';
+import { useVoiceInputPreference } from './voice/preference';
 import { useExitGuard } from './useExitGuard';
 
 // Resolves the practice mode from the `?mode=` query param. When the deck has only one registered
@@ -412,6 +413,10 @@ function PracticeRunner({
   const [review, setReview] = useState<PracticeAnswer[] | null>(null);
   // The card whose discussion panel is open (FLA-116), or null when closed.
   const [discussCardUid, setDiscussCardUid] = useState<string | null>(null);
+  // Answering by voice (#387): the flag decides whether it's offered, the local preference whether
+  // it's on. The panel can switch the preference off when the microphone turns out to be blocked.
+  const { isEnabled } = useAuth();
+  const [voicePreference, setVoicePreference] = useVoiceInputPreference();
 
   // Mirror progress up so the parent's leave-guard can read it (and persist on guest save).
   useEffect(() => {
@@ -618,6 +623,17 @@ function PracticeRunner({
   const currentCard = state.cards[state.index];
   // Discussions need a stable cardUid (FLA-113) and the deck opted in (FLA-116).
   const canDiscuss = discussionsEnabled && !!currentCard.cardUid;
+  // Answering by voice (#387). Note this deliberately does NOT use the `isGuest || isEnabled(key)`
+  // idiom used elsewhere: that exists because guests carry no flags and every other flag is a
+  // default-ON kill switch, so failing open is right for them. This flag is default-OFF, so the same
+  // idiom would ship a dark feature to every signed-out visitor while hiding it from signed-in users.
+  // Suppressed in timed runs: the recogniser's own latency would eat the budget, not the user (#289).
+  const voiceInput =
+    !isGuest &&
+    isEnabled('practice_voice_input') &&
+    voicePreference &&
+    deadline == null &&
+    (mode.key === 'test' || mode.key === 'multiple_choice');
   return (
     <div className="practice">
       {/* Timed session (#289): a live m:ss countdown, urgent styling in the last 10s. */}
@@ -667,6 +683,8 @@ function PracticeRunner({
         canSuggest={isGlobal && !!currentCard.cardUid}
         isGuest={isGuest}
         onImageReady={() => setReadyForIndex(state.index)}
+        voiceInput={voiceInput}
+        onDisableVoice={() => setVoicePreference(false)}
       />
 
       {discussCardUid && (

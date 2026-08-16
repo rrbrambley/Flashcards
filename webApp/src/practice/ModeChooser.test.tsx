@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { ModeChooser } from './ModeChooser';
 import { PRACTICE_MODES } from './modes';
 import { api } from '../api/client';
+import { installFakeSpeechRecognition } from '../test/fakeSpeechRecognition';
+import { VOICE_INPUT_KEY } from './voice/preference';
 
 vi.mock('../api/client', () => ({
   api: { getDeck: vi.fn(), getCatalogDeck: vi.fn() },
@@ -238,6 +240,72 @@ describe('ModeChooser', () => {
     expect(screen.getByText('No practice modes are available right now.')).toBeInTheDocument();
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start practice' })).toBeDisabled();
+  });
+
+  describe('answering by voice (#387)', () => {
+    let uninstallVoice: () => void;
+    beforeEach(() => {
+      uninstallVoice = installFakeSpeechRecognition();
+      localStorage.removeItem(VOICE_INPUT_KEY);
+      mockFlags = { practice_voice_input: true };
+    });
+    afterEach(() => uninstallVoice());
+
+    const voiceToggle = () => screen.getByRole('checkbox', { name: /Answer by voice/ });
+
+    it('is offered once a mode that takes an answer is picked, and remembers the choice', async () => {
+      renderChooser();
+      await screen.findByText('Practice Spanish');
+
+      await userEvent.click(screen.getByRole('radio', { name: /Test/ }));
+      expect(voiceToggle()).toBeEnabled();
+
+      await userEvent.click(voiceToggle());
+      expect(voiceToggle()).toBeChecked();
+      // The preference is local, not on the session — so it has to outlive this screen (#387).
+      expect(localStorage.getItem(VOICE_INPUT_KEY)).toBe('true');
+    });
+
+    it('is disabled for Classic, which is a self-graded flip with nothing to say', async () => {
+      renderChooser();
+      await screen.findByText('Practice Spanish');
+
+      await userEvent.click(screen.getByRole('radio', { name: /Classic/ }));
+      expect(voiceToggle()).toBeDisabled();
+      // Scoped to this control's own name: the grade-at-end toggle carries the same copy.
+      expect(voiceToggle()).toHaveAccessibleName(/Available for Test & Multiple Choice/);
+    });
+
+    it('says so rather than hiding when the browser has no recogniser (Firefox)', async () => {
+      uninstallVoice();
+      renderChooser();
+      await screen.findByText('Practice Spanish');
+
+      await userEvent.click(screen.getByRole('radio', { name: /Test/ }));
+      expect(voiceToggle()).toBeDisabled();
+      expect(voiceToggle()).toHaveAccessibleName(/Not supported in this browser/);
+    });
+
+    it('is absent when the flag is off', async () => {
+      mockFlags = { practice_voice_input: false };
+      renderChooser();
+      await screen.findByText('Practice Spanish');
+
+      expect(screen.queryByRole('checkbox', { name: /Answer by voice/ })).not.toBeInTheDocument();
+    });
+
+    /**
+     * Guests carry no flags, so the `isGuest ||` idiom the other settings use would ship this
+     * default-OFF feature to every signed-out visitor while hiding it from signed-in users.
+     */
+    it('is absent for guests, unlike the default-on kill switches', async () => {
+      mockToken = null;
+      renderChooser();
+      await screen.findByText('Practice Spanish');
+
+      expect(screen.getByText('Shuffle cards')).toBeInTheDocument();
+      expect(screen.queryByRole('checkbox', { name: /Answer by voice/ })).not.toBeInTheDocument();
+    });
   });
 
   it('forwards the practice origin to the runner so "back" returns there (FLA-168)', async () => {
