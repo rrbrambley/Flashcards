@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { VoiceAnswerInput, VOICE_SUBMIT_DELAY_MS } from './VoiceAnswerInput';
@@ -23,6 +24,20 @@ describe('VoiceAnswerInput', () => {
     });
 
   const speak = (transcript: string) => act(() => FakeSpeechRecognition.last.say(transcript));
+
+  /**
+   * The app runs in StrictMode, which mounts → cleans up → mounts again on the same fiber, so refs
+   * survive. The unmount cleanup detaches `onend` (a late result would grade a card that's gone),
+   * and `onend` is what clears the "already started" flag — so leaving it set made the second
+   * start() a no-op and the panel sat idle, never listening. Every other test here mounts once and
+   * cannot see it.
+   */
+  it('listens after a StrictMode double-mount, not just the first one', () => {
+    render(<VoiceAnswerInput onSubmit={vi.fn()} />, { wrapper: StrictMode });
+
+    expect(FakeSpeechRecognition.last.started).toBe(true);
+    expect(screen.getByText('Listening…')).toBeInTheDocument();
+  });
 
   it('shows the live partial transcript while listening', () => {
     render(<VoiceAnswerInput onSubmit={vi.fn()} />);

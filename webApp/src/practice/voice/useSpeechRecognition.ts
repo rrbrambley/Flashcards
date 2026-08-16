@@ -210,6 +210,12 @@ export function useSpeechRecognition({
       } catch {
         /* already stopped */
       }
+      // Detaching `onend` above means it can't clear these for us, and `start()` early-returns while
+      // `startedRef` is set. React StrictMode (dev) mounts → cleans up → mounts again on the same
+      // fiber, so refs survive: leaving the flag set there makes the second start() a no-op and the
+      // panel sits in its idle state, never listening.
+      recognizerRef.current = null;
+      startedRef.current = false;
     },
     [],
   );
