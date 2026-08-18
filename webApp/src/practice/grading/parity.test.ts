@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { gradeTextAnswer } from './textAnswer';
 import { buildChoices } from './multipleChoice';
+import { matchSpokenChoice } from './voiceChoice';
 import type { FlashcardDto } from '../../api/types';
 
 // Parity guard (FLA-81): asserts the web's grading matches the canonical golden fixture that the
@@ -33,9 +34,21 @@ interface ChoiceCase {
   allowedDistractors: string[];
 }
 
+interface VoiceChoiceCase {
+  name: string;
+  transcript: string;
+  options: string[];
+  /** null = "didn't catch that" — the panel must re-prompt rather than pick a best guess. */
+  expectedIndex: number | null;
+}
+
 const here = dirname(fileURLToPath(import.meta.url));
 const fixturePath = resolve(here, '../../../../testFixtures/practice-grading/grading-fixtures.json');
-const fixtures: { textGrading: TextCase[]; multipleChoice: ChoiceCase[] } = JSON.parse(
+const fixtures: {
+  textGrading: TextCase[];
+  multipleChoice: ChoiceCase[];
+  voiceChoiceMatch: VoiceChoiceCase[];
+} = JSON.parse(
   readFileSync(fixturePath, 'utf-8'),
 );
 
@@ -46,6 +59,12 @@ describe('grading parity (golden fixture)', () => {
     if (c.expectedSimilarity !== undefined) {
       expect(similarity).toBeCloseTo(c.expectedSimilarity, 9);
     }
+  });
+
+  // The floor and the margin live in the fixture, not in either implementation, so neither side can
+  // be retuned alone (#388/#389). These are the numbers most likely to be tweaked after real use.
+  it.each(fixtures.voiceChoiceMatch)('voice choice: $name', (c) => {
+    expect(matchSpokenChoice(c.transcript, c.options)).toBe(c.expectedIndex);
   });
 
   it.each(fixtures.multipleChoice)('multiple choice: $name', (c) => {

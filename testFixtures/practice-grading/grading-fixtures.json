@@ -222,5 +222,85 @@
       "correct": "Rome",
       "allowedDistractors": ["Paris", "Tokyo", "Madrid", "Berlin"]
     }
+  ],
+  "voiceChoiceMatch": [
+    {
+      "name": "exact match, case-insensitive",
+      "transcript": "paris",
+      "options": ["Paris", "Berlin", "Madrid", "Rome"],
+      "expectedIndex": 0
+    },
+    {
+      "name": "surrounding whitespace is ignored",
+      "transcript": "  ROME  ",
+      "options": ["Paris", "Berlin", "Madrid", "Rome"],
+      "expectedIndex": 3
+    },
+    {
+      "name": "natural spoken phrasing that Test-mode grading would reject — 0.85 answers a different question",
+      "transcript": "the eiffel tower",
+      "options": ["Eiffel Tower", "Colosseum", "Sagrada Familia", "Brandenburg Gate"],
+      "expectedIndex": 0
+    },
+    {
+      "name": "nothing close enough — re-prompt rather than guess",
+      "transcript": "banana",
+      "options": ["Paris", "Berlin", "Madrid", "Rome"],
+      "expectedIndex": null
+    },
+    {
+      "name": "near-tie is ambiguity, not a weak match: 'ira' is one character from both Iran and Iraq",
+      "transcript": "ira",
+      "options": ["Iran", "Iraq", "Portugal", "Vietnam"],
+      "expectedIndex": null
+    },
+    {
+      "name": "a clean utterance still resolves past a similar option",
+      "transcript": "iran",
+      "options": ["Iran", "Iraq", "Portugal", "Vietnam"],
+      "expectedIndex": 0
+    },
+    {
+      "name": "a similar option trailing by more than the margin does not block the match",
+      "transcript": "1980",
+      "options": ["1980", "1990", "Cheese", "Tuesday"],
+      "expectedIndex": 0
+    },
+    {
+      "name": "silence",
+      "transcript": "",
+      "options": ["Paris", "Berlin", "Madrid", "Rome"],
+      "expectedIndex": null
+    },
+    {
+      "name": "whitespace-only transcript",
+      "transcript": "   ",
+      "options": ["Paris", "Berlin", "Madrid", "Rome"],
+      "expectedIndex": null
+    },
+    {
+      "name": "blank options are skipped, not matched",
+      "transcript": "paris",
+      "options": ["Paris", "", "", ""],
+      "expectedIndex": 0
+    },
+    {
+      "name": "all-blank options never match a blank transcript",
+      "transcript": "   ",
+      "options": ["", "", "", ""],
+      "expectedIndex": null
+    },
+    {
+      "name": "a single option has no runner-up to clear the margin against",
+      "transcript": "paris",
+      "options": ["Paris"],
+      "expectedIndex": 0
+    },
+    {
+      "name": "a single option still has to clear the floor",
+      "transcript": "banana",
+      "options": ["Paris"],
+      "expectedIndex": null
+    }
   ]
 }

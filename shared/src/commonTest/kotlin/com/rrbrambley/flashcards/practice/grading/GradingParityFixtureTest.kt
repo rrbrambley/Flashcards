@@ -24,7 +24,11 @@ import kotlin.test.assertTrue
 class GradingParityFixtureTest {
 
     @Serializable
-    private data class Fixtures(val textGrading: List<TextCase>, val multipleChoice: List<ChoiceCase>)
+    private data class Fixtures(
+        val textGrading: List<TextCase>,
+        val multipleChoice: List<ChoiceCase>,
+        val voiceChoiceMatch: List<VoiceChoiceCase>,
+    )
 
     @Serializable
     private data class TextCase(
@@ -34,6 +38,15 @@ class GradingParityFixtureTest {
         val alternativeAnswers: List<String> = emptyList(),
         val expectedCorrect: Boolean,
         val expectedSimilarity: Double? = null,
+    )
+
+    @Serializable
+    private data class VoiceChoiceCase(
+        val name: String,
+        val transcript: String,
+        val options: List<String>,
+        /** null = "didn't catch that" — re-prompt rather than pick a best guess. */
+        val expectedIndex: Int? = null,
     )
 
     @Serializable
@@ -67,6 +80,22 @@ class GradingParityFixtureTest {
                     "similarity mismatch for '${case.name}': expected $expected, got ${grade.similarity}",
                 )
             }
+        }
+    }
+
+    /**
+     * The floor and the margin live in the fixture rather than in either implementation, so neither
+     * side can be retuned alone (#388/#389) — these are the numbers most likely to be tweaked once
+     * voice gets real use.
+     */
+    @Test
+    fun voiceChoiceMatchingMatchesTheGoldenFixture() {
+        for (case in fixtures.voiceChoiceMatch) {
+            assertEquals(
+                case.expectedIndex,
+                matchSpokenChoice(case.transcript, case.options),
+                "spoken-choice mismatch for '${case.name}'",
+            )
         }
     }
 
