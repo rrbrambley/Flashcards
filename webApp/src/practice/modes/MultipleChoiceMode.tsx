@@ -3,6 +3,10 @@ import { MultipleChoice } from '../components/MultipleChoice';
 import { DiscussButton } from '../components/DiscussButton';
 import { PromptImage } from '../components/PromptImage';
 import { buildChoices } from '../grading/multipleChoice';
+import { matchSpokenChoice } from '../grading/voiceChoice';
+import { VoiceAnswerInput } from '../components/VoiceAnswerInput';
+import { useVoiceAutoAdvance } from '../voice/useVoiceAutoAdvance';
+import { VoiceAdvanceNotice } from '../components/VoiceAdvanceNotice';
 import type { PracticeModeProps } from './types';
 
 /**
@@ -11,7 +15,16 @@ import type { PracticeModeProps } from './types';
  * The runner remounts this per card, so the choices + selection reset on their own — and choices are
  * built once per mount so they don't reshuffle on re-render.
  */
-export function MultipleChoiceMode({ card, cards, onGraded, onAdvance, onDiscuss, onImageReady }: PracticeModeProps) {
+export function MultipleChoiceMode({
+  card,
+  cards,
+  onGraded,
+  onAdvance,
+  onDiscuss,
+  onImageReady,
+  voiceInput,
+  onDisableVoice,
+}: PracticeModeProps) {
   const [choices] = useState(() => buildChoices(card, cards));
   const correctIndex = choices.indexOf(card.answer.trim());
   const [selected, setSelected] = useState<number | null>(null);
@@ -25,6 +38,33 @@ export function MultipleChoiceMode({ card, cards, onGraded, onAdvance, onDiscuss
     },
     [selected, correctIndex, choices, onGraded],
   );
+
+  // Say the answer rather than the option letter (#388): naming "Paris" is how you'd answer a person,
+  // where "option B" forces you to read all four first. Both callbacks re-run the same pure match —
+  // it's deterministic on the same transcript and choices, so there's no state to keep in sync.
+  const interpretSpoken = useCallback(
+    (transcript: string) => {
+      const index = matchSpokenChoice(transcript, choices);
+      // null → the panel re-prompts. Never fall back to a best guess: an auto-submitted wrong answer
+      // is recorded against the card and can't be un-graded.
+      return index == null ? null : { note: `Matched: ${choices[index]}` };
+    },
+    [choices],
+  );
+
+  const submitSpoken = useCallback(
+    (transcript: string) => {
+      const index = matchSpokenChoice(transcript, choices);
+      if (index != null) pick(index);
+    },
+    [choices, pick],
+  );
+
+  const advancing = useVoiceAutoAdvance({
+    active: selected !== null && !!voiceInput,
+    correct: selected === correctIndex,
+    onAdvance,
+  });
 
   // Once a choice is locked in, Enter advances.
   useEffect(() => {
@@ -55,6 +95,12 @@ export function MultipleChoiceMode({ card, cards, onGraded, onAdvance, onDiscuss
         )}
       </div>
 
+      {/* Above the options, and never instead of them — a misrecognition, a blocked microphone or a
+          browser with no recogniser all leave the card answerable by clicking. */}
+      {voiceInput && selected === null && (
+        <VoiceAnswerInput onSubmit={submitSpoken} interpret={interpretSpoken} onDisableVoice={onDisableVoice} />
+      )}
+
       <MultipleChoice
         options={choices}
         onSelect={pick}
@@ -66,9 +112,13 @@ export function MultipleChoiceMode({ card, cards, onGraded, onAdvance, onDiscuss
       {selected !== null && (
         <>
           <div className="practice-actions">
-            <button className="mark-correct" onClick={() => onAdvance()}>
-              Next
-            </button>
+            {advancing ? (
+              <VoiceAdvanceNotice />
+            ) : (
+              <button className="mark-correct" onClick={() => onAdvance()}>
+                Next
+              </button>
+            )}
           </div>
           {onDiscuss && <DiscussButton onClick={onDiscuss} />}
         </>

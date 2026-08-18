@@ -273,18 +273,15 @@ describe('ModeChooser', () => {
       await userEvent.click(screen.getByRole('radio', { name: /Classic/ }));
       expect(voiceToggle()).toBeDisabled();
       // Scoped to this control's own name: the grade-at-end toggle carries the same copy.
-      expect(voiceToggle()).toHaveAccessibleName(/Available in Test mode/);
+      expect(voiceToggle()).toHaveAccessibleName(/Available for Test & Multiple Choice/);
     });
 
-    // Multiple Choice has an answer to speak, but its voice wiring is #388. Offering the toggle
-    // before that lands switches voice "on" for a mode that then never listens.
-    it('is disabled for Multiple Choice until its voice wiring lands', async () => {
+    it('is offered for Multiple Choice too, which also has an answer to speak', async () => {
       renderChooser();
       await screen.findByText('Practice Spanish');
 
       await userEvent.click(screen.getByRole('radio', { name: /Multiple Choice/ }));
-      expect(voiceToggle()).toBeDisabled();
-      expect(voiceToggle()).not.toBeChecked();
+      expect(voiceToggle()).toBeEnabled();
     });
 
     it('says so rather than hiding when the browser has no recogniser (Firefox)', async () => {
