@@ -34,6 +34,11 @@ enum class FeatureFlag(val key: String, val description: String, val defaultEnab
     // still produced when off; flipping this off just hides the UI.
     NOTIFICATIONS("notifications", "Show the in-app notifications center", true),
 
+    // Offer answering by voice — an input modality layered on Test/Multiple Choice, not a mode (#386).
+    // Seeded OFF, unlike the other practice flags: it's browser-dependent and new, so it dark-launches
+    // and gets switched on per user/role.
+    PRACTICE_VOICE_INPUT("practice_voice_input", "Offer answering practice questions by voice", false),
+
     // Make the streak flame badge tappable → a popup with current/max streak + sessions completed
     // (#353). Visibility only; off leaves the badge as a plain, non-interactive pill.
     STREAK_DETAILS("streak_details", "Show the streak-details popup on the flame badge", true),

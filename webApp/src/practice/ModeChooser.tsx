@@ -4,6 +4,8 @@ import { api } from '../api/client';
 import { useAuth } from '../auth/auth-context';
 import { BackHeader } from '../decks/BackHeader';
 import { PRACTICE_MODES } from './modes';
+import { isSpeechRecognitionSupported } from './voice/useSpeechRecognition';
+import { useVoiceInputPreference } from './voice/preference';
 import { exitTarget, fromState } from './exitTarget';
 
 /**
@@ -26,11 +28,18 @@ export function ModeChooser({ deckId }: { deckId: number }) {
   const gradeAtEndEnabled = isGuest || isEnabled('practice_grade_at_end');
   // Offer the "Timed" toggle only when its flag is on (#289); guests carry no flags → shown.
   const timerEnabled = isGuest || isEnabled('practice_timer');
+  // Voice answering (#387). Deliberately NOT the `isGuest ||` idiom used above: that exists because
+  // guests carry no flags and those flags are default-ON kill switches, so failing open is right. This
+  // one is default-OFF, so the same idiom would show a dark feature to every signed-out visitor while
+  // hiding it from signed-in users.
+  const voiceFlagOn = !isGuest && isEnabled('practice_voice_input');
+  const voiceSupported = isSpeechRecognitionSupported();
   // Carry the practice referrer (FLA-168) through the chooser so the runner exits to it too.
   const from = fromState(location.state);
   const exit = exitTarget(from, isGuest);
   const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [shuffle, setShuffle] = useState(true);
+  const [voiceInput, setVoiceInput] = useVoiceInputPreference();
   const [gradeAtEnd, setGradeAtEnd] = useState(false);
   // A per-session time limit as mm:ss (#289); default 1:00. Kept as strings so the fields can be blank
   // mid-edit, parsed to total seconds on Start.
@@ -61,6 +70,10 @@ export function ModeChooser({ deckId }: { deckId: number }) {
 
   // Grade-at-the-end only applies to the objectively-graded modes (#293) — not Classic's self-graded flip.
   const canGradeAtEnd = gradeAtEndEnabled && (selectedMode === 'test' || selectedMode === 'multiple_choice');
+  // Test only for now. Multiple Choice has an answer to speak too, but its voice wiring is #388 —
+  // offering the toggle here before that lands would switch voice "on" for a mode that then never
+  // listens.
+  const voiceModeSelected = selectedMode === 'test';
 
   // Total seconds from the mm:ss fields (#289), at least 1 (the backend rejects < 1); null when off.
   const timeLimitSeconds =
@@ -133,6 +146,28 @@ export function ModeChooser({ deckId }: { deckId: number }) {
           <span className="shuffle-toggle-label">Shuffle cards</span>
           <span className="muted">Practice in a random order</span>
         </label>
+
+        {/* Answering by voice (#387) — an input method, not a mode, so it sits with the other
+            settings rather than in the single-sitting group. Only for the modes that take an answer;
+            Classic is a self-graded flip with nothing to say. */}
+        {voiceFlagOn && (
+          <label className="shuffle-toggle">
+            <input
+              type="checkbox"
+              checked={voiceInput && voiceSupported && voiceModeSelected}
+              disabled={!voiceSupported || !voiceModeSelected}
+              onChange={(e) => setVoiceInput(e.target.checked)}
+            />
+            <span className="shuffle-toggle-label">Answer by voice</span>
+            <span className="muted">
+              {!voiceSupported
+                ? 'Not supported in this browser'
+                : !voiceModeSelected
+                  ? 'Available in Test mode'
+                  : "Say your answer instead of typing. Speech is processed by your browser's speech service."}
+            </span>
+          </label>
+        )}
 
         {/* Single-sitting settings (#306): timed + grade-at-the-end run start-to-finish in one go and
             don't resume, so they're grouped under their own subheader. */}

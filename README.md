@@ -254,8 +254,8 @@ otherwise.
 
 ## Optional features
 
-The app is fully usable without these. They're opt-in and require resources in **your own**
-cloud accounts — never reuse another deployment's identifiers.
+The app is fully usable without these. They're opt-in, and the first two require resources in
+**your own** cloud accounts — never reuse another deployment's identifiers.
 
 ### Sign in with Google
 
@@ -282,6 +282,33 @@ Without a client ID, the Google button is hidden (Android, web & iOS) and the ba
 
 The backend verifies Google ID tokens against the configured client ID(s) — the Web ID (web +
 Android) and the iOS ID (iOS) — so they must match between each client and the backend.
+
+### Answering by voice (web)
+
+Unlike the other two, this needs **no account, no API key, and costs nothing** — there is no
+service to sign up for and no billing relationship to create. Recognition is done by the browser
+itself through the [Web Speech API][webspeech]; the app holds no credentials and never talks to a
+speech service. It also adds no npm dependency.
+
+- **Browser support:** Chrome, Edge and Safari implement it (as `webkitSpeechRecognition`).
+  **Firefox does not**, and the UI says so rather than appearing broken. Safari is untested — see
+  issue #396.
+- **Privacy — worth knowing before enabling it:** recognition is *not* on-device in Chrome or
+  Safari. The browser streams audio to its vendor's speech service (Google's, Apple's). The UI
+  discloses this on screen; don't enable it for users who'd object.
+- **Microphone:** the browser prompts once per origin, and the prompt needs a click — a session's
+  first card costs one tap, after which answering is hands-free.
+- **HTTPS or `localhost` only.** A dev server reached by LAN IP isn't a secure context, so the
+  browser refuses the microphone; the toggle reports "Not supported in this browser" rather than
+  surfacing that as a confusing permission error.
+
+It's gated by the `practice_voice_input` feature flag, seeded **off** (the only practice flag that
+is), so it dark-launches. Turn it on from the admin **Feature flags** screen or
+`make admin ARGS="flag set --key practice_voice_input --enabled true"`. Users then opt in per browser with the
+**Answer by voice** toggle in the practice chooser — a local preference, not a property of the
+session, so grading and resume are identical either way. Currently **Test mode** only.
+
+[webspeech]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
 
 ### Image uploads (S3 + CloudFront)
 

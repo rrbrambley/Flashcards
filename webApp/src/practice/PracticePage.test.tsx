@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { PracticePage } from './PracticePage';
 import { api } from '../api/client';
+import { installFakeSpeechRecognition } from '../test/fakeSpeechRecognition';
+import { VOICE_INPUT_KEY } from './voice/preference';
 import { orderCards } from './shuffle';
 import type { FlashcardDto, PracticeSessionDto } from '../api/types';
 
@@ -29,10 +31,16 @@ vi.mock('../api/client', () => ({
 let mockToken: string | null = 'test-token';
 const applyAuth = vi.fn();
 let mockCan = false;
-// The `discussions` kill switch (FLA-180); default on so the discuss surface shows.
-let mockDiscussionsFlag = true;
+// Keyed per flag, and fail-closed like the real `isEnabled` — one shared boolean would have made a
+// test that turns the `discussions` kill switch off silently turn every other flag off too.
+let mockFlags: Record<string, boolean> = {};
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ token: mockToken, applyAuth, can: () => mockCan, isEnabled: () => mockDiscussionsFlag }),
+  useAuth: () => ({
+    token: mockToken,
+    applyAuth,
+    can: () => mockCan,
+    isEnabled: (key: string) => mockFlags[key] === true,
+  }),
 }));
 vi.mock('../auth/token', () => ({ setTokens: vi.fn() }));
 
@@ -84,7 +92,14 @@ describe('PracticePage', () => {
     vi.clearAllMocks();
     mockToken = 'test-token';
     mockCan = false;
-    mockDiscussionsFlag = true;
+    // What a real signed-in user gets: the default-ON flags on. `practice_voice_input` is absent
+    // because it's default-OFF (#387) — voice tests opt in explicitly.
+    mockFlags = {
+      discussions: true,
+      practice_mode_classic: true,
+      practice_mode_test: true,
+      practice_mode_multiple_choice: true,
+    };
   });
 
   it('starts a session in the default (classic) mode and shows the (resumed) current card', async () => {
@@ -479,6 +494,72 @@ describe('PracticePage', () => {
     expect(screen.queryByText(/←/)).not.toBeInTheDocument();
   });
 
+  describe('answering by voice (#387)', () => {
+    let uninstall: () => void;
+    beforeEach(() => {
+      uninstall = installFakeSpeechRecognition();
+      localStorage.setItem(VOICE_INPUT_KEY, 'true');
+      mockFlags = { ...mockFlags, practice_voice_input: true };
+    });
+    afterEach(() => {
+      localStorage.removeItem(VOICE_INPUT_KEY);
+      uninstall();
+    });
+
+    const startTestRun = (search: string) => {
+      vi.mocked(api.createSession).mockResolvedValue(
+        session({
+          mode: 'test',
+          createdAtMillis: Date.now(),
+          timeLimitSeconds: search.includes('timeLimit') ? 300 : null,
+        }),
+      );
+      const deck = { id: 5, title: 'Spanish', editable: true, flashcards: threeCards };
+      vi.mocked(api.getDeck).mockResolvedValue(deck);
+      // Guests read the public catalog and run the session locally.
+      vi.mocked(api.getCatalogDeck).mockResolvedValue({ ...deck, editable: false });
+      // shuffle=0 keeps the catalog order, so these can assert on Q1 (the house idiom below).
+      render(
+        <MemoryRouter initialEntries={[`/decks/5/practice?mode=test&shuffle=0${search}`]}>
+          <Routes>
+            <Route path="/decks/:id/practice" element={<PracticePage />} />
+            <Route path="/" element={<div>library</div>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+    };
+
+    it('offers the mic on an untimed run when the flag and the preference are both on', async () => {
+      startTestRun('');
+      expect(await screen.findByText(/Speech is processed/)).toBeInTheDocument();
+    });
+
+    /**
+     * Timed runs get voice too. It costs the clock ~2.5s a card (Chrome's final transcript lags ~1s
+     * behind end-of-speech, plus the grace window), but silently dropping a feature the user
+     * explicitly switched on is worse than a slightly generous timer.
+     */
+    it('offers voice in a timed run too, rather than silently dropping it', async () => {
+      startTestRun('&timeLimit=300');
+      await screen.findByLabelText('time remaining');
+      expect(await screen.findByText(/Speech is processed/)).toBeInTheDocument();
+    });
+
+    it('offers nothing when the flag is off, even with the preference on', async () => {
+      mockFlags = { ...mockFlags, practice_voice_input: false };
+      startTestRun('');
+      expect(await screen.findByText('Q1')).toBeInTheDocument();
+      expect(screen.queryByText(/Speech is processed/)).not.toBeInTheDocument();
+    });
+
+    it('offers nothing to a guest, who carries no flags at all', async () => {
+      mockToken = null;
+      startTestRun('');
+      expect(await screen.findByText('Q1')).toBeInTheDocument();
+      expect(screen.queryByText(/Speech is processed/)).not.toBeInTheDocument();
+    });
+  });
+
   it('shows an error when the deck has no cards', async () => {
     setup([]);
     expect(await screen.findByText(/no cards to practice/i)).toBeInTheDocument();
@@ -532,7 +613,7 @@ describe('PracticePage', () => {
   });
 
   it('hides the discuss control when the discussions flag is off (FLA-180)', async () => {
-    mockDiscussionsFlag = false; // kill switch off for this signed-in user
+    mockFlags = { ...mockFlags, discussions: false }; // kill switch off for this signed-in user
     vi.mocked(api.createSession).mockResolvedValue(session());
     vi.mocked(api.getDeck).mockResolvedValue({
       id: 5,
