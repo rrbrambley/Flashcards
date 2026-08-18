@@ -34,6 +34,19 @@ function similarityOf(a: string, b: string): number {
 }
 
 /**
+ * How alike two answers are, 0–1, ignoring case, surrounding space and internal run-length — the
+ * same measure [gradeTextAnswer] scores against, exposed for callers that need the number rather
+ * than a verdict (voice → multiple-choice matching, #388).
+ *
+ * Deliberately *not* a verdict: comparing this against [TEXT_ANSWER_THRESHOLD] answers "is this the
+ * right answer?", which is a different question from "which of these options did they name?" and
+ * wants a different threshold. See `voiceChoice.ts`.
+ */
+export function answerSimilarity(a: string, b: string): number {
+  return similarityOf(normalize(a), normalize(b));
+}
+
+/**
  * Grades [input] against the card's [answer] plus any [alternativeAnswers] (FLA-109): normalizes
  * each, then takes the best normalized Levenshtein similarity (1 = identical). Correct when that best
  * similarity ≥ [TEXT_ANSWER_THRESHOLD] — i.e. the input matches the primary OR any alternative.

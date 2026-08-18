@@ -545,6 +545,24 @@ describe('PracticePage', () => {
       expect(await screen.findByText(/Speech is processed/)).toBeInTheDocument();
     });
 
+    it('offers voice in Multiple Choice too (#388), not just Test', async () => {
+      vi.mocked(api.createSession).mockResolvedValue(
+        session({ mode: 'multiple_choice', createdAtMillis: Date.now(), timeLimitSeconds: null }),
+      );
+      const deck = { id: 5, title: 'Spanish', editable: true, flashcards: threeCards };
+      vi.mocked(api.getDeck).mockResolvedValue(deck);
+      render(
+        <MemoryRouter initialEntries={['/decks/5/practice?mode=multiple_choice&shuffle=0']}>
+          <Routes>
+            <Route path="/decks/:id/practice" element={<PracticePage />} />
+            <Route path="/" element={<div>library</div>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(await screen.findByText(/Speech is processed/)).toBeInTheDocument();
+    });
+
     it('offers nothing when the flag is off, even with the preference on', async () => {
       mockFlags = { ...mockFlags, practice_voice_input: false };
       startTestRun('');
