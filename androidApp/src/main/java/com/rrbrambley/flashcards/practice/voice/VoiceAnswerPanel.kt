@@ -40,6 +40,16 @@ import kotlinx.coroutines.delay
  */
 const val VOICE_SUBMIT_DELAY_MS = 1500L
 
+/**
+ * How long to wait for the recogniser to say *anything* before giving up on it.
+ *
+ * A recogniser can accept `startListening`, report itself ready, and then never call back — no
+ * partial, no result, no error (#402 review). Without this the panel sits on "Listening…" with a
+ * Stop button and no explanation, which reads as "the app is broken" rather than "try again".
+ * Any partial transcript resets the clock, so a slow speaker is never cut off.
+ */
+private const val VOICE_LISTEN_TIMEOUT_MS = 12_000L
+
 /** What a final transcript means, when the caller needs to interpret it (Multiple Choice). */
 data class VoiceInterpretation(val note: String? = null)
 
@@ -70,6 +80,8 @@ fun VoiceAnswerPanel(
     var heard by remember { mutableStateOf<Pair<String, String?>?>(null) }
     var unheard by remember { mutableStateOf(false) }
     var permissionDenied by remember { mutableStateOf(false) }
+    // Set when the recogniser went quiet on us — see VOICE_LISTEN_TIMEOUT_MS.
+    var timedOut by remember { mutableStateOf(false) }
 
     val recognizer = rememberVoiceRecognizer { transcript ->
         val interpretation = if (interpret != null) interpret(transcript) else VoiceInterpretation()
@@ -94,6 +106,7 @@ fun VoiceAnswerPanel(
 
     fun listen() {
         unheard = false
+        timedOut = false
         recognizer.reset()
         val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
             PackageManager.PERMISSION_GRANTED
@@ -104,6 +117,14 @@ fun VoiceAnswerPanel(
             pendingStart = true
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
+    }
+
+    // Watchdog. Keyed on the interim transcript too, so any sign of life restarts it.
+    LaunchedEffect(recognizer.listening, recognizer.interim) {
+        if (!recognizer.listening) return@LaunchedEffect
+        delay(VOICE_LISTEN_TIMEOUT_MS)
+        recognizer.cancel()
+        timedOut = true
     }
 
     // The grace window: submit unless the user intervenes first.
@@ -142,6 +163,7 @@ fun VoiceAnswerPanel(
                 unheard = unheard,
                 error = recognizer.error,
                 permissionDenied = permissionDenied,
+                timedOut = timedOut,
             )
 
             if (pending != null) {
@@ -174,7 +196,7 @@ fun VoiceAnswerPanel(
                 OutlinedButton(onClick = { listen() }, modifier = Modifier.fillMaxWidth()) {
                     Text(
                         stringResource(
-                            if (unheard || recognizer.error != null) {
+                            if (unheard || timedOut || recognizer.error != null) {
                                 R.string.practice_voice_try_again
                             } else {
                                 R.string.practice_voice_speak
@@ -190,7 +212,7 @@ fun VoiceAnswerPanel(
                 }
             }
 
-            if (pending == null && recognizer.error == null && !permissionDenied) {
+            if (pending == null && recognizer.error == null && !permissionDenied && !timedOut) {
                 Text(
                     text = stringResource(R.string.practice_voice_privacy),
                     style = MaterialTheme.typography.bodySmall,
@@ -210,6 +232,7 @@ private fun VoiceStatus(
     unheard: Boolean,
     error: VoiceError?,
     permissionDenied: Boolean,
+    timedOut: Boolean,
 ) {
     when {
         heard != null -> {
@@ -233,6 +256,7 @@ private fun VoiceStatus(
             textAlign = TextAlign.Center,
         )
 
+        timedOut -> VoiceMessage(R.string.practice_voice_timed_out)
         permissionDenied || error == VoiceError.Denied -> VoiceMessage(R.string.practice_voice_denied)
         error == VoiceError.NoMic -> VoiceMessage(R.string.practice_voice_no_mic)
         error == VoiceError.Network -> VoiceMessage(R.string.practice_voice_network)

@@ -297,6 +297,7 @@
     <string name="practice_voice_stop">Stop</string>
     <string name="practice_voice_submit_now">Submit now</string>
     <string name="practice_voice_retry">Retry</string>
+    <string name="practice_voice_timed_out">The speech service didn\'t respond. Try again, or answer without voice.</string>
     <string name="practice_voice_unheard">Didn\'t catch that.</string>
     <string name="practice_voice_denied">Microphone blocked. Allow it in Settings, or answer without voice.</string>
     <string name="practice_voice_no_mic">No microphone available.</string>

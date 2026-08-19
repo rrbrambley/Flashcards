@@ -2,7 +2,6 @@ package com.rrbrambley.flashcards.practice.voice
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -122,18 +121,20 @@ fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
 }
 
 /**
- * On-device recognition keeps the audio on the phone, which is a materially better privacy story
- * than the web's (where Chrome streams it to Google). It needs API 33+, though, and `minSdk` is 26 —
- * so fall back to the service-backed recogniser, which is what the web effectively always uses.
+ * The service-backed recogniser, deliberately — not `createOnDeviceSpeechRecognizer`.
+ *
+ * On-device recognition would keep audio on the phone, which is a better privacy story than the
+ * web's. But `isOnDeviceRecognitionAvailable()` reports the *service*, not whether a language pack
+ * has actually been downloaded, and with no pack the on-device recogniser accepts `startListening`,
+ * calls `onReadyForSpeech`, and then never calls back at all — no result, no error. The panel sits
+ * on "Listening…" forever (#402 review). That's the default state of an emulator and of any device
+ * whose user has never downloaded offline speech.
+ *
+ * There's no reliable pre-flight check for "is a usable model present", so preferring it means
+ * betting the whole feature on an unverifiable condition. Correctness first; revisit as a
+ * try-then-fall-back once there's real-device data (#403).
  */
-private fun createRecognizer(context: Context): SpeechRecognizer =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-        SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
-    ) {
-        SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
-    } else {
-        SpeechRecognizer.createSpeechRecognizer(context)
-    }
+private fun createRecognizer(context: Context): SpeechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
 
 private fun recognitionIntent(context: Context): Intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
     putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
