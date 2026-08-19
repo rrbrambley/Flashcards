@@ -6,6 +6,7 @@ import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.auth.FeatureFlagRepository
 import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.StringProvider
+import com.rrbrambley.flashcards.practice.voice.VoiceInputPreference
 import com.rrbrambley.flashcards.shared.domain.DeckLibrary
 import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
 import com.rrbrambley.flashcards.shared.domain.FlashcardRepository
@@ -16,11 +17,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,6 +34,7 @@ class LibraryViewModel @Inject constructor(
     private val practiceSessionRepository: PracticeSessionRepository,
     private val featureFlagRepository: FeatureFlagRepository,
     private val stringProvider: StringProvider,
+    private val voiceInputPreference: VoiceInputPreference,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val uiState = _uiState.asStateFlow()
@@ -53,6 +57,16 @@ class LibraryViewModel @Inject constructor(
     // Whether the "Timed" toggle is offered in the config sheet (#289). Fail-open too.
     private val _timerEnabled = MutableStateFlow(true)
     val timerEnabled: StateFlow<Boolean> = _timerEnabled.asStateFlow()
+
+    // Whether voice answering is offered at all (#389), and the user's saved preference for it.
+    private val _voiceInputFlagOn = MutableStateFlow(false)
+    val voiceInputFlagOn: StateFlow<Boolean> = _voiceInputFlagOn.asStateFlow()
+    val voiceInputPreferred: StateFlow<Boolean> = voiceInputPreference.enabled()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun setVoiceInputPreferred(enabled: Boolean) {
+        viewModelScope.launch { voiceInputPreference.setEnabled(enabled) }
+    }
 
     // One-shot user-facing messages (e.g. a failed delete), surfaced as a snackbar.
     private val _userMessages = MutableSharedFlow<String>(extraBufferCapacity = 1)
@@ -89,6 +103,9 @@ class LibraryViewModel @Inject constructor(
             _questionCountEnabled.value = flags[FeatureFlags.PRACTICE_QUESTION_COUNT] != false
             _gradeAtEndEnabled.value = flags[FeatureFlags.PRACTICE_GRADE_AT_END] != false
             _timerEnabled.value = flags[FeatureFlags.PRACTICE_TIMER] != false
+            // `== true`, not `!= false`: the others are default-ON kill switches where failing open
+            // is right, but voice is seeded off and dark-launched (#389).
+            _voiceInputFlagOn.value = flags[FeatureFlags.PRACTICE_VOICE_INPUT] == true
         }
     }
 

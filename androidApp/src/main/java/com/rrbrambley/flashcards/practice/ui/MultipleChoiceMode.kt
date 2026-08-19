@@ -26,6 +26,12 @@ import androidx.compose.ui.unit.dp
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.practice.grading.buildChoices
+import com.rrbrambley.flashcards.practice.grading.matchSpokenChoice
+import com.rrbrambley.flashcards.practice.voice.VoiceAdvanceNotice
+import com.rrbrambley.flashcards.practice.voice.VoiceAnswerPanel
+import com.rrbrambley.flashcards.practice.voice.VoiceInterpretation
+import com.rrbrambley.flashcards.practice.voice.cancelVoiceAdvanceOnTouch
+import com.rrbrambley.flashcards.practice.voice.rememberVoiceAutoAdvance
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 
 /**
@@ -46,6 +52,10 @@ fun MultipleChoiceMode(
     onDiscuss: () -> Unit = {},
     // Whether the prompt image is on screen (#311): the runner pauses the timed countdown while it loads.
     onImageReadyChanged: (Boolean) -> Unit = {},
+    // Say the answer rather than the option letter (#389) — "Paris", not "option B". Additive: the
+    // options stay tappable throughout.
+    voiceInput: Boolean = false,
+    onDisableVoice: (() -> Unit)? = null,
 ) {
     val choices = remember(flashcard) { buildChoices(flashcard, deck) }
     val correctIndex = remember(flashcard) { choices.indexOf(flashcard.answer.trim()) }
@@ -56,8 +66,24 @@ fun MultipleChoiceMode(
     // Pause the timed countdown while this card's image is loading, resume once it's ready (#311).
     LaunchedEffect(imageReady) { onImageReadyChanged(imageReady) }
 
+    // The pick, shared by tapping and speaking, so both grade through exactly the same path.
+    fun pick(index: Int) {
+        if (selected == null) {
+            selected = index
+            onGraded(index == correctIndex, choices[index])
+        }
+    }
+
+    var advanceCancelled by remember(flashcard) { mutableStateOf(false) }
+    val advancing = rememberVoiceAutoAdvance(
+        active = voiceInput && selected != null && !advanceCancelled,
+        correct = selected == correctIndex,
+        onAdvance = onAdvance,
+    )
+
     Column(
         modifier = modifier
+            .cancelVoiceAdvanceOnTouch(enabled = advancing) { advanceCancelled = true }
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp, vertical = 20.dp),
@@ -69,26 +95,37 @@ fun MultipleChoiceMode(
         // Only reveal the options once the prompt image has loaded (#302 review).
         if (!imageReady) return@Column
 
+        if (voiceInput && selected == null) {
+            VoiceAnswerPanel(
+                // null re-prompts instead of submitting — never fall back to a best guess, since an
+                // auto-submitted wrong answer is recorded and can't be un-graded.
+                interpret = { transcript ->
+                    matchSpokenChoice(transcript, choices)?.let { VoiceInterpretation(note = choices[it]) }
+                },
+                onSubmit = { transcript -> matchSpokenChoice(transcript, choices)?.let { pick(it) } },
+                onDisableVoice = onDisableVoice,
+            )
+        }
+
         choices.forEachIndexed { index, option ->
             ChoiceButton(
                 text = option,
                 state = choiceState(index = index, selected = selected, correctIndex = correctIndex),
                 // First pick locks the answer and grades it now, so the streak badge shows on the revealed answer.
-                onClick = {
-                    if (selected == null) {
-                        selected = index
-                        onGraded(index == correctIndex, option)
-                    }
-                },
+                onClick = { pick(index) },
             )
         }
 
         if (selected != null) {
-            Button(
-                onClick = onAdvance,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.practice_next))
+            if (advancing) {
+                VoiceAdvanceNotice(modifier = Modifier.fillMaxWidth())
+            } else {
+                Button(
+                    onClick = onAdvance,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.practice_next))
+                }
             }
             // Discussion opens once an option is picked (the answer is revealed), mirroring web.
             if (discussionsEnabled) {

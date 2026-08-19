@@ -3,6 +3,7 @@ package com.rrbrambley.flashcards.library.ui
 import com.rrbrambley.flashcards.auth.FeatureFlagRepository
 import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.FakeStringProvider
+import com.rrbrambley.flashcards.practice.voice.FakeVoiceInputPreference
 import com.rrbrambley.flashcards.shared.domain.DeckSortOrder
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 import com.rrbrambley.flashcards.shared.domain.FlashcardDeck
@@ -49,6 +50,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
 
         assertEquals(LibraryUiState.Loading, viewModel.uiState.value)
@@ -68,6 +70,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -82,6 +85,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
 
         testDispatcher.scheduler.advanceUntilIdle()
@@ -101,6 +105,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -129,6 +134,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -152,6 +158,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -173,6 +180,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(lastPracticed = mapOf(1L to 100L, 2L to 500L)),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -193,6 +201,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = practiceSessionRepository,
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
 
         viewModel.startPractice(
@@ -224,6 +233,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(startShouldFail = true),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         val messages = mutableListOf<String>()
         backgroundScope.launch(UnconfinedTestDispatcher(testDispatcher.scheduler)) {
@@ -254,6 +264,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(mapOf(FeatureFlags.PRACTICE_MODE_TEST to false)),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -269,6 +280,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(emptyMap()),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -283,6 +295,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
 
         viewModel.deleteDeck(deckId = 5L)
@@ -298,6 +311,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         val messages = mutableListOf<String>()
         // Unconfined so the collector subscribes eagerly (before we emit) — SharedFlow has no replay.
@@ -318,6 +332,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         val messages = mutableListOf<String>()
         // Unconfined so the collector subscribes eagerly (before we emit) — SharedFlow has no replay.
@@ -339,6 +354,7 @@ class LibraryViewModelTest {
             practiceSessionRepository = FakePracticeSessionRepository(),
             featureFlagRepository = FakeFeatureFlagRepository(),
             stringProvider = FakeStringProvider(),
+            voiceInputPreference = FakeVoiceInputPreference(),
         )
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(LibraryUiState.LoadingFailed, viewModel.uiState.value)

@@ -1,4 +1,6 @@
 package com.rrbrambley.flashcards.library.ui
+
+import android.speech.SpeechRecognizer
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -48,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -81,6 +84,8 @@ fun LibraryScreen(
     val questionCountEnabled by libraryViewModel.questionCountEnabled.collectAsState()
     val gradeAtEndEnabled by libraryViewModel.gradeAtEndEnabled.collectAsState()
     val timerEnabled by libraryViewModel.timerEnabled.collectAsState()
+    val voiceFlagOn by libraryViewModel.voiceInputFlagOn.collectAsState()
+    val voicePreferred by libraryViewModel.voiceInputPreferred.collectAsState()
     var selectedDeck by remember { mutableStateOf<FlashcardDeck?>(null) }
     var deckPendingDeletion by remember { mutableStateOf<FlashcardDeck?>(null) }
 
@@ -91,6 +96,9 @@ fun LibraryScreen(
             questionCountEnabled = questionCountEnabled,
             gradeAtEndEnabled = gradeAtEndEnabled,
             timerEnabled = timerEnabled,
+            voiceFlagOn = voiceFlagOn,
+            voicePreferred = voicePreferred,
+            onVoicePreferredChange = libraryViewModel::setVoiceInputPreferred,
             onDismissRequest = { selectedDeck = null },
             onPracticeWithMode = { mode, shuffle, questionCount, gradeAtEnd, timeLimitSeconds ->
                 selectedDeck = null
@@ -377,6 +385,9 @@ internal fun LibraryDeckActionsSheet(
     questionCountEnabled: Boolean,
     gradeAtEndEnabled: Boolean,
     timerEnabled: Boolean,
+    voiceFlagOn: Boolean,
+    voicePreferred: Boolean,
+    onVoicePreferredChange: (Boolean) -> Unit,
     onDismissRequest: () -> Unit,
     onPracticeWithMode: (PracticeMode, Boolean, Int?, Boolean, Int?) -> Unit,
     onEditClick: () -> Unit,
@@ -463,6 +474,22 @@ internal fun LibraryDeckActionsSheet(
                     )
                 }
                 ShuffleSettingRow(checked = shuffle, onCheckedChange = { shuffle = it })
+
+                // Answering by voice (#389) — an input method, not a mode, so it sits with the other
+                // settings. Only for the modes that take an answer; Classic is a self-graded flip
+                // with nothing to say. Flipping this must not prompt for the microphone: the
+                // permission is requested when the user first actually asks to speak.
+                if (voiceFlagOn) {
+                    val voiceModeSelected =
+                        selectedMode == PracticeMode.Test || selectedMode == PracticeMode.MultipleChoice
+                    val recognitionAvailable = rememberRecognitionAvailable()
+                    VoiceSettingRow(
+                        checked = voicePreferred && voiceModeSelected && recognitionAvailable,
+                        enabled = voiceModeSelected && recognitionAvailable,
+                        unsupported = !recognitionAvailable,
+                        onCheckedChange = onVoicePreferredChange,
+                    )
+                }
 
                 // Single-sitting settings (#306): grade-at-the-end + timed run start-to-finish in one
                 // sitting (they don't resume), grouped under their own subheader.
@@ -614,6 +641,58 @@ private fun ShuffleSettingRow(checked: Boolean, onCheckedChange: (Boolean) -> Un
             )
         }
         Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}
+
+/**
+ * Whether this device can recognise speech at all (#389). Checked here so the toggle can say
+ * "Not supported on this device" up front rather than leaving the user to discover an inert panel
+ * mid-practice. Does NOT touch the microphone permission — flipping a setting isn't asking to speak.
+ */
+@Composable
+private fun rememberRecognitionAvailable(): Boolean {
+    val context = LocalContext.current
+    return remember(context) { SpeechRecognizer.isRecognitionAvailable(context) }
+}
+
+/** "Answer by voice" toggle (#389): grayed + off for Classic, or on a device with no recogniser. */
+@Composable
+private fun VoiceSettingRow(
+    checked: Boolean,
+    enabled: Boolean,
+    unsupported: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    val contentColor = if (enabled) {
+        MaterialTheme.colorScheme.onSurface
+    } else {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = stringResource(R.string.practice_voice_setting_label),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = contentColor,
+            )
+            Text(
+                text = stringResource(
+                    when {
+                        unsupported -> R.string.practice_voice_setting_unsupported
+                        !enabled -> R.string.practice_voice_setting_mode_only
+                        else -> R.string.practice_voice_setting_description
+                    },
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange)
     }
 }
 

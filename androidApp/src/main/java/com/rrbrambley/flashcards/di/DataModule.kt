@@ -12,6 +12,8 @@ import com.rrbrambley.flashcards.data.auth.DataStoreTokenStore
 import com.rrbrambley.flashcards.data.image.AndroidImageUploader
 import com.rrbrambley.flashcards.data.image.ImageUploader
 import com.rrbrambley.flashcards.home.data.AndroidHomeFeedStrings
+import com.rrbrambley.flashcards.practice.voice.DataStoreVoiceInputPreference
+import com.rrbrambley.flashcards.practice.voice.VoiceInputPreference
 import com.rrbrambley.flashcards.shared.api.TokenStore
 import com.rrbrambley.flashcards.shared.domain.HomeFeedStrings
 import dagger.Binds
@@ -46,4 +48,8 @@ abstract class DataModule {
 
     @Binds
     abstract fun bindHomeFeedStrings(strings: AndroidHomeFeedStrings): HomeFeedStrings
+
+    /** Answering by voice is a local preference, not a property of the session (#386). */
+    @Binds
+    abstract fun bindVoiceInputPreference(impl: DataStoreVoiceInputPreference): VoiceInputPreference
 }
