@@ -385,9 +385,12 @@ internal fun LibraryDeckActionsSheet(
     questionCountEnabled: Boolean,
     gradeAtEndEnabled: Boolean,
     timerEnabled: Boolean,
-    voiceFlagOn: Boolean,
-    voicePreferred: Boolean,
-    onVoicePreferredChange: (Boolean) -> Unit,
+    // Defaulted like the other optional switches: the sheet has call sites in tests that don't care
+    // about voice, and androidTest isn't compiled by assembleDebug — so a required param here breaks
+    // the instrumented build without any local signal.
+    voiceFlagOn: Boolean = false,
+    voicePreferred: Boolean = false,
+    onVoicePreferredChange: (Boolean) -> Unit = {},
     onDismissRequest: () -> Unit,
     onPracticeWithMode: (PracticeMode, Boolean, Int?, Boolean, Int?) -> Unit,
     onEditClick: () -> Unit,
