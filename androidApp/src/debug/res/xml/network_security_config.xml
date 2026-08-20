@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug builds only. Overrides the release config (androidApp/src/main/res/xml) by source set, so
+  release builds keep cleartext restricted to the emulator/localhost dev hosts.
+
+  Permits cleartext to any host because a real device reaching a dev backend uses whatever LAN IP the
+  machine has today (192.168.x.y, 10.x.y.z, a hotspot range…). Enumerating that in a tracked file
+  would mean committing one developer's address and breaking everyone else's. Without this, Android
+  blocks the request before it leaves the app, which looks exactly like "the server is unreachable".
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true"/>
+</network-security-config>
