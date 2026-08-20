@@ -18,8 +18,15 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // The Android emulator reaches the host machine at 10.0.2.2.
-        buildConfigField("String", "BACKEND_BASE_URL", "\"http://10.0.2.2:8080\"")
+        // Defaults to 10.0.2.2 — the address at which the Android emulator reaches the host machine.
+        // A real device needs the host's LAN IP instead, so this is overridable like the two below:
+        // set BACKEND_BASE_URL in ~/.gradle/gradle.properties (e.g. http://192.168.1.103:8080)
+        // rather than editing this file, which is tracked and shared.
+        buildConfigField(
+            "String",
+            "BACKEND_BASE_URL",
+            "\"${providers.gradleProperty("BACKEND_BASE_URL").getOrElse("http://10.0.2.2:8080")}\"",
+        )
 
         // Base URL of the web app, used to build shareable deck links (guest mode). Override with
         // WEB_APP_BASE_URL in gradle.properties for a real deployment; defaults to the dev server.

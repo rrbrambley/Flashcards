@@ -159,6 +159,8 @@ private fun CardByCardPractice(
     // run is in progress there's nothing saved, so warn before leaving + hide the close affordance.
     val remaining by flashcardsViewModel.remainingSeconds.collectAsState()
     val singleSitting by flashcardsViewModel.isSingleSitting.collectAsState()
+    val voiceInputEnabled by flashcardsViewModel.voiceInputEnabled.collectAsState()
+    val showVoicePrivacyNotice by flashcardsViewModel.showVoicePrivacyNotice.collectAsState()
     var showLeaveConfirm by remember { mutableStateOf(false) }
     val guardActive = singleSitting && flashcardsState is PracticeUiState.ShowCard
 
@@ -309,6 +311,10 @@ private fun CardByCardPractice(
                                     canSuggest = state.isGlobal,
                                     isGuest = isGuest,
                                     onImageReadyChanged = ::onPromptImageReadyChanged,
+                                    voiceInput = voiceInputEnabled,
+                                    onDisableVoice = flashcardsViewModel::disableVoiceInput,
+                                    showVoicePrivacyNotice = showVoicePrivacyNotice,
+                                    onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
                                 )
 
                             PracticeMode.MultipleChoice.key ->
@@ -320,6 +326,10 @@ private fun CardByCardPractice(
                                     discussionsEnabled = state.discussionsEnabled,
                                     onDiscuss = onDiscuss,
                                     onImageReadyChanged = ::onPromptImageReadyChanged,
+                                    voiceInput = voiceInputEnabled,
+                                    onDisableVoice = flashcardsViewModel::disableVoiceInput,
+                                    showVoicePrivacyNotice = showVoicePrivacyNotice,
+                                    onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
                                 )
 
                             else -> ClassicMode(

@@ -288,4 +288,27 @@
     <string name="notification_a_deck">a deck</string>
     <string name="notification_streak_milestone">🔥 %1$s-day streak! Keep it up.</string>
     <string name="notification_thread_activity">%1$s also posted in a discussion you joined</string>
+    <!-- Answering practice questions by voice (#389). -->
+    <string name="practice_voice_prompt">Say your answer</string>
+    <string name="practice_voice_listening">Listening…</string>
+    <string name="practice_voice_heard">Heard: “%1$s”</string>
+    <string name="practice_voice_speak">Speak answer</string>
+    <string name="practice_voice_try_again">Try again</string>
+    <string name="practice_voice_stop">Stop</string>
+    <string name="practice_voice_submit_now">Submit now</string>
+    <string name="practice_voice_retry">Retry</string>
+    <string name="practice_voice_timed_out">The speech service didn\'t respond. Try again, or answer without voice.</string>
+    <string name="practice_voice_unheard">Didn\'t catch that.</string>
+    <string name="practice_voice_denied">Microphone blocked. Allow it in Settings, or answer without voice.</string>
+    <string name="practice_voice_no_mic">No microphone available.</string>
+    <string name="practice_voice_network">Speech service unreachable — answer without voice.</string>
+    <string name="practice_voice_unavailable">Voice answers aren\'t available right now.</string>
+    <string name="practice_voice_unsupported">Voice answers aren\'t supported on this device.</string>
+    <string name="practice_voice_turn_off">Turn off voice answers</string>
+    <string name="practice_voice_privacy">Speech is processed by your device\'s speech service.</string>
+    <string name="practice_voice_advancing">Next question…</string>
+    <string name="practice_voice_setting_label">Answer by voice</string>
+    <string name="practice_voice_setting_description">Say your answer instead of typing or tapping.</string>
+    <string name="practice_voice_setting_mode_only">Available for Test &amp; Multiple Choice</string>
+    <string name="practice_voice_setting_unsupported">Not supported on this device</string>
 </resources>

@@ -2,6 +2,7 @@ package com.rrbrambley.flashcards.practice.ui
 
 import com.rrbrambley.flashcards.auth.FeatureFlagRepository
 import com.rrbrambley.flashcards.auth.FeatureFlags
+import com.rrbrambley.flashcards.practice.voice.FakeVoiceInputPreference
 import com.rrbrambley.flashcards.shared.AuthService
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.TokenStore
@@ -119,6 +120,9 @@ class FlashcardsViewModelTest {
         engine: MockEngine = unavailableEngine(),
         discussionsFlagEnabled: Boolean = true,
         deckDiscussionsEnabled: Boolean = false,
+        voiceFlagEnabled: Boolean? = null,
+        voicePreferred: Boolean = false,
+        voicePrivacyNoticeSeen: Boolean = false,
     ): FlashcardsViewModel {
         val apiClient = FlashcardApiClient(
             client = createFlashcardHttpClient(engine),
@@ -140,9 +144,113 @@ class FlashcardsViewModelTest {
             apiClient = apiClient,
             authService = AuthService(apiClient, FakeTokenStore(), FakeLocalDataStore()),
             featureFlagRepository = FakeFeatureFlagRepository(
-                mapOf(FeatureFlags.DISCUSSIONS to discussionsFlagEnabled),
+                buildMap {
+                    put(FeatureFlags.DISCUSSIONS, discussionsFlagEnabled)
+                    // Absent (null) is the realistic dark-launch case: the flag is seeded off, so the
+                    // key simply isn't in the caller's resolved map.
+                    voiceFlagEnabled?.let { put(FeatureFlags.PRACTICE_VOICE_INPUT, it) }
+                },
             ),
+            voiceInputPreference = FakeVoiceInputPreference(voicePreferred, voicePrivacyNoticeSeen),
         )
+    }
+
+    @Test
+    fun `voice input is off when the flag is absent, even with the preference on`() = runTest {
+        // Fail-CLOSED, unlike the other practice flags' `!= false`. Those are default-ON kill
+        // switches where an offline/failed fetch should still show the feature; this one is seeded
+        // off and dark-launched, so the same idiom would ship it to everyone whose fetch failed.
+        val viewModel = createViewModel(flashcards = testFlashcards(), voiceFlagEnabled = null, voicePreferred = true)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.voiceInputEnabled.value)
+    }
+
+    @Test
+    fun `voice input is off when the flag is on but the user hasn't opted in`() = runTest {
+        val viewModel = createViewModel(flashcards = testFlashcards(), voiceFlagEnabled = true, voicePreferred = false)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.voiceInputEnabled.value)
+    }
+
+    @Test
+    fun `voice input needs both the flag and the preference`() = runTest {
+        val viewModel = createViewModel(flashcards = testFlashcards(), voiceFlagEnabled = true, voicePreferred = true)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.voiceInputEnabled.value)
+    }
+
+    @Test
+    fun `disabling voice from the panel turns it off for good, not just this card`() = runTest {
+        val viewModel = createViewModel(flashcards = testFlashcards(), voiceFlagEnabled = true, voicePreferred = true)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.disableVoiceInput()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.voiceInputEnabled.value)
+    }
+
+    @Test
+    fun `the speech-processing disclosure shows until it has been seen`() = runTest {
+        val viewModel = createViewModel(
+            flashcards = testFlashcards(),
+            voiceFlagEnabled = true,
+            voicePreferred = true,
+            voicePrivacyNoticeSeen = false,
+        )
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.showVoicePrivacyNotice.value)
+    }
+
+    // A one-time disclosure, not a label: repeating it on every card turns it into furniture the
+    // user stops reading, which is worse for informed consent than showing it once and meaning it.
+    @Test
+    fun `the disclosure does not come back once seen`() = runTest {
+        val viewModel = createViewModel(
+            flashcards = testFlashcards(),
+            voiceFlagEnabled = true,
+            voicePreferred = true,
+            voicePrivacyNoticeSeen = true,
+        )
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.showVoicePrivacyNotice.value)
+    }
+
+    @Test
+    fun `marking the disclosure seen clears it for the rest of the run too`() = runTest {
+        val viewModel = createViewModel(
+            flashcards = testFlashcards(),
+            voiceFlagEnabled = true,
+            voicePreferred = true,
+        )
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.showVoicePrivacyNotice.value)
+
+        viewModel.markVoicePrivacyNoticeSeen()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.showVoicePrivacyNotice.value)
+    }
+
+    @Test
+    fun `no disclosure when voice is not in use at all`() = runTest {
+        val viewModel = createViewModel(flashcards = testFlashcards(), voiceFlagEnabled = null, voicePreferred = true)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.showVoicePrivacyNotice.value)
     }
 
     /** A MockEngine that fails every request — the default for tests that don't touch the network. */

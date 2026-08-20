@@ -4,6 +4,17 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Observe connectivity to flush offline practice sessions on reconnect (FLA-91). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Answering practice questions by voice (#389). Requested at runtime, and only when the user
+         first asks to speak — never at launch, and never merely for flipping the setting. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+    <!-- Package visibility (API 30+): without this, SpeechRecognizer.isRecognitionAvailable() cannot
+         see the recognition service and reports the device as incapable even when it isn't. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
+    </queries>
 
     <application
         android:name=".FlashcardsApplication"

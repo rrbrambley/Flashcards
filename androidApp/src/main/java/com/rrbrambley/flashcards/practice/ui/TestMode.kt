@@ -31,6 +31,10 @@ import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.practice.grading.gradeTextAnswer
 import com.rrbrambley.flashcards.practice.suggestions.SuggestAnswerAction
+import com.rrbrambley.flashcards.practice.voice.VoiceAdvanceNotice
+import com.rrbrambley.flashcards.practice.voice.VoiceAnswerPanel
+import com.rrbrambley.flashcards.practice.voice.cancelVoiceAdvanceOnTouch
+import com.rrbrambley.flashcards.practice.voice.rememberVoiceAutoAdvance
 import com.rrbrambley.flashcards.shared.domain.Flashcard
 
 private data class TestGrade(val input: String, val correct: Boolean)
@@ -54,6 +58,12 @@ fun TestMode(
     isGuest: Boolean = false,
     // Whether the prompt image is on screen (#311): the runner pauses the timed countdown while it loads.
     onImageReadyChanged: (Boolean) -> Unit = {},
+    // Answer by speaking as well as typing (#389). Additive — the text field stays, so a denied mic
+    // or a device with no recogniser leaves the card fully answerable.
+    voiceInput: Boolean = false,
+    onDisableVoice: (() -> Unit)? = null,
+    showVoicePrivacyNotice: Boolean = false,
+    onVoicePrivacyNoticeShown: () -> Unit = {},
 ) {
     var input by remember(flashcard) { mutableStateOf("") }
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
@@ -85,8 +95,17 @@ fun TestMode(
         grade(input)
     }
 
+    val currentGraded = graded
+    var advanceCancelled by remember(flashcard) { mutableStateOf(false) }
+    val advancing = rememberVoiceAutoAdvance(
+        active = voiceInput && currentGraded != null && !advanceCancelled,
+        correct = currentGraded?.correct == true,
+        onAdvance = onAdvance,
+    )
+
     Column(
         modifier = modifier
+            .cancelVoiceAdvanceOnTouch(enabled = advancing) { advanceCancelled = true }
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 28.dp, vertical = 20.dp),
@@ -98,8 +117,16 @@ fun TestMode(
         // Only reveal the answer UI once the prompt image has loaded (#302 review).
         if (!imageReady) return@Column
 
-        val currentGrade = graded
+        val currentGrade = currentGraded
         if (currentGrade == null) {
+            if (voiceInput) {
+                VoiceAnswerPanel(
+                    onSubmit = { grade(it) },
+                    onDisableVoice = onDisableVoice,
+                    showPrivacyNotice = showVoicePrivacyNotice,
+                    onPrivacyNoticeShown = onVoicePrivacyNoticeShown,
+                )
+            }
             OutlinedTextField(
                 value = input,
                 onValueChange = {
@@ -162,8 +189,12 @@ fun TestMode(
                     isGuest = isGuest,
                 )
             }
-            Button(onClick = onAdvance, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.practice_next))
+            if (advancing) {
+                VoiceAdvanceNotice(modifier = Modifier.fillMaxWidth())
+            } else {
+                Button(onClick = onAdvance, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.practice_next))
+                }
             }
             // Discussion opens once the answer is revealed (after grading), mirroring web.
             if (discussionsEnabled) {
