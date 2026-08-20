@@ -34,3 +34,10 @@ updates:
     schedule:
       interval: weekly
     labels: ["dependencies"]
+    ignore:
+      # The workflows reference codeql-action by its floating major tag (`@v4`), which already picks
+      # up every patch and minor release. Dependabot reads that as "pin me to 4.x.y" and opens a PR
+      # per release — churn that also *reduces* what we track, since a pin stops following v4.
+      # A major bump (v4 -> v5) is a real change and still comes through.
+      - dependency-name: "github/codeql-action"
+        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
