@@ -122,6 +122,7 @@ class FlashcardsViewModelTest {
         deckDiscussionsEnabled: Boolean = false,
         voiceFlagEnabled: Boolean? = null,
         voicePreferred: Boolean = false,
+        voicePrivacyNoticeSeen: Boolean = false,
     ): FlashcardsViewModel {
         val apiClient = FlashcardApiClient(
             client = createFlashcardHttpClient(engine),
@@ -150,7 +151,7 @@ class FlashcardsViewModelTest {
                     voiceFlagEnabled?.let { put(FeatureFlags.PRACTICE_VOICE_INPUT, it) }
                 },
             ),
-            voiceInputPreference = FakeVoiceInputPreference(voicePreferred),
+            voiceInputPreference = FakeVoiceInputPreference(voicePreferred, voicePrivacyNoticeSeen),
         )
     }
 
@@ -194,6 +195,62 @@ class FlashcardsViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertFalse(viewModel.voiceInputEnabled.value)
+    }
+
+    @Test
+    fun `the speech-processing disclosure shows until it has been seen`() = runTest {
+        val viewModel = createViewModel(
+            flashcards = testFlashcards(),
+            voiceFlagEnabled = true,
+            voicePreferred = true,
+            voicePrivacyNoticeSeen = false,
+        )
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.showVoicePrivacyNotice.value)
+    }
+
+    // A one-time disclosure, not a label: repeating it on every card turns it into furniture the
+    // user stops reading, which is worse for informed consent than showing it once and meaning it.
+    @Test
+    fun `the disclosure does not come back once seen`() = runTest {
+        val viewModel = createViewModel(
+            flashcards = testFlashcards(),
+            voiceFlagEnabled = true,
+            voicePreferred = true,
+            voicePrivacyNoticeSeen = true,
+        )
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.showVoicePrivacyNotice.value)
+    }
+
+    @Test
+    fun `marking the disclosure seen clears it for the rest of the run too`() = runTest {
+        val viewModel = createViewModel(
+            flashcards = testFlashcards(),
+            voiceFlagEnabled = true,
+            voicePreferred = true,
+        )
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.showVoicePrivacyNotice.value)
+
+        viewModel.markVoicePrivacyNoticeSeen()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.showVoicePrivacyNotice.value)
+    }
+
+    @Test
+    fun `no disclosure when voice is not in use at all`() = runTest {
+        val viewModel = createViewModel(flashcards = testFlashcards(), voiceFlagEnabled = null, voicePreferred = true)
+        viewModel.load(sessionId = SESSION_ID, deckId = null)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.showVoicePrivacyNotice.value)
     }
 
     /** A MockEngine that fails every request — the default for tests that don't touch the network. */

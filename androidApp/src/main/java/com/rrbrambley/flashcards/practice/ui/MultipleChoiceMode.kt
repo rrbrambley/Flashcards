@@ -56,6 +56,8 @@ fun MultipleChoiceMode(
     // options stay tappable throughout.
     voiceInput: Boolean = false,
     onDisableVoice: (() -> Unit)? = null,
+    showVoicePrivacyNotice: Boolean = false,
+    onVoicePrivacyNoticeShown: () -> Unit = {},
 ) {
     val choices = remember(flashcard) { buildChoices(flashcard, deck) }
     val correctIndex = remember(flashcard) { choices.indexOf(flashcard.answer.trim()) }
@@ -104,6 +106,8 @@ fun MultipleChoiceMode(
                 },
                 onSubmit = { transcript -> matchSpokenChoice(transcript, choices)?.let { pick(it) } },
                 onDisableVoice = onDisableVoice,
+                showPrivacyNotice = showVoicePrivacyNotice,
+                onPrivacyNoticeShown = onVoicePrivacyNoticeShown,
             )
         }
 

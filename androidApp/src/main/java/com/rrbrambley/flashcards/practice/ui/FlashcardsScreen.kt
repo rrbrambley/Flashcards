@@ -160,6 +160,7 @@ private fun CardByCardPractice(
     val remaining by flashcardsViewModel.remainingSeconds.collectAsState()
     val singleSitting by flashcardsViewModel.isSingleSitting.collectAsState()
     val voiceInputEnabled by flashcardsViewModel.voiceInputEnabled.collectAsState()
+    val showVoicePrivacyNotice by flashcardsViewModel.showVoicePrivacyNotice.collectAsState()
     var showLeaveConfirm by remember { mutableStateOf(false) }
     val guardActive = singleSitting && flashcardsState is PracticeUiState.ShowCard
 
@@ -312,6 +313,8 @@ private fun CardByCardPractice(
                                     onImageReadyChanged = ::onPromptImageReadyChanged,
                                     voiceInput = voiceInputEnabled,
                                     onDisableVoice = flashcardsViewModel::disableVoiceInput,
+                                    showVoicePrivacyNotice = showVoicePrivacyNotice,
+                                    onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
                                 )
 
                             PracticeMode.MultipleChoice.key ->
@@ -325,6 +328,8 @@ private fun CardByCardPractice(
                                     onImageReadyChanged = ::onPromptImageReadyChanged,
                                     voiceInput = voiceInputEnabled,
                                     onDisableVoice = flashcardsViewModel::disableVoiceInput,
+                                    showVoicePrivacyNotice = showVoicePrivacyNotice,
+                                    onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
                                 )
 
                             else -> ClassicMode(

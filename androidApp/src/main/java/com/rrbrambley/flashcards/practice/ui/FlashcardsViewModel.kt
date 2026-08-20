@@ -74,6 +74,17 @@ class FlashcardsViewModel @Inject constructor(
     private val _voiceInputEnabled = MutableStateFlow(false)
     val voiceInputEnabled: StateFlow<Boolean> = _voiceInputEnabled.asStateFlow()
 
+    // The one-time speech-processing disclosure (#402 review): shown until it's actually been seen,
+    // then never again. Held as its own state so it can't flip mid-card and vanish as it's read.
+    private val _showVoicePrivacyNotice = MutableStateFlow(false)
+    val showVoicePrivacyNotice: StateFlow<Boolean> = _showVoicePrivacyNotice.asStateFlow()
+
+    /** Called once the disclosure has been on screen for a whole card. */
+    fun markVoicePrivacyNoticeSeen() {
+        _showVoicePrivacyNotice.value = false
+        viewModelScope.launch { voiceInputPreference.markPrivacyNoticeSeen() }
+    }
+
     /** Switches voice off for good — offered by the panel when the microphone turns out to be blocked. */
     fun disableVoiceInput() {
         _voiceInputEnabled.value = false
@@ -104,6 +115,8 @@ class FlashcardsViewModel @Inject constructor(
                 runCatching { featureFlagRepository.isEnabled(FeatureFlags.PRACTICE_VOICE_INPUT) }.getOrDefault(false)
             _voiceInputEnabled.value = voiceFlag &&
                 runCatching { voiceInputPreference.enabled().first() }.getOrDefault(false)
+            _showVoicePrivacyNotice.value = _voiceInputEnabled.value &&
+                !runCatching { voiceInputPreference.privacyNoticeSeen().first() }.getOrDefault(true)
             // Resolve the run's settings: a stored session is authoritative (resume keeps its choice),
             // a deck/guest entry carries the picker's choice. Then drive the matching shared controller.
             val settings = resolveSettings(entry)

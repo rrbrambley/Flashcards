@@ -15,6 +15,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +76,10 @@ fun VoiceAnswerPanel(
     interpret: ((String) -> VoiceInterpretation?)? = null,
     /** Offered when the mic is unusable, so a stuck user can switch voice off without navigating away. */
     onDisableVoice: (() -> Unit)? = null,
+    /** Whether the one-time speech-processing disclosure still needs showing. */
+    showPrivacyNotice: Boolean = false,
+    /** Called once the disclosure has actually been on screen for a card. */
+    onPrivacyNoticeShown: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var heard by remember { mutableStateOf<Pair<String, String?>?>(null) }
@@ -117,6 +122,26 @@ fun VoiceAnswerPanel(
             pendingStart = true
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
+    }
+
+    // Start listening as soon as the card appears — but only when the microphone is already granted.
+    // The panel is composed once per card (the mode swaps it out for the verdict once answered), so
+    // this fires exactly once per question, which is what makes a run genuinely hands-free: tapping
+    // "Speak answer" on every card is the tap voice exists to remove.
+    //
+    // Never auto-requests the permission: that's still owed to a deliberate tap. And never re-fires
+    // after a stop, an error or a "didn't catch that" — auto-restarting would loop the microphone and
+    // leave its indicator lit with no way out.
+    LaunchedEffect(Unit) {
+        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+            PackageManager.PERMISSION_GRANTED
+        if (granted && recognizer.supported) recognizer.start()
+    }
+
+    // Mark the disclosure seen when the card is done with, not the moment it renders: flipping it
+    // mid-card would make the text vanish under the user as they read it.
+    DisposableEffect(showPrivacyNotice) {
+        onDispose { if (showPrivacyNotice) onPrivacyNoticeShown() }
     }
 
     // Watchdog. Keyed on the interim transcript too, so any sign of life restarts it.
@@ -212,7 +237,7 @@ fun VoiceAnswerPanel(
                 }
             }
 
-            if (pending == null && recognizer.error == null && !permissionDenied && !timedOut) {
+            if (showPrivacyNotice && pending == null && recognizer.error == null && !permissionDenied && !timedOut) {
                 Text(
                     text = stringResource(R.string.practice_voice_privacy),
                     style = MaterialTheme.typography.bodySmall,

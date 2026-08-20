@@ -62,6 +62,8 @@ fun TestMode(
     // or a device with no recogniser leaves the card fully answerable.
     voiceInput: Boolean = false,
     onDisableVoice: (() -> Unit)? = null,
+    showVoicePrivacyNotice: Boolean = false,
+    onVoicePrivacyNoticeShown: () -> Unit = {},
 ) {
     var input by remember(flashcard) { mutableStateOf("") }
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
@@ -118,7 +120,12 @@ fun TestMode(
         val currentGrade = currentGraded
         if (currentGrade == null) {
             if (voiceInput) {
-                VoiceAnswerPanel(onSubmit = { grade(it) }, onDisableVoice = onDisableVoice)
+                VoiceAnswerPanel(
+                    onSubmit = { grade(it) },
+                    onDisableVoice = onDisableVoice,
+                    showPrivacyNotice = showVoicePrivacyNotice,
+                    onPrivacyNoticeShown = onVoicePrivacyNoticeShown,
+                )
             }
             OutlinedTextField(
                 value = input,

@@ -14,6 +14,7 @@ import javax.inject.Singleton
 
 private val Context.practiceDataStore: DataStore<Preferences> by preferencesDataStore(name = "practice")
 private val VOICE_INPUT = booleanPreferencesKey("voice_input")
+private val VOICE_PRIVACY_NOTICE_SEEN = booleanPreferencesKey("voice_privacy_notice_seen")
 
 /**
  * Whether the user wants to answer by speaking — a *local* preference, deliberately not a property
@@ -31,6 +32,16 @@ interface VoiceInputPreference {
     fun enabled(): Flow<Boolean>
 
     suspend fun setEnabled(enabled: Boolean)
+
+    /**
+     * Whether the "speech is processed by your device's speech service" disclosure has been shown.
+     *
+     * It's a one-time disclosure, not a label: repeating it on every card turns it into furniture
+     * the user stops reading, which is worse for informed consent than showing it once and meaning it.
+     */
+    fun privacyNoticeSeen(): Flow<Boolean>
+
+    suspend fun markPrivacyNoticeSeen()
 }
 
 @Singleton
@@ -44,5 +55,14 @@ class DataStoreVoiceInputPreference @Inject constructor(
 
     override suspend fun setEnabled(enabled: Boolean) {
         runCatching { context.practiceDataStore.edit { it[VOICE_INPUT] = enabled } }
+    }
+
+    override fun privacyNoticeSeen(): Flow<Boolean> = context.practiceDataStore.data
+        // Unreadable store → treat as unseen, so the disclosure errs towards being shown again.
+        .catch { emit(androidx.datastore.preferences.core.emptyPreferences()) }
+        .map { it[VOICE_PRIVACY_NOTICE_SEEN] ?: false }
+
+    override suspend fun markPrivacyNoticeSeen() {
+        runCatching { context.practiceDataStore.edit { it[VOICE_PRIVACY_NOTICE_SEEN] = true } }
     }
 }
