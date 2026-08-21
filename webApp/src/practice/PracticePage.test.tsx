@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { PracticePage } from './PracticePage';
@@ -448,6 +448,49 @@ describe('PracticePage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'This should be correct' }));
     expect(await screen.findByText(/sent for review/)).toBeInTheDocument();
     expect(api.suggestAnswer).toHaveBeenCalledWith('c1', 'wrong');
+  });
+
+  /**
+   * The reported bug (#398): the recap listed the same card twice — once ✓ with the user's answer,
+   * once ✗ with none. The window isn't a millisecond race: Test grades when the verdict appears and
+   * only advances on "Next", so the runner sits on an answered card for as long as it's being read.
+   */
+  it('does not record a second answer when the clock expires on an already-answered card (#398)', async () => {
+    // 2s limit from now: long enough to answer, short enough to expire while the verdict is up.
+    vi.mocked(api.createSession).mockResolvedValue(
+      session({ mode: 'test', createdAtMillis: Date.now(), timeLimitSeconds: 2 }),
+    );
+    vi.mocked(api.getDeck).mockResolvedValue({
+      id: 5,
+      title: 'Spanish',
+      editable: true,
+      flashcards: [{ cardUid: 'c1', question: 'Q1', answer: 'A1' }],
+    });
+    vi.mocked(api.completeSession).mockResolvedValue(session({ isCompleted: true }));
+    vi.mocked(api.getAnswers).mockResolvedValue([]);
+    vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 1, longest: 1 }, decks: [] });
+    render(
+      <MemoryRouter initialEntries={['/decks/5/practice?mode=test&shuffle=0&timeLimit=2']}>
+        <Routes>
+          <Route path="/decks/:id/practice" element={<PracticePage />} />
+          <Route path="/" element={<div>library</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await userEvent.type(await screen.findByLabelText('Your answer'), 'a1');
+    await userEvent.click(screen.getByRole('button', { name: 'Check' }));
+    expect(await screen.findByText('✓ Correct')).toBeInTheDocument();
+    expect(api.recordAnswers).toHaveBeenCalledTimes(1);
+
+    // Let the clock run out while the verdict is still on screen.
+    await waitFor(() => expect(screen.queryByLabelText('time remaining')).not.toBeInTheDocument(), {
+      timeout: 4000,
+    });
+
+    // Exactly one answer for this card, and it keeps the verdict the user actually earned.
+    expect(api.recordAnswers).toHaveBeenCalledTimes(1);
+    expect(api.recordAnswers).toHaveBeenCalledWith(1, [expect.objectContaining({ cardUid: 'c1', correct: true })]);
   });
 
   it('auto-completes a timed session whose deadline has already passed (#289)', async () => {

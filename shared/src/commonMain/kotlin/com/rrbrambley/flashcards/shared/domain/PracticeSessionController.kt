@@ -81,6 +81,12 @@ class PracticeSessionController(
     private var discussionsEnabled = false
     private var isGlobal = false
     private var answerStreak = 0
+
+    // Whether the card at [index] has already been scored. Test/Multiple-Choice call [applyResult]
+    // when the verdict is revealed and only [goForward] on "Next", so the controller sits on an
+    // *answered* card for as long as the user reads it. Without this, a countdown expiring in that
+    // window records the same card a second time as unanswered-and-wrong (#398).
+    private var currentCardGraded = false
     private var reviewJob: Job? = null
     private var timerJob: Job? = null
 
@@ -216,6 +222,7 @@ class PracticeSessionController(
     fun applyResult(correct: Boolean, submittedText: String? = null) {
         if (correct) numCorrect++ else numIncorrect++
         answerStreak = if (correct) answerStreak + 1 else 0
+        currentCardGraded = true
         recordAnswer(correct, submittedText)
         updateState()
     }
@@ -230,6 +237,7 @@ class PracticeSessionController(
     fun goBack() {
         if (index > 0) {
             index--
+            currentCardGraded = false
             updateState()
             persist()
         }
@@ -238,6 +246,7 @@ class PracticeSessionController(
     fun goForward() {
         if (index < cards.size - 1) {
             index++
+            currentCardGraded = false
             updateState()
             persist()
         } else {
@@ -257,9 +266,16 @@ class PracticeSessionController(
     private fun expireRun() {
         val showing = _state.value as? PracticeUiState.ShowCard ?: return
         timerJob?.cancel()
-        numIncorrect++
-        answerStreak = 0
-        recordAnswer(correct = false, submittedText = null)
+        // Only score and log a miss for a card that was genuinely unanswered. Expiring while the user
+        // reads a verdict they already earned must not re-record it: that produces two contradictory
+        // rows for one card in the recap, inflates the totals past the number of cards answered, and
+        // wipes a streak the answer had just extended (#398). The reveal still happens either way —
+        // it's the card they were on.
+        if (!currentCardGraded) {
+            numIncorrect++
+            answerStreak = 0
+            recordAnswer(correct = false, submittedText = null)
+        }
         _state.update { PracticeUiState.TimeUp(card = showing.card, mode = mode) }
     }
 
