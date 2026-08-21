@@ -494,13 +494,18 @@ function PracticeRunner({
   useEffect(() => {
     if (!expired || state.status !== 'practicing') return;
     if (wasRunningRef.current) {
-      recordAnswer(state.cards[state.index], false, undefined);
+      // Record the miss only for a card that was genuinely unanswered. Test/Multiple-Choice hold an
+      // *answered* card on screen until "Next", so expiring while the user reads a verdict would
+      // otherwise log the same card twice — once with their answer, once as unanswered-and-wrong,
+      // giving two contradictory rows in the recap (#398). The reveal still happens either way:
+      // it's the card they were on.
+      if (!state.currentCardGraded) recordAnswer(state.cards[state.index], false, undefined);
       dispatch({ type: 'TIME_UP' });
     } else {
       dispatch({ type: 'EXPIRE' });
       completeNow();
     }
-  }, [expired, state.status, state.cards, state.index, recordAnswer, completeNow]);
+  }, [expired, state.status, state.cards, state.index, state.currentCardGraded, recordAnswer, completeNow]);
 
   // Leaving the reveal ends the run for real.
   const continueAfterTimeUp = useCallback(() => {

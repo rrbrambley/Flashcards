@@ -97,6 +97,45 @@ describe('practiceReducer', () => {
     expect(practiceReducer(expired, { type: 'CONTINUE' }).status).toBe('completed');
   });
 
+  /**
+   * The window this guards is not a millisecond race — Test/Multiple-Choice GRADE when the verdict
+   * appears and only ADVANCE on "Next", so the runner sits on an answered card for as long as the
+   * user reads it. Expiring in there used to score the card a second time (#398).
+   */
+  it('does not re-score a card that was already answered when the clock expires (#398)', () => {
+    const graded = practiceReducer(
+      initPractice(cards, { currentCardIndex: 1, numCorrect: 1, numIncorrect: 0 }),
+      { type: 'GRADE', correct: true },
+    );
+    expect(graded.numCorrect).toBe(2);
+    expect(graded.streak).toBe(1);
+
+    const expired = practiceReducer(graded, { type: 'TIME_UP' });
+
+    // Still reveals the card they were on...
+    expect(expired.status).toBe('timeUp');
+    // ...but the answer they already earned stands: no phantom miss, and the streak survives.
+    expect(expired.numCorrect).toBe(2);
+    expect(expired.numIncorrect).toBe(0);
+    expect(expired.streak).toBe(1);
+    // The totals can never exceed the cards actually answered.
+    expect(expired.numCorrect + expired.numIncorrect).toBe(2);
+  });
+
+  it('still counts the miss when the clock expires on a genuinely unanswered card', () => {
+    const graded = practiceReducer(
+      initPractice(cards, { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 }),
+      { type: 'GRADE', correct: true },
+    );
+    // Moving on clears the flag, so the *next* card is unanswered again.
+    const next = practiceReducer(graded, { type: 'ADVANCE' });
+    expect(next.currentCardGraded).toBe(false);
+
+    const expired = practiceReducer(next, { type: 'TIME_UP' });
+    expect(expired.numIncorrect).toBe(1);
+    expect(expired.streak).toBe(0);
+  });
+
   it('ignores further grading once the clock has expired', () => {
     const expired = practiceReducer(
       initPractice(cards, { currentCardIndex: 0, numCorrect: 0, numIncorrect: 0 }),

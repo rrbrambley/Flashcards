@@ -281,6 +281,70 @@ class PracticeSessionControllerTest {
         }
     }
 
+    /**
+     * #398: the window here is not a millisecond race. Test/Multiple-Choice call [applyResult] when
+     * the verdict is revealed and only advance on "Next", so the controller sits on an answered card
+     * for as long as the user reads it. Expiring in there used to log the card a second time as
+     * unanswered-and-wrong, producing two contradictory recap rows for one card.
+     */
+    @Test
+    fun expiry_doesNotReRecordACardTheUserAlreadyAnswered() = runTest {
+        var fakeNow = 0L
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 1))
+        val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"))))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks, now = { fakeNow })
+        try {
+            c.start()
+            advanceTimeBy(100)
+            // Answer it, but stay on the verdict — exactly what Test mode does before "Next".
+            c.applyResult(correct = true, submittedText = "a-a")
+            advanceTimeBy(100)
+
+            fakeNow = 2_000
+            advanceTimeBy(2_000)
+
+            assertIs<PracticeUiState.TimeUp>(c.state.value)
+            assertEquals<List<Triple<String, Boolean, String?>>>(
+                listOf(Triple("a", true, "a-a")),
+                sessions.recorded,
+                "the answer the user earned should stand, with no second unanswered row beside it",
+            )
+        } finally {
+            c.close()
+        }
+    }
+
+    /** The score and streak must not be double-counted either — the same bug, seen from the totals. */
+    @Test
+    fun expiry_afterAnsweringKeepsTheScoreAndStreakIntact() = runTest {
+        var fakeNow = 0L
+        val sessions = FakeSessionRepo(session(deckId = 1, timeLimitSeconds = 1))
+        val decks = FakeDeckRepo(deck(1, listOf(card("a"), card("b"))))
+        val c = controller(this, PracticeEntry.Session(SESSION_ID), sessions, decks, now = { fakeNow })
+        try {
+            c.start()
+            advanceTimeBy(100)
+            c.applyResult(correct = true, submittedText = "a-a")
+            advanceTimeBy(100)
+            val answered = assertIs<PracticeUiState.ShowCard>(c.state.value)
+            assertEquals(1, answered.numCorrect)
+            assertEquals(0, answered.numIncorrect)
+
+            fakeNow = 2_000
+            advanceTimeBy(2_000)
+            c.continueAfterTimeUp()
+            advanceTimeBy(100)
+
+            val done = assertIs<PracticeUiState.Completed>(c.state.value)
+            assertEquals(1, done.numCorrect)
+            // Was 1 before the fix: a correct answer also counted as a miss, so the totals exceeded
+            // the number of cards actually answered.
+            assertEquals(0, done.numIncorrect)
+        } finally {
+            c.close()
+        }
+    }
+
     @Test
     fun emptyDeck_fails() = runTest {
         val sessions = FakeSessionRepo(session(deckId = 1))

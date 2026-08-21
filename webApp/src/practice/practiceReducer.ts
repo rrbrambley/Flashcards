@@ -14,6 +14,11 @@ export interface PracticeState {
   // answer revealed before the recap — otherwise the question the user was working on is the one whose
   // answer they never see. CONTINUE leaves it.
   status: 'practicing' | 'timeUp' | 'completed';
+  // Whether the card at [index] has already been scored. Test/Multiple-Choice GRADE when the verdict
+  // is revealed and only ADVANCE on "Next", so the runner sits on an *answered* card for as long as
+  // the user reads it. Without this, a countdown expiring in that window records the same card a
+  // second time as unanswered-and-wrong (#398).
+  currentCardGraded: boolean;
 }
 
 // GRADE scores the current card (and the in-session streak) without moving on, so the streak badge
@@ -43,6 +48,7 @@ export function initPractice(
     numIncorrect: session.numIncorrect,
     streak: initialStreak,
     status: 'practicing',
+    currentCardGraded: false,
   };
 }
 
@@ -61,6 +67,10 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
   // shown (#375). It counts as a miss — it went unanswered — which is also what puts it in the recap,
   // since that list is built from recorded answers.
   if (action.type === 'TIME_UP') {
+    // Only counts as a miss if the card was actually unanswered. Expiring while the user reads a
+    // verdict they already earned must not re-score it — GRADE has been here, and taking the miss
+    // anyway both double-counts the card and wipes a streak the answer had just extended (#398).
+    if (state.currentCardGraded) return { ...state, status: 'timeUp' };
     return { ...state, status: 'timeUp', numIncorrect: state.numIncorrect + 1, streak: 0 };
   }
   if (action.type === 'GRADE') {
@@ -70,10 +80,11 @@ export function practiceReducer(state: PracticeState, action: PracticeAction): P
       numCorrect: state.numCorrect + (action.correct ? 1 : 0),
       numIncorrect: state.numIncorrect + (action.correct ? 0 : 1),
       streak: action.correct ? state.streak + 1 : 0,
+      currentCardGraded: true,
     };
   }
   // ADVANCE: move to the next card, or complete after the last.
   return state.index >= state.cards.length - 1
     ? { ...state, status: 'completed' }
-    : { ...state, index: state.index + 1 };
+    : { ...state, index: state.index + 1, currentCardGraded: false };
 }
