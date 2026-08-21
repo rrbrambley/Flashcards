@@ -1,4 +1,5 @@
 import Shared
+import Speech
 import SwiftUI
 
 /// Configure a practice run before it starts (FLA-200): pick a mode (the primary choice), adjust
@@ -17,6 +18,9 @@ struct PracticeConfigView: View {
     let gradeAtEndEnabled: Bool
     /// Whether to offer the "Timed" toggle (gated on `practice_timer`, #289).
     let timerEnabled: Bool
+    /// Whether voice answering is offered at all (#389) — the `practice_voice_input` flag, which is
+    /// seeded off and dark-launched.
+    var voiceEnabled = false
     let onStart: (
         _ modeKey: String, _ shuffle: Bool, _ questionCount: Int32?, _ gradeAtEnd: Bool, _ timeLimitSeconds: Int32?
     ) -> Void
@@ -24,6 +28,7 @@ struct PracticeConfigView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedMode: String?
     @State private var shuffle = true
+    @State private var voiceInput = VoiceInputPreference.isEnabled
     @State private var gradeAtEnd = false
     @State private var timed = false
     @State private var minutesText = "1"
@@ -31,6 +36,12 @@ struct PracticeConfigView: View {
     @State private var questionsText = ""
 
     /// Grade-at-the-end only applies to the objectively-graded modes (#293), not Classic's self-graded flip.
+    /// The two modes with an answer to speak. Classic is a self-graded flip — nothing to say, and
+    /// nothing to grade a transcript against.
+    private var canUseVoice: Bool {
+        selectedMode == PracticeMode.test.key || selectedMode == PracticeMode.multiplechoice.key
+    }
+
     private var canGradeAtEnd: Bool {
         gradeAtEndEnabled && (selectedMode == PracticeMode.test.key || selectedMode == PracticeMode.multiplechoice.key)
     }
@@ -76,6 +87,21 @@ struct PracticeConfigView: View {
                         }
                     }
                     Toggle("Shuffle cards", isOn: $shuffle)
+                    // Answering by voice (#389) — an input method, not a mode, so it sits with the
+                    // other settings. Flipping this must not prompt for the microphone: permission
+                    // is requested when the user first actually asks to speak.
+                    if voiceEnabled {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Toggle("Answer by voice", isOn: $voiceInput)
+                                .disabled(!canUseVoice || !speechAvailable)
+                                // Local preference, not a property of the run — so it has to outlive
+                                // this sheet rather than ride on the session (#386).
+                                .onChange(of: voiceInput) { VoiceInputPreference.isEnabled = voiceInput }
+                            Text(voiceCaption)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
                 // Single-sitting settings (#306): grade-at-the-end + timed run start to finish in one go.
                 if gradeAtEndEnabled || timerEnabled {
@@ -150,4 +176,17 @@ struct PracticeConfigView: View {
         let total = (Int(minutesText) ?? 0) * 60 + (Int(secondsText) ?? 0)
         return Int32(max(1, total))
     }
+
+    /// Whether this device can recognise speech at all. Checked up front so the toggle can say so,
+    /// rather than leaving the user to discover an inert panel mid-practice.
+    private var speechAvailable: Bool {
+        SFSpeechRecognizer(locale: .current) != nil
+    }
+
+    private var voiceCaption: LocalizedStringKey {
+        if !speechAvailable { return "Not supported on this device" }
+        if !canUseVoice { return "Available for Test & Multiple Choice" }
+        return "Say your answer instead of typing or tapping"
+    }
+
 }

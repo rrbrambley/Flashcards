@@ -13,6 +13,9 @@ enum FeatureFlag {
     static let practiceQuestionCount = "practice_question_count"
     static let practiceGradeAtEnd = "practice_grade_at_end"
     static let practiceTimer = "practice_timer"
+    // Seeded OFF, unlike the practice flags above: voice is dark-launched and switched on per
+    // user/role (#386). `isEnabled` already defaults false, which is what a dark flag wants.
+    static let practiceVoiceInput = "practice_voice_input"
     static let notifications = "notifications"
     static let streakDetails = "streak_details"
 }

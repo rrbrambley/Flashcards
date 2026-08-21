@@ -103,7 +103,10 @@ struct LibraryView: View {
                     // Fail-open like the mode gating: offered unless the flag is explicitly off.
                     questionCountEnabled: featureFlagStore.flags[FeatureFlag.practiceQuestionCount] != false,
                     gradeAtEndEnabled: featureFlagStore.flags[FeatureFlag.practiceGradeAtEnd] != false,
-                    timerEnabled: featureFlagStore.flags[FeatureFlag.practiceTimer] != false
+                    timerEnabled: featureFlagStore.flags[FeatureFlag.practiceTimer] != false,
+                    // NOT fail-open like the three above: voice is seeded off and dark-launched, so
+                    // `!= false` would offer it to anyone whose flag fetch merely failed (#389).
+                    voiceEnabled: featureFlagStore.isEnabled(FeatureFlag.practiceVoiceInput)
                 ) { mode, shuffle, questionCount, gradeAtEnd, timeLimitSeconds in
                     pendingStart = PracticingDeck(
                         id: item.id, mode: mode, shuffle: shuffle,

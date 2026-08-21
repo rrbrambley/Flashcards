@@ -25,6 +25,10 @@ struct PracticeView: View {
     private let authService: AuthService?
     // Gates the discuss affordance behind the `discussions` kill switch (FLA-185); guests bypass it.
     private let featureFlagStore: FeatureFlagStore
+    /// Local preference (#389), read once so it can't flip mid-run; the panel can switch it off.
+    @State private var voiceInputPreferred = VoiceInputPreference.isEnabled
+    /// The one-time speech-processing disclosure, likewise read once so it can't vanish mid-card.
+    @State private var showVoicePrivacyNotice = !VoiceInputPreference.privacyNoticeSeen
 
     init(
         flashcardRepository: FlashcardRepository,
@@ -209,6 +213,13 @@ struct PracticeView: View {
         )
         // Pause the countdown while this card's prompt image loads (#314); no-op for untimed runs.
         let onImageReadyChanged = { (ready: Bool) in viewModel.setPromptImageReady(ready) }
+        // Answering by voice (#389). Note `isEnabled` alone, NOT the guests-see-everything idiom the
+        // discussions kill switch uses: that exists because guests carry no flags and those flags are
+        // default-ON. This one is seeded off and dark-launched, so failing open would ship it to
+        // every signed-out visitor while hiding it from signed-in users.
+        let voiceInput = !viewModel.isGuestMode
+            && featureFlagStore.isEnabled(FeatureFlag.practiceVoiceInput)
+            && voiceInputPreferred
         // Bridged Kotlin enum is a non-final class, so the switch needs a `default` (→ Classic).
         switch PracticeMode.companion.fromKey(key: mode) {
         case .test:
@@ -222,7 +233,11 @@ struct PracticeView: View {
                 isGuest: viewModel.isGuestMode,
                 apiClient: apiClient,
                 authService: authService,
-                onImageReadyChanged: onImageReadyChanged
+                onImageReadyChanged: onImageReadyChanged,
+                voiceInput: voiceInput,
+                onDisableVoice: disableVoice,
+                showVoicePrivacyNotice: showVoicePrivacyNotice,
+                onVoicePrivacyNoticeShown: markVoicePrivacyNoticeSeen
             )
         case .multiplechoice:
             MultipleChoiceModeView(
@@ -232,7 +247,11 @@ struct PracticeView: View {
                 onAdvance: viewModel.goForward,
                 discussionsEnabled: showDiscuss,
                 onDiscuss: onDiscuss,
-                onImageReadyChanged: onImageReadyChanged
+                onImageReadyChanged: onImageReadyChanged,
+                voiceInput: voiceInput,
+                onDisableVoice: disableVoice,
+                showVoicePrivacyNotice: showVoicePrivacyNotice,
+                onVoicePrivacyNoticeShown: markVoicePrivacyNoticeSeen
             )
         default:
             ClassicModeView(
@@ -246,6 +265,18 @@ struct PracticeView: View {
                 onImageReadyChanged: onImageReadyChanged
             )
         }
+    }
+
+    /// Switches voice off for good — offered by the panel when the microphone or speech access is
+    /// refused, so a stuck user isn't re-prompted on every card.
+    private func disableVoice() {
+        VoiceInputPreference.isEnabled = false
+        voiceInputPreferred = false
+    }
+
+    private func markVoicePrivacyNoticeSeen() {
+        VoiceInputPreference.privacyNoticeSeen = true
+        showVoicePrivacyNotice = false
     }
 }
 
@@ -522,4 +553,5 @@ private struct OutcomeBadge: View {
             .background(correct ? Color.green : Color.red, in: Circle())
             .accessibilityLabel(correct ? "Correct" : "Incorrect")
     }
+
 }

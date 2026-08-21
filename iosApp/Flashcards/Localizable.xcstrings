@@ -83,6 +83,9 @@
     "Answer" : {
 
     },
+    "Answer by voice" : {
+
+    },
     "Answer every card, then submit to see your score" : {
 
     },
@@ -197,6 +200,9 @@
     "Couldn't start practice" : {
 
     },
+    "Couldn't start recording." : {
+
+    },
     "Couldn't update your avatar." : {
 
     },
@@ -248,6 +254,9 @@
     "Delete “%@”?" : {
 
     },
+    "Didn't catch that." : {
+
+    },
     "Discard" : {
 
     },
@@ -296,6 +305,9 @@
     "Have an account? Log in" : {
 
     },
+    "Heard: “%@”" : {
+
+    },
     "Home" : {
 
     },
@@ -326,6 +338,9 @@
     "Library" : {
 
     },
+    "Listening…" : {
+
+    },
     "Load more" : {
 
     },
@@ -353,6 +368,9 @@
     "Max streak" : {
 
     },
+    "Microphone or speech access is off. Turn it on in Settings, or answer without voice." : {
+
+    },
     "Multiple Choice" : {
 
     },
@@ -366,6 +384,9 @@
 
     },
     "Next" : {
+
+    },
+    "Next question…" : {
 
     },
     "No decks are available yet." : {
@@ -387,6 +408,9 @@
 
     },
     "No practice modes are available right now." : {
+
+    },
+    "Not supported on this device" : {
 
     },
     "Notifications" : {
@@ -479,6 +503,9 @@
     "Reported" : {
 
     },
+    "Retry" : {
+
+    },
     "Review" : {
 
     },
@@ -488,7 +515,16 @@
     "Save your progress?" : {
 
     },
+    "Say your answer" : {
+
+    },
+    "Say your answer instead of typing or tapping" : {
+
+    },
     "Search decks" : {
+
+    },
+    "See results" : {
 
     },
     "Sessions completed" : {
@@ -530,6 +566,15 @@
     "Sort decks" : {
 
     },
+    "Speak answer" : {
+
+    },
+    "Speech is processed by your device's speech service." : {
+
+    },
+    "Speech service unreachable — answer without voice." : {
+
+    },
     "Start" : {
 
     },
@@ -537,6 +582,9 @@
 
     },
     "Start the conversation!" : {
+
+    },
+    "Stop" : {
 
     },
     "Submit (%lld/%lld)" : {
@@ -548,6 +596,9 @@
           }
         }
       }
+    },
+    "Submit now" : {
+
     },
     "Suggest an answer" : {
 
@@ -568,6 +619,9 @@
 
     },
     "That suggestion couldn't be accepted." : {
+
+    },
+    "The answer was" : {
 
     },
     "This deck and its cards will be permanently deleted." : {
@@ -591,6 +645,9 @@
     "Time limit" : {
 
     },
+    "Time's up" : {
+
+    },
     "Timed" : {
 
     },
@@ -603,6 +660,9 @@
     "Try again" : {
 
     },
+    "Turn off voice answers" : {
+
+    },
     "Type the answer" : {
 
     },
@@ -610,6 +670,12 @@
 
     },
     "Uploading image…" : {
+
+    },
+    "Voice answers aren't available right now." : {
+
+    },
+    "Voice answers aren't supported on this device." : {
 
     },
     "Welcome back" : {
