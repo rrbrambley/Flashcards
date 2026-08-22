@@ -2,6 +2,22 @@ import AVFoundation
 import Speech
 import SwiftUI
 
+/// How long a pause counts as "they've finished answering".
+///
+/// `SFSpeechAudioBufferRecognitionRequest` does **not** detect end-of-utterance: it emits a final
+/// result only once the audio stream ends, so without this the recogniser transcribes happily and
+/// never submits (#409 review). The web (`continuous = false`) and Android's `SpeechRecognizer` both
+/// provide that signal themselves — iOS makes us find it.
+///
+/// 1.2s is long enough to survive a mid-answer breath and short enough that "Paris" doesn't feel
+/// like it hung. Combined with the 1.5s grace window that's ~2.7s from speech to grade, comparable
+/// to the web's ~1s recogniser lag plus the same grace.
+private let silenceWindow: Duration = .milliseconds(1200)
+
+/// How long to wait for *any* speech before giving up, so a card can't sit listening forever with
+/// the recording indicator lit.
+private let noSpeechWindow: Duration = .seconds(6)
+
 /// Why listening stopped, reduced to the cases the UI actually distinguishes.
 ///
 /// Mirrors the web's `VoiceError` and Android's, so the UX states are one product across platforms
@@ -43,6 +59,8 @@ final class VoiceRecognizer: ObservableObject {
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var onFinal: ((String) -> Void)?
+    /// Fires when the user stops talking; ending the audio is what makes iOS deliver a final result.
+    private var silenceTask: Task<Void, Never>?
 
     init(locale: Locale = .current) {
         // A recogniser is nil for an unsupported locale; `isAvailable` covers a temporary outage.
@@ -52,8 +70,9 @@ final class VoiceRecognizer: ObservableObject {
     }
 
     deinit {
-        // Not `stopListening()` — deinit is nonisolated and tearing down the engine here would hop
-        // actors during deallocation. The tap and engine are released with the object.
+        // Not `cancel()` — deinit is nonisolated and tearing down the engine here would hop actors
+        // during deallocation. The tap and engine are released with the object.
+        silenceTask?.cancel()
         task?.cancel()
     }
 
@@ -134,6 +153,8 @@ final class VoiceRecognizer: ObservableObject {
         listening = true
         self.error = nil
         interim = ""
+        // Nothing heard yet, so allow the longer window before giving up entirely.
+        restartSilenceTimer(heardSomething: false)
 
         task = recognizer.recognitionTask(with: request) { [weak self] result, taskError in
             Task { @MainActor in
@@ -145,6 +166,8 @@ final class VoiceRecognizer: ObservableObject {
                         return
                     }
                     self.interim = transcript
+                    // Still talking — push the end-of-answer deadline back.
+                    self.restartSilenceTimer(heardSomething: true)
                 }
                 if let taskError {
                     self.handle(taskError)
@@ -153,8 +176,20 @@ final class VoiceRecognizer: ObservableObject {
         }
     }
 
+    /// Ends the audio stream after a pause, which is the only thing that makes `SFSpeechRecognizer`
+    /// deliver `isFinal`. Restarted on every partial result, so a slow speaker is never cut off.
+    private func restartSilenceTimer(heardSomething: Bool) {
+        silenceTask?.cancel()
+        silenceTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: heardSomething ? silenceWindow : noSpeechWindow)
+            guard let self, !Task.isCancelled, self.listening else { return }
+            self.request?.endAudio()
+        }
+    }
+
     /// Stops listening without reporting anything — the user's own "Stop", or moving on.
     func cancel() {
+        silenceTask?.cancel()
         task?.cancel()
         task = nil
         finishRequest()
@@ -170,6 +205,7 @@ final class VoiceRecognizer: ObservableObject {
     }
 
     private func finish(with transcript: String) {
+        silenceTask?.cancel()
         finishRequest()
         teardownAudio()
         listening = false
@@ -183,6 +219,7 @@ final class VoiceRecognizer: ObservableObject {
     }
 
     private func handle(_ taskError: Error) {
+        silenceTask?.cancel()
         finishRequest()
         teardownAudio()
         listening = false
@@ -190,6 +227,12 @@ final class VoiceRecognizer: ObservableObject {
         // Cancellation is ours (the user stopped, or the card moved on) — reporting it would flash
         // an error on every advance. Same reason web ignores `aborted` and Android ERROR_CLIENT.
         if nsError.code == 203 || nsError.domain == NSCocoaErrorDomain && nsError.code == NSUserCancelledError {
+            return
+        }
+        // "No speech detected" is a re-promptable outcome, not a malfunction — the same thing the
+        // other platforms report as no-speech rather than as an error the user can't act on.
+        if nsError.domain == "kAFAssistantErrorDomain" && nsError.code == 1110 {
+            error = .noSpeech
             return
         }
         error = nsError.domain == NSURLErrorDomain ? .network : .unavailable
