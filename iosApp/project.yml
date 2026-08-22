@@ -63,6 +63,14 @@ targets:
         # http://localhost:8080). A production build should point at an HTTPS backend and drop this.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
+        # Answering practice questions by voice (#389). iOS needs BOTH: speech recognition and the
+        # microphone are separate permissions, and the system prompts for each the first time voice
+        # is used. Missing either one crashes the app at the point of request rather than failing
+        # gracefully. Shown verbatim in the system alerts, so they explain the "why", not the "what".
+        NSSpeechRecognitionUsageDescription: >-
+          Flashcards uses speech recognition to check the answers you say out loud during practice.
+        NSMicrophoneUsageDescription: >-
+          Flashcards needs the microphone to hear the answers you say out loud during practice.
         # Surfaced from the per-config BACKEND_BASE_URL build setting; read via AppConfig.
         BackendBaseURL: $(BACKEND_BASE_URL)
         # Google Sign-In (FLA-50): the iOS OAuth client ID gates the button (read via AppConfig);
