@@ -1456,6 +1456,15 @@ button.danger:hover:not(:disabled) {
   color: var(--muted);
 }
 
+/* The generic `button:hover` fills every button with the primary colour, which on a zero-padding
+   link renders as a stray coloured oval around the words. This reads as a link, so it should behave
+   like one: underline it and darken the text, and paint no background at all. */
+.settings-step-header .link-btn:hover:not(:disabled) {
+  background: none;
+  color: var(--text);
+  text-decoration: underline;
+}
+
 /* The mode name is what this step is about, so it reads as the heading rather than as a label. */
 .settings-step-header .section-heading {
   margin: 0;
