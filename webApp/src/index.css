@@ -1438,6 +1438,31 @@ button.danger:hover:not(:disabled) {
 
 /* Answering by voice (#387): a panel above the mode's normal input, which stays put — so a blocked
    mic or an unsupported browser never strands the card. */
+/* Header of the per-mode settings step (#410): which mode you're configuring, and the way back. */
+.settings-step-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Muted and small: it's the escape hatch, not the subject of the screen. Left prominent it
+   out-shouted the heading below it, inverting the hierarchy. */
+.settings-step-header .link-btn {
+  align-self: flex-start;
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+/* The mode name is what this step is about, so it reads as the heading rather than as a label. */
+.settings-step-header .section-heading {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
 .test-advancing {
   margin: 0;
   color: #6b7280;

@@ -45,7 +45,8 @@ test('register → create a deck → it appears in the library → practice it t
   // No mode in the URL → the mode chooser. Use Test mode: it's the most literal
   // prompt → type-an-answer → grade → completion path.
   await expect(page.getByRole('heading', { name: 'Choose a mode' })).toBeVisible();
-  await page.getByRole('radio', { name: 'Test' }).click();
+  // Picking a mode advances to that mode's settings step, where Start lives (#410).
+  await page.getByRole('button', { name: 'Test' }).click();
   await page.getByRole('button', { name: 'Start practice' }).click();
 
   // Answer the single card correctly, see it graded, then advance to completion.
