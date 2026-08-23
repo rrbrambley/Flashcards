@@ -286,8 +286,8 @@ describe('PracticePage', () => {
     );
     expect(await screen.findByText('Choose a mode')).toBeInTheDocument();
     expect(screen.getByText('Test')).toBeInTheDocument();
-    // Selecting a mode no longer auto-starts — a Start button drives it.
-    expect(screen.getByRole('button', { name: 'Start practice' })).toBeInTheDocument();
+    // Start lives on the mode's settings step now, not alongside the mode list (#410).
+    expect(screen.queryByRole('button', { name: 'Start practice' })).not.toBeInTheDocument();
   });
 
   it('runs the test mode end-to-end when ?mode=test', async () => {

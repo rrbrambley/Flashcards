@@ -69,6 +69,8 @@ export function ModeChooser({ deckId }: { deckId: number }) {
   }, [deckId, isGuest]);
 
   // Grade-at-the-end only applies to the objectively-graded modes (#293) — not Classic's self-graded flip.
+  // The chosen mode's label, so the settings step says what it's configuring (#410).
+  const selectedModeLabel = modes.find((m) => m.key === selectedMode)?.label ?? '';
   const canGradeAtEnd = gradeAtEndEnabled && (selectedMode === 'test' || selectedMode === 'multiple_choice');
   // The two modes with an answer to speak (#387, #388). Classic is a self-graded flip — there's
   // nothing to say, and nothing to grade a transcript against.
@@ -98,26 +100,33 @@ export function ModeChooser({ deckId }: { deckId: number }) {
         backLabel={exit.label}
       />
       <main className="container">
-        <h2 className="section-heading">Choose a mode</h2>
-        {modes.length === 0 && <p className="muted">No practice modes are available right now.</p>}
-        <ul className="mode-list" role="radiogroup" aria-label="Practice mode">
-          {modes.map((mode) => (
-            <li key={mode.key}>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={selectedMode === mode.key}
-                className={`mode-option${selectedMode === mode.key ? ' selected' : ''}`}
-                onClick={() => setSelectedMode(mode.key)}
-              >
-                <span className="mode-option-label">{mode.label}</span>
-                <span className="muted">{mode.description}</span>
+        {selectedMode == null ? (
+          <>
+            <h2 className="section-heading">Choose a mode</h2>
+            {modes.length === 0 && <p className="muted">No practice modes are available right now.</p>}
+            <ul className="mode-list" aria-label="Practice mode">
+              {modes.map((mode) => (
+                <li key={mode.key}>
+                  {/* Picking a mode *is* advancing (#410). Not a radio any more: nothing here is
+                      submitted, so it's a navigation choice, and announcing it as a selected-but-
+                      inert radio would misdescribe what tapping does. Two taps to start either way,
+                      so the fast path costs nothing. */}
+                  <button type="button" className="mode-option" onClick={() => setSelectedMode(mode.key)}>
+                    <span className="mode-option-label">{mode.label}</span>
+                    <span className="muted">{mode.description}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <>
+            <div className="settings-step-header">
+              <button type="button" className="link-btn" onClick={() => setSelectedMode(null)}>
+                ← Choose a different mode
               </button>
-            </li>
-          ))}
-        </ul>
-
-        <h2 className="section-heading">Settings</h2>
+              <h2 className="section-heading">{selectedModeLabel} settings</h2>
+            </div>
         {questionsEnabled && maxQuestions > 0 && (
           <label className="questions-field">
             <span className="questions-field-label">Questions (max {maxQuestions})</span>
@@ -147,30 +156,31 @@ export function ModeChooser({ deckId }: { deckId: number }) {
         </label>
 
         {/* Answering by voice (#387) — an input method, not a mode, so it sits with the other
-            settings rather than in the single-sitting group. Only for the modes that take an answer;
-            Classic is a self-graded flip with nothing to say. */}
-        {voiceFlagOn && (
+            settings rather than in the single-sitting group. Rendered only on the steps for modes
+            that take an answer, so it's never shown disabled-because-of-mode (#410). */}
+        {voiceFlagOn && voiceModeSelected && (
           <label className="shuffle-toggle">
             <input
               type="checkbox"
-              checked={voiceInput && voiceSupported && voiceModeSelected}
-              disabled={!voiceSupported || !voiceModeSelected}
+              checked={voiceInput && voiceSupported}
+              disabled={!voiceSupported}
               onChange={(e) => setVoiceInput(e.target.checked)}
             />
             <span className="shuffle-toggle-label">Answer by voice</span>
             <span className="muted">
-              {!voiceSupported
-                ? 'Not supported in this browser'
-                : !voiceModeSelected
-                  ? 'Available for Test & Multiple Choice'
-                  : "Say your answer instead of typing. Speech is processed by your browser's speech service."}
+              {/* Only the browser-support case is left: the mode case can't happen now that this row
+                  is rendered solely for the modes that can use it (#410). Browser support is a
+                  different axis from mode, and worth stating rather than silently hiding. */}
+              {voiceSupported
+                ? "Say your answer instead of typing. Speech is processed by your browser's speech service."
+                : 'Not supported in this browser'}
             </span>
           </label>
         )}
 
         {/* Single-sitting settings (#306): timed + grade-at-the-end run start-to-finish in one go and
             don't resume, so they're grouped under their own subheader. */}
-        {(gradeAtEndEnabled || timerEnabled) && (
+        {(canGradeAtEnd || timerEnabled) && (
           <div className="single-sitting-group">
             <h3 className="settings-subheading">Complete in a single session</h3>
             <p className="muted single-sitting-note">
@@ -179,20 +189,11 @@ export function ModeChooser({ deckId }: { deckId: number }) {
 
             {/* Always shown (when flagged), but disabled unless a gradeable mode is picked — Classic is
                 a self-graded flip, so there's nothing to defer. */}
-            {gradeAtEndEnabled && (
-              <label className={`shuffle-toggle${canGradeAtEnd ? '' : ' disabled'}`}>
-                <input
-                  type="checkbox"
-                  checked={canGradeAtEnd && gradeAtEnd}
-                  disabled={!canGradeAtEnd}
-                  onChange={(e) => setGradeAtEnd(e.target.checked)}
-                />
+            {canGradeAtEnd && (
+              <label className="shuffle-toggle">
+                <input type="checkbox" checked={gradeAtEnd} onChange={(e) => setGradeAtEnd(e.target.checked)} />
                 <span className="shuffle-toggle-label">Grade at the end</span>
-                <span className="muted">
-                  {canGradeAtEnd
-                    ? 'Answer every card, then submit to see your score'
-                    : 'Available for Test & Multiple Choice'}
-                </span>
+                <span className="muted">Answer every card, then submit to see your score</span>
               </label>
             )}
 
@@ -236,9 +237,11 @@ export function ModeChooser({ deckId }: { deckId: number }) {
           </div>
         )}
 
-        <button type="button" className="start-practice" onClick={start} disabled={!selectedMode}>
-          Start practice
-        </button>
+            <button type="button" className="start-practice" onClick={start}>
+              Start practice
+            </button>
+          </>
+        )}
       </main>
     </div>
   );
