@@ -44,10 +44,31 @@ object OnDeviceRecognition {
  * would fail the same way. Anything else (no speech, a busy recogniser) is about the attempt, not
  * the engine, and must not disqualify on-device for the whole process.
  */
-fun isOnDeviceUnusableError(code: Int): Boolean = when (code) {
+internal fun isOnDeviceUnusableError(code: Int): Boolean = when (code) {
     SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
     SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
     SpeechRecognizer.ERROR_CANNOT_CHECK_SUPPORT,
     -> true
     else -> false
+}
+
+/**
+ * Whether a failed **on-device** attempt proved the *engine* hollow, as opposed to the utterance
+ * simply being empty.
+ *
+ * The hard case (#411 review): a hollow on-device engine can report `ERROR_NO_MATCH` rather than
+ * going silent, which is indistinguishable from a user who said nothing — and treating it as an
+ * ordinary miss leaves them stuck on "Didn't catch that" forever, since every retry fails the same
+ * way.
+ *
+ * [detectedSpeech] is what separates them. `onBeginningOfSpeech` means the engine *heard someone
+ * start talking*; a working recogniser that hears speech produces some transcript, even a wrong one.
+ * Hearing speech and yielding nothing at all is the engine's failure, not the speaker's.
+ */
+fun onDeviceProvedHollow(code: Int, detectedSpeech: Boolean, producedTranscript: Boolean): Boolean {
+    // It transcribed something, so it demonstrably works — whatever went wrong was the attempt.
+    if (producedTranscript) return false
+    // The engine said so itself.
+    if (isOnDeviceUnusableError(code)) return true
+    return detectedSpeech && (code == SpeechRecognizer.ERROR_NO_MATCH || code == SpeechRecognizer.ERROR_SPEECH_TIMEOUT)
 }

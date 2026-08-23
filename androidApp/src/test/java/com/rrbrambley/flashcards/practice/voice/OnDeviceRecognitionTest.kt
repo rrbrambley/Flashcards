@@ -77,4 +77,82 @@ class OnDeviceRecognitionTest {
         assertFalse(isOnDeviceUnusableError(SpeechRecognizer.ERROR_NETWORK))
         assertFalse(isOnDeviceUnusableError(SpeechRecognizer.ERROR_AUDIO))
     }
+
+    /**
+     * The #411 case. A hollow on-device engine can report ERROR_NO_MATCH instead of going silent,
+     * which looks exactly like a user who said nothing — and treating it as an ordinary miss leaves
+     * them stuck on "Didn't catch that" forever, because every retry fails identically.
+     *
+     * `onBeginningOfSpeech` separates them: the engine heard someone start talking and still
+     * produced nothing, which a working recogniser doesn't do.
+     */
+    @Test
+    fun `hearing speech and transcribing nothing is the engine's failure, not the speaker's`() {
+        assertTrue(
+            onDeviceProvedHollow(
+                code = SpeechRecognizer.ERROR_NO_MATCH,
+                detectedSpeech = true,
+                producedTranscript = false,
+            ),
+        )
+        assertTrue(
+            onDeviceProvedHollow(
+                code = SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
+                detectedSpeech = true,
+                producedTranscript = false,
+            ),
+        )
+    }
+
+    /** Nobody spoke, so there's nothing to conclude about the engine. */
+    @Test
+    fun `a miss with no speech detected is just a miss`() {
+        assertFalse(
+            onDeviceProvedHollow(
+                code = SpeechRecognizer.ERROR_NO_MATCH,
+                detectedSpeech = false,
+                producedTranscript = false,
+            ),
+        )
+    }
+
+    /** It transcribed something at some point, so it demonstrably works. */
+    @Test
+    fun `an engine that produced a transcript is never written off`() {
+        assertFalse(
+            onDeviceProvedHollow(
+                code = SpeechRecognizer.ERROR_NO_MATCH,
+                detectedSpeech = true,
+                producedTranscript = true,
+            ),
+        )
+    }
+
+    /** The engine reporting its own incapacity needs no corroboration from the speaker. */
+    @Test
+    fun `an explicit unusable error stands on its own`() {
+        assertTrue(
+            onDeviceProvedHollow(
+                code = SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE,
+                detectedSpeech = false,
+                producedTranscript = false,
+            ),
+        )
+    }
+
+    /** A refused permission or a dead network says nothing about the engine's model. */
+    @Test
+    fun `environmental failures never disqualify the engine`() {
+        for (code in listOf(
+            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS,
+            SpeechRecognizer.ERROR_NETWORK,
+            SpeechRecognizer.ERROR_AUDIO,
+            SpeechRecognizer.ERROR_RECOGNIZER_BUSY,
+        )) {
+            assertFalse(
+                "code $code should not disqualify on-device",
+                onDeviceProvedHollow(code = code, detectedSpeech = true, producedTranscript = false),
+            )
+        }
+    }
 }

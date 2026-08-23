@@ -84,6 +84,9 @@ fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
     val usingOnDevice = remember { mutableStateOf(false) }
     // Any partial or result proves the engine works, so we stop second-guessing it.
     val heardSomething = remember { mutableStateOf(false) }
+    // Whether the engine reported someone starting to talk — the signal that separates "hollow
+    // engine" from "said nothing" when an attempt yields no transcript (#411 review).
+    val detectedSpeech = remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val probe = remember { mutableStateOf<Job?>(null) }
 
@@ -149,7 +152,13 @@ fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
                                 listening.value = false
                                 // "This engine can't serve this at all" — as opposed to "this
                                 // utterance didn't work" — disqualifies on-device, not the attempt.
-                                if (usingOnDevice.value && isOnDeviceUnusableError(code)) {
+                                if (usingOnDevice.value &&
+                                    onDeviceProvedHollow(
+                                        code = code,
+                                        detectedSpeech = detectedSpeech.value,
+                                        producedTranscript = heardSomething.value,
+                                    )
+                                ) {
                                     fallBackToService()
                                     return@listenerFor
                                 }
@@ -157,10 +166,12 @@ fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
                                 voiceErrorFor(code)?.let { error.value = it }
                             },
                             onDone = { listening.value = false },
+                            onSpeechStarted = { detectedSpeech.value = true },
                         ),
                     )
 
                     heardSomething.value = false
+                    detectedSpeech.value = false
                     probe.value?.cancel()
                     // The signature failure has no error code at all: on-device reports ready and
                     // then never calls back (#402 review). Only a timer can catch that.
@@ -225,9 +236,10 @@ private fun listenerFor(
     onFinal: (String) -> Unit,
     onError: (Int) -> Unit,
     onDone: () -> Unit,
+    onSpeechStarted: () -> Unit = {},
 ) = object : RecognitionListener {
     override fun onReadyForSpeech(params: Bundle?) = onReady()
-    override fun onBeginningOfSpeech() = Unit
+    override fun onBeginningOfSpeech() = onSpeechStarted()
     override fun onRmsChanged(rmsdB: Float) = Unit
     override fun onBufferReceived(buffer: ByteArray?) = Unit
     override fun onEndOfSpeech() = onDone()
