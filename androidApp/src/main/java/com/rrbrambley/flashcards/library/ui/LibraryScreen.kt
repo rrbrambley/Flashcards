@@ -433,7 +433,8 @@ internal fun LibraryDeckActionsSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 // The pinned action carries the bottom inset when it's showing.
-                .padding(bottom = if (choosingMode) 0.dp else 32.dp),
+                // The pinned action carries the bottom inset only on the step that shows it.
+                .padding(bottom = if (choosingMode && selectedMode != null) 0.dp else 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
@@ -441,7 +442,9 @@ internal fun LibraryDeckActionsSheet(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            if (choosingMode) {
+            if (choosingMode && selectedMode == null) {
+                // Step 1: the modes and nothing else (#410). Tapping one *is* advancing, so the
+                // common path stays two taps — no Next button taxing every run.
                 Text(
                     text = stringResource(R.string.practice_choose_mode),
                     style = MaterialTheme.typography.bodyLarge,
@@ -457,14 +460,31 @@ internal fun LibraryDeckActionsSheet(
                 availableModes.forEach { mode ->
                     PracticeModeOption(
                         mode = mode,
-                        selected = selectedMode == mode,
+                        selected = false,
                         onClick = { selectedMode = mode },
                     )
                 }
+            } else if (choosingMode) {
+                // Step 2: only the settings that apply to the chosen mode, so nothing is ever shown
+                // disabled-because-of-mode.
+                val mode = selectedMode
+                TextButton(
+                    onClick = { selectedMode = null },
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.practice_choose_different_mode),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
-                    text = stringResource(R.string.practice_settings),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = stringResource(
+                        R.string.practice_mode_settings,
+                        mode?.let { stringResource(it.labelRes) }.orEmpty(),
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
                 )
                 if (questionCountEnabled && maxQuestions > 0) {
                     OutlinedTextField(
@@ -487,8 +507,10 @@ internal fun LibraryDeckActionsSheet(
                         selectedMode == PracticeMode.Test || selectedMode == PracticeMode.MultipleChoice
                     val recognitionAvailable = rememberRecognitionAvailable()
                     VoiceSettingRow(
-                        checked = voicePreferred && voiceModeSelected && recognitionAvailable,
-                        enabled = voiceModeSelected && recognitionAvailable,
+                        checked = voicePreferred && recognitionAvailable,
+                        // Only the device-support case can disable it now: mode no longer applies,
+                        // because this row isn't on a step where it wouldn't (#410).
+                        enabled = recognitionAvailable,
                         unsupported = !recognitionAvailable,
                         onCheckedChange = onVoicePreferredChange,
                     )
@@ -496,7 +518,7 @@ internal fun LibraryDeckActionsSheet(
 
                 // Single-sitting settings (#306): grade-at-the-end + timed run start-to-finish in one
                 // sitting (they don't resume), grouped under their own subheader.
-                if (gradeAtEndEnabled || timerEnabled) {
+                if (canGradeAtEnd || timerEnabled) {
                     Text(
                         text = stringResource(R.string.practice_single_sitting_subheader),
                         style = MaterialTheme.typography.titleSmall,
@@ -505,10 +527,9 @@ internal fun LibraryDeckActionsSheet(
                     )
                     // Grade-at-the-end (#293): always shown when flagged, but disabled unless a gradeable
                     // mode (Test / Multiple Choice) is selected — Classic is a self-graded flip.
-                    if (gradeAtEndEnabled) {
+                    if (canGradeAtEnd) {
                         GradeAtEndSettingRow(
-                            checked = canGradeAtEnd && gradeAtEnd,
-                            enabled = canGradeAtEnd,
+                            checked = gradeAtEnd,
                             onCheckedChange = { gradeAtEnd = it },
                         )
                     }
@@ -562,7 +583,7 @@ internal fun LibraryDeckActionsSheet(
             }
         }
         // Pinned outside the scrolling body so it can't be squeezed by tall settings (#367).
-        if (choosingMode) {
+        if (choosingMode && selectedMode != null) {
             Button(
                 onClick = {
                     selectedMode?.let { mode ->
@@ -576,7 +597,6 @@ internal fun LibraryDeckActionsSheet(
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .padding(top = 12.dp, bottom = 32.dp),
-                enabled = selectedMode != null,
             ) {
                 Text(stringResource(R.string.practice_start))
             }
@@ -684,11 +704,13 @@ private fun VoiceSettingRow(
                 color = contentColor,
             )
             Text(
+                // Only the device-support case is left: the mode case can't happen now that this row
+                // is rendered solely on the steps for modes that can use it (#410).
                 text = stringResource(
-                    when {
-                        unsupported -> R.string.practice_voice_setting_unsupported
-                        !enabled -> R.string.practice_voice_setting_mode_only
-                        else -> R.string.practice_voice_setting_description
+                    if (unsupported) {
+                        R.string.practice_voice_setting_unsupported
+                    } else {
+                        R.string.practice_voice_setting_description
                     },
                 ),
                 style = MaterialTheme.typography.bodyMedium,
@@ -699,14 +721,13 @@ private fun VoiceSettingRow(
     }
 }
 
-/** "Grade at the end" toggle (#293): grayed + off when [enabled] is false (Classic mode selected). */
+/**
+ * "Grade at the end" toggle (#293). No longer takes an `enabled` flag: it's rendered only on the
+ * steps for modes that can defer grading, so there's no disabled state to express (#410).
+ */
 @Composable
-private fun GradeAtEndSettingRow(checked: Boolean, enabled: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    val contentColor = if (enabled) {
-        MaterialTheme.colorScheme.onSurface
-    } else {
-        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-    }
+private fun GradeAtEndSettingRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    val contentColor = MaterialTheme.colorScheme.onSurface
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -720,18 +741,12 @@ private fun GradeAtEndSettingRow(checked: Boolean, enabled: Boolean, onCheckedCh
                 color = contentColor,
             )
             Text(
-                text = stringResource(
-                    if (enabled) {
-                        R.string.practice_grade_at_end_description
-                    } else {
-                        R.string.practice_grade_at_end_unavailable
-                    },
-                ),
+                text = stringResource(R.string.practice_grade_at_end_description),
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant else contentColor,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Switch(checked = checked, enabled = enabled, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

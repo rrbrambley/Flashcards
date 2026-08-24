@@ -153,7 +153,6 @@
     <string name="practice_shuffle_description">Practice in a random order</string>
     <string name="practice_grade_at_end_label">Grade at the end</string>
     <string name="practice_grade_at_end_description">Answer every card, then submit to see your score</string>
-    <string name="practice_grade_at_end_unavailable">Available for Test &amp; Multiple Choice</string>
     <string name="practice_single_sitting_subheader">Complete in a single session</string>
     <string name="practice_timed_label">Timed</string>
     <string name="practice_timed_description">Auto-submit when the clock runs out</string>
@@ -288,6 +287,10 @@
     <string name="notification_a_deck">a deck</string>
     <string name="notification_streak_milestone">🔥 %1$s-day streak! Keep it up.</string>
     <string name="notification_thread_activity">%1$s also posted in a discussion you joined</string>
+    <!-- Practice setup, split into mode then that mode's settings (#410). -->
+    <string name="practice_choose_different_mode">← Choose a different mode</string>
+    <string name="practice_mode_settings">%1$s settings</string>
+
     <!-- Answering practice questions by voice (#389). -->
     <string name="practice_voice_prompt">Say your answer</string>
     <string name="practice_voice_listening">Listening…</string>
@@ -309,6 +312,5 @@
     <string name="practice_voice_advancing">Next question…</string>
     <string name="practice_voice_setting_label">Answer by voice</string>
     <string name="practice_voice_setting_description">Say your answer instead of typing or tapping.</string>
-    <string name="practice_voice_setting_mode_only">Available for Test &amp; Multiple Choice</string>
     <string name="practice_voice_setting_unsupported">Not supported on this device</string>
 </resources>
