@@ -42,6 +42,14 @@ struct PracticeConfigView: View {
         selectedMode == PracticeMode.test.key || selectedMode == PracticeMode.multiplechoice.key
     }
 
+    /// The deck on step 1, the mode being configured on step 2 — so the title says what you're doing.
+    private var navigationTitle: String {
+        guard let selectedMode,
+            let label = availableModes.first(where: { $0.key == selectedMode })?.label
+        else { return String(localized: "Practice \(deckTitle)") }
+        return String(localized: "\(label) settings")
+    }
+
     private var canGradeAtEnd: Bool {
         gradeAtEndEnabled && (selectedMode == PracticeMode.test.key || selectedMode == PracticeMode.multiplechoice.key)
     }
@@ -49,32 +57,36 @@ struct PracticeConfigView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Choose a mode") {
-                    if availableModes.isEmpty {
-                        Text("No practice modes are available right now.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    ForEach(availableModes) { mode in
-                        Button {
-                            selectedMode = mode.key
-                        } label: {
-                            HStack(alignment: .firstTextBaseline) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(mode.label).font(.headline).foregroundStyle(.primary)
-                                    Text(mode.summary).font(.subheadline).foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                if selectedMode == mode.key {
-                                    Image(systemName: "checkmark").foregroundStyle(.tint).fontWeight(.semibold)
-                                }
-                            }
-                            .contentShape(Rectangle())
+                if selectedMode == nil {
+                    // Step 1: the modes and nothing else (#410). Tapping one *is* advancing, so the
+                    // common path stays two taps — no Next button taxing every run. A chevron rather
+                    // than a checkmark, because this navigates rather than selecting-in-place.
+                    Section("Choose a mode") {
+                        if availableModes.isEmpty {
+                            Text("No practice modes are available right now.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityAddTraits(selectedMode == mode.key ? [.isSelected] : [])
+                        ForEach(availableModes) { mode in
+                            Button {
+                                selectedMode = mode.key
+                            } label: {
+                                HStack(alignment: .firstTextBaseline) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(mode.label).font(.headline).foregroundStyle(.primary)
+                                        Text(mode.summary).font(.subheadline).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.footnote)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
-                }
+                } else {
                 Section("Settings") {
                     if questionCountEnabled && maxQuestions > 0 {
                         HStack {
@@ -90,10 +102,10 @@ struct PracticeConfigView: View {
                     // Answering by voice (#389) — an input method, not a mode, so it sits with the
                     // other settings. Flipping this must not prompt for the microphone: permission
                     // is requested when the user first actually asks to speak.
-                    if voiceEnabled {
+                    if voiceEnabled, canUseVoice {
                         VStack(alignment: .leading, spacing: 2) {
                             Toggle("Answer by voice", isOn: $voiceInput)
-                                .disabled(!canUseVoice || !speechAvailable)
+                                .disabled(!speechAvailable)
                                 // Local preference, not a property of the run — so it has to outlive
                                 // this sheet rather than ride on the session (#386).
                                 .onChange(of: voiceInput) { VoiceInputPreference.isEnabled = voiceInput }
@@ -104,17 +116,14 @@ struct PracticeConfigView: View {
                     }
                 }
                 // Single-sitting settings (#306): grade-at-the-end + timed run start to finish in one go.
-                if gradeAtEndEnabled || timerEnabled {
+                if canGradeAtEnd || timerEnabled {
                     Section("Complete in a single session") {
                         // Grade-at-the-end (#293): always shown when flagged, but disabled unless a
                         // gradeable mode (Test / Multiple Choice) is selected — Classic self-grades.
-                        if gradeAtEndEnabled {
+                        if canGradeAtEnd {
                             VStack(alignment: .leading, spacing: 2) {
                                 Toggle("Grade at the end", isOn: $gradeAtEnd)
-                                    .disabled(!canGradeAtEnd)
-                                Text(canGradeAtEnd
-                                    ? "Answer every card, then submit to see your score"
-                                    : "Available for Test & Multiple Choice")
+                                Text("Answer every card, then submit to see your score")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -140,24 +149,28 @@ struct PracticeConfigView: View {
                         }
                     }
                 }
+                }
             }
-            .navigationTitle("Practice \(deckTitle)")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .onAppear { if questionsText.isEmpty { questionsText = String(maxQuestions) } }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    // On the settings step, back returns to the modes — a wrong pick is recoverable
+                    // without abandoning the sheet.
+                    if selectedMode == nil {
+                        Button("Cancel") { dismiss() }
+                    } else {
+                        Button("Modes") { selectedMode = nil }
+                    }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Start") {
-                        if let selectedMode {
-                            onStart(
-                                selectedMode, shuffle, chosenQuestionCount(), canGradeAtEnd && gradeAtEnd,
-                                chosenTimeLimit()
-                            )
+                // Start belongs to the settings step, so it's never shown disabled waiting for a mode.
+                if let mode = selectedMode {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Start") {
+                            onStart(mode, shuffle, chosenQuestionCount(), canGradeAtEnd && gradeAtEnd, chosenTimeLimit())
                         }
                     }
-                    .disabled(selectedMode == nil)
                 }
             }
         }
@@ -183,10 +196,10 @@ struct PracticeConfigView: View {
         SFSpeechRecognizer(locale: .current) != nil
     }
 
+    /// Only the device-support case is left: the mode case can't happen now that the row is rendered
+    /// solely on the steps for modes that can use it (#410).
     private var voiceCaption: LocalizedStringKey {
-        if !speechAvailable { return "Not supported on this device" }
-        if !canUseVoice { return "Available for Test & Multiple Choice" }
-        return "Say your answer instead of typing or tapping"
+        speechAvailable ? "Say your answer instead of typing or tapping" : "Not supported on this device"
     }
 
 }

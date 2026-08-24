@@ -19,6 +19,9 @@
     "%@ replied to your comment" : {
 
     },
+    "%@ settings" : {
+
+    },
     "%d of %lld" : {
       "localizations" : {
         "en" : {
@@ -93,9 +96,6 @@
 
     },
     "Answer: %@" : {
-
-    },
-    "Available for Test & Multiple Choice" : {
 
     },
     "Avatar selection isn't available right now." : {
@@ -369,6 +369,9 @@
 
     },
     "Microphone or speech access is off. Turn it on in Settings, or answer without voice." : {
+
+    },
+    "Modes" : {
 
     },
     "Multiple Choice" : {
