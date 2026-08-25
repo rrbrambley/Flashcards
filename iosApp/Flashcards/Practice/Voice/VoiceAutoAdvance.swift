@@ -21,22 +21,27 @@ struct VoiceAutoAdvance: ViewModifier {
     let onAdvance: () -> Void
     @Binding var cancelled: Bool
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
+        let timed = content
             .task(id: active) {
                 guard active, !cancelled else { return }
                 try? await Task.sleep(for: correct ? voiceAdvanceDelay : voiceAdvanceDelayIncorrect)
                 guard !Task.isCancelled, !cancelled else { return }
                 onAdvance()
             }
-            // simultaneousGesture, not onTapGesture: this must observe taps without swallowing
-            // them, or it would eat the taps on the very controls the user is reaching for.
-            .simultaneousGesture(
-                TapGesture().onEnded {
-                    if active { cancelled = true }
-                },
-                including: active ? .all : .subviews
-            )
+        if active {
+            // Installed only during the dwell, and only in a voice run. A gesture attached to the
+            // mode's ScrollView competes with the things inside it — scrolling, and focusing a text
+            // field — so it must not exist a moment longer than it's needed (#417). A `.subviews`
+            // gesture mask is not enough: the recogniser is still attached either way.
+            //
+            // simultaneousGesture rather than onTapGesture so it observes the tap without consuming
+            // it, letting the control the user was actually reaching for still receive it.
+            timed.simultaneousGesture(TapGesture().onEnded { cancelled = true })
+        } else {
+            timed
+        }
     }
 }
 
