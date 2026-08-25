@@ -75,6 +75,11 @@ export function ModeChooser({ deckId }: { deckId: number }) {
   // The two modes with an answer to speak (#387, #388). Classic is a self-graded flip — there's
   // nothing to say, and nothing to grade a transcript against.
   const voiceModeSelected = selectedMode === 'test' || selectedMode === 'multiple_choice';
+  // Grade-at-the-end puts the whole deck on screen at once, so a single microphone has no
+  // unambiguous target — voice is card-by-card only (#386). Saying so beats accepting the
+  // combination and silently dropping voice at runtime, which is what it did before (#413 review).
+  // The stored preference is left alone, so turning grade-at-the-end off restores the real choice.
+  const voiceBlockedByGradeAtEnd = canGradeAtEnd && gradeAtEnd;
 
   // Total seconds from the mm:ss fields (#289), at least 1 (the backend rejects < 1); null when off.
   const timeLimitSeconds =
@@ -162,8 +167,8 @@ export function ModeChooser({ deckId }: { deckId: number }) {
           <label className="shuffle-toggle">
             <input
               type="checkbox"
-              checked={voiceInput && voiceSupported}
-              disabled={!voiceSupported}
+              checked={voiceInput && voiceSupported && !voiceBlockedByGradeAtEnd}
+              disabled={!voiceSupported || voiceBlockedByGradeAtEnd}
               onChange={(e) => setVoiceInput(e.target.checked)}
             />
             <span className="shuffle-toggle-label">Answer by voice</span>
@@ -171,9 +176,11 @@ export function ModeChooser({ deckId }: { deckId: number }) {
               {/* Only the browser-support case is left: the mode case can't happen now that this row
                   is rendered solely for the modes that can use it (#410). Browser support is a
                   different axis from mode, and worth stating rather than silently hiding. */}
-              {voiceSupported
-                ? "Say your answer instead of typing. Speech is processed by your browser's speech service."
-                : 'Not supported in this browser'}
+              {!voiceSupported
+                ? 'Not supported in this browser'
+                : voiceBlockedByGradeAtEnd
+                  ? 'Not available when grading at the end'
+                  : "Say your answer instead of typing. Speech is processed by your browser's speech service."}
             </span>
           </label>
         )}
