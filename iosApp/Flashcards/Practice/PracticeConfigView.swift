@@ -104,8 +104,8 @@ struct PracticeConfigView: View {
                     // is requested when the user first actually asks to speak.
                     if voiceEnabled, canUseVoice {
                         VStack(alignment: .leading, spacing: 2) {
-                            Toggle("Answer by voice", isOn: $voiceInput)
-                                .disabled(!speechAvailable)
+                            Toggle("Answer by voice", isOn: voiceToggleBinding)
+                                .disabled(!speechAvailable || blockedByGradeAtEnd)
                                 // Local preference, not a property of the run — so it has to outlive
                                 // this sheet rather than ride on the session (#386).
                                 .onChange(of: voiceInput) { VoiceInputPreference.isEnabled = voiceInput }
@@ -196,10 +196,26 @@ struct PracticeConfigView: View {
         SFSpeechRecognizer(locale: .current) != nil
     }
 
-    /// Only the device-support case is left: the mode case can't happen now that the row is rendered
-    /// solely on the steps for modes that can use it (#410).
+    /// Grade-at-the-end puts the whole deck on screen at once, so a single microphone has no
+    /// unambiguous target — voice is card-by-card only (#386). Saying so beats accepting the
+    /// combination and silently dropping voice at runtime, which is what it did before (#413 review).
+    private var blockedByGradeAtEnd: Bool { canGradeAtEnd && gradeAtEnd }
+
+    /// Reads as off while grade-at-the-end blocks it, without disturbing the stored preference —
+    /// turning grade-at-the-end back off restores the user's actual choice.
+    private var voiceToggleBinding: Binding<Bool> {
+        Binding(
+            get: { voiceInput && !blockedByGradeAtEnd },
+            set: { voiceInput = $0 }
+        )
+    }
+
+    /// The mode case can't happen now that the row is rendered solely on the steps for modes that
+    /// can use it (#410); what's left is device support and the grade-at-the-end conflict.
     private var voiceCaption: LocalizedStringKey {
-        speechAvailable ? "Say your answer instead of typing or tapping" : "Not supported on this device"
+        if !speechAvailable { return "Not supported on this device" }
+        if blockedByGradeAtEnd { return "Not available when grading at the end" }
+        return "Say your answer instead of typing or tapping"
     }
 
 }
