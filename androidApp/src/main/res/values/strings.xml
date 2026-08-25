@@ -313,4 +313,5 @@
     <string name="practice_voice_setting_label">Answer by voice</string>
     <string name="practice_voice_setting_description">Say your answer instead of typing or tapping.</string>
     <string name="practice_voice_setting_unsupported">Not supported on this device</string>
+    <string name="practice_voice_setting_grade_at_end">Not available when grading at the end</string>
 </resources>

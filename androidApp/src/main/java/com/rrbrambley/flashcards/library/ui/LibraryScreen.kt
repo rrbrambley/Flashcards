@@ -506,12 +506,16 @@ internal fun LibraryDeckActionsSheet(
                     val voiceModeSelected =
                         selectedMode == PracticeMode.Test || selectedMode == PracticeMode.MultipleChoice
                     val recognitionAvailable = rememberRecognitionAvailable()
+                    // Grade-at-the-end puts the whole deck on screen at once, so a single microphone
+                    // has no unambiguous target — voice is card-by-card only (#386). Say so here
+                    // rather than accept the combination and silently drop voice at runtime, which
+                    // is what it did before (#413 review).
+                    val blockedByGradeAtEnd = canGradeAtEnd && gradeAtEnd
                     VoiceSettingRow(
-                        checked = voicePreferred && recognitionAvailable,
-                        // Only the device-support case can disable it now: mode no longer applies,
-                        // because this row isn't on a step where it wouldn't (#410).
-                        enabled = recognitionAvailable,
+                        checked = voicePreferred && recognitionAvailable && !blockedByGradeAtEnd,
+                        enabled = recognitionAvailable && !blockedByGradeAtEnd,
                         unsupported = !recognitionAvailable,
+                        blockedByGradeAtEnd = blockedByGradeAtEnd,
                         onCheckedChange = onVoicePreferredChange,
                     )
                 }
@@ -684,6 +688,7 @@ private fun VoiceSettingRow(
     checked: Boolean,
     enabled: Boolean,
     unsupported: Boolean,
+    blockedByGradeAtEnd: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
     val contentColor = if (enabled) {
@@ -707,10 +712,12 @@ private fun VoiceSettingRow(
                 // Only the device-support case is left: the mode case can't happen now that this row
                 // is rendered solely on the steps for modes that can use it (#410).
                 text = stringResource(
-                    if (unsupported) {
-                        R.string.practice_voice_setting_unsupported
-                    } else {
-                        R.string.practice_voice_setting_description
+                    when {
+                        unsupported -> R.string.practice_voice_setting_unsupported
+                        // A sibling setting on this same step, so cause and effect are adjacent —
+                        // unlike the mode-driven disabling this PR removes.
+                        blockedByGradeAtEnd -> R.string.practice_voice_setting_grade_at_end
+                        else -> R.string.practice_voice_setting_description
                     },
                 ),
                 style = MaterialTheme.typography.bodyMedium,
