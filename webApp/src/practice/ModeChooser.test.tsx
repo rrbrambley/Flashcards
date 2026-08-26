@@ -278,6 +278,41 @@ describe('ModeChooser', () => {
       expect(localStorage.getItem(VOICE_INPUT_KEY)).toBe('true');
     });
 
+    /**
+     * Grade-at-the-end routes to the batch runner, which has never rendered the voice panel — the
+     * whole deck is on screen, so a single microphone has no unambiguous target (#386). Accepting
+     * both settings produced a run where speaking did nothing at all (#413 review).
+     */
+    it('switches off and explains itself when grading at the end', async () => {
+      renderChooser();
+      await screen.findByText('Practice Spanish');
+      await userEvent.click(screen.getByRole('button', { name: /Test/ }));
+      await userEvent.click(voiceToggle());
+      expect(voiceToggle()).toBeChecked();
+
+      await userEvent.click(screen.getByRole('checkbox', { name: /Grade at the end/ }));
+
+      expect(voiceToggle()).toBeDisabled();
+      expect(voiceToggle()).not.toBeChecked();
+      expect(voiceToggle()).toHaveAccessibleName(/Not available when grading at the end/);
+    });
+
+    // The preference is the user's standing choice, not a property of this run — turning the
+    // conflicting setting back off must restore it rather than having silently cleared it.
+    it('comes back when grade-at-the-end is turned off again', async () => {
+      renderChooser();
+      await screen.findByText('Practice Spanish');
+      await userEvent.click(screen.getByRole('button', { name: /Test/ }));
+      await userEvent.click(voiceToggle());
+
+      const gradeAtEnd = screen.getByRole('checkbox', { name: /Grade at the end/ });
+      await userEvent.click(gradeAtEnd);
+      await userEvent.click(gradeAtEnd);
+
+      expect(voiceToggle()).toBeEnabled();
+      expect(voiceToggle()).toBeChecked();
+    });
+
     it('is absent from Classic, which is a self-graded flip with nothing to say', async () => {
       renderChooser();
       await screen.findByText('Practice Spanish');
