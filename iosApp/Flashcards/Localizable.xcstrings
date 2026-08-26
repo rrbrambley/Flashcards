@@ -19,6 +19,9 @@
     "%@ replied to your comment" : {
 
     },
+    "%@ settings" : {
+
+    },
     "%d of %lld" : {
       "localizations" : {
         "en" : {
@@ -93,9 +96,6 @@
 
     },
     "Answer: %@" : {
-
-    },
-    "Available for Test & Multiple Choice" : {
 
     },
     "Avatar selection isn't available right now." : {
@@ -371,6 +371,9 @@
     "Microphone or speech access is off. Turn it on in Settings, or answer without voice." : {
 
     },
+    "Modes" : {
+
+    },
     "Multiple Choice" : {
 
     },
@@ -408,6 +411,9 @@
 
     },
     "No practice modes are available right now." : {
+
+    },
+    "Not available when grading at the end" : {
 
     },
     "Not supported on this device" : {
