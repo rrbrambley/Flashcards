@@ -136,6 +136,8 @@ private struct BatchAnsweringView: View {
     @State private var picked: [Int] // -1 = none
     /// Guards against a double auto-submit if `remainingSeconds` re-emits 0.
     @State private var didAutoSubmit = false
+    /// Which answer field holds focus, so the keyboard's Next key can move to the following one (#416).
+    @FocusState private var focusedField: Int?
 
     init(
         cards: [Flashcard],
@@ -180,13 +182,23 @@ private struct BatchAnsweringView: View {
                 TimerChip(remainingSeconds: remainingSeconds)
                     .padding(.top, Spacing.sm)
             }
-            ScrollView {
-                LazyVStack(spacing: Spacing.md) {
-                    ForEach(cards.indices, id: \.self) { i in
-                        card(i)
+            // ScrollViewReader so Next can reach a field that hasn't been built yet: the stack is
+            // lazy, so the following row often doesn't exist until it's scrolled towards (#416).
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: Spacing.md) {
+                        ForEach(cards.indices, id: \.self) { i in
+                            card(i).id(i)
+                        }
                     }
+                    .padding(Spacing.lg)
                 }
-                .padding(Spacing.lg)
+                .onChange(of: focusedField) { _, field in
+                    // Keep the focused field clear of the keyboard. Scrolling on focus rather than on
+                    // the Next tap also covers a field the user simply tapped into.
+                    guard let field else { return }
+                    withAnimation { proxy.scrollTo(field, anchor: .center) }
+                }
             }
             submitBar
         }
@@ -214,6 +226,18 @@ private struct BatchAnsweringView: View {
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .accessibilityLabel(Text("Answer for question \(i + 1)"))
+                    .focused($focusedField, equals: i)
+                    // The last field takes Done — there's nothing after it to move to, and
+                    // submitting from the keyboard would be too easy to do by accident in a run
+                    // that can't be resumed (#306).
+                    .submitLabel(i == cards.count - 1 ? .done : .next)
+                    .onSubmit {
+                        guard i < cards.count - 1 else {
+                            focusedField = nil
+                            return
+                        }
+                        focusedField = i + 1
+                    }
             } else {
                 ForEach(choices[i].indices, id: \.self) { idx in
                     Button {
