@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.db.databaseConnectionHelp
 import com.typesafe.config.ConfigFactory
 import io.ktor.server.config.HoconApplicationConfig
 import kotlinx.coroutines.runBlocking
@@ -116,12 +117,6 @@ private fun connectDatabase() {
             ),
         )
     } catch (e: Exception) {
-        // The most common cause is the local Postgres being on a non-default port (e.g. 5433 when
-        // 5432 is taken) — `make admin` detects it; the bare Gradle invocation defaults to 5432.
-        throw AdminError(
-            "could not connect to the database at $jdbcUrl (${e.message}). " +
-                "If your local Postgres is on a non-default port, run `make admin ARGS=\"…\"` " +
-                "(it detects the port) or set DB_JDBC_URL.",
-        )
+        throw AdminError(databaseConnectionHelp(jdbcUrl, e.message, "make admin ARGS=\"…\""))
     }
 }

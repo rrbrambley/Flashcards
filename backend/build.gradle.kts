@@ -59,26 +59,46 @@ application {
     mainClass.set("com.rrbrambley.flashcards.backend.ApplicationKt")
 }
 
+/**
+ * Forwards one config key into a forked JVM's environment, preferring an environment variable over
+ * a Gradle property.
+ *
+ * Both are read through [ProviderFactory], which matters for more than style: `providers` reads the
+ * *invoking* environment and registers it as a configuration-cache input, whereas `System.getenv()`
+ * and the environment a forked process inherits by default both come from the long-lived Gradle
+ * **daemon** — whose environment is frozen at whatever the first build of the day happened to
+ * export. That's how `DB_JDBC_URL` could silently come from a previous invocation (#405): the same
+ * command would work or fail depending on the daemon's age, which reads exactly like cache
+ * poisoning. Resolving it explicitly here makes the value a property of *this* invocation.
+ *
+ * Environment wins over the Gradle property so `make start`, which detects the container's published
+ * port and exports it, is authoritative over a stale `DB_JDBC_URL` in `~/.gradle/gradle.properties`.
+ */
+fun JavaExec.forwardConfig(keys: List<String>) = keys.forEach { key ->
+    val value = providers.environmentVariable(key).orElse(providers.gradleProperty(key))
+    value.orNull?.let { environment(key, it) }
+}
+
 tasks.named<JavaExec>("run") {
-    // Forward config from gradle.properties (committed or in ~/.gradle/gradle.properties) to the
-    // run env, so `./gradlew :backend:run` works without inline env vars. Secrets (AWS creds) still
-    // come from the default AWS chain (~/.aws / env), never from gradle properties.
-    listOf(
-        "GOOGLE_WEB_CLIENT_ID",
-        "GOOGLE_IOS_CLIENT_ID",
-        "S3_BUCKET",
-        "S3_REGION",
-        "CDN_BASE_URL",
-        "S3_ENDPOINT",
-        "DB_JDBC_URL",
-        "JWT_SECRET",
-        "JWT_ISSUER",
-        "JWT_AUDIENCE",
-        "JWT_ACCESS_TTL_SECONDS",
-        "JWT_REFRESH_TTL_SECONDS",
-    ).forEach { key ->
-        providers.gradleProperty(key).orNull?.let { environment(key, it) }
-    }
+    // Forward config from the environment or gradle.properties (committed or in
+    // ~/.gradle/gradle.properties), so `./gradlew :backend:run` works without inline env vars.
+    // Secrets (AWS creds) still come from the default AWS chain (~/.aws / env), never from here.
+    forwardConfig(
+        listOf(
+            "GOOGLE_WEB_CLIENT_ID",
+            "GOOGLE_IOS_CLIENT_ID",
+            "S3_BUCKET",
+            "S3_REGION",
+            "CDN_BASE_URL",
+            "S3_ENDPOINT",
+            "DB_JDBC_URL",
+            "JWT_SECRET",
+            "JWT_ISSUER",
+            "JWT_AUDIENCE",
+            "JWT_ACCESS_TTL_SECONDS",
+            "JWT_REFRESH_TTL_SECONDS",
+        ),
+    )
 }
 
 // Operator admin CLI (user management, role assignment, …). Run e.g.:
@@ -91,9 +111,7 @@ tasks.register<JavaExec>("admin") {
     mainClass.set("com.rrbrambley.flashcards.backend.cli.AdminCliKt")
     classpath = sourceSets["main"].runtimeClasspath
     standardInput = System.`in`
-    listOf("DB_JDBC_URL", "DB_USER", "DB_PASSWORD", "DB_MAX_POOL_SIZE").forEach { key ->
-        providers.gradleProperty(key).orNull?.let { environment(key, it) }
-    }
+    forwardConfig(listOf("DB_JDBC_URL", "DB_USER", "DB_PASSWORD", "DB_MAX_POOL_SIZE"))
 }
 
 tasks.test {
