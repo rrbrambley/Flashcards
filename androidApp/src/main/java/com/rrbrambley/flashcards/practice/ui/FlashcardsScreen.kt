@@ -20,8 +20,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -51,19 +54,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -83,6 +91,7 @@ import com.rrbrambley.flashcards.shared.domain.InSessionStreak
 import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.shared.domain.PracticeUiState
 import com.rrbrambley.flashcards.shared.domain.ReviewItem
+import kotlinx.coroutines.launch
 
 /**
  * The practice runner entry point. Resolves which runner to show from the session's grade-at-the-end
@@ -1048,7 +1057,14 @@ private fun BatchAnswering(
                     .padding(top = 8.dp),
             )
         }
+        // Moving between answers with the keyboard's Next key (#416). The list is lazy, so the next
+        // field usually isn't composed yet and `focusManager.moveFocus` has nothing to move to —
+        // scroll it into existence first, then let the row itself claim focus once it composes.
+        val listState = rememberLazyListState()
+        val scope = rememberCoroutineScope()
+        var focusTarget by remember { mutableStateOf<Int?>(null) }
         LazyColumn(
+            state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -1064,6 +1080,20 @@ private fun BatchAnswering(
                     pickedIndex = picked[i],
                     onPick = { picked[i] = it },
                     onImageSettled = { onPromptImageSettled(i) },
+                    isLast = i == cards.lastIndex,
+                    onNext = {
+                        val next = i + 1
+                        if (next <= cards.lastIndex) {
+                            // Only scroll when the target is off-screen: for a field already visible,
+                            // Compose brings the focused item into view itself, and an unconditional
+                            // scroll would yank the list for no reason.
+                            val visible = listState.layoutInfo.visibleItemsInfo.any { it.index == next }
+                            if (!visible) scope.launch { listState.animateScrollToItem(next) }
+                            focusTarget = next
+                        }
+                    },
+                    focusRequested = focusTarget == i,
+                    onFocusHandled = { focusTarget = null },
                 )
             }
         }
@@ -1093,6 +1123,12 @@ private fun BatchCardItem(
     pickedIndex: Int,
     onPick: (Int) -> Unit,
     onImageSettled: () -> Unit = {},
+    /** The last card takes Done rather than Next — there's nothing after it to move to (#416). */
+    isLast: Boolean = false,
+    onNext: () -> Unit = {},
+    /** Set when the previous field's Next targeted this row; it grabs focus as it composes. */
+    focusRequested: Boolean = false,
+    onFocusHandled: () -> Unit = {},
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1112,11 +1148,31 @@ private fun BatchCardItem(
             )
             CardPrompt(flashcard = card, onImageReady = onImageSettled)
             if (isTest) {
+                val focusRequester = remember { FocusRequester() }
+                val focusManager = LocalFocusManager.current
+                LaunchedEffect(focusRequested) {
+                    if (!focusRequested) return@LaunchedEffect
+                    // The row may have composed only a frame ago (scrolled in by the Next that
+                    // targeted it), so the requester can still be unattached — don't crash the run
+                    // over a keyboard convenience.
+                    runCatching { focusRequester.requestFocus() }
+                    onFocusHandled()
+                }
                 OutlinedTextField(
                     value = typedValue,
                     onValueChange = onType,
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = if (isLast) ImeAction.Done else ImeAction.Next,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { onNext() },
+                        // Done dismisses rather than submitting: a grade-at-the-end run is
+                        // single-sitting and can't be resumed (#306), so an accidental submit from
+                        // the keyboard would be expensive.
+                        onDone = { focusManager.clearFocus() },
+                    ),
                 )
             } else {
                 options.forEachIndexed { idx, option ->

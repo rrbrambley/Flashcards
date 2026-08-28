@@ -244,7 +244,20 @@ export function BatchPracticeRunner({
                 className="batch-input"
                 value={entries[i] as string}
                 aria-label={`Answer for question ${i + 1}`}
+                data-answer-index={i}
                 onChange={(e) => setEntry(i, e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter moves to the next answer, matching the mobile keyboards' Next key (#416).
+                  // Tab already does this natively here, so this is parity rather than a rescue —
+                  // and Enter previously did nothing at all, which is its own small oddity.
+                  if (e.key !== 'Enter') return;
+                  e.preventDefault();
+                  const next = document.querySelector<HTMLInputElement>(`[data-answer-index="${i + 1}"]`);
+                  // No next field: blur rather than submit. A grade-at-the-end run is single-sitting
+                  // and can't be resumed (#306), so submitting from Enter is too easy to do by accident.
+                  if (next) next.focus();
+                  else e.currentTarget.blur();
+                }}
               />
             ) : (
               <MultipleChoice

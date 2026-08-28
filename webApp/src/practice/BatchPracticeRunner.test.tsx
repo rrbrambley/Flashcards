@@ -97,3 +97,66 @@ describe('BatchPracticeRunner timed start gate', () => {
     expect(clock()).toContain('0:57');
   });
 });
+
+/**
+ * Moving between answers with the keyboard (#416). On the touch platforms this is the difference
+ * between typing a deck and typing-dismiss-tap-typing a deck; on web Tab already works, so Enter is
+ * parity — and it previously did nothing at all here.
+ */
+describe('BatchPracticeRunner keyboard navigation', () => {
+  const testMode = { key: 'test' } as PracticeMode;
+
+  const card = (uid: string): FlashcardDto =>
+    ({ cardUid: uid, question: `q-${uid}`, answer: `a-${uid}` }) as FlashcardDto;
+
+  const renderRunner = (cards: FlashcardDto[]) =>
+    render(
+      <BatchPracticeRunner
+        sessionId={1}
+        cards={cards}
+        mode={testMode}
+        isGlobal={false}
+        isGuest
+        deadline={null}
+        timeLimitSeconds={null}
+        onCompleted={() => {}}
+        onAgain={() => {}}
+        onExit={() => {}}
+      />,
+    );
+
+  const field = (n: number) => screen.getByLabelText(`Answer for question ${n}`);
+
+  it('moves to the next answer on Enter', () => {
+    renderRunner([card('a'), card('b'), card('c')]);
+    field(1).focus();
+
+    fireEvent.keyDown(field(1), { key: 'Enter' });
+
+    expect(field(2)).toHaveFocus();
+  });
+
+  /**
+   * A grade-at-the-end run is single-sitting and can't be resumed (#306), so Enter must not submit
+   * — that would be far too easy to trigger by accident on the way through the last answer.
+   */
+  it('blurs rather than submitting on the last answer', () => {
+    renderRunner([card('a'), card('b')]);
+    field(2).focus();
+
+    fireEvent.keyDown(field(2), { key: 'Enter' });
+
+    expect(field(2)).not.toHaveFocus();
+    // Still on the answering screen — nothing was graded.
+    expect(screen.getByLabelText('Answer for question 1')).toBeInTheDocument();
+  });
+
+  it('leaves other keys alone, so typing is unaffected', () => {
+    renderRunner([card('a'), card('b')]);
+    field(1).focus();
+
+    fireEvent.keyDown(field(1), { key: 'a' });
+
+    expect(field(1)).toHaveFocus();
+  });
+});
