@@ -24,6 +24,15 @@ export class FakeSpeechRecognition implements SpeechRecognizer {
   started = false;
   aborted = false;
 
+  /**
+   * Whether `abort()` fires `onend`, as Chrome does.
+   *
+   * Safari doesn't reliably fire it (#396), which left the panel stuck on "Stop" with a live
+   * microphone. Set false to model WebKit — the default stays Chrome-like so existing tests are
+   * unaffected.
+   */
+  endsOnAbort = true;
+
   onstart: (() => void) | null = null;
   onresult: ((event: SpeechRecognitionEvent) => void) | null = null;
   onerror: ((event: SpeechRecognitionErrorEvent) => void) | null = null;
@@ -48,7 +57,7 @@ export class FakeSpeechRecognition implements SpeechRecognizer {
   abort(): void {
     this.aborted = true;
     this.started = false;
-    this.onend?.();
+    if (this.endsOnAbort) this.onend?.();
   }
 
   /** Emit a result. A final one also ends the session, as the real API does with `continuous = false`. */

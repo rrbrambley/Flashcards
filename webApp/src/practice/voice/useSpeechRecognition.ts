@@ -182,43 +182,58 @@ export function useSpeechRecognition({
     }
   }, []);
 
-  const abort = useCallback(() => {
+  /**
+   * Detach and let go of the current recogniser. Shared by `abort` and unmount, which want the same
+   * thing: this instance is finished, and nothing it says from here on concerns us.
+   *
+   * Detaching before aborting matters — a late `onresult` would otherwise report an utterance the
+   * caller has stopped listening for.
+   */
+  const discard = useCallback(() => {
+    const recognizer = recognizerRef.current;
+    // Cleared first, so even a synchronous callback out of abort() finds nothing to act on.
+    recognizerRef.current = null;
+    startedRef.current = false;
+    if (recognizer == null) return;
+    recognizer.onstart = null;
+    recognizer.onresult = null;
+    recognizer.onerror = null;
+    recognizer.onend = null;
     try {
-      recognizerRef.current?.abort();
+      recognizer.abort();
     } catch {
       /* already stopped */
     }
   }, []);
+
+  /**
+   * Stop and discard — no final result will arrive.
+   *
+   * This resolves its own state rather than waiting for `onend`, because that wait is what broke in
+   * Safari (#396): WebKit doesn't reliably fire `onend` after `abort()`, so `listening` stayed true
+   * and the Stop button sat there looking dead while the microphone was still live. The normal
+   * end-of-utterance path still goes through `onend` — it fires there in every browser we've seen —
+   * but a teardown *we* initiate can't depend on the browser to confirm it.
+   */
+  const abort = useCallback(() => {
+    discard();
+    setListening(false);
+    setInterim('');
+  }, [discard]);
 
   const reset = useCallback(() => {
     setError(null);
     setInterim('');
   }, []);
 
-  useEffect(
-    () => () => {
-      const recognizer = recognizerRef.current;
-      if (recognizer == null) return;
-      // Detach before aborting: a late onresult after unmount would grade a card that's already gone
-      // (the runner remounts the mode per card, so unmount is also the between-cards teardown).
-      recognizer.onstart = null;
-      recognizer.onresult = null;
-      recognizer.onerror = null;
-      recognizer.onend = null;
-      try {
-        recognizer.abort();
-      } catch {
-        /* already stopped */
-      }
-      // Detaching `onend` above means it can't clear these for us, and `start()` early-returns while
-      // `startedRef` is set. React StrictMode (dev) mounts → cleans up → mounts again on the same
-      // fiber, so refs survive: leaving the flag set there makes the second start() a no-op and the
-      // panel sits in its idle state, never listening.
-      recognizerRef.current = null;
-      startedRef.current = false;
-    },
-    [],
-  );
+  // The runner remounts the mode per card, so unmount is also the between-cards teardown: a late
+  // onresult would otherwise grade a card that's already gone.
+  //
+  // `discard` clearing the refs is load-bearing beyond tidiness. Detaching `onend` means it can't
+  // clear them for us, and `start()` early-returns while `startedRef` is set — so under React
+  // StrictMode (dev), which mounts → cleans up → mounts again on the same fiber where refs survive,
+  // a stale flag would make the second start() a no-op and leave the panel idle, never listening.
+  useEffect(() => discard, [discard]);
 
   return { supported, listening, interim, error, start, stop, abort, reset };
 }

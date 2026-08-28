@@ -69,6 +69,44 @@ describe('useSpeechRecognition', () => {
       expect(view.result.current.error).toBeNull();
     });
 
+    /**
+     * Safari doesn't reliably fire `onend` after `abort()` (#396). Waiting for it left `listening`
+     * true, so the panel kept showing "Stop" and the button looked dead while the mic stayed live.
+     */
+    it('stops listening on abort even when the browser never fires onend', () => {
+      const { view } = start();
+      FakeSpeechRecognition.last.endsOnAbort = false;
+
+      act(() => view.result.current.abort());
+
+      expect(view.result.current.listening).toBe(false);
+      expect(view.result.current.interim).toBe('');
+    });
+
+    it('can start again after an abort the browser never acknowledged', () => {
+      const { view } = start();
+      const first = FakeSpeechRecognition.last;
+      first.endsOnAbort = false;
+      act(() => view.result.current.abort());
+
+      act(() => view.result.current.start());
+
+      // A fresh recogniser, actually listening — not the stuck one.
+      expect(FakeSpeechRecognition.last).not.toBe(first);
+      expect(view.result.current.listening).toBe(true);
+    });
+
+    it('ignores a result from a recogniser that was aborted', () => {
+      const { view, onFinal } = start();
+      const recognizer = FakeSpeechRecognition.last;
+      recognizer.endsOnAbort = false;
+      act(() => view.result.current.abort());
+
+      act(() => recognizer.say('too late'));
+
+      expect(onFinal).not.toHaveBeenCalled();
+    });
+
     it('survives a double start rather than throwing', () => {
       const { view } = start();
       expect(() => act(() => view.result.current.start())).not.toThrow();
