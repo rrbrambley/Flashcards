@@ -56,7 +56,8 @@ start: db
 		echo "Backend already running on :8080 (use 'make restart' to reload code)."; exit 0; fi; \
 	port=$$(docker port flashcards-postgres 5432/tcp 2>/dev/null | head -1 | sed 's/.*://'); \
 	port=$${port:-5432}; \
-	echo "Starting backend → http://localhost:8080 (Postgres on :$$port). Logs: $(BACKEND_LOG)"; \
+	echo "Starting backend → http://localhost:8080. Logs: $(BACKEND_LOG)"; \
+	echo "Database: jdbc:postgresql://localhost:$$port/flashcards"; \
 	DB_JDBC_URL=jdbc:postgresql://localhost:$$port/flashcards \
 		nohup ./gradlew --console=plain :backend:run > $(BACKEND_LOG) 2>&1 & \
 	echo "Waiting for startup…"; \

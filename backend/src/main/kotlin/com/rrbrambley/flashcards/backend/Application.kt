@@ -4,6 +4,7 @@ import com.rrbrambley.flashcards.backend.auth.Avatars
 import com.rrbrambley.flashcards.backend.auth.GoogleTokenVerifier
 import com.rrbrambley.flashcards.backend.db.DatabaseFactory
 import com.rrbrambley.flashcards.backend.db.DbConfig
+import com.rrbrambley.flashcards.backend.db.databaseConnectionHelp
 import com.rrbrambley.flashcards.backend.plugins.configureCors
 import com.rrbrambley.flashcards.backend.plugins.configureMonitoring
 import com.rrbrambley.flashcards.backend.plugins.configureRateLimiting
@@ -25,14 +26,23 @@ import io.ktor.server.netty.Netty
 fun main() {
     val config = HoconApplicationConfig(ConfigFactory.load())
 
-    DatabaseFactory.init(
-        DbConfig(
-            jdbcUrl = config.property("db.jdbcUrl").getString(),
-            user = config.property("db.user").getString(),
-            password = config.property("db.password").getString(),
-            maxPoolSize = config.property("db.maxPoolSize").getString().toInt(),
-        ),
-    )
+    val jdbcUrl = config.property("db.jdbcUrl").getString()
+    // Announced before connecting, so a wrong address is visible even when the failure that follows
+    // describes something else entirely (#405). It's the connection target, not a credential — the
+    // user and password are separate config keys.
+    println("Database: $jdbcUrl")
+    try {
+        DatabaseFactory.init(
+            DbConfig(
+                jdbcUrl = jdbcUrl,
+                user = config.property("db.user").getString(),
+                password = config.property("db.password").getString(),
+                maxPoolSize = config.property("db.maxPoolSize").getString().toInt(),
+            ),
+        )
+    } catch (e: Exception) {
+        throw IllegalStateException(databaseConnectionHelp(jdbcUrl, e.message, "make start"), e)
+    }
 
     GoogleTokenVerifier.configure(
         config.propertyOrNull("auth.googleWebClientId")?.getString(),
