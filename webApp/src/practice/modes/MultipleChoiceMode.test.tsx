@@ -96,6 +96,35 @@ describe('MultipleChoiceMode', () => {
       expect(onGraded).toHaveBeenCalledExactlyOnceWith(true, 'Paris');
     });
 
+    /**
+     * n-best rescoring (#390): the recogniser's top pick names no option, but a lower-ranked one
+     * does. Walking the list in confidence order recovers the answer without touching
+     * `matchSpokenChoice`, whose floor and margin rules still decide every individual match.
+     */
+    it('falls through to a lower-ranked hypothesis that names an option', () => {
+      const onGraded = vi.fn();
+      render(<MultipleChoiceMode card={deck[0]} cards={deck} {...noopProps} onGraded={onGraded} voiceInput />);
+
+      // "elephant" scores ≈0.13 against every option — under the floor, so the top hypothesis
+      // genuinely resolves to nothing and the walk has to reach the second one to find Paris.
+      act(() => FakeSpeechRecognition.last.sayAll(['elephant', 'paris']));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+
+      expect(onGraded).toHaveBeenCalledExactlyOnceWith(true, 'Paris');
+    });
+
+    // Re-prompting still wins over guessing: if no hypothesis names an option, none is invented.
+    it('grades nothing when no hypothesis matches an option', () => {
+      const onGraded = vi.fn();
+      render(<MultipleChoiceMode card={deck[0]} cards={deck} {...noopProps} onGraded={onGraded} voiceInput />);
+
+      act(() => FakeSpeechRecognition.last.sayAll(['banana', 'bandana', 'bahama']));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+
+      expect(onGraded).not.toHaveBeenCalled();
+      expect(screen.getByText(/Didn't catch that/)).toBeInTheDocument();
+    });
+
     // A transcript matching nothing must re-prompt, never land on a definite option the user
     // didn't say — that answer would be recorded with no way to un-grade it.
     it('grades nothing when the transcript matches no option', () => {

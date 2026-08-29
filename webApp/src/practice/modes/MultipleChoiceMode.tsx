@@ -42,12 +42,26 @@ export function MultipleChoiceMode({
   // Say the answer rather than the option letter (#388): naming "Paris" is how you'd answer a person,
   // where "option B" forces you to read all four first. Both callbacks re-run the same pure match —
   // it's deterministic on the same transcript and choices, so there's no state to keep in sync.
+  /**
+   * The first hypothesis that names an option wins — n-best rescoring (#390).
+   *
+   * Walked in the recogniser's own confidence order, so its ranking is only overridden when the
+   * better-ranked hypotheses name nothing at all. [matchSpokenChoice] is called unchanged, once per
+   * hypothesis: its floor and margin rules still decide every match, and the shared Kotlin port and
+   * the golden fixture that pins them stay exactly as they are.
+   *
+   * Resolving to the *option text* (not the raw transcript) is what keeps a spoken answer
+   * indistinguishable from a clicked one in the review screen and answer stats.
+   */
   const interpretSpoken = useCallback(
-    (transcript: string) => {
-      const index = matchSpokenChoice(transcript, choices);
+    (transcripts: string[]) => {
+      for (const transcript of transcripts) {
+        const index = matchSpokenChoice(transcript, choices);
+        if (index != null) return { transcript: choices[index], note: `Matched: ${choices[index]}` };
+      }
       // null → the panel re-prompts. Never fall back to a best guess: an auto-submitted wrong answer
       // is recorded against the card and can't be un-graded.
-      return index == null ? null : { note: `Matched: ${choices[index]}` };
+      return null;
     },
     [choices],
   );

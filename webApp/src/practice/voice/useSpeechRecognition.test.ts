@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useSpeechRecognition, isSpeechRecognitionSupported } from './useSpeechRecognition';
+import { useSpeechRecognition, isSpeechRecognitionSupported, VOICE_MAX_ALTERNATIVES } from './useSpeechRecognition';
 import { FakeSpeechRecognition, installFakeSpeechRecognition } from '../../test/fakeSpeechRecognition';
 
 describe('useSpeechRecognition', () => {
@@ -47,7 +47,25 @@ describe('useSpeechRecognition', () => {
     it('reports a final result once, trimmed', () => {
       const { onFinal } = start();
       act(() => FakeSpeechRecognition.last.say('  paris  '));
-      expect(onFinal).toHaveBeenCalledExactlyOnceWith('paris');
+      expect(onFinal).toHaveBeenCalledExactlyOnceWith(['paris']);
+    });
+
+    it('asks the recogniser for more than one hypothesis', () => {
+      start();
+      // One hypothesis can't be re-ranked, and re-ranking is the whole of #390.
+      expect(FakeSpeechRecognition.last.maxAlternatives).toBe(VOICE_MAX_ALTERNATIVES);
+    });
+
+    it('reports every hypothesis, best-ranked first', () => {
+      const { onFinal } = start();
+      act(() => FakeSpeechRecognition.last.sayAll(['jibooty', 'djibouti']));
+      expect(onFinal).toHaveBeenCalledExactlyOnceWith(['jibooty', 'djibouti']);
+    });
+
+    it('drops blank and duplicate hypotheses', () => {
+      const { onFinal } = start();
+      act(() => FakeSpeechRecognition.last.sayAll(['chad', '  ', 'chad', ' chad ']));
+      expect(onFinal).toHaveBeenCalledExactlyOnceWith(['chad']);
     });
 
     it.each([

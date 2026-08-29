@@ -49,6 +49,19 @@ export function isSpeechRecognitionSupported(): boolean {
   return typeof window === 'undefined' || window.isSecureContext !== false;
 }
 
+/**
+ * How many hypotheses to ask the recogniser for.
+ *
+ * More than one because the ranking is done by a general-purpose language model biased toward
+ * everyday words, which is exactly why proper nouns lose — a country name is outscored by whatever
+ * common phrase it sounds like (#390). Callers know something the recogniser doesn't (the card's
+ * answer, or the four options on screen) and can re-rank with it.
+ *
+ * Kept small: alternatives past the first few are acoustically remote, and every extra one is
+ * another chance to accept something that wasn't said.
+ */
+export const VOICE_MAX_ALTERNATIVES = 4;
+
 /** Why listening stopped, reduced to the cases the UI actually distinguishes. */
 export type VoiceError = 'denied' | 'no-speech' | 'no-mic' | 'network' | 'unavailable';
 
@@ -88,6 +101,28 @@ function toVoiceError(code: SpeechRecognitionErrorCode): VoiceError | null {
 }
 
 /**
+ * The utterance's hypotheses, best-ranked first, trimmed and free of blanks and duplicates.
+ *
+ * With `continuous = false` there is normally exactly one final result, and its alternatives are
+ * what we want. More than one only happens if a service splits an utterance; there the alternatives
+ * belong to different fragments and can't be combined into a ranked list, so the pieces are joined
+ * into a single hypothesis — the behaviour before alternatives existed.
+ */
+function hypotheses(finals: SpeechRecognitionResult[]): string[] {
+  if (finals.length !== 1) {
+    return [finals.map((r) => r[0]?.transcript ?? '').join('').trim()].filter((t) => t !== '');
+  }
+  const result = finals[0];
+  const ranked: string[] = [];
+  for (let i = 0; i < result.length; i++) {
+    const text = result[i]?.transcript?.trim() ?? '';
+    // Distinct spellings are the point; the same string twice tells a caller nothing new.
+    if (text !== '' && !ranked.includes(text)) ranked.push(text);
+  }
+  return ranked;
+}
+
+/**
  * Wraps the Web Speech API for one utterance at a time.
  *
  * `continuous` is deliberately false: the service then ends the session itself at end-of-utterance
@@ -103,8 +138,11 @@ export function useSpeechRecognition({
   onFinal,
 }: {
   lang?: string;
-  /** Fired once per utterance with the trimmed final transcript. */
-  onFinal: (transcript: string) => void;
+  /**
+   * Fired once per utterance with the recogniser's hypotheses, best-ranked first, trimmed and
+   * non-empty. Usually one entry; see [VOICE_MAX_ALTERNATIVES] for why it can hold more.
+   */
+  onFinal: (transcripts: string[]) => void;
 }): SpeechRecognitionHandle {
   const [supported] = useState(isSpeechRecognitionSupported);
   const [listening, setListening] = useState(false);
@@ -129,30 +167,28 @@ export function useSpeechRecognition({
     recognizer.lang = lang ?? (typeof navigator === 'undefined' ? 'en-US' : navigator.language);
     recognizer.continuous = false;
     recognizer.interimResults = true;
-    // One hypothesis is enough: we fuzzy-match the transcript ourselves.
-    recognizer.maxAlternatives = 1;
+    recognizer.maxAlternatives = VOICE_MAX_ALTERNATIVES;
 
     recognizer.onstart = () => {
       setListening(true);
       setError(null);
     };
     recognizer.onresult = (event) => {
-      let final = '';
+      const finals: SpeechRecognitionResult[] = [];
       let partial = '';
       // Normally a single result with continuous=false; iterating is cheap insurance.
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
-        const text = result[0]?.transcript ?? '';
-        if (result.isFinal) final += text;
-        else partial += text;
+        if (result.isFinal) finals.push(result);
+        else partial += result[0]?.transcript ?? '';
       }
-      if (final !== '') {
-        setInterim('');
-        // Don't stop() here — the service ends the session itself and a manual stop races it.
-        onFinalRef.current(final.trim());
-      } else {
+      if (finals.length === 0) {
         setInterim(partial);
+        return;
       }
+      setInterim('');
+      // Don't stop() here — the service ends the session itself and a manual stop races it.
+      onFinalRef.current(hypotheses(finals));
     };
     recognizer.onerror = (event) => {
       const mapped = toVoiceError(event.error);

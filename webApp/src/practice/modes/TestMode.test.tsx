@@ -187,6 +187,48 @@ describe('TestMode', () => {
     });
 
     /**
+     * n-best rescoring (#390). The recogniser's own ranking favours everyday words, so a proper noun
+     * loses to whatever common phrase it sounds like — the failure reported from a real session on
+     * the geography decks. The right answer is often present, just not ranked first.
+     */
+    it('grades a lower-ranked hypothesis that matches, over a top-ranked one that does not', () => {
+      const onGraded = vi.fn();
+      render(<TestMode card={card} cards={[card]} {...noopProps} onGraded={onGraded} voiceInput />);
+
+      act(() => FakeSpeechRecognition.last.sayAll(['pear iss', 'paris']));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+
+      expect(onGraded).toHaveBeenCalledWith(true, 'paris');
+      expect(screen.getByText('✓ Correct')).toBeInTheDocument();
+    });
+
+    /**
+     * Rescoring must not become "keep looking until something is right". A genuinely wrong answer
+     * stays wrong, and is recorded as what they most likely said — the top-ranked hypothesis — so
+     * the review screen and answer stats show the real utterance.
+     */
+    it('records the top hypothesis when no hypothesis is correct', () => {
+      const onGraded = vi.fn();
+      render(<TestMode card={card} cards={[card]} {...noopProps} onGraded={onGraded} voiceInput />);
+
+      act(() => FakeSpeechRecognition.last.sayAll(['lyon', 'leon', 'lion']));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+
+      expect(onGraded).toHaveBeenCalledWith(false, 'lyon');
+    });
+
+    // The recogniser's ranking is only overridden when it has to be: a correct top hypothesis wins.
+    it('keeps the top hypothesis when it is already correct', () => {
+      const onGraded = vi.fn();
+      render(<TestMode card={card} cards={[card]} {...noopProps} onGraded={onGraded} voiceInput />);
+
+      act(() => FakeSpeechRecognition.last.sayAll(['paris', 'parris']));
+      act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+
+      expect(onGraded).toHaveBeenCalledWith(true, 'paris');
+    });
+
+    /**
      * The whole point: you can answer from across the room. Reaching for "Next" is exactly the reach
      * the feature exists to remove, so the verdict clears itself.
      */

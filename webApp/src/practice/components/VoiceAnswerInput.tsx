@@ -12,6 +12,8 @@ export const VOICE_SUBMIT_DELAY_MS = 1500;
 
 /** What a final transcript means, when the caller needs to interpret it (Multiple Choice, #388). */
 export interface VoiceInterpretation {
+  /** The hypothesis to show and submit — the caller's pick from the ones offered. */
+  transcript: string;
   /** Shown alongside the transcript, e.g. "Matched: Paris". */
   note?: string;
 }
@@ -32,10 +34,13 @@ export function VoiceAnswerInput({
 }: {
   onSubmit: (transcript: string) => void;
   /**
-   * Whether a transcript is usable, and what to show for it. `null` means "didn't catch that" — the
-   * panel re-prompts instead of submitting. Default: any non-blank transcript is accepted.
+   * Picks which of the recogniser's hypotheses to use, and what to show for it. `null` means "didn't
+   * catch that" — the panel re-prompts instead of submitting.
+   *
+   * The list arrives best-ranked first and is usually one entry. Callers that know what a right
+   * answer looks like can re-rank it (#390); the default simply takes the recogniser's own pick.
    */
-  interpret?: (transcript: string) => VoiceInterpretation | null;
+  interpret?: (transcripts: string[]) => VoiceInterpretation | null;
   lang?: string;
   /** Offered on an unrecoverable error, so a stuck user can switch voice off without navigating away. */
   onDisableVoice?: () => void;
@@ -45,17 +50,21 @@ export function VoiceAnswerInput({
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   const onFinal = useCallback(
-    (transcript: string) => {
-      const trimmed = transcript.trim();
-      // Not `interpret?.(t) ?? {}` — `??` would turn a deliberate null ("didn't understand that")
-      // back into an accepted answer, which is exactly the case this exists to catch.
-      const interpretation = trimmed === '' ? null : interpret ? interpret(trimmed) : {};
-      if (interpretation == null) {
+    (transcripts: string[]) => {
+      const heardAnything = transcripts.length > 0;
+      // Not `interpret?.(t) ?? fallback` — `??` would turn a deliberate null ("didn't understand
+      // that") back into an accepted answer, which is exactly the case this exists to catch.
+      const interpretation = !heardAnything
+        ? null
+        : interpret
+          ? interpret(transcripts)
+          : { transcript: transcripts[0] };
+      if (interpretation == null || interpretation.transcript.trim() === '') {
         setUnheard(true);
         return;
       }
       setUnheard(false);
-      setHeard({ transcript: trimmed, note: interpretation.note });
+      setHeard({ transcript: interpretation.transcript.trim(), note: interpretation.note });
     },
     [interpret],
   );
