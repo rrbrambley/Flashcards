@@ -39,6 +39,31 @@ export function TestMode({
     [card, onGraded],
   );
 
+  /**
+   * Picks which hypothesis to grade — n-best rescoring (#390).
+   *
+   * The recogniser ranks by a general-purpose language model biased toward everyday words, which is
+   * why proper nouns lose: a country name is outscored by whatever common phrase it sounds like. We
+   * know something it doesn't — this card's answer — so its own list is re-ranked with it.
+   *
+   * Note what this is *not*: [gradeTextAnswer] is untouched and still decides, at the same
+   * threshold, so a spoken and a typed string grade identically. What changes is which string gets
+   * graded. That does make voice more forgiving than typing — any hypothesis can win, and only the
+   * recogniser proposed them — which is the point, since the mis-hear was never the user's mistake.
+   *
+   * Falls back to the top hypothesis rather than re-prompting: a wrong answer still has to be
+   * recordable, and it should be recorded as what they most likely said.
+   */
+  const interpretSpoken = useCallback(
+    (transcripts: string[]) => {
+      const matched = transcripts.find(
+        (t) => gradeTextAnswer(t, card.answer, card.alternativeAnswers ?? []).correct,
+      );
+      return { transcript: matched ?? transcripts[0] };
+    },
+    [card],
+  );
+
   // Once revealed, Enter advances (mirrors the submit-with-Enter flow).
   useEffect(() => {
     if (!graded) return;
@@ -76,7 +101,9 @@ export function TestMode({
 
       {!graded ? (
         <>
-          {voiceInput && <VoiceAnswerInput onSubmit={submit} onDisableVoice={onDisableVoice} />}
+          {voiceInput && (
+            <VoiceAnswerInput onSubmit={submit} interpret={interpretSpoken} onDisableVoice={onDisableVoice} />
+          )}
           <TextAnswerInput confirmBlankSubmit onSubmit={submit} />
         </>
       ) : (

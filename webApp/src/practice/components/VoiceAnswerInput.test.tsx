@@ -111,9 +111,37 @@ describe('VoiceAnswerInput', () => {
   });
 
   it('shows the caller\'s note alongside the transcript', () => {
-    render(<VoiceAnswerInput onSubmit={vi.fn()} interpret={() => ({ note: 'Matched: Paris' })} />);
+    render(
+      <VoiceAnswerInput onSubmit={vi.fn()} interpret={() => ({ transcript: 'paris', note: 'Matched: Paris' })} />,
+    );
     speak('paris');
     expect(screen.getByText('Matched: Paris')).toBeInTheDocument();
+  });
+
+  /**
+   * The caller re-ranks the recogniser's hypotheses (#390), so the panel must show and submit the
+   * one it chose — not the one that happened to rank first.
+   */
+  it('shows and submits the hypothesis the caller picked, not the top-ranked one', () => {
+    const onSubmit = vi.fn();
+    render(
+      <VoiceAnswerInput onSubmit={onSubmit} interpret={(transcripts) => ({ transcript: transcripts[1] })} />,
+    );
+
+    act(() => FakeSpeechRecognition.last.sayAll(['jibooty', 'djibouti']));
+
+    expect(screen.getByText(/djibouti/)).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith('djibouti');
+  });
+
+  it('offers every hypothesis to the caller', () => {
+    const interpret = vi.fn(() => ({ transcript: 'chad' }));
+    render(<VoiceAnswerInput onSubmit={vi.fn()} interpret={interpret} />);
+
+    act(() => FakeSpeechRecognition.last.sayAll(['shad', 'chad', 'chat']));
+
+    expect(interpret).toHaveBeenCalledExactlyOnceWith(['shad', 'chad', 'chat']);
   });
 
   it('explains a blocked microphone and offers a way out instead of a dead retry', () => {

@@ -62,7 +62,15 @@ export class FakeSpeechRecognition implements SpeechRecognizer {
 
   /** Emit a result. A final one also ends the session, as the real API does with `continuous = false`. */
   say(transcript: string, isFinal = true): void {
-    this.onresult?.(resultEvent(transcript, isFinal));
+    this.sayAll([transcript], isFinal);
+  }
+
+  /**
+   * Emit a result carrying several hypotheses, best-ranked first — what a real recogniser returns
+   * once `maxAlternatives` is above 1 (#390).
+   */
+  sayAll(transcripts: string[], isFinal = true): void {
+    this.onresult?.(resultEvent(transcripts, isFinal));
     if (isFinal) {
       this.started = false;
       this.onend?.();
@@ -81,9 +89,10 @@ export class FakeSpeechRecognition implements SpeechRecognizer {
  * jsdom can't construct a `SpeechRecognitionResultList`, and the hook indexes it, reads `.length` and
  * checks `isFinal` — so build it from real arrays and let the array carry the extra members.
  */
-function resultEvent(transcript: string, isFinal: boolean): SpeechRecognitionEvent {
-  const alternative = { transcript, confidence: 0.9 };
-  const result = Object.assign([alternative], { isFinal, item: () => alternative });
+function resultEvent(transcripts: string[], isFinal: boolean): SpeechRecognitionEvent {
+  // Descending confidence, mirroring the ranking a real recogniser returns.
+  const alternatives = transcripts.map((transcript, i) => ({ transcript, confidence: 0.9 - i * 0.1 }));
+  const result = Object.assign(alternatives, { isFinal, item: (i: number) => alternatives[i] });
   const results = Object.assign([result], { item: () => result });
   return { resultIndex: 0, results } as unknown as SpeechRecognitionEvent;
 }
