@@ -104,6 +104,19 @@ export function VoiceAnswerInput({
   }, [reset, start]);
 
   /**
+   * Read through a ref so the ticking clock can't be an effect dependency.
+   *
+   * The countdown re-renders this component once a second. With `remainingMs` in the deps below, each
+   * tick tore down the pending timeout and started a fresh one — and since a tick (1s) lands inside
+   * the window (1.5s), it could never finish. The answer just sat there, never submitting, in every
+   * timed run. Same idiom as `pausedRef` in useCountdown and `onFinalRef` above.
+   */
+  const remainingMsRef = useRef(remainingMs);
+  useEffect(() => {
+    remainingMsRef.current = remainingMs;
+  }, [remainingMs]);
+
+  /**
    * The grace window — unless the clock would beat it (#426).
    *
    * In a timed run this delay is *our* pause, not the user's. If it outlives the deadline the answer
@@ -113,15 +126,17 @@ export function VoiceAnswerInput({
    * Nothing is lost by that: retrying needs time to re-speak *and* be re-recognised, so in the last
    * couple of seconds Retry was never really on offer. This drops an affordance that couldn't have
    * been used, to keep an answer that would otherwise have been thrown away.
+   *
+   * Decided once, when the transcript arrives — which is also the only moment it matters.
    */
   useEffect(() => {
     if (heard == null) return;
-    const fits = remainingMs > VOICE_SUBMIT_DELAY_MS + VOICE_DEADLINE_SLACK_MS;
+    const fits = remainingMsRef.current > VOICE_SUBMIT_DELAY_MS + VOICE_DEADLINE_SLACK_MS;
     // Still scheduled rather than called outright when it doesn't fit: submitting from inside the
     // effect body would set state synchronously during the commit.
     const id = setTimeout(submitNow, fits ? VOICE_SUBMIT_DELAY_MS : 0);
     return () => clearTimeout(id);
-  }, [heard, submitNow, remainingMs]);
+  }, [heard, submitNow]);
 
   // Taking over with the keyboard cancels a pending submit — but Enter means "submit now" rather than
   // "cancel", or in Test mode it would reach the empty text field and raise the blank-skip confirm

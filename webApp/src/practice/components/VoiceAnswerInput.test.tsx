@@ -164,6 +164,25 @@ describe('VoiceAnswerInput', () => {
     expect(onSubmit).toHaveBeenCalledExactlyOnceWith('paris');
   });
 
+  /**
+   * The countdown re-renders this component once a second. While the remaining time was an effect
+   * dependency, every tick tore down the pending timeout and started a new one — and a tick (1s)
+   * lands inside the window (1.5s), so it never finished: the answer sat there unsubmitted for the
+   * rest of the run. Only reproducible with a *changing* clock, which is why the fixed-prop tests
+   * above all passed while timed runs were broken.
+   */
+  it('submits even though the clock ticks during the window', () => {
+    const onSubmit = vi.fn();
+    const { rerender } = render(<VoiceAnswerInput onSubmit={onSubmit} remainingMs={60_000} />);
+
+    speak('paris');
+    act(() => vi.advanceTimersByTime(1000));
+    rerender(<VoiceAnswerInput onSubmit={onSubmit} remainingMs={59_000} />);
+    act(() => vi.advanceTimersByTime(500));
+
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith('paris');
+  });
+
   // An untimed run has no deadline to lose the answer to, so the window always applies.
   it('keeps the grace window in an untimed run', () => {
     const onSubmit = vi.fn();
