@@ -58,6 +58,8 @@ fun MultipleChoiceMode(
     onDisableVoice: (() -> Unit)? = null,
     showVoicePrivacyNotice: Boolean = false,
     onVoicePrivacyNoticeShown: () -> Unit = {},
+    /** Seconds left in a timed run (#289), or null when untimed — the voice grace window reads it (#426). */
+    remainingSeconds: Int? = null,
 ) {
     val choices = remember(flashcard) { buildChoices(flashcard, deck) }
     val correctIndex = remember(flashcard) { choices.indexOf(flashcard.answer.trim()) }
@@ -107,6 +109,7 @@ fun MultipleChoiceMode(
                 onSubmit = { transcript -> matchSpokenChoice(transcript, choices)?.let { pick(it) } },
                 onDisableVoice = onDisableVoice,
                 showPrivacyNotice = showVoicePrivacyNotice,
+                remainingSeconds = remainingSeconds,
                 onPrivacyNoticeShown = onVoicePrivacyNoticeShown,
             )
         }

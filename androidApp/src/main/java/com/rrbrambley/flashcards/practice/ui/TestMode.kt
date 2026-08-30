@@ -64,6 +64,8 @@ fun TestMode(
     onDisableVoice: (() -> Unit)? = null,
     showVoicePrivacyNotice: Boolean = false,
     onVoicePrivacyNoticeShown: () -> Unit = {},
+    /** Seconds left in a timed run (#289), or null when untimed — the voice grace window reads it (#426). */
+    remainingSeconds: Int? = null,
 ) {
     var input by remember(flashcard) { mutableStateOf("") }
     var graded by remember(flashcard) { mutableStateOf<TestGrade?>(null) }
@@ -124,6 +126,7 @@ fun TestMode(
                     onSubmit = { grade(it) },
                     onDisableVoice = onDisableVoice,
                     showPrivacyNotice = showVoicePrivacyNotice,
+                    remainingSeconds = remainingSeconds,
                     onPrivacyNoticeShown = onVoicePrivacyNoticeShown,
                 )
             }

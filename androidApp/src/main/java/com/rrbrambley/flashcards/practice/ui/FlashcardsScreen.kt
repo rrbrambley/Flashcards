@@ -324,6 +324,7 @@ private fun CardByCardPractice(
                                     onDisableVoice = flashcardsViewModel::disableVoiceInput,
                                     showVoicePrivacyNotice = showVoicePrivacyNotice,
                                     onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
+                                    remainingSeconds = remaining,
                                 )
 
                             PracticeMode.MultipleChoice.key ->
@@ -339,6 +340,7 @@ private fun CardByCardPractice(
                                     onDisableVoice = flashcardsViewModel::disableVoiceInput,
                                     showVoicePrivacyNotice = showVoicePrivacyNotice,
                                     onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
+                                    remainingSeconds = remaining,
                                 )
 
                             else -> ClassicMode(

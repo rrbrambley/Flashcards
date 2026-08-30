@@ -54,6 +54,11 @@ export interface PracticeModeProps {
    * the microphone is blocked or missing, so a stuck user isn't re-prompted on every card.
    */
   onDisableVoice?: () => void;
+  /**
+   * Time left in a timed run (#289), or `Infinity` when untimed. Only the voice panel reads it, to
+   * decide whether its pre-submission grace window still fits before the clock runs out (#426).
+   */
+  remainingMs?: number;
 }
 
 /** A selectable practice mode: its persisted key, display copy, and the component that runs it. */

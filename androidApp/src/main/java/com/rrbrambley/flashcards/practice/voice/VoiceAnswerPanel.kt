@@ -42,6 +42,15 @@ import kotlinx.coroutines.delay
 const val VOICE_SUBMIT_DELAY_MS = 1500L
 
 /**
+ * Least time that must remain in a timed run for the grace window to be worth starting (#426).
+ *
+ * The remaining time ticks in whole seconds, so it can overstate what's left by nearly a second;
+ * this covers that plus the window itself. Matches the web's `VOICE_SUBMIT_DELAY_MS` +
+ * `VOICE_DEADLINE_SLACK_MS`.
+ */
+private const val VOICE_DEADLINE_FLOOR_SECONDS = 3
+
+/**
  * How long to wait for the recogniser to say *anything* before giving up on it.
  *
  * A recogniser can accept `startListening`, report itself ready, and then never call back — no
@@ -80,6 +89,8 @@ fun VoiceAnswerPanel(
     showPrivacyNotice: Boolean = false,
     /** Called once the disclosure has actually been on screen for a card. */
     onPrivacyNoticeShown: () -> Unit = {},
+    /** Seconds left in a timed run (#289), or null when untimed. See the grace window below (#426). */
+    remainingSeconds: Int? = null,
 ) {
     val context = LocalContext.current
     var heard by remember { mutableStateOf<Pair<String, String?>?>(null) }
@@ -152,11 +163,17 @@ fun VoiceAnswerPanel(
         timedOut = true
     }
 
-    // The grace window: submit unless the user intervenes first.
+    // The grace window: submit unless the user intervenes first — unless the clock would beat it.
+    //
+    // In a timed run this delay is *ours*, not the user's. Left to outlive the deadline the answer is
+    // never submitted and the run scores the card unanswered, marking a spoken, correct, in-time
+    // answer wrong (#426). Retrying needs time to re-speak *and* be re-recognised, so in the last
+    // couple of seconds the window was offering something that couldn't be used anyway.
     val pending = heard
     LaunchedEffect(pending) {
         if (pending == null) return@LaunchedEffect
-        delay(VOICE_SUBMIT_DELAY_MS)
+        val timeToSpare = remainingSeconds == null || remainingSeconds >= VOICE_DEADLINE_FLOOR_SECONDS
+        if (timeToSpare) delay(VOICE_SUBMIT_DELAY_MS)
         heard = null
         // Keep the payload sane whatever the recogniser produced; the server clamps too (#391).
         onSubmit(pending.first.take(200))

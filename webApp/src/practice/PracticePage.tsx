@@ -693,6 +693,7 @@ function PracticeRunner({
         onImageReady={() => setReadyForIndex(state.index)}
         voiceInput={voiceInput}
         onDisableVoice={() => setVoicePreference(false)}
+        remainingMs={remainingMs}
       />
 
       {discussCardUid && (

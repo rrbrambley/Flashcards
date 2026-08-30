@@ -10,6 +10,14 @@ import { useSpeechRecognition } from '../voice/useSpeechRecognition';
  */
 export const VOICE_SUBMIT_DELAY_MS = 1500;
 
+/**
+ * Slack allowed for the countdown being behind reality.
+ *
+ * `useCountdown` ticks once a second, so the remaining time we're handed can overstate what's left by
+ * nearly a full tick. Anything tighter than this and the window could still outlive the clock.
+ */
+export const VOICE_DEADLINE_SLACK_MS = 1000;
+
 /** What a final transcript means, when the caller needs to interpret it (Multiple Choice, #388). */
 export interface VoiceInterpretation {
   /** The hypothesis to show and submit — the caller's pick from the ones offered. */
@@ -31,6 +39,7 @@ export function VoiceAnswerInput({
   interpret,
   lang,
   onDisableVoice,
+  remainingMs = Infinity,
 }: {
   onSubmit: (transcript: string) => void;
   /**
@@ -44,6 +53,8 @@ export function VoiceAnswerInput({
   lang?: string;
   /** Offered on an unrecoverable error, so a stuck user can switch voice off without navigating away. */
   onDisableVoice?: () => void;
+  /** Time left in a timed run (#289); `Infinity` when untimed. See the grace-window effect (#426). */
+  remainingMs?: number;
 }) {
   const [heard, setHeard] = useState<{ transcript: string; note?: string } | null>(null);
   const [unheard, setUnheard] = useState(false);
@@ -92,10 +103,38 @@ export function VoiceAnswerInput({
     start();
   }, [reset, start]);
 
-  // The grace window.
+  /**
+   * Read through a ref so the ticking clock can't be an effect dependency.
+   *
+   * The countdown re-renders this component once a second. With `remainingMs` in the deps below, each
+   * tick tore down the pending timeout and started a fresh one — and since a tick (1s) lands inside
+   * the window (1.5s), it could never finish. The answer just sat there, never submitting, in every
+   * timed run. Same idiom as `pausedRef` in useCountdown and `onFinalRef` above.
+   */
+  const remainingMsRef = useRef(remainingMs);
+  useEffect(() => {
+    remainingMsRef.current = remainingMs;
+  }, [remainingMs]);
+
+  /**
+   * The grace window — unless the clock would beat it (#426).
+   *
+   * In a timed run this delay is *our* pause, not the user's. If it outlives the deadline the answer
+   * is never submitted, and the run ends scoring the card unanswered — a spoken, correct, in-time
+   * answer marked wrong. So when the window no longer fits, the answer goes in at once.
+   *
+   * Nothing is lost by that: retrying needs time to re-speak *and* be re-recognised, so in the last
+   * couple of seconds Retry was never really on offer. This drops an affordance that couldn't have
+   * been used, to keep an answer that would otherwise have been thrown away.
+   *
+   * Decided once, when the transcript arrives — which is also the only moment it matters.
+   */
   useEffect(() => {
     if (heard == null) return;
-    const id = setTimeout(submitNow, VOICE_SUBMIT_DELAY_MS);
+    const fits = remainingMsRef.current > VOICE_SUBMIT_DELAY_MS + VOICE_DEADLINE_SLACK_MS;
+    // Still scheduled rather than called outright when it doesn't fit: submitting from inside the
+    // effect body would set state synchronously during the commit.
+    const id = setTimeout(submitNow, fits ? VOICE_SUBMIT_DELAY_MS : 0);
     return () => clearTimeout(id);
   }, [heard, submitNow]);
 

@@ -28,6 +28,8 @@ struct TestModeView: View {
     var onDisableVoice: (() -> Void)?
     var showVoicePrivacyNotice = false
     var onVoicePrivacyNoticeShown: () -> Void = {}
+    /// Seconds left in a timed run (#289), or nil when untimed — read by the voice grace window (#426).
+    var remainingSeconds: Int?
 
     @State private var input = ""
     @State private var graded: Graded?
@@ -85,7 +87,8 @@ struct TestModeView: View {
                             onSubmit: { spoken in grade(spoken) },
                             onDisableVoice: onDisableVoice,
                             showPrivacyNotice: showVoicePrivacyNotice,
-                            onPrivacyNoticeShown: onVoicePrivacyNoticeShown
+                            onPrivacyNoticeShown: onVoicePrivacyNoticeShown,
+                            remainingSeconds: remainingSeconds
                         )
                     }
                     TextField("Type the answer", text: $input)

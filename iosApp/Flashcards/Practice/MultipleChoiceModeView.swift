@@ -22,6 +22,8 @@ struct MultipleChoiceModeView: View {
     let onDisableVoice: (() -> Void)?
     let showVoicePrivacyNotice: Bool
     let onVoicePrivacyNoticeShown: () -> Void
+    /// Seconds left in a timed run (#289), or nil when untimed — read by the voice grace window (#426).
+    let remainingSeconds: Int?
 
     @State private var choices: [String]
     @State private var selected: Int?
@@ -46,7 +48,8 @@ struct MultipleChoiceModeView: View {
         voiceInput: Bool = false,
         onDisableVoice: (() -> Void)? = nil,
         showVoicePrivacyNotice: Bool = false,
-        onVoicePrivacyNoticeShown: @escaping () -> Void = {}
+        onVoicePrivacyNoticeShown: @escaping () -> Void = {},
+        remainingSeconds: Int? = nil
     ) {
         self.card = card
         self.onGraded = onGraded
@@ -58,6 +61,7 @@ struct MultipleChoiceModeView: View {
         self.onDisableVoice = onDisableVoice
         self.showVoicePrivacyNotice = showVoicePrivacyNotice
         self.onVoicePrivacyNoticeShown = onVoicePrivacyNoticeShown
+        self.remainingSeconds = remainingSeconds
         // The first init's shuffle wins (@State ignores later initialValues), so `choices` is stable.
         _choices = State(initialValue: IosPracticeGradingKt.buildChoicesForSwift(card: card, deck: deck))
     }
@@ -83,7 +87,8 @@ struct MultipleChoiceModeView: View {
                         },
                         onDisableVoice: onDisableVoice,
                         showPrivacyNotice: showVoicePrivacyNotice,
-                        onPrivacyNoticeShown: onVoicePrivacyNoticeShown
+                        onPrivacyNoticeShown: onVoicePrivacyNoticeShown,
+                        remainingSeconds: remainingSeconds
                     )
                     .padding(.bottom, Spacing.sm)
                 }
