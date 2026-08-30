@@ -7,6 +7,12 @@ import SwiftUI
 /// So the correction has to happen *before* submission, not after. Matches web and Android.
 let voiceSubmitDelay: Duration = .milliseconds(1500)
 
+/// Least time that must remain in a timed run for the grace window to be worth starting (#426).
+///
+/// The remaining time ticks in whole seconds, so it can overstate what's left by nearly a second;
+/// this covers that as well as the window itself. Matches web and Android.
+let voiceDeadlineFloorSeconds = 3
+
 /// What a final transcript means, when the caller needs to interpret it (Multiple Choice).
 struct VoiceInterpretation {
     /// Shown alongside the transcript, e.g. the option that was matched.
@@ -30,6 +36,8 @@ struct VoiceAnswerPanel: View {
     var showPrivacyNotice = false
     /// Called once the disclosure has actually been on screen for a card.
     var onPrivacyNoticeShown: () -> Void = {}
+    /// Seconds left in a timed run (#289), or nil when untimed. Read by the grace window (#426).
+    var remainingSeconds: Int?
 
     @StateObject private var recognizer = VoiceRecognizer()
     @State private var heard: Heard?
@@ -185,8 +193,18 @@ struct VoiceAnswerPanel: View {
         }
     }
 
+    /// Holds the answer briefly so it can be retried — unless the clock would beat the window.
+    ///
+    /// In a timed run this delay is *ours*, not the user's. Left to outlive the deadline the answer
+    /// is never submitted and the run scores the card unanswered, marking a spoken, correct, in-time
+    /// answer wrong (#426). Retrying needs time to re-speak *and* be re-recognised, so in the last
+    /// couple of seconds the window was offering something that couldn't have been used anyway.
     private func startGraceWindow(_ transcript: String) {
         submitTask?.cancel()
+        if let remaining = remainingSeconds, remaining < voiceDeadlineFloorSeconds {
+            submitNow(transcript)
+            return
+        }
         submitTask = Task {
             try? await Task.sleep(for: voiceSubmitDelay)
             guard !Task.isCancelled else { return }

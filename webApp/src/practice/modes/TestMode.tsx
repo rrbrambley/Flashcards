@@ -24,6 +24,7 @@ export function TestMode({
   isGuest,
   onImageReady,
   voiceInput,
+  remainingMs,
   onDisableVoice,
 }: PracticeModeProps) {
   const [graded, setGraded] = useState<{ input: string; correct: boolean } | null>(null);
@@ -102,7 +103,12 @@ export function TestMode({
       {!graded ? (
         <>
           {voiceInput && (
-            <VoiceAnswerInput onSubmit={submit} interpret={interpretSpoken} onDisableVoice={onDisableVoice} />
+            <VoiceAnswerInput
+              onSubmit={submit}
+              interpret={interpretSpoken}
+              onDisableVoice={onDisableVoice}
+              remainingMs={remainingMs}
+            />
           )}
           <TextAnswerInput confirmBlankSubmit onSubmit={submit} />
         </>

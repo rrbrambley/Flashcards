@@ -23,6 +23,7 @@ export function MultipleChoiceMode({
   onDiscuss,
   onImageReady,
   voiceInput,
+  remainingMs,
   onDisableVoice,
 }: PracticeModeProps) {
   const [choices] = useState(() => buildChoices(card, cards));
@@ -112,7 +113,12 @@ export function MultipleChoiceMode({
       {/* Above the options, and never instead of them — a misrecognition, a blocked microphone or a
           browser with no recogniser all leave the card answerable by clicking. */}
       {voiceInput && selected === null && (
-        <VoiceAnswerInput onSubmit={submitSpoken} interpret={interpretSpoken} onDisableVoice={onDisableVoice} />
+        <VoiceAnswerInput
+          onSubmit={submitSpoken}
+          interpret={interpretSpoken}
+          onDisableVoice={onDisableVoice}
+          remainingMs={remainingMs}
+        />
       )}
 
       <MultipleChoice

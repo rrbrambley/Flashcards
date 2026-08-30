@@ -135,6 +135,45 @@ describe('VoiceAnswerInput', () => {
     expect(onSubmit).toHaveBeenCalledExactlyOnceWith('djibouti');
   });
 
+  /**
+   * #426: in a timed run the grace window is our delay, not the user's. Left to run past the
+   * deadline it loses the answer entirely and the card is scored unanswered — a correct, in-time
+   * spoken answer marked wrong.
+   */
+  it('submits at once when the grace window would outlive the deadline', () => {
+    const onSubmit = vi.fn();
+    render(<VoiceAnswerInput onSubmit={onSubmit} remainingMs={VOICE_SUBMIT_DELAY_MS} />);
+
+    speak('paris');
+    act(() => vi.advanceTimersByTime(0));
+
+    // Submitted without the window running at all.
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith('paris');
+  });
+
+  it('keeps the grace window when there is time for it', () => {
+    const onSubmit = vi.fn();
+    render(<VoiceAnswerInput onSubmit={onSubmit} remainingMs={60_000} />);
+
+    speak('paris');
+    // The same instant that submits above leaves this one still waiting.
+    act(() => vi.advanceTimersByTime(0));
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    act(() => vi.advanceTimersByTime(VOICE_SUBMIT_DELAY_MS));
+    expect(onSubmit).toHaveBeenCalledExactlyOnceWith('paris');
+  });
+
+  // An untimed run has no deadline to lose the answer to, so the window always applies.
+  it('keeps the grace window in an untimed run', () => {
+    const onSubmit = vi.fn();
+    render(<VoiceAnswerInput onSubmit={onSubmit} />);
+
+    speak('paris');
+    act(() => vi.advanceTimersByTime(0));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
   it('offers every hypothesis to the caller', () => {
     const interpret = vi.fn(() => ({ transcript: 'chad' }));
     render(<VoiceAnswerInput onSubmit={vi.fn()} interpret={interpret} />);

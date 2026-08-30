@@ -237,7 +237,8 @@ struct PracticeView: View {
                 voiceInput: voiceInput,
                 onDisableVoice: disableVoice,
                 showVoicePrivacyNotice: showVoicePrivacyNotice,
-                onVoicePrivacyNoticeShown: markVoicePrivacyNoticeSeen
+                onVoicePrivacyNoticeShown: markVoicePrivacyNoticeSeen,
+                remainingSeconds: viewModel.remainingSeconds
             )
         case .multiplechoice:
             MultipleChoiceModeView(
@@ -251,7 +252,8 @@ struct PracticeView: View {
                 voiceInput: voiceInput,
                 onDisableVoice: disableVoice,
                 showVoicePrivacyNotice: showVoicePrivacyNotice,
-                onVoicePrivacyNoticeShown: markVoicePrivacyNoticeSeen
+                onVoicePrivacyNoticeShown: markVoicePrivacyNoticeSeen,
+                remainingSeconds: viewModel.remainingSeconds
             )
         default:
             ClassicModeView(
