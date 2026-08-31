@@ -99,7 +99,21 @@ fun rememberVoiceRecognizer(onFinal: (List<String>) -> Unit): VoiceRecognizerSta
                             },
                             onError = { code ->
                                 listening.value = false
-                                voiceErrorFor(code)?.let { error.value = it }
+                                // ERROR_NO_MATCH is the engine's *own* confidence gate rejecting
+                                // hypotheses it did form — the same general-purpose bias that ranks
+                                // proper nouns low, which is what this whole path routes around
+                                // (#390). If it showed us partial text, that text is a hypothesis,
+                                // and `interpret` is precisely what decides whether one is usable:
+                                // Multiple Choice still re-prompts unless it names an option, so
+                                // nothing is guessed. Without this a hard name is unanswerable by
+                                // voice at all — an endless "Didn't catch that" (#425 review).
+                                val partial = interim.value.trim()
+                                if (code == SpeechRecognizer.ERROR_NO_MATCH && partial.isNotEmpty()) {
+                                    interim.value = ""
+                                    currentOnFinal(listOf(partial))
+                                } else {
+                                    voiceErrorFor(code)?.let { error.value = it }
+                                }
                             },
                             onDone = { listening.value = false },
                         ),
@@ -142,6 +156,13 @@ private fun recognitionIntent(context: Context): Intent = Intent(RecognizerInten
     putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
     putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, VOICE_MAX_ALTERNATIVES)
+    // Room to breathe inside a multi-word answer (#425 review). The default endpointing ends the
+    // utterance at the first real pause, which truncates answers said with natural gaps — "São Tomé
+    // and Príncipe" becomes "sao", and the engine then reports no match at all. These are hints and
+    // some engines ignore them; the cost when honoured is roughly half a second of extra latency
+    // after a short answer, which is worth it against not being able to say a long one.
+    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
     putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
 }
 
