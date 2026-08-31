@@ -69,3 +69,28 @@ fun gradeTextAnswer(input: String, answer: String, alternativeAnswers: List<Stri
     }
     return TextAnswerGrade(correct = best >= TEXT_ANSWER_THRESHOLD, similarity = best)
 }
+
+/**
+ * Which of a recogniser's hypotheses to grade — n-best rescoring (#390).
+ *
+ * A recogniser returns several readings of the same audio, ranked by a general-purpose language
+ * model biased toward everyday words, which is why proper nouns lose. This card's answer is
+ * knowledge the recogniser doesn't have, so its own list is re-ranked with it: the first hypothesis
+ * that grades correct wins.
+ *
+ * [gradeTextAnswer] is untouched and still decides, at the same threshold, so a spoken and a typed
+ * string grade identically — what changes is which string gets graded. That does make voice more
+ * forgiving than typing, since any hypothesis can win; deliberately so, because only the recogniser
+ * proposed them and the mis-hear was never the user's mistake.
+ *
+ * Falls back to the top hypothesis rather than reporting nothing: a wrong answer still has to be
+ * recordable, and it should be recorded as what they most likely said.
+ */
+fun pickSpokenAnswer(
+    hypotheses: List<String>,
+    answer: String,
+    alternativeAnswers: List<String> = emptyList(),
+): String? {
+    val matched = hypotheses.firstOrNull { gradeTextAnswer(it, answer, alternativeAnswers).correct }
+    return matched ?: hypotheses.firstOrNull()
+}

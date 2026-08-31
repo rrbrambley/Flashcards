@@ -85,6 +85,31 @@ struct TestModeView: View {
                     if voiceInput {
                         VoiceAnswerPanel(
                             onSubmit: { spoken in grade(spoken) },
+                            interpret: { hypotheses in
+                                // Picks which hypothesis to grade — n-best rescoring (#390).
+                                //
+                                // The recogniser ranks by a general-purpose language model biased
+                                // toward everyday words, which is why proper nouns lose: a country
+                                // name is outscored by whatever common phrase it sounds like. We know
+                                // something it doesn't — this card's answer — so its own list is
+                                // re-ranked with it.
+                                //
+                                // `gradeTextAnswer` is untouched and still decides, at the same
+                                // threshold, so a spoken and a typed string grade identically; what
+                                // changes is which string gets graded. That does make voice more
+                                // forgiving than typing — any hypothesis can win, and only the
+                                // recogniser proposed them — which is the point, since the mis-hear
+                                // was never the user's mistake.
+                                //
+                                // Falls back to the top hypothesis rather than re-prompting: a wrong
+                                // answer still has to be recordable, as what they most likely said.
+                                guard let chosen = TextAnswerGradingKt.pickSpokenAnswer(
+                                    hypotheses: hypotheses,
+                                    answer: card.answer,
+                                    alternativeAnswers: card.alternativeAnswers
+                                ) else { return nil }
+                                return VoiceInterpretation(transcript: chosen)
+                            },
                             onDisableVoice: onDisableVoice,
                             showPrivacyNotice: showVoicePrivacyNotice,
                             onPrivacyNoticeShown: onVoicePrivacyNoticeShown,
@@ -138,16 +163,22 @@ struct TestModeView: View {
         grade()
     }
 
-    /// One grading call site, so a spoken answer and a typed one are scored by exactly the same code.
-    private func grade(_ spoken: String? = nil) {
-        let value = spoken ?? input
-        confirmingBlank = false
-        // Kotlin default args don't bridge to Swift, so pass alternativeAnswers explicitly (FLA-109).
-        let correct = TextAnswerGradingKt.gradeTextAnswer(
+    /// Whether a candidate answer grades correct, via the shared grader.
+    ///
+    /// Kotlin default args don't bridge to Swift, so pass alternativeAnswers explicitly (FLA-109).
+    private func isCorrect(_ value: String) -> Bool {
+        TextAnswerGradingKt.gradeTextAnswer(
             input: value,
             answer: card.answer,
             alternativeAnswers: card.alternativeAnswers
         ).correct
+    }
+
+    /// One grading call site, so a spoken answer and a typed one are scored by exactly the same code.
+    private func grade(_ spoken: String? = nil) {
+        let value = spoken ?? input
+        confirmingBlank = false
+        let correct = isCorrect(value)
         graded = Graded(input: value, correct: correct)
         // Score it now (verdict is on screen) so the streak badge shows on this answer, not the next card.
         onGraded(correct, value)

@@ -30,9 +30,11 @@ import androidx.compose.ui.unit.dp
 import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.practice.grading.gradeTextAnswer
+import com.rrbrambley.flashcards.practice.grading.pickSpokenAnswer
 import com.rrbrambley.flashcards.practice.suggestions.SuggestAnswerAction
 import com.rrbrambley.flashcards.practice.voice.VoiceAdvanceNotice
 import com.rrbrambley.flashcards.practice.voice.VoiceAnswerPanel
+import com.rrbrambley.flashcards.practice.voice.VoiceInterpretation
 import com.rrbrambley.flashcards.practice.voice.cancelVoiceAdvanceOnTouch
 import com.rrbrambley.flashcards.practice.voice.rememberVoiceAutoAdvance
 import com.rrbrambley.flashcards.shared.domain.Flashcard
@@ -123,6 +125,25 @@ fun TestMode(
         if (currentGrade == null) {
             if (voiceInput) {
                 VoiceAnswerPanel(
+                    // Picks which hypothesis to grade — n-best rescoring (#390).
+                    //
+                    // The recogniser ranks by a general-purpose language model biased toward everyday
+                    // words, which is why proper nouns lose: a country name is outscored by whatever
+                    // common phrase it sounds like. We know something it doesn't — this card's answer
+                    // — so its own list is re-ranked with it.
+                    //
+                    // gradeTextAnswer is untouched and still decides, at the same threshold, so a
+                    // spoken and a typed string grade identically; what changes is which string gets
+                    // graded. That does make voice more forgiving than typing — any hypothesis can
+                    // win, and only the recogniser proposed them — which is the point, since the
+                    // mis-hear was never the user's mistake.
+                    //
+                    // Falls back to the top hypothesis rather than re-prompting: a wrong answer still
+                    // has to be recordable, as what they most likely said.
+                    interpret = { hypotheses ->
+                        pickSpokenAnswer(hypotheses, flashcard.answer, flashcard.alternativeAnswers)
+                            ?.let { VoiceInterpretation(transcript = it) }
+                    },
                     onSubmit = { grade(it) },
                     onDisableVoice = onDisableVoice,
                     showPrivacyNotice = showVoicePrivacyNotice,

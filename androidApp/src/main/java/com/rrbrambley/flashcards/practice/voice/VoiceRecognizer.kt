@@ -57,7 +57,7 @@ class VoiceRecognizerState internal constructor(
  * recognition mid-utterance.
  */
 @Composable
-fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
+fun rememberVoiceRecognizer(onFinal: (List<String>) -> Unit): VoiceRecognizerState {
     val context = LocalContext.current
     val currentOnFinal by rememberUpdatedState(onFinal)
 
@@ -92,10 +92,10 @@ fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
                                 error.value = null
                             },
                             onPartial = { interim.value = it },
-                            onFinal = { transcript ->
+                            onFinal = { hypotheses ->
                                 interim.value = ""
                                 listening.value = false
-                                currentOnFinal(transcript)
+                                currentOnFinal(hypotheses)
                             },
                             onError = { code ->
                                 listening.value = false
@@ -141,15 +141,14 @@ private fun recognitionIntent(context: Context): Intent = Intent(RecognizerInten
     // Decks carry no language, so this follows the device — the same known gap as the web (#390).
     putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-    // One hypothesis is enough: we fuzzy-match the transcript ourselves.
-    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, VOICE_MAX_ALTERNATIVES)
     putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
 }
 
 private fun listenerFor(
     onReady: () -> Unit,
     onPartial: (String) -> Unit,
-    onFinal: (String) -> Unit,
+    onFinal: (List<String>) -> Unit,
     onError: (Int) -> Unit,
     onDone: () -> Unit,
 ) = object : RecognitionListener {
@@ -161,15 +160,24 @@ private fun listenerFor(
     override fun onError(error: Int) = onError(error)
 
     override fun onResults(results: Bundle?) {
-        val transcript = results?.transcript()
-        if (transcript.isNullOrBlank()) onDone() else onFinal(transcript.trim())
+        val hypotheses = results?.hypotheses().orEmpty()
+        if (hypotheses.isEmpty()) onDone() else onFinal(hypotheses)
     }
 
     override fun onPartialResults(partialResults: Bundle?) {
-        onPartial(partialResults?.transcript()?.trim().orEmpty())
+        onPartial(partialResults?.hypotheses()?.firstOrNull().orEmpty())
     }
 
     override fun onEvent(eventType: Int, params: Bundle?) = Unit
 }
 
-private fun Bundle.transcript(): String? = getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+/**
+ * The utterance's hypotheses, best-ranked first, trimmed and free of blanks and duplicates.
+ *
+ * Distinct spellings are the point — the same string twice tells a caller nothing new.
+ */
+private fun Bundle.hypotheses(): List<String> = getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+    ?.map { it.trim() }
+    ?.filter { it.isNotEmpty() }
+    ?.distinct()
+    .orEmpty()

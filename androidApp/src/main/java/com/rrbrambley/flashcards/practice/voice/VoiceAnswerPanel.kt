@@ -42,6 +42,19 @@ import kotlinx.coroutines.delay
 const val VOICE_SUBMIT_DELAY_MS = 1500L
 
 /**
+ * How many hypotheses to ask the recogniser for.
+ *
+ * More than one because the ranking is done by a general-purpose language model biased toward
+ * everyday words, which is exactly why proper nouns lose — a country name is outscored by whatever
+ * common phrase it sounds like (#390). Callers know something the recogniser doesn't (the card's
+ * answer, or the four options on screen) and can re-rank with it.
+ *
+ * Kept small: alternatives past the first few are acoustically remote, and every extra one is
+ * another chance to accept something that wasn't said. Matches the web's `VOICE_MAX_ALTERNATIVES`.
+ */
+const val VOICE_MAX_ALTERNATIVES = 4
+
+/**
  * Least time that must remain in a timed run for the grace window to be worth starting (#426).
  *
  * The remaining time ticks in whole seconds, so it can overstate what's left by nearly a second;
@@ -61,7 +74,12 @@ private const val VOICE_DEADLINE_FLOOR_SECONDS = 3
 private const val VOICE_LISTEN_TIMEOUT_MS = 12_000L
 
 /** What a final transcript means, when the caller needs to interpret it (Multiple Choice). */
-data class VoiceInterpretation(val note: String? = null)
+data class VoiceInterpretation(
+    /** The hypothesis to show and submit — the caller's pick from the ones offered. */
+    val transcript: String,
+    /** Shown alongside the transcript, e.g. the option that was matched. */
+    val note: String? = null,
+)
 
 /**
  * Answer by speaking. Owns the recogniser and the states around it; owns no grading — the transcript
@@ -79,10 +97,13 @@ fun VoiceAnswerPanel(
     onSubmit: (String) -> Unit,
     modifier: Modifier = Modifier,
     /**
-     * Whether a transcript is usable, and what to show for it. `null` means "didn't catch that" —
-     * the panel re-prompts instead of submitting. Default: any non-blank transcript is accepted.
+     * Picks which of the recogniser's hypotheses to use, and what to show for it. `null` means
+     * "didn't catch that" — the panel re-prompts instead of submitting.
+     *
+     * The list arrives best-ranked first and is usually one entry. Callers that know what a right
+     * answer looks like can re-rank it (#390); the default simply takes the recogniser's own pick.
      */
-    interpret: ((String) -> VoiceInterpretation?)? = null,
+    interpret: ((List<String>) -> VoiceInterpretation?)? = null,
     /** Offered when the mic is unusable, so a stuck user can switch voice off without navigating away. */
     onDisableVoice: (() -> Unit)? = null,
     /** Whether the one-time speech-processing disclosure still needs showing. */
@@ -99,13 +120,14 @@ fun VoiceAnswerPanel(
     // Set when the recogniser went quiet on us — see VOICE_LISTEN_TIMEOUT_MS.
     var timedOut by remember { mutableStateOf(false) }
 
-    val recognizer = rememberVoiceRecognizer { transcript ->
-        val interpretation = if (interpret != null) interpret(transcript) else VoiceInterpretation()
-        if (interpretation == null) {
+    val recognizer = rememberVoiceRecognizer { hypotheses ->
+        val interpretation =
+            if (interpret != null) interpret(hypotheses) else VoiceInterpretation(hypotheses.first())
+        if (interpretation == null || interpretation.transcript.isBlank()) {
             unheard = true
         } else {
             unheard = false
-            heard = transcript to interpretation.note
+            heard = interpretation.transcript.trim() to interpretation.note
         }
     }
 
