@@ -84,7 +84,15 @@ fun rememberVoiceRecognizer(onFinal: (List<String>) -> Unit): VoiceRecognizerSta
             errorState = error,
             startListening = {
                 if (supported && !listening.value) {
-                    val instance = recognizer.value ?: createRecognizer(context).also { recognizer.value = it }
+                    // A fresh instance per attempt, not a reused one. A SpeechRecognizer that has
+                    // already run — especially one that ended in ERROR_NO_MATCH or a cancel —
+                    // routinely stops producing callbacks at all: no partial, no result, no error.
+                    // That's the same wedging the watchdog below exists to notice, and reusing the
+                    // instance is what makes it stick across retries, so "Try again" fails as many
+                    // times as it's pressed (#425 review). Constructing one is cheap next to the
+                    // recognition itself.
+                    recognizer.value?.destroy()
+                    val instance = createRecognizer(context).also { recognizer.value = it }
                     instance.setRecognitionListener(
                         listenerFor(
                             onReady = {
