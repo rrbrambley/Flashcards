@@ -66,3 +66,22 @@ fun matchSpokenChoice(transcript: String, options: List<String>): Int? {
     if (best - second < VOICE_CHOICE_MARGIN) return null
     return bestIndex
 }
+
+/**
+ * The index of the option named by the best-ranked hypothesis that names one at all, or `null`.
+ *
+ * n-best rescoring (#390). A recogniser returns several readings of the same audio, ranked by a
+ * general-purpose language model biased toward everyday words — which is exactly why proper nouns
+ * lose, a country name outscored by whatever common phrase it sounds like. The options on screen are
+ * knowledge the recogniser doesn't have, so its own list is re-ranked with them.
+ *
+ * The walk is in the recogniser's confidence order, so its ranking is only overridden when the
+ * better-ranked hypotheses name nothing at all. [matchSpokenChoice] is called unchanged, once per
+ * hypothesis: its floor and margin rules still decide every individual match, so the thresholds the
+ * golden fixture pins are untouched.
+ *
+ * `null` still means "didn't catch that" and must re-prompt — never a best guess, since an
+ * auto-submitted wrong answer is recorded against the card and can't be un-graded.
+ */
+fun matchSpokenChoiceAmong(hypotheses: List<String>, options: List<String>): Int? =
+    hypotheses.firstNotNullOfOrNull { matchSpokenChoice(it, options) }

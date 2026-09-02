@@ -57,7 +57,7 @@ class VoiceRecognizerState internal constructor(
  * recognition mid-utterance.
  */
 @Composable
-fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
+fun rememberVoiceRecognizer(onFinal: (List<String>) -> Unit): VoiceRecognizerState {
     val context = LocalContext.current
     val currentOnFinal by rememberUpdatedState(onFinal)
 
@@ -84,7 +84,15 @@ fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
             errorState = error,
             startListening = {
                 if (supported && !listening.value) {
-                    val instance = recognizer.value ?: createRecognizer(context).also { recognizer.value = it }
+                    // A fresh instance per attempt, not a reused one. A SpeechRecognizer that has
+                    // already run — especially one that ended in ERROR_NO_MATCH or a cancel —
+                    // routinely stops producing callbacks at all: no partial, no result, no error.
+                    // That's the same wedging the watchdog below exists to notice, and reusing the
+                    // instance is what makes it stick across retries, so "Try again" fails as many
+                    // times as it's pressed (#425 review). Constructing one is cheap next to the
+                    // recognition itself.
+                    recognizer.value?.destroy()
+                    val instance = createRecognizer(context).also { recognizer.value = it }
                     instance.setRecognitionListener(
                         listenerFor(
                             onReady = {
@@ -92,14 +100,28 @@ fun rememberVoiceRecognizer(onFinal: (String) -> Unit): VoiceRecognizerState {
                                 error.value = null
                             },
                             onPartial = { interim.value = it },
-                            onFinal = { transcript ->
+                            onFinal = { hypotheses ->
                                 interim.value = ""
                                 listening.value = false
-                                currentOnFinal(transcript)
+                                currentOnFinal(hypotheses)
                             },
                             onError = { code ->
                                 listening.value = false
-                                voiceErrorFor(code)?.let { error.value = it }
+                                // ERROR_NO_MATCH is the engine's *own* confidence gate rejecting
+                                // hypotheses it did form — the same general-purpose bias that ranks
+                                // proper nouns low, which is what this whole path routes around
+                                // (#390). If it showed us partial text, that text is a hypothesis,
+                                // and `interpret` is precisely what decides whether one is usable:
+                                // Multiple Choice still re-prompts unless it names an option, so
+                                // nothing is guessed. Without this a hard name is unanswerable by
+                                // voice at all — an endless "Didn't catch that" (#425 review).
+                                val partial = interim.value.trim()
+                                if (code == SpeechRecognizer.ERROR_NO_MATCH && partial.isNotEmpty()) {
+                                    interim.value = ""
+                                    currentOnFinal(listOf(partial))
+                                } else {
+                                    voiceErrorFor(code)?.let { error.value = it }
+                                }
                             },
                             onDone = { listening.value = false },
                         ),
@@ -141,15 +163,21 @@ private fun recognitionIntent(context: Context): Intent = Intent(RecognizerInten
     // Decks carry no language, so this follows the device — the same known gap as the web (#390).
     putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toLanguageTag())
     putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-    // One hypothesis is enough: we fuzzy-match the transcript ourselves.
-    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, VOICE_MAX_ALTERNATIVES)
+    // Room to breathe inside a multi-word answer (#425 review). The default endpointing ends the
+    // utterance at the first real pause, which truncates answers said with natural gaps — "São Tomé
+    // and Príncipe" becomes "sao", and the engine then reports no match at all. These are hints and
+    // some engines ignore them; the cost when honoured is roughly half a second of extra latency
+    // after a short answer, which is worth it against not being able to say a long one.
+    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+    putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
     putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
 }
 
 private fun listenerFor(
     onReady: () -> Unit,
     onPartial: (String) -> Unit,
-    onFinal: (String) -> Unit,
+    onFinal: (List<String>) -> Unit,
     onError: (Int) -> Unit,
     onDone: () -> Unit,
 ) = object : RecognitionListener {
@@ -161,15 +189,24 @@ private fun listenerFor(
     override fun onError(error: Int) = onError(error)
 
     override fun onResults(results: Bundle?) {
-        val transcript = results?.transcript()
-        if (transcript.isNullOrBlank()) onDone() else onFinal(transcript.trim())
+        val hypotheses = results?.hypotheses().orEmpty()
+        if (hypotheses.isEmpty()) onDone() else onFinal(hypotheses)
     }
 
     override fun onPartialResults(partialResults: Bundle?) {
-        onPartial(partialResults?.transcript()?.trim().orEmpty())
+        onPartial(partialResults?.hypotheses()?.firstOrNull().orEmpty())
     }
 
     override fun onEvent(eventType: Int, params: Bundle?) = Unit
 }
 
-private fun Bundle.transcript(): String? = getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
+/**
+ * The utterance's hypotheses, best-ranked first, trimmed and free of blanks and duplicates.
+ *
+ * Distinct spellings are the point — the same string twice tells a caller nothing new.
+ */
+private fun Bundle.hypotheses(): List<String> = getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+    ?.map { it.trim() }
+    ?.filter { it.isNotEmpty() }
+    ?.distinct()
+    .orEmpty()

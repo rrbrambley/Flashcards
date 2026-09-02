@@ -27,6 +27,7 @@ import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.practice.discussions.DiscussButton
 import com.rrbrambley.flashcards.practice.grading.buildChoices
 import com.rrbrambley.flashcards.practice.grading.matchSpokenChoice
+import com.rrbrambley.flashcards.practice.grading.matchSpokenChoiceAmong
 import com.rrbrambley.flashcards.practice.voice.VoiceAdvanceNotice
 import com.rrbrambley.flashcards.practice.voice.VoiceAnswerPanel
 import com.rrbrambley.flashcards.practice.voice.VoiceInterpretation
@@ -101,10 +102,21 @@ fun MultipleChoiceMode(
 
         if (voiceInput && selected == null) {
             VoiceAnswerPanel(
+                // The first hypothesis that names an option wins — n-best rescoring (#390). Walked in
+                // the recogniser's own confidence order, so its ranking is only overridden when the
+                // better-ranked hypotheses name nothing at all. matchSpokenChoice is called unchanged,
+                // once per hypothesis: its floor and margin rules still decide every match, and the
+                // golden fixture pinning them to the web stays exactly as it is.
+                //
+                // Resolving to the *option text* (not the raw transcript) keeps a spoken answer
+                // indistinguishable from a tapped one in the review screen and answer stats.
+                //
                 // null re-prompts instead of submitting — never fall back to a best guess, since an
                 // auto-submitted wrong answer is recorded and can't be un-graded.
-                interpret = { transcript ->
-                    matchSpokenChoice(transcript, choices)?.let { VoiceInterpretation(note = choices[it]) }
+                interpret = { hypotheses ->
+                    matchSpokenChoiceAmong(hypotheses, choices)?.let {
+                        VoiceInterpretation(transcript = choices[it], note = choices[it])
+                    }
                 },
                 onSubmit = { transcript -> matchSpokenChoice(transcript, choices)?.let { pick(it) } },
                 onDisableVoice = onDisableVoice,

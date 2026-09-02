@@ -15,6 +15,8 @@ let voiceDeadlineFloorSeconds = 3
 
 /// What a final transcript means, when the caller needs to interpret it (Multiple Choice).
 struct VoiceInterpretation {
+    /// The hypothesis to show and submit — the caller's pick from the ones offered.
+    var transcript: String
     /// Shown alongside the transcript, e.g. the option that was matched.
     var note: String?
 }
@@ -29,7 +31,12 @@ struct VoiceAnswerPanel: View {
     let onSubmit: (String) -> Void
     /// Whether a transcript is usable, and what to show for it. `nil` means "didn't catch that" —
     /// the panel re-prompts instead of submitting. Default: any non-blank transcript is accepted.
-    var interpret: ((String) -> VoiceInterpretation?)?
+    /// Picks which of the recogniser's hypotheses to use, and what to show for it. `nil` means
+    /// "didn't catch that" — the panel re-prompts instead of submitting.
+    ///
+    /// The list arrives best-ranked first and is usually one entry. Callers that know what a right
+    /// answer looks like can re-rank it (#390); the default simply takes the recogniser's own pick.
+    var interpret: (([String]) -> VoiceInterpretation?)?
     /// Offered when the mic is unusable, so a stuck user can switch voice off without leaving practice.
     var onDisableVoice: (() -> Void)?
     /// Whether the one-time speech-processing disclosure still needs showing.
@@ -179,17 +186,21 @@ struct VoiceAnswerPanel: View {
     private func listen() {
         unheard = false
         recognizer.reset()
-        recognizer.start { transcript in
-            let interpretation = interpret.map { $0(transcript) } ?? VoiceInterpretation()
-            guard let interpretation else {
+        recognizer.start { hypotheses in
+            let interpretation = interpret.map { $0(hypotheses) }
+                ?? VoiceInterpretation(transcript: hypotheses[0])
+            guard let interpretation,
+                  !interpretation.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else {
                 // nil re-prompts. Never fall back to a best guess: an auto-submitted wrong answer is
                 // recorded against the card and can't be un-graded.
                 unheard = true
                 return
             }
+            let chosen = interpretation.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
             unheard = false
-            heard = Heard(transcript: transcript, note: interpretation.note)
-            startGraceWindow(transcript)
+            heard = Heard(transcript: chosen, note: interpretation.note)
+            startGraceWindow(chosen)
         }
     }
 

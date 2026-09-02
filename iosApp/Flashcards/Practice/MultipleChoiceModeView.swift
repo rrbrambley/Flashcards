@@ -79,11 +79,25 @@ struct MultipleChoiceModeView: View {
                         onSubmit: { transcript in
                             if let index = matchSpoken(transcript) { pick(index) }
                         },
-                        interpret: { transcript in
+                        interpret: { hypotheses in
+                            // The first hypothesis that names an option wins — n-best rescoring
+                            // (#390). Walked in the recogniser's own confidence order, so its ranking
+                            // is only overridden when the better-ranked hypotheses name nothing at
+                            // all. `matchSpoken` is called unchanged, once per hypothesis: its floor
+                            // and margin rules still decide every match, and the golden fixture
+                            // pinning them to the web stays exactly as it is.
+                            //
+                            // Resolving to the *option text* (not the raw transcript) keeps a spoken
+                            // answer indistinguishable from a tapped one in the review screen and
+                            // answer stats.
+                            //
                             // nil re-prompts instead of submitting — never a best guess, since an
                             // auto-submitted wrong answer is recorded and can't be un-graded.
-                            guard let index = matchSpoken(transcript) else { return nil }
-                            return VoiceInterpretation(note: choices[index])
+                            guard let index = VoiceChoiceKt.matchSpokenChoiceAmong(
+                                hypotheses: hypotheses,
+                                options: choices
+                            )?.intValue else { return nil }
+                            return VoiceInterpretation(transcript: choices[index], note: choices[index])
                         },
                         onDisableVoice: onDisableVoice,
                         showPrivacyNotice: showVoicePrivacyNotice,

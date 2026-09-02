@@ -58,7 +58,7 @@ final class VoiceRecognizer: ObservableObject {
     private let audioEngine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
-    private var onFinal: ((String) -> Void)?
+    private var onFinal: (([String]) -> Void)?
     /// Fires when the user stops talking; ending the audio is what makes iOS deliver a final result.
     private var silenceTask: Task<Void, Never>?
 
@@ -81,7 +81,7 @@ final class VoiceRecognizer: ObservableObject {
     ///
     /// Called only from a deliberate user action or from a card appearing *after* permission is
     /// already held — never speculatively, so the system alerts arrive when they're motivated.
-    func start(onFinal: @escaping (String) -> Void) {
+    func start(onFinal: @escaping ([String]) -> Void) {
         guard supported, !listening else { return }
         self.onFinal = onFinal
 
@@ -160,12 +160,13 @@ final class VoiceRecognizer: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 if let result {
-                    let transcript = result.bestTranscription.formattedString
                     if result.isFinal {
-                        self.finish(with: transcript)
+                        // Every hypothesis, best-ranked first — `transcriptions` is ordered by
+                        // descending confidence, with `bestTranscription` as its first entry (#390).
+                        self.finish(with: result.transcriptions.map(\.formattedString))
                         return
                     }
-                    self.interim = transcript
+                    self.interim = result.bestTranscription.formattedString
                     // Still talking — push the end-of-answer deadline back.
                     self.restartSilenceTimer(heardSomething: true)
                 }
@@ -204,17 +205,23 @@ final class VoiceRecognizer: ObservableObject {
         interim = ""
     }
 
-    private func finish(with transcript: String) {
+    /// Reports the utterance's hypotheses, trimmed and free of blanks and duplicates — distinct
+    /// spellings are the point, the same string twice tells a caller nothing new.
+    private func finish(with hypotheses: [String]) {
         silenceTask?.cancel()
         finishRequest()
         teardownAudio()
         listening = false
         interim = ""
-        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
+        var ranked: [String] = []
+        for candidate in hypotheses {
+            let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty && !ranked.contains(trimmed) { ranked.append(trimmed) }
+        }
+        if ranked.isEmpty {
             error = .noSpeech
         } else {
-            onFinal?(trimmed)
+            onFinal?(ranked)
         }
     }
 
