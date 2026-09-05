@@ -4,6 +4,7 @@ import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.auth.FeatureFlagRepository
 import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.FakeStringProvider
+import com.rrbrambley.flashcards.practice.voice.VoiceInputPreference
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.createFlashcardHttpClient
 import com.rrbrambley.flashcards.shared.domain.HomeButton
@@ -60,6 +61,7 @@ class HomeViewModelTest {
                 readyApiClient(),
                 FakeStringProvider(),
                 FakeFeatureFlagRepository(),
+                FakeVoiceInputPreference(),
             )
 
         assertEquals(HomeUiState.Loading, viewModel.uiState.value)
@@ -110,6 +112,7 @@ class HomeViewModelTest {
                 readyApiClient(),
                 FakeStringProvider(),
                 FakeFeatureFlagRepository(),
+                FakeVoiceInputPreference(),
             )
 
         // Subscribe to the one-shot messages before the failing flow runs (UNDISPATCHED so the
@@ -156,6 +159,7 @@ class HomeViewModelTest {
                 client,
                 FakeStringProvider(),
                 FakeFeatureFlagRepository(),
+                FakeVoiceInputPreference(),
             )
 
         // The streak fetch runs over a real client/MockEngine, so await the StateFlow.
@@ -216,8 +220,16 @@ class HomeViewModelTest {
         sessionRepository: PracticeSessionRepository = FakePracticeSessionRepository(),
         apiClient: FlashcardApiClient = readyApiClient(),
         featureFlags: FeatureFlagRepository = FakeFeatureFlagRepository(),
+        voicePreference: VoiceInputPreference = FakeVoiceInputPreference(),
     ): HomeViewModel {
-        val viewModel = HomeViewModel(homeRepository, sessionRepository, apiClient, FakeStringProvider(), featureFlags)
+        val viewModel = HomeViewModel(
+            homeRepository,
+            sessionRepository,
+            apiClient,
+            FakeStringProvider(),
+            featureFlags,
+            voicePreference,
+        )
         viewModel.streak.first { it != null } // join the off-scheduler streak fetch (see above)
         testDispatcher.scheduler.advanceUntilIdle() // drain the feed + flag coroutines
         return viewModel
@@ -254,6 +266,13 @@ class HomeViewModelTest {
     private class FakeFeatureFlagRepository(private val flags: Map<String, Boolean> = emptyMap()) :
         FeatureFlagRepository {
         override suspend fun flags(): Map<String, Boolean> = flags
+    }
+
+    private class FakeVoiceInputPreference(private val on: Boolean = false) : VoiceInputPreference {
+        override fun enabled(): Flow<Boolean> = flowOf(on)
+        override suspend fun setEnabled(enabled: Boolean) = Unit
+        override fun privacyNoticeSeen(): Flow<Boolean> = flowOf(true)
+        override suspend fun markPrivacyNoticeSeen() = Unit
     }
 
     /** Records the discarded session id; only the abstract members are overridden (rest are defaults). */

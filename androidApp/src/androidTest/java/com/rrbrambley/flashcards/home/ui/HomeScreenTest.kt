@@ -25,6 +25,65 @@ class HomeScreenTest {
         button = HomeButton(message = "Start practice", action = HomeButtonAction.NavigateToPractice(deckId = 1)),
     )
 
+    private fun sessionCard(mode: String) = HomeData(
+        title = "Spanish",
+        button = HomeButton(message = "Resume", action = HomeButtonAction.ContinuePractice(sessionId = 7)),
+        session = HomeSessionInfo(
+            mode = mode,
+            numCorrect = 3,
+            numIncorrect = 1,
+            currentCardIndex = 4,
+            totalCards = 10,
+        ),
+    )
+
+    /**
+     * The voice chip (#434) says *this device* will answer by speaking — voice is never recorded on
+     * the session (#386), so the chip is a statement about the current setting, not the run's history.
+     */
+    @Test
+    fun voiceBadge_showsOnAVoiceCapableSessionWhenVoiceIsOn() {
+        composeTestRule.setContent {
+            HomeScreenContent(
+                cards = listOf(sessionCard("test")),
+                streak = null,
+                onButtonAction = {},
+                voiceInputEnabled = true,
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Voice answers are on").assertIsDisplayed()
+    }
+
+    // Classic is flip-and-swipe — no answer to say, so advertising voice would be a lie.
+    @Test
+    fun voiceBadge_hiddenOnAClassicSession() {
+        composeTestRule.setContent {
+            HomeScreenContent(
+                cards = listOf(sessionCard("flashcards")),
+                streak = null,
+                onButtonAction = {},
+                voiceInputEnabled = true,
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Voice answers are on").assertDoesNotExist()
+    }
+
+    @Test
+    fun voiceBadge_hiddenWhenVoiceIsOff() {
+        composeTestRule.setContent {
+            HomeScreenContent(
+                cards = listOf(sessionCard("test")),
+                streak = null,
+                onButtonAction = {},
+                voiceInputEnabled = false,
+            )
+        }
+
+        composeTestRule.onNodeWithContentDescription("Voice answers are on").assertDoesNotExist()
+    }
+
     @Test
     fun rendersCardTitleAndButton() {
         composeTestRule.setContent {

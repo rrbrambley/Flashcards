@@ -1,4 +1,5 @@
 package com.rrbrambley.flashcards.home.ui
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +44,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -72,6 +75,7 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel(), onButtonAction: (
     val streak by homeViewModel.streak.collectAsState()
     val streaks by homeViewModel.streaks.collectAsState()
     val streakDetailsEnabled by homeViewModel.streakDetailsEnabled.collectAsState()
+    val voiceInputEnabled by homeViewModel.voiceInputEnabled.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -94,6 +98,7 @@ fun HomeScreen(homeViewModel: HomeViewModel = hiltViewModel(), onButtonAction: (
                 HomeUiState.LoadingFailed -> ErrorMessage(onRetry = homeViewModel::retry)
                 is HomeUiState.ShowHome -> HomeScreenContent(
                     cards = state.cards,
+                    voiceInputEnabled = voiceInputEnabled,
                     streak = streak,
                     onButtonAction = onButtonAction,
                     onRequestRemove = { sessionId, title -> pendingRemoval = sessionId to title },
@@ -227,6 +232,8 @@ internal fun HomeScreenContent(
     onRequestRemove: (Long, String) -> Unit = { _, _ -> },
     // When non-null (the streak_details flag is on, #353), tapping the badge opens the details popup.
     onStreakClick: (() -> Unit)? = null,
+    /** Whether resuming a session from the feed would use voice answering (#434). */
+    voiceInputEnabled: Boolean = false,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -245,6 +252,7 @@ internal fun HomeScreenContent(
                     card = card,
                     onButtonAction = onButtonAction,
                     onRequestRemove = onRequestRemove,
+                    voiceInputEnabled = voiceInputEnabled,
                 )
             }
         }
@@ -287,6 +295,8 @@ fun HomeCard(
     card: HomeData,
     onButtonAction: (HomeButtonAction) -> Unit = {},
     onRequestRemove: (Long, String) -> Unit = { _, _ -> },
+    /** Whether resuming a session from this card would use voice answering (#434). */
+    voiceInputEnabled: Boolean = false,
 ) {
     // In-progress "continue" cards can be discarded (FLA-205); other cards have no session to remove.
     val removableSessionId = (card.button?.action as? HomeButtonAction.ContinuePractice)?.sessionId
@@ -324,7 +334,7 @@ fun HomeCard(
                     }
                 }
             }
-            card.session?.let { SessionDetail(it) }
+            card.session?.let { SessionDetail(it, voiceInputEnabled = voiceInputEnabled) }
             card.button?.let {
                 Button(
                     onClick = { onButtonAction(it.action) },
@@ -339,7 +349,7 @@ fun HomeCard(
 
 /** Mode + score + a progress bar for an in-progress session, shown on its "continue" home card. */
 @Composable
-private fun SessionDetail(session: HomeSessionInfo) {
+private fun SessionDetail(session: HomeSessionInfo, voiceInputEnabled: Boolean) {
     val modeLabel = PracticeMode.entries.firstOrNull { it.key == session.mode }?.labelRes
     val total = session.totalCards
     val progress = SessionProgress.fraction(session.currentCardIndex, total)
@@ -354,6 +364,11 @@ private fun SessionDetail(session: HomeSessionInfo) {
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             modeLabel?.let { ModeBadge(text = stringResource(it)) }
+            // Resuming this run will use voice (#434) — a property of this device, not of the
+            // session, which never records it (#386). Classic has no answer to speak.
+            if (voiceInputEnabled && PracticeMode.supportsVoice(session.mode)) {
+                VoiceBadge()
+            }
             // In-session streak (FLA-99): a flame + count immediately before the ✓, hidden at 0.
             if (session.streak > 0) {
                 Text(
@@ -394,6 +409,26 @@ private fun SessionDetail(session: HomeSessionInfo) {
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+    }
+}
+
+@Composable
+private fun VoiceBadge() {
+    // The emoji alone reads poorly aloud, so the chip carries its own description.
+    val description = stringResource(R.string.home_session_voice_description)
+    Surface(
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        shape = RoundedCornerShape(999.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Text(
+            text = stringResource(R.string.home_session_voice),
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier
+                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .semantics { contentDescription = description },
+        )
     }
 }
 

@@ -5,11 +5,19 @@ import type { HomeButtonAction, HomeData, HomeSessionInfo, StreaksResponse } fro
 import { useAuth } from '../auth/auth-context';
 import { Avatar } from '../components/Avatar';
 import { NotificationBell } from '../notifications/NotificationBell';
-import { findMode } from '../practice/modes';
+import { findMode, modeSupportsVoice } from '../practice/modes';
+import { readVoiceInputPreference } from '../practice/voice/preference';
 
 export function HomePage() {
-  const { signOut, displayName, avatarUrl, isEnabled } = useAuth();
+  const { signOut, displayName, avatarUrl, isEnabled, token } = useAuth();
   const navigate = useNavigate();
+  // Whether continuing a session here would put you in voice mode. Voice isn't recorded on a session
+  // (#386 keeps it a local preference), so this is a statement about *this device* — which is also
+  // what the chip needs to mean: tap continue and you'll be answering out loud (#434).
+  //
+  // `!isGuest && isEnabled(...)`, not the `isGuest || isEnabled(...)` idiom the default-on kill
+  // switches use — that would advertise a dark feature to every signed-out visitor.
+  const voiceOn = !!token && isEnabled('practice_voice_input') && readVoiceInputPreference();
   const [items, setItems] = useState<HomeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,7 +157,7 @@ export function HomePage() {
                         </button>
                       )}
                       <span className="home-card-title">{item.title}</span>
-                      {item.session && <SessionDetail session={item.session} />}
+                      {item.session && <SessionDetail session={item.session} voiceOn={voiceOn} />}
                       {item.button && (
                         <button onClick={() => runAction(item.button!.action)}>{item.button.message}</button>
                       )}
@@ -232,7 +240,7 @@ function groupBySection(items: HomeData[]): { section: string | null; items: Hom
 }
 
 /** Mode + score + a progress bar for an in-progress session, shown on its "continue" home card. */
-function SessionDetail({ session }: { session: HomeSessionInfo }) {
+function SessionDetail({ session, voiceOn }: { session: HomeSessionInfo; voiceOn: boolean }) {
   const modeLabel = findMode(session.mode)?.label ?? session.mode;
   const { totalCards, currentCardIndex, numCorrect, numIncorrect, streak } = session;
   const progressPct = totalCards > 0 ? Math.round((currentCardIndex / totalCards) * 100) : 0;
@@ -241,6 +249,9 @@ function SessionDetail({ session }: { session: HomeSessionInfo }) {
     <div className="home-card-session">
       <div className="home-card-session-meta">
         <span className="badge">{modeLabel}</span>
+        {voiceOn && modeSupportsVoice(session.mode) && (
+          <span className="badge badge-voice" aria-label="Voice answers are on">🗣️ Voice</span>
+        )}
         {streak > 0 && (
           <span className="session-streak-count" aria-label={`${streak} correct in a row`}>🔥 {streak}</span>
         )}

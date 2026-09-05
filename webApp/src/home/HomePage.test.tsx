@@ -5,13 +5,21 @@ import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { HomePage } from './HomePage';
 import { api } from '../api/client';
 import type { HomeData } from '../api/types';
+import { VOICE_INPUT_KEY } from '../practice/voice/preference';
 
 vi.mock('../api/client', () => ({
   api: { getHome: vi.fn(), getSession: vi.fn(), deleteSession: vi.fn(), getAllDecks: vi.fn(), getStreaks: vi.fn() },
 }));
 let mockFlags: Record<string, boolean> = {};
+let mockToken: string | null = null;
 vi.mock('../auth/auth-context', () => ({
-  useAuth: () => ({ signOut: vi.fn(), isEnabled: (key: string) => mockFlags[key] === true }),
+  useAuth: () => ({
+    signOut: vi.fn(),
+    isEnabled: (key: string) => mockFlags[key] === true,
+    get token() {
+      return mockToken;
+    },
+  }),
 }));
 
 function PracticeStub() {
@@ -58,6 +66,8 @@ describe('HomePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFlags = {};
+    mockToken = null;
+    localStorage.removeItem(VOICE_INPUT_KEY);
     // Default: no active streak, so the badge is absent unless a test opts in.
     vi.mocked(api.getStreaks).mockResolvedValue({ overall: { current: 0, longest: 0 }, decks: [], sessionsCompleted: 0 });
   });
@@ -93,6 +103,69 @@ describe('HomePage', () => {
     expect(screen.queryByText(/🔥/)).not.toBeInTheDocument();
     // 4 of 10 cards reached → 40%.
     expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '40');
+  });
+
+  describe('the voice chip (#434)', () => {
+    /** Everything the chip needs: signed in, flag on, preference on, and a mode that supports voice. */
+    const enableVoice = () => {
+      mockToken = 'tok';
+      mockFlags = { practice_voice_input: true };
+      localStorage.setItem(VOICE_INPUT_KEY, 'true');
+    };
+
+    it('shows on a session whose mode supports voice', async () => {
+      enableVoice();
+      vi.mocked(api.getHome).mockResolvedValue([continueItemWithSession]);
+      renderHome();
+
+      expect(await screen.findByText(/Voice/)).toBeInTheDocument();
+    });
+
+    // Classic is flip-and-swipe — there's no answer to say, so promising voice would be a lie.
+    it('is absent on a Classic session', async () => {
+      enableVoice();
+      vi.mocked(api.getHome).mockResolvedValue([
+        { ...continueItemWithSession, session: { ...continueItemWithSession.session!, mode: 'flashcards' } },
+      ]);
+      renderHome();
+
+      expect(await screen.findByText('✓ 3')).toBeInTheDocument();
+      expect(screen.queryByText(/Voice/)).not.toBeInTheDocument();
+    });
+
+    it('is absent when voice is switched off', async () => {
+      enableVoice();
+      localStorage.setItem(VOICE_INPUT_KEY, 'false');
+      vi.mocked(api.getHome).mockResolvedValue([continueItemWithSession]);
+      renderHome();
+
+      expect(await screen.findByText('✓ 3')).toBeInTheDocument();
+      expect(screen.queryByText(/Voice/)).not.toBeInTheDocument();
+    });
+
+    /**
+     * The gate is `!isGuest && isEnabled(...)`, not the `isGuest || isEnabled(...)` idiom the
+     * default-on kill switches use — that one would advertise a dark feature to every visitor.
+     */
+    it('is absent for a signed-out visitor even with the preference set', async () => {
+      enableVoice();
+      mockToken = null;
+      vi.mocked(api.getHome).mockResolvedValue([continueItemWithSession]);
+      renderHome();
+
+      expect(await screen.findByText('✓ 3')).toBeInTheDocument();
+      expect(screen.queryByText(/Voice/)).not.toBeInTheDocument();
+    });
+
+    it('is absent when the flag is off', async () => {
+      enableVoice();
+      mockFlags = {};
+      vi.mocked(api.getHome).mockResolvedValue([continueItemWithSession]);
+      renderHome();
+
+      expect(await screen.findByText('✓ 3')).toBeInTheDocument();
+      expect(screen.queryByText(/Voice/)).not.toBeInTheDocument();
+    });
   });
 
   it('shows a flame with the in-session streak count, before the score (FLA-99)', async () => {

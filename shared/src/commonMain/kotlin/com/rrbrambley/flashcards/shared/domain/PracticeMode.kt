@@ -17,8 +17,20 @@ enum class PracticeMode(val key: String, val flagKey: String) {
     MultipleChoice("multiple_choice", "practice_mode_multiple_choice"),
     ;
 
+    /**
+     * Whether this mode can be answered by speaking (#387/#388).
+     *
+     * Classic is flip-and-swipe: there's no answer to say, so voice has nothing to grade. Shared
+     * because the practice runner enables voice and the home feed advertises it (#434), and those
+     * two must never disagree about where it applies.
+     */
+    val supportsVoice: Boolean get() = this == Test || this == MultipleChoice
+
     companion object {
         /** Resolves a persisted/backend [key] to a mode; unknown keys fall back to [Classic]. */
         fun fromKey(key: String): PracticeMode = entries.firstOrNull { it.key == key } ?: Classic
+
+        /** [supportsVoice] for a persisted/backend mode key. */
+        fun supportsVoice(key: String): Boolean = fromKey(key).supportsVoice
     }
 }

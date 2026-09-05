@@ -6,7 +6,7 @@ import type { FlashcardDeckDto, FlashcardDto, PracticeAnswer, PracticeSessionDto
 import { BackHeader } from '../decks/BackHeader';
 import { ModeChooser } from './ModeChooser';
 import { BatchPracticeRunner } from './BatchPracticeRunner';
-import { DEFAULT_MODE, findMode, PRACTICE_MODES } from './modes';
+import { DEFAULT_MODE, findMode, modeSupportsVoice, PRACTICE_MODES } from './modes';
 import type { PracticeMode } from './modes/types';
 import { ShareButton } from './ShareButton';
 import { SavePrompt } from './SavePrompt';
@@ -641,7 +641,7 @@ function PracticeRunner({
     !isGuest &&
     isEnabled('practice_voice_input') &&
     voicePreference &&
-    (mode.key === 'test' || mode.key === 'multiple_choice');
+    modeSupportsVoice(mode.key);
   return (
     <div className="practice">
       {/* Timed session (#289): a live m:ss countdown, urgent styling in the last 10s. */}

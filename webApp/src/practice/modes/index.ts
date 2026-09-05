@@ -36,3 +36,14 @@ export const DEFAULT_MODE = PRACTICE_MODES[0];
 export function findMode(key: string | null | undefined): PracticeMode | undefined {
   return PRACTICE_MODES.find((m) => m.key === key);
 }
+
+/**
+ * Whether a mode can be answered by speaking (#387/#388).
+ *
+ * Classic is flip-and-swipe: there's no answer to say, so voice has nothing to grade. Kept here
+ * rather than inline at each call site because the home feed advertises voice on a session card
+ * (#434) and the runner enables it, and those two must never disagree about where it applies.
+ */
+export function modeSupportsVoice(key: string | null | undefined): boolean {
+  return key === 'test' || key === 'multiple_choice';
+}

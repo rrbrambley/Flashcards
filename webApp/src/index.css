@@ -300,6 +300,14 @@ button.danger:hover:not(:disabled) {
   background: var(--primary-soft);
   color: var(--primary);
 }
+/* "Voice answers are on" chip beside a home session card's mode chip (#434).
+   Deliberately quieter than the mode badge next to it: the mode is a property of the session,
+   this is a property of the current device, and it shouldn't compete for attention. */
+.badge-voice {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
 /* Practice streak pill (FLA-106) — warm "flame" accent, on Home and the completion screen. */
 .streak-badge {
   display: inline-flex;
