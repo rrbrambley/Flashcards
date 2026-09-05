@@ -6,6 +6,7 @@ import com.rrbrambley.flashcards.R
 import com.rrbrambley.flashcards.auth.FeatureFlagRepository
 import com.rrbrambley.flashcards.auth.FeatureFlags
 import com.rrbrambley.flashcards.core.StringProvider
+import com.rrbrambley.flashcards.practice.voice.VoiceInputPreference
 import com.rrbrambley.flashcards.shared.api.FlashcardApiClient
 import com.rrbrambley.flashcards.shared.api.StreaksResponse
 import com.rrbrambley.flashcards.shared.domain.HomeRepository
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.ZoneId
@@ -31,6 +33,7 @@ class HomeViewModel @Inject constructor(
     private val apiClient: FlashcardApiClient,
     private val stringProvider: StringProvider,
     private val featureFlagRepository: FeatureFlagRepository,
+    private val voiceInputPreference: VoiceInputPreference,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -38,6 +41,17 @@ class HomeViewModel @Inject constructor(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    /**
+     * Whether continuing a session from here would put the user in voice mode (#434).
+     *
+     * Voice isn't recorded on a session (#386 keeps it a local preference), so this describes *this
+     * device* — which is also what the chip means: resume and you'll be answering out loud. Computed
+     * exactly as `FlashcardsViewModel` does, so the card can't advertise something the runner then
+     * doesn't do.
+     */
+    private val _voiceInputEnabled = MutableStateFlow(false)
+    val voiceInputEnabled: StateFlow<Boolean> = _voiceInputEnabled.asStateFlow()
 
     // Overall practice streak (FLA-106); null until loaded / when there's no active streak.
     private val _streak = MutableStateFlow<Int?>(null)
@@ -83,6 +97,10 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _streakCalendarEnabled.value = featureFlagRepository.isEnabled(FeatureFlags.STREAK_CALENDAR)
             _streakDetailsEnabled.value = featureFlagRepository.isEnabled(FeatureFlags.STREAK_DETAILS)
+            val voiceFlag =
+                runCatching { featureFlagRepository.isEnabled(FeatureFlags.PRACTICE_VOICE_INPUT) }.getOrDefault(false)
+            _voiceInputEnabled.value = voiceFlag &&
+                runCatching { voiceInputPreference.enabled().first() }.getOrDefault(false)
         }
     }
 

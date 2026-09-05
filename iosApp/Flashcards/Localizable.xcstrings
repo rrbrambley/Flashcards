@@ -678,6 +678,9 @@
     "Uploading image…" : {
 
     },
+    "Voice answers are on" : {
+
+    },
     "Voice answers aren't available right now." : {
 
     },
@@ -771,6 +774,9 @@
 
     },
     "🔥 %d" : {
+
+    },
+    "🗣️ Voice" : {
 
     }
   },

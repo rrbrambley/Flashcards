@@ -128,7 +128,8 @@ struct HomeView: View {
                             FeedCard(
                                 item: item,
                                 onAction: { action in handle(action) },
-                                onRemove: { sessionId in pendingRemoval = RemovingSession(id: sessionId, title: item.title) }
+                                onRemove: { sessionId in pendingRemoval = RemovingSession(id: sessionId, title: item.title) },
+                                voiceOn: voiceOn
                             )
                         }
                     }
@@ -137,6 +138,19 @@ struct HomeView: View {
             .padding(Spacing.md)
         }
         .refreshable { await viewModel.refresh() }
+    }
+
+    /// Whether resuming a session from the feed would put the user in voice mode (#434).
+    ///
+    /// Voice is never recorded on a session (#386 keeps it a local preference), so this describes
+    /// *this device* — which is also what the chip means: resume and you'll be answering out loud.
+    /// Computed the same way `PracticeView` does, so the card can't advertise what the runner won't do.
+    ///
+    /// `isEnabled` alone, NOT the guests-see-everything idiom the discussions kill switch uses: that
+    /// flag is default-ON, this one is seeded off and dark-launched. No guest check is needed here —
+    /// the feed is only reachable once signed in.
+    private var voiceOn: Bool {
+        container.featureFlagStore.isEnabled(FeatureFlag.practiceVoiceInput) && VoiceInputPreference.isEnabled
     }
 
     private func handle(_ action: HomeButtonAction) {
@@ -189,6 +203,8 @@ private struct FeedCard: View {
     let item: HomeData
     let onAction: (HomeButtonAction) -> Void
     let onRemove: (Int64) -> Void
+    /// Whether resuming a session from this card would use voice answering (#434).
+    var voiceOn = false
 
     /// The session id if this is a "continue practice" card, else nil (only those are removable).
     private var removableSessionId: Int64? {
@@ -214,7 +230,7 @@ private struct FeedCard: View {
                 }
             }
             if let session = item.session {
-                SessionDetail(session: session)
+                SessionDetail(session: session, voiceOn: voiceOn)
             }
             if let button = item.button {
                 Button(button.message) { onAction(button.action) }
@@ -229,6 +245,7 @@ private struct FeedCard: View {
 /// Mode + score + a progress bar for an in-progress session, shown on its "continue" home card.
 private struct SessionDetail: View {
     let session: HomeSessionInfo
+    var voiceOn = false
 
     var body: some View {
         let total = Int(session.totalCards)
@@ -244,6 +261,19 @@ private struct SessionDetail: View {
                     .padding(.vertical, 2)
                     .background(Color.accentColor.opacity(0.15), in: Capsule())
                     .foregroundStyle(Color.accentColor)
+                // Resuming this run will use voice (#434) — a property of this device, not of the
+                // session, which never records it (#386). Classic has no answer to speak.
+                if voiceOn, PracticeMode.companion.supportsVoice(key: session.mode) {
+                    Text("🗣️ Voice")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .padding(.horizontal, Spacing.sm)
+                        .padding(.vertical, 2)
+                        .overlay(Capsule().stroke(Color.secondary.opacity(0.4)))
+                        .foregroundStyle(.secondary)
+                        // The emoji alone reads poorly aloud, so the chip carries its own label.
+                        .accessibilityLabel(Text("Voice answers are on"))
+                }
                 // In-session streak (FLA-99): a flame + count immediately before the ✓, hidden at 0.
                 if session.streak > 0 {
                     Text("🔥 \(session.streak)")

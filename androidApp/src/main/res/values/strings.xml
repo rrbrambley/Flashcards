@@ -63,6 +63,9 @@
     <string name="home_load_error">Couldn\'t load your home feed. Check your connection.</string>
     <string name="home_refresh_error">Couldn\'t refresh. Showing your saved home feed.</string>
     <string name="home_session_streak">🔥 %1$d</string>
+    <!-- Chip on a home "continue studying" card: resuming this session will use voice answering (#434). -->
+    <string name="home_session_voice">🗣\u200d️ Voice</string>
+    <string name="home_session_voice_description">Voice answers are on</string>
     <string name="home_session_correct">✓ %1$d</string>
     <string name="home_session_incorrect">✗ %1$d</string>
     <string name="home_session_progress">%1$d of %2$d</string>
