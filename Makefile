@@ -17,6 +17,10 @@
 
 SHELL := /bin/bash
 BACKEND_LOG := backend.local.log
+# The `-sTCP:LISTEN` on every :8080 check below is load-bearing: without it lsof also matches
+# *outbound* sockets to that port, so an Android emulator dialling the LAN dev backend made `status`
+# report RUNNING while the backend was down, `start` refuse to start, and `stop` target the
+# emulator's pid instead of the server's.
 
 .PHONY: start stop restart logs status web db db-stop reseed admin avatars
 
@@ -52,7 +56,7 @@ reseed:
 	@$(MAKE) start
 
 start: db
-	@if lsof -ti tcp:8080 >/dev/null 2>&1; then \
+	@if lsof -ti tcp:8080 -sTCP:LISTEN >/dev/null 2>&1; then \
 		echo "Backend already running on :8080 (use 'make restart' to reload code)."; exit 0; fi; \
 	port=$$(docker port flashcards-postgres 5432/tcp 2>/dev/null | head -1 | sed 's/.*://'); \
 	port=$${port:-5432}; \
@@ -62,14 +66,14 @@ start: db
 		nohup ./gradlew --console=plain :backend:run > $(BACKEND_LOG) 2>&1 & \
 	echo "Waiting for startup…"; \
 	for i in $$(seq 1 90); do \
-		if lsof -ti tcp:8080 >/dev/null 2>&1; then echo "✓ Backend up at http://localhost:8080"; exit 0; fi; \
+		if lsof -ti tcp:8080 -sTCP:LISTEN >/dev/null 2>&1; then echo "✓ Backend up at http://localhost:8080"; exit 0; fi; \
 		if ! pgrep -f "backend:run" >/dev/null 2>&1 && [ $$i -gt 3 ]; then echo "✗ Backend exited — see $(BACKEND_LOG)"; exit 1; fi; \
 		sleep 1; \
 	done; \
 	echo "✗ Backend didn't come up in time — see $(BACKEND_LOG)"; exit 1
 
 stop:
-	@pid=$$(lsof -ti tcp:8080); \
+	@pid=$$(lsof -ti tcp:8080 -sTCP:LISTEN); \
 	if [ -n "$$pid" ]; then kill $$pid && echo "Stopped backend (pid $$pid)."; else echo "Backend not running."; fi
 
 restart: stop
@@ -79,7 +83,7 @@ logs:
 	@touch $(BACKEND_LOG); tail -f $(BACKEND_LOG)
 
 status:
-	@if lsof -ti tcp:8080 >/dev/null 2>&1; then echo "backend:  RUNNING (http://localhost:8080)"; else echo "backend:  stopped"; fi
+	@if lsof -ti tcp:8080 -sTCP:LISTEN >/dev/null 2>&1; then echo "backend:  RUNNING (http://localhost:8080)"; else echo "backend:  stopped"; fi
 	@if docker ps --format '{{.Names}}' | grep -q '^flashcards-postgres$$'; then \
 		echo "postgres: RUNNING ($$(docker port flashcards-postgres 5432/tcp 2>/dev/null | head -1))"; \
 	else echo "postgres: stopped"; fi
