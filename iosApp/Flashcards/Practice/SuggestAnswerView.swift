@@ -145,8 +145,9 @@ struct SuggestAnswerView: View {
 }
 
 /// Guest conversion (FLA-135): register or log in inline; the view model replays the captured
-/// suggestion on success before flipping to the signed-in state.
-private struct SuggestionAuthPrompt: View {
+/// suggestion on success before flipping to the signed-in state. Shared with the recap's
+/// `SuggestibleReviewRow`, where it's the only step that still needs a sheet (#433).
+struct SuggestionAuthPrompt: View {
     @ObservedObject var viewModel: SuggestAnswerViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var register = true
