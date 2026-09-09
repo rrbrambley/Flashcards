@@ -402,6 +402,32 @@ struct ReviewSuggestion {
             !item.cardUid.isEmpty &&
             !(item.submittedText ?? "").isEmpty
     }
+
+    @MainActor
+    func makeViewModel(for item: ReviewItem) -> SuggestAnswerViewModel {
+        SuggestAnswerViewModel(
+            cardUid: item.cardUid,
+            suggestedAnswer: item.submittedText ?? "",
+            isGuest: isGuest,
+            apiClient: apiClient,
+            authService: authService
+        )
+    }
+}
+
+/// Keeps one `SuggestAnswerViewModel` per suggestible review row, so a row can submit straight from
+/// its context menu (#433) and report the outcome in place. Cached by card id so the "Thanks —"
+/// state survives the recap re-rendering, and built lazily — only rows that can suggest get one.
+@MainActor
+final class ReviewSuggestionStore: ObservableObject {
+    private var viewModels: [String: SuggestAnswerViewModel] = [:]
+
+    func viewModel(for item: ReviewItem, suggestion: ReviewSuggestion) -> SuggestAnswerViewModel {
+        if let existing = viewModels[item.cardUid] { return existing }
+        let created = suggestion.makeViewModel(for: item)
+        viewModels[item.cardUid] = created
+        return created
+    }
 }
 
 /// End-of-deck summary + the per-card recap of the run (FLA-149). Shared by the card-by-card runner
@@ -415,7 +441,7 @@ struct CompletionView: View {
     var suggestion: ReviewSuggestion? = nil
     let onDone: () -> Void
 
-    @State private var suggestTarget: ReviewItem?
+    @StateObject private var suggestions = ReviewSuggestionStore()
 
     var body: some View {
         ScrollView {
@@ -434,7 +460,7 @@ struct CompletionView: View {
                     StreakBadge(streak: streak)
                 }
                 if !review.isEmpty {
-                    ReviewList(items: review, suggestion: suggestion, onSuggest: { suggestTarget = $0 })
+                    ReviewList(items: review, suggestion: suggestion, suggestions: suggestions)
                 }
                 Button("Done", action: onDone)
                     .buttonStyle(.primary)
@@ -442,17 +468,6 @@ struct CompletionView: View {
                     .padding(.top, Spacing.md)
             }
             .padding(Spacing.lg)
-        }
-        .sheet(item: $suggestTarget) { item in
-            if let suggestion {
-                SuggestAnswerView(
-                    cardUid: item.cardUid,
-                    suggestedAnswer: item.submittedText ?? "",
-                    isGuest: suggestion.isGuest,
-                    apiClient: suggestion.apiClient,
-                    authService: suggestion.authService
-                )
-            }
         }
     }
 
@@ -468,7 +483,7 @@ struct CompletionView: View {
 private struct ReviewList: View {
     let items: [ReviewItem]
     var suggestion: ReviewSuggestion?
-    var onSuggest: (ReviewItem) -> Void = { _ in }
+    var suggestions: ReviewSuggestionStore
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -476,30 +491,90 @@ private struct ReviewList: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity, alignment: .leading)
             ForEach(items) { item in
-                ReviewRow(
-                    item: item,
-                    canSuggest: suggestion?.canSuggest(item) ?? false,
-                    onSuggest: { onSuggest(item) }
-                )
+                if let suggestion, suggestion.canSuggest(item) {
+                    SuggestibleReviewRow(
+                        item: item,
+                        viewModel: suggestions.viewModel(for: item, suggestion: suggestion)
+                    )
+                } else {
+                    ReviewRow(item: item)
+                }
             }
         }
         .padding(.top, Spacing.md)
     }
 }
 
-/// One recap row: outcome + (image) + prompt + correct answer + the submitted text (Test/MC).
-/// When `canSuggest` (a wrong Test answer on a global deck, #338), long-pressing offers the
-/// "this should be correct" suggestion via a context menu.
-private struct ReviewRow: View {
+/// A review row whose wrong Test answer can be suggested as correct (#338). The context-menu action
+/// submits **immediately** (#433): the menu item already names the decision, so a sheet that offers
+/// the identical button just asks the same question twice. The outcome is reported on the row. A
+/// guest is the one case that still needs a sheet — the view model raises the sign-in prompt.
+private struct SuggestibleReviewRow: View {
     let item: ReviewItem
-    var canSuggest = false
-    var onSuggest: () -> Void = {}
+    @ObservedObject var viewModel: SuggestAnswerViewModel
 
     var body: some View {
-        row
-            .padding(Spacing.md)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
-            .modifier(SuggestContextMenu(enabled: canSuggest, onSuggest: onSuggest))
+        ReviewRow(item: item, suggestionStatus: status)
+            .modifier(
+                SuggestContextMenu(
+                    enabled: !viewModel.submitted && !viewModel.submitting,
+                    onSuggest: viewModel.suggest
+                )
+            )
+            .sheet(isPresented: $viewModel.showAuthPrompt) {
+                SuggestionAuthPrompt(viewModel: viewModel)
+            }
+    }
+
+    private var status: SuggestionStatus? {
+        if viewModel.submitted { return .sent }
+        if viewModel.submitting { return .sending }
+        if let error = viewModel.errorMessage { return .failed(error) }
+        return nil
+    }
+}
+
+/// What a review row reports about a suggestion submitted from its context menu (#433).
+private enum SuggestionStatus {
+    case sending
+    case sent
+    case failed(String)
+}
+
+/// One recap row: outcome + (image) + prompt + correct answer + the submitted text (Test/MC), plus
+/// the in-place outcome of a suggestion made from the row's context menu (#433). The long-press menu
+/// itself is attached by `SuggestibleReviewRow`, which owns that state.
+private struct ReviewRow: View {
+    let item: ReviewItem
+    var suggestionStatus: SuggestionStatus?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            row
+            if let suggestionStatus {
+                statusLine(suggestionStatus)
+            }
+        }
+        .padding(Spacing.md)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    @ViewBuilder
+    private func statusLine(_ status: SuggestionStatus) -> some View {
+        switch status {
+        case .sending:
+            Text("Sending your suggestion…")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case .sent:
+            Text("Thanks — we'll review your suggestion.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        case let .failed(message):
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.red)
+        }
     }
 
     private var row: some View {
