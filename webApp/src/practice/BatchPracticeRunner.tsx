@@ -6,7 +6,8 @@ import { gradeTextAnswer } from './grading/textAnswer';
 import { MultipleChoice } from './components/MultipleChoice';
 import { SuggestAnswerButton } from './SuggestAnswerButton';
 import type { PracticeMode } from './modes/types';
-import { formatRemaining, useCountdown } from './useCountdown';
+import { useCountdown } from './useCountdown';
+import { PracticeTimer } from './components/PracticeTimer';
 
 interface BatchPracticeRunnerProps {
   // Null for a guest: the batch runs entirely in-memory and isn't persisted.
@@ -210,17 +211,8 @@ export function BatchPracticeRunner({
 
   return (
     <div className="batch-practice">
-      {/* Timed session (#289): a live m:ss countdown, urgent styling in the last 10s. */}
-      {deadline != null && (
-        <div className="practice-timer-row">
-          <span
-            className={`practice-timer${remainingMs <= 10000 ? ' urgent' : ''}`}
-            aria-label="time remaining"
-          >
-            ⏱ {formatRemaining(remainingMs)}
-          </span>
-        </div>
-      )}
+      {/* Timed session (#289): a live m:ss countdown, escalating in the final seconds (#443). */}
+      {deadline != null && <PracticeTimer remainingMs={remainingMs} />}
       <ol className="batch-list">
         {cards.map((card, i) => (
           <li key={card.cardUid ?? i} className="batch-item">

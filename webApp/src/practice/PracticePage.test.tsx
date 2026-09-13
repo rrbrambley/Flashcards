@@ -484,7 +484,7 @@ describe('PracticePage', () => {
     expect(api.recordAnswers).toHaveBeenCalledTimes(1);
 
     // Let the clock run out while the verdict is still on screen.
-    await waitFor(() => expect(screen.queryByLabelText('time remaining')).not.toBeInTheDocument(), {
+    await waitFor(() => expect(screen.queryByLabelText(/ remaining$/)).not.toBeInTheDocument(), {
       timeout: 4000,
     });
 
@@ -533,7 +533,7 @@ describe('PracticePage', () => {
     );
 
     // The countdown is running (in progress) → the "← Back" control is gone so there's no casual exit.
-    await screen.findByLabelText('time remaining');
+    await screen.findByLabelText(/ remaining$/);
     expect(screen.queryByText(/←/)).not.toBeInTheDocument();
   });
 
@@ -584,7 +584,7 @@ describe('PracticePage', () => {
      */
     it('offers voice in a timed run too, rather than silently dropping it', async () => {
       startTestRun('&timeLimit=300');
-      await screen.findByLabelText('time remaining');
+      await screen.findByLabelText(/ remaining$/);
       expect(await screen.findByText(/Speech is processed/)).toBeInTheDocument();
     });
 
