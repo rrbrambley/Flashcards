@@ -128,13 +128,23 @@ struct TestModeView: View {
                     Button("Check", action: submit)
                         .buttonStyle(.primary)
                     if confirmingBlank {
-                        Text("You haven't typed an answer — skip this one?")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .frame(maxWidth: .infinity)
-                        Button("Confirm") { grade() }
-                            .buttonStyle(.primary)
+                        // Grouped into one callout, with the action at secondary weight. Two
+                        // full-width filled buttons stacked read as a duplicated "Check" rather than
+                        // a question and its answer — and skipping shouldn't outrank typing one.
+                        VStack(spacing: Spacing.sm) {
+                            Text("You haven't typed an answer — skip this one?")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity)
+                            Button("Confirm") { grade() }
+                                .buttonStyle(.secondary)
+                        }
+                        .padding(Spacing.md)
+                        .background(
+                            Color(.secondarySystemBackground),
+                            in: RoundedRectangle(cornerRadius: CornerRadius.control)
+                        )
                     }
                 }
             }
@@ -156,7 +166,9 @@ struct TestModeView: View {
     private func submit() {
         if input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             // Confirm the skip instead of grading a blank answer wrong; Confirm still allows an
-            // intentional blank submit, so Check is never disabled (FLA-190).
+            // intentional blank submit, so Check is never disabled (FLA-190). A second Return while
+            // the confirm is up must not stand in for tapping Confirm — skipping a card should take
+            // a deliberate tap, not a repeated keypress (matches the web guard).
             confirmingBlank = true
             return
         }
