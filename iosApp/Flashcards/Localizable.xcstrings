@@ -41,6 +41,9 @@
     "%lld in a row" : {
 
     },
+    "%lld seconds remaining" : {
+
+    },
     "%lld." : {
 
     },

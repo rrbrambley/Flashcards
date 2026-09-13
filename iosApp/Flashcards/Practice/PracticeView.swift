@@ -120,6 +120,16 @@ struct PracticeView: View {
                 .task { await viewModel.start() }
                 .onDisappear { viewModel.stopObserving() }
         }
+        // On the NavigationStack, not on `content`: content sits inside the toolbar and safe area, so
+        // a glow there would stop at the app bar instead of reading as the screen's edges (#443).
+        .urgencyGlow(remainingSeconds: urgencySeconds)
+        .urgencyAnnouncement(remainingSeconds: urgencySeconds)
+    }
+
+    /// Only while a card is up, so the escalation clears on the time-up reveal and the recap.
+    private var urgencySeconds: Int? {
+        if case .showCard = viewModel.state { return viewModel.remainingSeconds }
+        return nil
     }
 
     /// Single-sitting runs in progress confirm first (#307); guests with progress get the save prompt;
@@ -365,22 +375,40 @@ func formatMinSec(_ totalSeconds: Int) -> String {
     return "\(secs / 60):\(String(format: "%02d", secs % 60))"
 }
 
-/// Live timed-session countdown (#289): a m:ss pill, red in the final 10s. Shared by the card-by-card
-/// and grade-at-the-end runners.
+/// Live timed-session countdown (#289): a m:ss pill, red in the final 10s and amplified + flashing
+/// once per second in the final 5 (#443). Shared by the card-by-card and grade-at-the-end runners.
 struct TimerChip: View {
     let remainingSeconds: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let urgent = remainingSeconds <= 10
+        let urgent = TimedUrgency.shared.isUrgent(remainingSeconds: Int32(remainingSeconds))
+        let critical = isCriticalSecond(remainingSeconds)
         Text("\(formatMinSec(remainingSeconds)) left")
-            .font(.subheadline.bold())
+            .font(critical ? .title3.bold() : .subheadline.bold())
+            // Without tabular digits, scaling the chip up makes proportional numerals resize the
+            // pill every second.
+            .monospacedDigit()
             .foregroundStyle(urgent ? Color.white : Color.primary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 5)
+            .padding(.horizontal, critical ? 18 : 14)
+            .padding(.vertical, critical ? 7 : 5)
             .background(
-                urgent ? Color(red: 0.83, green: 0.24, blue: 0.24) : Color(.tertiarySystemFill),
+                critical ? urgencyRedCritical : (urgent ? urgencyRed : Color(.tertiarySystemFill)),
                 in: Capsule()
             )
+            // Driven by the same value change as the vignette, in the same transaction, so the two
+            // start on the same frame — the sync is structural rather than tuned.
+            .keyframeAnimator(
+                initialValue: 1.0,
+                trigger: critical && !reduceMotion ? remainingSeconds : 0
+            ) { view, scale in
+                view.scaleEffect(scale)
+            } keyframes: { _ in
+                KeyframeTrack {
+                    CubicKeyframe(1.0 + chipPulseScale, duration: 0.08)
+                    CubicKeyframe(1.0, duration: 0.42)
+                }
+            }
             .accessibilityLabel(Text("\(formatMinSec(remainingSeconds)) remaining"))
     }
 }
