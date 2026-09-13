@@ -69,6 +69,15 @@ struct BatchPracticeView: View {
                 .task { await viewModel.start() }
                 .onDisappear { viewModel.stopObserving() }
         }
+        // On the NavigationStack — see PracticeView.
+        .urgencyGlow(remainingSeconds: urgencySeconds)
+        .urgencyAnnouncement(remainingSeconds: urgencySeconds)
+    }
+
+    /// Only while answering, so the escalation clears on the recap.
+    private var urgencySeconds: Int? {
+        if case .answering = viewModel.state { return viewModel.remainingSeconds }
+        return nil
     }
 
     /// While answering, confirm before leaving (progress isn't saved); otherwise just dismiss.
