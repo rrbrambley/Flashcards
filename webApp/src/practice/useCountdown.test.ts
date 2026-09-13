@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useCountdown, formatRemaining } from './useCountdown';
+import { useCountdown, formatRemaining, urgencyIntensity, URGENT_MS, CRITICAL_MS } from './useCountdown';
 
 describe('useCountdown', () => {
   beforeEach(() => {
@@ -61,6 +61,41 @@ describe('useCountdown', () => {
     rerender({ paused: false });
     act(() => vi.advanceTimersByTime(2_000));
     expect(result.current.expired).toBe(true);
+  });
+});
+
+describe('urgencyIntensity', () => {
+  it('ramps across the critical tier, and is 0 above it', () => {
+    expect(urgencyIntensity(6_000)).toBe(0);
+    expect(urgencyIntensity(CRITICAL_MS)).toBeCloseTo(0.2);
+    expect(urgencyIntensity(4_000)).toBeCloseTo(0.4);
+    // The last 3s cross the line where the mobile clients switch to the heavier haptic.
+    expect(urgencyIntensity(3_000)).toBeCloseTo(0.6);
+    expect(urgencyIntensity(2_000)).toBeCloseTo(0.8);
+    expect(urgencyIntensity(1_000)).toBeCloseTo(1);
+  });
+
+  it('steps with the displayed second, not the raw milliseconds', () => {
+    // Both sides round UP, so the whole span that displays "0:05" shares one step — the ramp can
+    // never disagree with the number on screen.
+    expect(formatRemaining(5_001)).toBe('0:06');
+    expect(urgencyIntensity(5_001)).toBe(0); // still showing 0:06 → not critical yet
+    expect(formatRemaining(4_001)).toBe('0:05');
+    expect(urgencyIntensity(5_000)).toBeCloseTo(0.2);
+    expect(urgencyIntensity(4_001)).toBeCloseTo(0.2); // same displayed second, same step
+    expect(urgencyIntensity(4_000)).toBeCloseTo(0.4); // ticks over to 0:04
+  });
+
+  it('stays clamped at or below zero', () => {
+    // The component gates on `> 0`, but an alpha multiplier above 1 would render, not throw.
+    expect(urgencyIntensity(0)).toBe(1);
+    expect(urgencyIntensity(-2_000)).toBe(1);
+  });
+
+  it('matches the shared Kotlin tiers', () => {
+    // Mirrors TimedUrgency in shared/…/PresentationHelpers.kt (#443/#444) — same steps, same order.
+    expect(URGENT_MS).toBe(10_000);
+    expect(CRITICAL_MS).toBe(5_000);
   });
 });
 

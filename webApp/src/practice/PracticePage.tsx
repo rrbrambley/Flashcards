@@ -16,7 +16,8 @@ import { initPractice, practiceReducer } from './practiceReducer';
 import { trailingCorrectStreak } from './grading/streak';
 import { orderCards } from './shuffle';
 import { exitTarget, fromState } from './exitTarget';
-import { formatRemaining, useCountdown } from './useCountdown';
+import { useCountdown } from './useCountdown';
+import { PracticeTimer } from './components/PracticeTimer';
 import { useVoiceInputPreference } from './voice/preference';
 import { useExitGuard } from './useExitGuard';
 
@@ -644,17 +645,8 @@ function PracticeRunner({
     modeSupportsVoice(mode.key);
   return (
     <div className="practice">
-      {/* Timed session (#289): a live m:ss countdown, urgent styling in the last 10s. */}
-      {deadline != null && (
-        <div className="practice-timer-row">
-          <span
-            className={`practice-timer${remainingMs <= 10000 ? ' urgent' : ''}`}
-            aria-label="time remaining"
-          >
-            ⏱ {formatRemaining(remainingMs)}
-          </span>
-        </div>
-      )}
+      {/* Timed session (#289): a live m:ss countdown, escalating in the final seconds (#443). */}
+      {deadline != null && <PracticeTimer remainingMs={remainingMs} />}
       <div className="score-row">
         <span className="score-chip incorrect" aria-label="incorrect count">
           {state.numIncorrect}

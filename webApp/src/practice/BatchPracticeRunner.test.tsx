@@ -12,38 +12,38 @@ import type { FlashcardDto } from '../api/types';
  * The mobile clients get this from `BatchPracticeController`; the web runner is a separate
  * implementation, so the behaviour is duplicated by design (as grading is) and tested on both sides.
  */
+const testMode = { key: 'test' } as PracticeMode;
+
+const card = (uid: string, imageUrl?: string): FlashcardDto =>
+  ({ cardUid: uid, question: '', answer: `a-${uid}`, imageUrl }) as FlashcardDto;
+
+const renderRunner = (cards: FlashcardDto[], deadline = 60_000) =>
+  render(
+    <BatchPracticeRunner
+      sessionId={1}
+      cards={cards}
+      mode={testMode}
+      isGlobal={false}
+      isGuest
+      deadline={deadline}
+      timeLimitSeconds={60}
+      onCompleted={() => {}}
+      onAgain={() => {}}
+      onExit={() => {}}
+    />,
+  );
+
+const clock = () => screen.getByLabelText(/ remaining$/).textContent;
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(0);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('BatchPracticeRunner timed start gate', () => {
-  const testMode = { key: 'test' } as PracticeMode;
-
-  const card = (uid: string, imageUrl?: string): FlashcardDto =>
-    ({ cardUid: uid, question: '', answer: `a-${uid}`, imageUrl }) as FlashcardDto;
-
-  const renderRunner = (cards: FlashcardDto[], deadline = 60_000) =>
-    render(
-      <BatchPracticeRunner
-        sessionId={1}
-        cards={cards}
-        mode={testMode}
-        isGlobal={false}
-        isGuest
-        deadline={deadline}
-        timeLimitSeconds={60}
-        onCompleted={() => {}}
-        onAgain={() => {}}
-        onExit={() => {}}
-      />,
-    );
-
-  const clock = () => screen.getByLabelText('time remaining').textContent;
-
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(0);
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('holds the clock until the opening prompt images settle, then credits the wait back', () => {
     renderRunner([card('a', 'http://img/a.svg'), card('b', 'http://img/b.svg'), card('c')]);
     expect(clock()).toContain('1:00');
@@ -95,6 +95,53 @@ describe('BatchPracticeRunner timed start gate', () => {
 
     act(() => vi.advanceTimersByTime(3_000));
     expect(clock()).toContain('0:57');
+  });
+});
+
+/**
+ * The countdown's urgency escalation (#443) through a real run. `PracticeTimer.test.tsx` covers the
+ * tiers themselves; what only integration can show is that the escalation goes *quiet* while the
+ * clock is held for a prompt image — the property the whole tick-driven design rests on.
+ */
+describe('BatchPracticeRunner countdown urgency', () => {
+  const glow = (c: HTMLElement) => c.querySelector('.practice-urgency-glow');
+
+  it('escalates as the budget runs out', () => {
+    const { container } = renderRunner([card('a')]); // no images → the clock starts at once
+    expect(screen.getByLabelText(/ remaining$/).className).toBe('practice-timer');
+
+    act(() => vi.advanceTimersByTime(50_000)); // 0:10 left
+    expect(screen.getByLabelText(/ remaining$/).className).toContain('urgent');
+    expect(glow(container)).toBeNull();
+
+    act(() => vi.advanceTimersByTime(5_000)); // 0:05 left
+    expect(screen.getByLabelText(/ remaining$/).className).toContain('critical');
+    expect(glow(container)).not.toBeNull();
+  });
+
+  it('holds the escalation still while the clock is paused for a prompt image', () => {
+    // Budget lands inside the critical tier while the image is still loading — a real case on a
+    // short run, since the hold can span the whole final 5s.
+    const { container } = renderRunner([card('a', 'http://img/a.svg')], 4_000);
+    expect(clock()).toContain('0:04');
+    const held = glow(container);
+    expect(held).not.toBeNull();
+    const heldRamp = held?.getAttribute('style');
+
+    // Wall-clock runs on, but the countdown is frozen — so nothing remounts, and with nothing
+    // remounting there is no animation to restart. The static tint stays: time really is nearly up.
+    act(() => vi.advanceTimersByTime(3_000));
+    expect(clock()).toContain('0:04');
+    expect(glow(container)).toBe(held); // the very same node — never re-keyed
+    expect(glow(container)?.getAttribute('style')).toBe(heldRamp);
+
+    // Once the image settles the clock resumes and the escalation picks up where it left off.
+    act(() => {
+      fireEvent.load(screen.getAllByRole('presentation', { hidden: true })[0]);
+    });
+    act(() => vi.advanceTimersByTime(1_000));
+    expect(clock()).toContain('0:03');
+    expect(glow(container)).not.toBe(held);
   });
 });
 
