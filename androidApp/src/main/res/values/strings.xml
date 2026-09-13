@@ -163,6 +163,8 @@
     <string name="practice_time_minutes">min</string>
     <string name="practice_time_seconds">sec</string>
     <string name="practice_timer_remaining">%1$s left</string>
+    <!-- Spoken once when a timed run crosses into each urgency tier (10s, then 5s) — never per tick. -->
+    <string name="practice_timer_urgency_announcement">%1$d seconds remaining</string>
     <string name="practice_leave_title">Leave this session?</string>
     <string name="practice_leave_message">This session runs in one sitting — if you leave, your progress won\'t be saved.</string>
     <string name="practice_leave_confirm">Leave</string>

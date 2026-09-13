@@ -64,6 +64,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -91,6 +92,7 @@ import com.rrbrambley.flashcards.shared.domain.InSessionStreak
 import com.rrbrambley.flashcards.shared.domain.PracticeMode
 import com.rrbrambley.flashcards.shared.domain.PracticeUiState
 import com.rrbrambley.flashcards.shared.domain.ReviewItem
+import com.rrbrambley.flashcards.shared.domain.TimedUrgency
 import kotlinx.coroutines.launch
 
 /**
@@ -224,138 +226,163 @@ private fun CardByCardPractice(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    // Show the deck being practiced; fall back to the app name until it's loaded (#352).
-                    Text(
-                        text = flashcardsViewModel.sharedDeck()?.second ?: stringResource(R.string.flashcards),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+    // Only while a card is up, so the glow clears on the time-up reveal and the recap (#443).
+    val urgencySeconds = remaining?.takeIf { flashcardsState is PracticeUiState.ShowCard }
+    val urgency = rememberCountdownUrgency(urgencySeconds)
+
+    // The vignette is a sibling of the Scaffold, not of its content: content sits inside `padding`,
+    // which is exactly what an edge glow has to escape or it draws inset and under the app bar.
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        // Show the deck being practiced; fall back to the app name until loaded (#352).
+                        Text(
+                            text = flashcardsViewModel.sharedDeck()?.second ?: stringResource(R.string.flashcards),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                    ),
+                    navigationIcon = {
+                        // Hidden while a single-sitting run is in progress (#307): no casual exit;
+                        // system back still works but confirms first.
+                        if (!guardActive) {
+                            IconButton(onClick = handleExit) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.practice_cd_back),
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        if (canShare) {
+                            IconButton(onClick = { shareDeck(context, flashcardsViewModel.sharedDeck()) }) {
+                                Icon(
+                                    Icons.Default.Share,
+                                    contentDescription = stringResource(R.string.practice_cd_share),
+                                )
+                            }
+                        }
+                        if (isClassic) {
+                            IconButton(onClick = { showHelpDialog = true }) {
+                                Icon(
+                                    Icons.Default.Info,
+                                    contentDescription = stringResource(R.string.practice_help_title),
+                                )
+                            }
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            Column(modifier = Modifier.padding(padding)) {
+                ScoreRow(flashcardsState = flashcardsState)
+                // Timed countdown (#289): a m:ss chip, escalating in the final seconds (#443).
+                urgencySeconds?.let { secs ->
+                    TimerChip(
+                        remainingSeconds = secs,
+                        pulse = urgency.pulse,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 4.dp),
                     )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                navigationIcon = {
-                    // Hidden while a single-sitting run is in progress (#307): no casual exit; system
-                    // back still works but confirms first.
-                    if (!guardActive) {
-                        IconButton(onClick = handleExit) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
-                        }
-                    }
-                },
-                actions = {
-                    if (canShare) {
-                        IconButton(onClick = { shareDeck(context, flashcardsViewModel.sharedDeck()) }) {
-                            Icon(Icons.Default.Share, contentDescription = stringResource(R.string.practice_cd_share))
-                        }
-                    }
-                    if (isClassic) {
-                        IconButton(onClick = { showHelpDialog = true }) {
-                            Icon(Icons.Default.Info, contentDescription = stringResource(R.string.practice_help_title))
-                        }
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
-            ScoreRow(flashcardsState = flashcardsState)
-            // Timed countdown (#289): a m:ss chip, urgent styling in the last 10s.
-            remaining?.takeIf { flashcardsState is PracticeUiState.ShowCard }?.let { secs ->
-                TimerChip(
-                    remainingSeconds = secs,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 4.dp),
-                )
-            }
-            // Live in-session streak (FLA-99): appears at 2+ in a row, with milestone emphasis at 5+.
-            (flashcardsState as? PracticeUiState.ShowCard)?.takeIf { InSessionStreak.showsBadge(it.streak) }?.let {
-                SessionStreakBadge(
-                    streak = it.streak,
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(top = 6.dp),
-                )
-            }
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                when (val state = flashcardsState) {
-                    PracticeUiState.Loading, PracticeUiState.Failed ->
-                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    UrgencyAnnouncement(remainingSeconds = secs)
+                }
+                // Live in-session streak (FLA-99): appears at 2+ in a row, with milestone emphasis at 5+.
+                (flashcardsState as? PracticeUiState.ShowCard)?.takeIf { InSessionStreak.showsBadge(it.streak) }?.let {
+                    SessionStreakBadge(
+                        streak = it.streak,
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(top = 6.dp),
+                    )
+                }
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    when (val state = flashcardsState) {
+                        PracticeUiState.Loading, PracticeUiState.Failed ->
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                    is PracticeUiState.TimeUp ->
-                        TimeUpContent(
-                            card = state.card,
-                            onContinue = flashcardsViewModel::continueAfterTimeUp,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-
-                    is PracticeUiState.Completed ->
-                        FlashcardsCompletionContent(
-                            streak = state.streak,
-                            review = state.review,
-                            modifier = Modifier.fillMaxSize(),
-                            // Offer "this should be correct" on wrong Test answers of a global deck here
-                            // too, not just grade-at-the-end (#361).
-                            suggestMode = state.mode,
-                            isGlobal = state.isGlobal,
-                            isGuest = isGuest,
-                        )
-
-                    is PracticeUiState.ShowCard -> {
-                        val onDiscuss = { discussionCardUid = state.card.cardUid }
-                        when (state.mode) {
-                            PracticeMode.Test.key ->
-                                TestMode(
-                                    flashcard = state.card,
-                                    onGraded = flashcardsViewModel::applyResult,
-                                    onAdvance = flashcardsViewModel::goForward,
-                                    discussionsEnabled = state.discussionsEnabled,
-                                    onDiscuss = onDiscuss,
-                                    canSuggest = state.isGlobal,
-                                    isGuest = isGuest,
-                                    onImageReadyChanged = ::onPromptImageReadyChanged,
-                                    voiceInput = voiceInputEnabled,
-                                    onDisableVoice = flashcardsViewModel::disableVoiceInput,
-                                    showVoicePrivacyNotice = showVoicePrivacyNotice,
-                                    onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
-                                    remainingSeconds = remaining,
-                                )
-
-                            PracticeMode.MultipleChoice.key ->
-                                MultipleChoiceMode(
-                                    flashcard = state.card,
-                                    deck = state.deck,
-                                    onGraded = flashcardsViewModel::applyResult,
-                                    onAdvance = flashcardsViewModel::goForward,
-                                    discussionsEnabled = state.discussionsEnabled,
-                                    onDiscuss = onDiscuss,
-                                    onImageReadyChanged = ::onPromptImageReadyChanged,
-                                    voiceInput = voiceInputEnabled,
-                                    onDisableVoice = flashcardsViewModel::disableVoiceInput,
-                                    showVoicePrivacyNotice = showVoicePrivacyNotice,
-                                    onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
-                                    remainingSeconds = remaining,
-                                )
-
-                            else -> ClassicMode(
-                                flashcard = state.card,
-                                canGoBack = state.canGoBack,
-                                onResult = flashcardsViewModel::onResult,
-                                onPrevious = flashcardsViewModel::goBack,
-                                onNext = flashcardsViewModel::goForward,
-                                discussionsEnabled = state.discussionsEnabled,
-                                onDiscuss = onDiscuss,
+                        is PracticeUiState.TimeUp ->
+                            TimeUpContent(
+                                card = state.card,
+                                onContinue = flashcardsViewModel::continueAfterTimeUp,
+                                modifier = Modifier.fillMaxSize(),
                             )
+
+                        is PracticeUiState.Completed ->
+                            FlashcardsCompletionContent(
+                                streak = state.streak,
+                                review = state.review,
+                                modifier = Modifier.fillMaxSize(),
+                                // Offer "this should be correct" on wrong Test answers of a global deck here
+                                // too, not just grade-at-the-end (#361).
+                                suggestMode = state.mode,
+                                isGlobal = state.isGlobal,
+                                isGuest = isGuest,
+                            )
+
+                        is PracticeUiState.ShowCard -> {
+                            val onDiscuss = { discussionCardUid = state.card.cardUid }
+                            when (state.mode) {
+                                PracticeMode.Test.key ->
+                                    TestMode(
+                                        flashcard = state.card,
+                                        onGraded = flashcardsViewModel::applyResult,
+                                        onAdvance = flashcardsViewModel::goForward,
+                                        discussionsEnabled = state.discussionsEnabled,
+                                        onDiscuss = onDiscuss,
+                                        canSuggest = state.isGlobal,
+                                        isGuest = isGuest,
+                                        onImageReadyChanged = ::onPromptImageReadyChanged,
+                                        voiceInput = voiceInputEnabled,
+                                        onDisableVoice = flashcardsViewModel::disableVoiceInput,
+                                        showVoicePrivacyNotice = showVoicePrivacyNotice,
+                                        onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
+                                        remainingSeconds = remaining,
+                                    )
+
+                                PracticeMode.MultipleChoice.key ->
+                                    MultipleChoiceMode(
+                                        flashcard = state.card,
+                                        deck = state.deck,
+                                        onGraded = flashcardsViewModel::applyResult,
+                                        onAdvance = flashcardsViewModel::goForward,
+                                        discussionsEnabled = state.discussionsEnabled,
+                                        onDiscuss = onDiscuss,
+                                        onImageReadyChanged = ::onPromptImageReadyChanged,
+                                        voiceInput = voiceInputEnabled,
+                                        onDisableVoice = flashcardsViewModel::disableVoiceInput,
+                                        showVoicePrivacyNotice = showVoicePrivacyNotice,
+                                        onVoicePrivacyNoticeShown = flashcardsViewModel::markVoicePrivacyNoticeSeen,
+                                        remainingSeconds = remaining,
+                                    )
+
+                                else -> ClassicMode(
+                                    flashcard = state.card,
+                                    canGoBack = state.canGoBack,
+                                    onResult = flashcardsViewModel::onResult,
+                                    onPrevious = flashcardsViewModel::goBack,
+                                    onNext = flashcardsViewModel::goForward,
+                                    discussionsEnabled = state.discussionsEnabled,
+                                    onDiscuss = onDiscuss,
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+
+        // Drawn last so it sits above the card content — but below the app bar's own surface, and
+        // touch-transparent, so nothing it covers stops responding.
+        if (urgency.showsVignette) {
+            UrgencyVignette(intensity = urgency.intensity, pulse = urgency.pulse)
         }
     }
 }
@@ -518,19 +545,47 @@ internal fun formatMinSec(totalSeconds: Int): String {
     return "${secs / 60}:${(secs % 60).toString().padStart(2, '0')}"
 }
 
-/** Live timed-session countdown (#289): a m:ss pill, red in the final 10s. */
+/**
+ * Live timed-session countdown (#289): a m:ss pill, red in the final 10s and amplified + flashing in
+ * the final 5 (#443).
+ *
+ * [pulse] is a lambda read inside `graphicsLayer {}` so the flash invalidates the layer rather than
+ * recomposing the practice screen every frame. Defaulted, so a caller that doesn't animate (previews,
+ * tests) just gets the static tiers.
+ */
 @Composable
-internal fun TimerChip(remainingSeconds: Int, modifier: Modifier = Modifier) {
-    val urgent = remainingSeconds <= 10
+internal fun TimerChip(remainingSeconds: Int, modifier: Modifier = Modifier, pulse: () -> Float = { 0f }) {
+    val urgent = TimedUrgency.isUrgent(remainingSeconds)
+    // Stops short of 0 — see rememberCountdownUrgency.
+    val critical = remainingSeconds > 0 && TimedUrgency.isCritical(remainingSeconds)
     Surface(
-        modifier = modifier,
+        modifier = modifier.then(
+            if (critical) {
+                Modifier.graphicsLayer {
+                    val p = pulse()
+                    scaleX = 1f + CHIP_PULSE_SCALE * p
+                    scaleY = 1f + CHIP_PULSE_SCALE * p
+                }
+            } else {
+                Modifier
+            },
+        ),
         shape = RoundedCornerShape(50),
-        color = if (urgent) Color(0xFFD33D3D) else MaterialTheme.colorScheme.surfaceContainerHighest,
+        // Deeper rather than brighter for the critical tier: the text is white, and a more saturated
+        // red would drop the contrast, where this lifts it.
+        color = when {
+            critical -> Color(0xFF8C1D18)
+            urgent -> Color(0xFFD33D3D)
+            else -> MaterialTheme.colorScheme.surfaceContainerHighest
+        },
     ) {
         Text(
             text = stringResource(R.string.practice_timer_remaining, formatMinSec(remainingSeconds)),
             color = if (urgent) Color.White else MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleSmall,
+            // Tabular digits: without them, scaling the chip up makes proportional numerals resize
+            // the pill every second.
+            style = (if (critical) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall)
+                .copy(fontFeatureSettings = "tnum"),
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
         )
@@ -953,70 +1008,88 @@ internal fun BatchPracticeScreen(
             onDismiss = { showLeaveConfirm = false },
         )
     }
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    // Show the deck being practiced; fall back to the app name until it's loaded (#352).
-                    Text(
-                        text = sharedDeck()?.second ?: stringResource(R.string.flashcards),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary,
-                ),
-                navigationIcon = {
-                    if (!guardActive) {
-                        IconButton(onClick = handleExit) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.practice_cd_back))
-                        }
-                    }
-                },
-                actions = {
-                    if (canShare) {
-                        IconButton(onClick = { shareDeck(context, sharedDeck()) }) {
-                            Icon(Icons.Default.Share, contentDescription = stringResource(R.string.practice_cd_share))
-                        }
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            when (state) {
-                BatchPracticeUiState.Loading, BatchPracticeUiState.Failed ->
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+    // Only while answering, so the glow clears on the recap (#443).
+    val urgencySeconds = remainingSeconds?.takeIf { state is BatchPracticeUiState.Answering }
+    val urgency = rememberCountdownUrgency(urgencySeconds)
 
-                is BatchPracticeUiState.Answering ->
-                    BatchAnswering(
-                        cards = state.cards,
-                        mode = state.mode,
-                        remainingSeconds = remainingSeconds,
-                        onSubmit = onSubmit,
-                        onPromptImageSettled = onPromptImageSettled,
-                    )
+    // Outside the Scaffold so the vignette escapes its content padding — see FlashcardsScreen.
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        // Show the deck being practiced; fall back to the app name until loaded (#352).
+                        Text(
+                            text = sharedDeck()?.second ?: stringResource(R.string.flashcards),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                    ),
+                    navigationIcon = {
+                        if (!guardActive) {
+                            IconButton(onClick = handleExit) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = stringResource(R.string.practice_cd_back),
+                                )
+                            }
+                        }
+                    },
+                    actions = {
+                        if (canShare) {
+                            IconButton(onClick = { shareDeck(context, sharedDeck()) }) {
+                                Icon(
+                                    Icons.Default.Share,
+                                    contentDescription = stringResource(R.string.practice_cd_share),
+                                )
+                            }
+                        }
+                    },
+                )
+            },
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+                when (state) {
+                    BatchPracticeUiState.Loading, BatchPracticeUiState.Failed ->
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                is BatchPracticeUiState.Completed ->
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        ScoreRow(
-                            PracticeUiState.Completed(
-                                numCorrect = state.numCorrect,
-                                numIncorrect = state.numIncorrect,
-                            ),
+                    is BatchPracticeUiState.Answering ->
+                        BatchAnswering(
+                            cards = state.cards,
+                            mode = state.mode,
+                            remainingSeconds = remainingSeconds,
+                            onSubmit = onSubmit,
+                            onPromptImageSettled = onPromptImageSettled,
+                            pulse = urgency.pulse,
                         )
-                        FlashcardsCompletionContent(
-                            streak = state.streak,
-                            review = state.review,
-                            modifier = Modifier.fillMaxSize(),
-                            suggestMode = state.mode,
-                            isGlobal = state.isGlobal,
-                            isGuest = isGuest,
-                        )
-                    }
+
+                    is BatchPracticeUiState.Completed ->
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            ScoreRow(
+                                PracticeUiState.Completed(
+                                    numCorrect = state.numCorrect,
+                                    numIncorrect = state.numIncorrect,
+                                ),
+                            )
+                            FlashcardsCompletionContent(
+                                streak = state.streak,
+                                review = state.review,
+                                modifier = Modifier.fillMaxSize(),
+                                suggestMode = state.mode,
+                                isGlobal = state.isGlobal,
+                                isGuest = isGuest,
+                            )
+                        }
+                }
             }
+        }
+
+        if (urgency.showsVignette) {
+            UrgencyVignette(intensity = urgency.intensity, pulse = urgency.pulse)
         }
     }
 }
@@ -1029,6 +1102,7 @@ private fun BatchAnswering(
     remainingSeconds: Int?,
     onSubmit: (List<String?>) -> Unit,
     onPromptImageSettled: (Int) -> Unit = {},
+    pulse: () -> Float = { 0f },
 ) {
     val isTest = mode == PracticeMode.Test.key
     // Multiple-choice options per card, built once so they don't reshuffle on recomposition.
@@ -1054,10 +1128,12 @@ private fun BatchAnswering(
         remainingSeconds?.let { secs ->
             TimerChip(
                 remainingSeconds = secs,
+                pulse = pulse,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(top = 8.dp),
             )
+            UrgencyAnnouncement(remainingSeconds = secs)
         }
         // Moving between answers with the keyboard's Next key (#416). The list is lazy, so the next
         // field usually isn't composed yet and `focusManager.moveFocus` has nothing to move to —
