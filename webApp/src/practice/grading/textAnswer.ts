@@ -1,3 +1,5 @@
+import { spokenNumberVariants } from './spokenNumbers';
+
 // Grading for the text-entry "Test" mode, kept standalone so other modes (e.g. a future "Learn"
 // mode) can reuse it. Case-insensitive, whitespace-tolerant, and forgiving of small typos.
 
@@ -65,4 +67,45 @@ export function gradeTextAnswer(
     best = Math.max(best, similarityOf(a, b));
   }
   return { correct: best >= TEXT_ANSWER_THRESHOLD, similarity: best };
+}
+
+/**
+ * Picks which of a recogniser's hypotheses to grade — n-best rescoring (#390).
+ *
+ * A recogniser returns several readings of the same audio, ranked by a general-purpose language
+ * model biased toward everyday words, which is why proper nouns lose. This card's answer is
+ * knowledge the recogniser doesn't have, so its own list is re-ranked with it: the first hypothesis
+ * that grades correct wins.
+ *
+ * [gradeTextAnswer] is untouched and still decides, at the same threshold, so a spoken and a typed
+ * string grade identically — what changes is which string gets graded. That does make voice more
+ * forgiving than typing, since any hypothesis can win; deliberately so, because only the recogniser
+ * proposed them and the mis-hear was never the user's mistake.
+ *
+ * Spoken numbers get the same treatment, one step later (#390): if no hypothesis grades correct as
+ * heard, each is retried with its number words written as digits, so "nineteen eighty" can match a
+ * card answered "1980". Digit variants are tried only *after* every original has failed, so a card
+ * whose answer really is words ("one piece") still matches on the words and is recorded that way.
+ *
+ * Falls back to the top hypothesis rather than reporting nothing: a wrong answer still has to be
+ * recordable, and it should be recorded as what they most likely said.
+ *
+ * Mirrors shared Kotlin `pickSpokenAnswer`.
+ */
+export function pickSpokenAnswer(
+  hypotheses: string[],
+  answer: string,
+  alternativeAnswers: string[] = [],
+): string | undefined {
+  const matches = (candidate: string) => gradeTextAnswer(candidate, answer, alternativeAnswers).correct;
+
+  const heard = hypotheses.find(matches);
+  if (heard !== undefined) return heard;
+
+  for (const hypothesis of hypotheses) {
+    const asDigits = spokenNumberVariants(hypothesis).find(matches);
+    if (asDigits !== undefined) return asDigits;
+  }
+
+  return hypotheses[0];
 }
