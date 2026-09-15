@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { gradeTextAnswer } from './textAnswer';
+import { gradeTextAnswer, pickSpokenAnswer } from './textAnswer';
 import { buildChoices } from './multipleChoice';
 import { matchSpokenChoice } from './voiceChoice';
 import type { FlashcardDto } from '../../api/types';
@@ -34,6 +34,15 @@ interface ChoiceCase {
   allowedDistractors: string[];
 }
 
+interface SpokenNumberCase {
+  name: string;
+  hypotheses: string[];
+  answer: string;
+  alternativeAnswers?: string[];
+  /** What `pickSpokenAnswer` must return — the string that then gets graded and recorded. */
+  expectedPick: string;
+}
+
 interface VoiceChoiceCase {
   name: string;
   transcript: string;
@@ -48,6 +57,7 @@ const fixtures: {
   textGrading: TextCase[];
   multipleChoice: ChoiceCase[];
   voiceChoiceMatch: VoiceChoiceCase[];
+  spokenNumbers: SpokenNumberCase[];
 } = JSON.parse(
   readFileSync(fixturePath, 'utf-8'),
 );
@@ -80,5 +90,11 @@ describe('grading parity (golden fixture)', () => {
     for (const distractor of choices.filter((x) => x !== c.correct)) {
       expect(c.allowedDistractors).toContain(distractor);
     }
+  });
+
+  // Spoken numbers rendered as digits (#390). Both sides must agree on which string gets graded —
+  // including that a digit variant is only ever reached after every hypothesis has failed as heard.
+  it.each(fixtures.spokenNumbers)('spoken numbers: $name', (c) => {
+    expect(pickSpokenAnswer(c.hypotheses, c.answer, c.alternativeAnswers ?? [])).toBe(c.expectedPick);
   });
 });

@@ -83,6 +83,11 @@ fun gradeTextAnswer(input: String, answer: String, alternativeAnswers: List<Stri
  * forgiving than typing, since any hypothesis can win; deliberately so, because only the recogniser
  * proposed them and the mis-hear was never the user's mistake.
  *
+ * Spoken numbers get the same treatment, one step later (#390): if no hypothesis grades correct as
+ * heard, each is retried with its number words written as digits, so "nineteen eighty" can match a
+ * card answered "1980". Digit variants are tried only *after* every original has failed, so a card
+ * whose answer really is words ("one piece") still matches on the words and is recorded that way.
+ *
  * Falls back to the top hypothesis rather than reporting nothing: a wrong answer still has to be
  * recordable, and it should be recorded as what they most likely said.
  */
@@ -91,6 +96,14 @@ fun pickSpokenAnswer(
     answer: String,
     alternativeAnswers: List<String> = emptyList(),
 ): String? {
-    val matched = hypotheses.firstOrNull { gradeTextAnswer(it, answer, alternativeAnswers).correct }
-    return matched ?: hypotheses.firstOrNull()
+    fun matches(candidate: String) = gradeTextAnswer(candidate, answer, alternativeAnswers).correct
+
+    val heard = hypotheses.firstOrNull { matches(it) }
+    if (heard != null) return heard
+
+    val asDigits = hypotheses.asSequence()
+        .flatMap { spokenNumberVariants(it).asSequence() }
+        .firstOrNull { matches(it) }
+
+    return asDigits ?: hypotheses.firstOrNull()
 }

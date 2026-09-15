@@ -28,6 +28,17 @@ class GradingParityFixtureTest {
         val textGrading: List<TextCase>,
         val multipleChoice: List<ChoiceCase>,
         val voiceChoiceMatch: List<VoiceChoiceCase>,
+        val spokenNumbers: List<SpokenNumberCase> = emptyList(),
+    )
+
+    @Serializable
+    private data class SpokenNumberCase(
+        val name: String,
+        val hypotheses: List<String>,
+        val answer: String,
+        val alternativeAnswers: List<String> = emptyList(),
+        /** What `pickSpokenAnswer` must return — the string that then gets graded and recorded. */
+        val expectedPick: String,
     )
 
     @Serializable
@@ -115,6 +126,17 @@ class GradingParityFixtureTest {
             choices.filter { it != case.correct }.forEach { distractor ->
                 assertContains(case.allowedDistractors, distractor, "unexpected distractor for '${case.name}'")
             }
+        }
+    }
+
+    @Test
+    fun spokenNumbersMatchTheGoldenFixture() {
+        for (case in fixtures.spokenNumbers) {
+            assertEquals(
+                case.expectedPick,
+                pickSpokenAnswer(case.hypotheses, case.answer, case.alternativeAnswers),
+                "spoken-number pick mismatch for '${case.name}'",
+            )
         }
     }
 }
