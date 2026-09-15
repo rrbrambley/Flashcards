@@ -126,6 +126,11 @@ jobs:
       # needs the SDK.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          # The action's default is `tools platform-tools`, but Google removed the obsolete
+          # `tools` package from the SDK repository, so the default now fails every run with
+          # "Failed to find package 'tools'". Ask for platform-tools only.
+          packages: 'platform-tools'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -166,6 +171,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          # The action's default is `tools platform-tools`, but Google removed the obsolete
+          # `tools` package from the SDK repository, so the default now fails every run with
+          # "Failed to find package 'tools'". Ask for platform-tools only.
+          packages: 'platform-tools'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -326,6 +336,11 @@ jobs:
       # The root Gradle build configures :androidApp (AGP), so the backend run needs the Android SDK.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          # The action's default is `tools platform-tools`, but Google removed the obsolete
+          # `tools` package from the SDK repository, so the default now fails every run with
+          # "Failed to find package 'tools'". Ask for platform-tools only.
+          packages: 'platform-tools'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -410,6 +425,11 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          # The action's default is `tools platform-tools`, but Google removed the obsolete
+          # `tools` package from the SDK repository, so the default now fails every run with
+          # "Failed to find package 'tools'". Ask for platform-tools only.
+          packages: 'platform-tools'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
