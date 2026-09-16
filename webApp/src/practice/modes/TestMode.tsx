@@ -6,7 +6,7 @@ import { VoiceAdvanceNotice } from '../components/VoiceAdvanceNotice';
 import { DiscussButton } from '../components/DiscussButton';
 import { PromptImage } from '../components/PromptImage';
 import { SuggestAnswerButton } from '../SuggestAnswerButton';
-import { gradeTextAnswer } from '../grading/textAnswer';
+import { gradeTextAnswer, pickSpokenAnswer } from '../grading/textAnswer';
 import type { PracticeModeProps } from './types';
 
 /**
@@ -41,26 +41,14 @@ export function TestMode({
   );
 
   /**
-   * Picks which hypothesis to grade — n-best rescoring (#390).
-   *
-   * The recogniser ranks by a general-purpose language model biased toward everyday words, which is
-   * why proper nouns lose: a country name is outscored by whatever common phrase it sounds like. We
-   * know something it doesn't — this card's answer — so its own list is re-ranked with it.
-   *
-   * Note what this is *not*: [gradeTextAnswer] is untouched and still decides, at the same
-   * threshold, so a spoken and a typed string grade identically. What changes is which string gets
-   * graded. That does make voice more forgiving than typing — any hypothesis can win, and only the
-   * recogniser proposed them — which is the point, since the mis-hear was never the user's mistake.
-   *
-   * Falls back to the top hypothesis rather than re-prompting: a wrong answer still has to be
-   * recordable, and it should be recorded as what they most likely said.
+   * Picks which hypothesis to grade — n-best rescoring, plus the spoken-number retry (#390). The
+   * rules live in `pickSpokenAnswer` so this and the mobile clients can't drift; the golden fixture
+   * pins them.
    */
   const interpretSpoken = useCallback(
     (transcripts: string[]) => {
-      const matched = transcripts.find(
-        (t) => gradeTextAnswer(t, card.answer, card.alternativeAnswers ?? []).correct,
-      );
-      return { transcript: matched ?? transcripts[0] };
+      const picked = pickSpokenAnswer(transcripts, card.answer, card.alternativeAnswers ?? []);
+      return picked === undefined ? null : { transcript: picked };
     },
     [card],
   );
