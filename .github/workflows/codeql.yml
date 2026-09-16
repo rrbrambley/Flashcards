@@ -39,6 +39,11 @@ jobs:
       # The root build configures :androidApp, which needs the Android SDK even to compile :backend.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          # The action's default is `tools platform-tools`, but Google removed the obsolete
+          # `tools` package from the SDK repository, so the default now fails every run with
+          # "Failed to find package 'tools'". Ask for platform-tools only.
+          packages: 'platform-tools'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
