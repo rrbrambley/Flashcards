@@ -22,6 +22,7 @@ export function MultipleChoiceMode({
   onAdvance,
   onDiscuss,
   onImageReady,
+  promptReady = true,
   voiceInput,
   remainingMs,
   onDisableVoice,
@@ -106,28 +107,36 @@ export function MultipleChoiceMode({
             alt={card.question || 'card image'}
             className="practice-image"
             onReady={onImageReady}
+            ready={promptReady}
           />
         )}
       </div>
 
-      {/* Above the options, and never instead of them — a misrecognition, a blocked microphone or a
-          browser with no recogniser all leave the card answerable by clicking. */}
-      {voiceInput && selected === null && (
-        <VoiceAnswerInput
-          onSubmit={submitSpoken}
-          interpret={interpretSpoken}
-          onDisableVoice={onDisableVoice}
-          remainingMs={remainingMs}
-        />
-      )}
+      {/* Nothing to answer with until the prompt is on screen (#458) — the voice panel starts the
+          recogniser on mount, so rendering it early means really listening to a question the user
+          can't see. The options wait with it, matching Android (#302). */}
+      {promptReady && (
+        <>
+          {/* Above the options, and never instead of them — a misrecognition, a blocked microphone
+              or a browser with no recogniser all leave the card answerable by clicking. */}
+          {voiceInput && selected === null && (
+            <VoiceAnswerInput
+              onSubmit={submitSpoken}
+              interpret={interpretSpoken}
+              onDisableVoice={onDisableVoice}
+              remainingMs={remainingMs}
+            />
+          )}
 
-      <MultipleChoice
-        options={choices}
-        onSelect={pick}
-        selectedIndex={selected}
-        correctIndex={selected === null ? null : correctIndex}
-        disabled={selected !== null}
-      />
+          <MultipleChoice
+            options={choices}
+            onSelect={pick}
+            selectedIndex={selected}
+            correctIndex={selected === null ? null : correctIndex}
+            disabled={selected !== null}
+          />
+        </>
+      )}
 
       {selected !== null && (
         <>

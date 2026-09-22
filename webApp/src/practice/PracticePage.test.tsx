@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { PracticePage } from './PracticePage';
 import { api } from '../api/client';
-import { installFakeSpeechRecognition } from '../test/fakeSpeechRecognition';
+import { FakeSpeechRecognition, installFakeSpeechRecognition } from '../test/fakeSpeechRecognition';
 import { VOICE_INPUT_KEY } from './voice/preference';
 import { orderCards } from './shuffle';
 import type { FlashcardDto, PracticeSessionDto } from '../api/types';
@@ -575,6 +575,44 @@ describe('PracticePage', () => {
     it('offers the mic on an untimed run when the flag and the preference are both on', async () => {
       startTestRun('');
       expect(await screen.findByText(/Speech is processed/)).toBeInTheDocument();
+    });
+
+    /**
+     * #458. End-to-end wiring of the readiness signal: the runner already computes it to pause the
+     * countdown (#317), and this is what proves it now reaches the mode. The symptom was a
+     * "Listening…" panel over an empty card; the substance is that the recogniser was genuinely
+     * running against a question that hadn't rendered.
+     */
+    it('starts no recogniser until the card image has loaded', async () => {
+      vi.mocked(api.createSession).mockResolvedValue(
+        session({ mode: 'test', createdAtMillis: Date.now(), timeLimitSeconds: null }),
+      );
+      const withImage: FlashcardDto[] = [
+        { question: 'Q1', answer: 'A1', imageUrl: 'http://img/q1.svg' },
+        ...threeCards.slice(1),
+      ];
+      const deck = { id: 5, title: 'Spanish', editable: true, flashcards: withImage };
+      vi.mocked(api.getDeck).mockResolvedValue(deck);
+      render(
+        <MemoryRouter initialEntries={['/decks/5/practice?mode=test&shuffle=0']}>
+          <Routes>
+            <Route path="/decks/:id/practice" element={<PracticePage />} />
+            <Route path="/" element={<div>library</div>} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      // The placeholder stands in for the prompt, and nothing is answerable yet.
+      const placeholder = await screen.findByRole('status', { name: 'Loading image' });
+      expect(placeholder).toBeInTheDocument();
+      expect(FakeSpeechRecognition.instances).toHaveLength(0);
+      expect(screen.queryByLabelText('Your answer')).not.toBeInTheDocument();
+
+      fireEvent.load(screen.getByAltText('Q1'));
+
+      expect(await screen.findByText(/Speech is processed/)).toBeInTheDocument();
+      expect(FakeSpeechRecognition.instances).toHaveLength(1);
+      expect(screen.queryByRole('status', { name: 'Loading image' })).not.toBeInTheDocument();
     });
 
     /**

@@ -10,6 +10,13 @@ interface PromptImageProps {
    * shouldn't strand the timer paused forever.
    */
   onReady?: () => void;
+  /**
+   * Whether the prompt has settled. Owned by the runner (which already tracks it for the #317 timer
+   * pause) rather than recomputed here, so "is this card ready?" has exactly one answer. False swaps
+   * the image for a loading placeholder (#458); defaulted true so a caller that doesn't care is
+   * unaffected.
+   */
+  ready?: boolean;
 }
 
 /**
@@ -19,7 +26,7 @@ interface PromptImageProps {
  * fires; we check `img.complete` on mount and report immediately (the web analog of the Android
  * cached-image gotcha, #309/#310).
  */
-export function PromptImage({ src, alt, className, onReady }: PromptImageProps) {
+export function PromptImage({ src, alt, className, onReady, ready = true }: PromptImageProps) {
   const ref = useRef<HTMLImageElement>(null);
   const reported = useRef(false);
 
@@ -38,5 +45,21 @@ export function PromptImage({ src, alt, className, onReady }: PromptImageProps) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
-  return <img ref={ref} src={src} alt={alt} className={className} onLoad={report} onError={report} />;
+  return (
+    <>
+      {/* Says the card is still coming rather than leaving a blank gap where the prompt goes (#458).
+          A `display: none` image still fetches and still fires load/error, so hiding it this way
+          doesn't strand the readiness report that flips `ready` in the first place. */}
+      {!ready && <span className="prompt-image-loading" role="status" aria-label="Loading image" />}
+      <img
+        ref={ref}
+        src={src}
+        alt={alt}
+        className={className}
+        onLoad={report}
+        onError={report}
+        style={ready ? undefined : { display: 'none' }}
+      />
+    </>
+  );
 }

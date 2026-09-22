@@ -310,5 +310,47 @@ describe('TestMode', () => {
       expect(screen.queryByRole('button', { name: /🎤/ })).not.toBeInTheDocument();
       expect(FakeSpeechRecognition.instances).toHaveLength(0);
     });
+
+    /**
+     * #458. The visible symptom was a "Listening…" panel floating above an empty card, but the
+     * reason it matters is underneath: the panel starts the recogniser on mount, so rendering it
+     * before the prompt is on screen means really listening to a question the user can't see.
+     */
+    describe('waiting for the prompt image', () => {
+      it('starts no recogniser while the prompt is still loading', () => {
+        render(<TestMode card={card} cards={[card]} {...noopProps} voiceInput promptReady={false} />);
+
+        // The assertion that matters: not merely hidden — never started.
+        expect(FakeSpeechRecognition.instances).toHaveLength(0);
+        expect(screen.queryByText('Listening…')).not.toBeInTheDocument();
+        expect(screen.queryByText(/Speech is processed/)).not.toBeInTheDocument();
+      });
+
+      it('holds the typed input back too, so nothing is answerable before the prompt', () => {
+        render(<TestMode card={card} cards={[card]} {...noopProps} voiceInput promptReady={false} />);
+
+        expect(screen.queryByLabelText('Your answer')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Check' })).not.toBeInTheDocument();
+      });
+
+      it('brings the answering UI up once the prompt settles', () => {
+        const { rerender } = render(
+          <TestMode card={card} cards={[card]} {...noopProps} voiceInput promptReady={false} />,
+        );
+        expect(FakeSpeechRecognition.instances).toHaveLength(0);
+
+        rerender(<TestMode card={card} cards={[card]} {...noopProps} voiceInput promptReady />);
+
+        expect(FakeSpeechRecognition.instances).toHaveLength(1);
+        expect(screen.getByLabelText('Your answer')).toBeInTheDocument();
+      });
+
+      it('is unaffected when the runner says nothing (a card with no image)', () => {
+        render(<TestMode card={card} cards={[card]} {...noopProps} voiceInput />);
+
+        expect(FakeSpeechRecognition.instances).toHaveLength(1);
+        expect(screen.getByLabelText('Your answer')).toBeInTheDocument();
+      });
+    });
   });
 });

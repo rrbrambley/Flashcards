@@ -683,6 +683,9 @@ function PracticeRunner({
         canSuggest={isGlobal && !!currentCard.cardUid}
         isGuest={isGuest}
         onImageReady={() => setReadyForIndex(state.index)}
+        // The same signal that pauses the countdown, handed back down so a mode can hold its
+        // answering UI until the prompt is on screen (#458).
+        promptReady={!imageLoading}
         voiceInput={voiceInput}
         onDisableVoice={() => setVoicePreference(false)}
         remainingMs={remainingMs}
