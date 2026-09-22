@@ -44,6 +44,16 @@ export interface PracticeModeProps {
    */
   onImageReady?: () => void;
   /**
+   * Whether the prompt has finished loading — the counterpart to [onImageReady] coming back down
+   * (#458). False only while a card's prompt image is still in flight; true immediately for a card
+   * without one, and defaulted true so a mode renders normally when the runner doesn't say.
+   *
+   * Modes must not show their answering UI until this is true. Voice is the reason: the panel starts
+   * the recogniser on mount, so rendering it early means genuinely listening to a question the user
+   * cannot see yet. Android has gated this since #302.
+   */
+  promptReady?: boolean;
+  /**
    * Answer by speaking as well as typing (#387). Additive — the mode still renders its normal input,
    * so a denied microphone or an unsupported browser leaves the card fully answerable. Gated by the
    * `practice_voice_input` flag plus a local preference; absent/false is today's behaviour.

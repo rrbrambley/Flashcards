@@ -26,6 +26,7 @@ export function TestMode({
   voiceInput,
   remainingMs,
   onDisableVoice,
+  promptReady = true,
 }: PracticeModeProps) {
   const [graded, setGraded] = useState<{ input: string; correct: boolean } | null>(null);
 
@@ -84,22 +85,29 @@ export function TestMode({
             alt={card.question || 'card image'}
             className="practice-image"
             onReady={onImageReady}
+            ready={promptReady}
           />
         )}
       </div>
 
       {!graded ? (
-        <>
-          {voiceInput && (
-            <VoiceAnswerInput
-              onSubmit={submit}
-              interpret={interpretSpoken}
-              onDisableVoice={onDisableVoice}
-              remainingMs={remainingMs}
-            />
-          )}
-          <TextAnswerInput confirmBlankSubmit onSubmit={submit} />
-        </>
+        // Nothing to answer with until the prompt is on screen (#458). Voice is the reason this
+        // matters rather than just looking untidy: the panel starts the recogniser on mount, so
+        // rendering it early means really listening to a question the user can't see. The whole
+        // answering UI waits, matching Android (#302).
+        promptReady && (
+          <>
+            {voiceInput && (
+              <VoiceAnswerInput
+                onSubmit={submit}
+                interpret={interpretSpoken}
+                onDisableVoice={onDisableVoice}
+                remainingMs={remainingMs}
+              />
+            )}
+            <TextAnswerInput confirmBlankSubmit onSubmit={submit} />
+          </>
+        )
       ) : (
         <>
           {/* Keep the typed answer where the input was, with the verdict beside it. */}

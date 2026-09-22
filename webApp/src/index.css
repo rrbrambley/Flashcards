@@ -870,6 +870,30 @@ button.danger:hover:not(:disabled) {
   object-fit: contain;
   border-radius: 12px;
 }
+
+/* Placeholder while a card's prompt image is still in flight (#458), so the prompt area reads as
+   "still coming" rather than as an empty card with an answer box under it.
+   Sized to approximate a card image rather than filling the column: a full-width block is roughly
+   twice the width the image actually renders at, so it would land the jump it's meant to avoid.
+   The real size isn't knowable before the image arrives, so 3:2 (the seed deck's flags) capped at
+   320px is the closest honest guess. */
+.prompt-image-loading {
+  display: block;
+  width: min(100%, 320px);
+  margin: 0 auto;
+  aspect-ratio: 3 / 2;
+  border-radius: 12px;
+  /* Grey block with a light sweep — the inverse reads as an empty white card, not as loading. */
+  background: linear-gradient(90deg, var(--border) 25%, var(--panel) 50%, var(--border) 75%);
+  background-size: 200% 100%;
+  animation: prompt-image-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes prompt-image-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
 .practice-hint {
   text-align: center;
   font-size: 0.85rem;
@@ -1642,6 +1666,11 @@ button.danger:hover:not(:disabled) {
 
   .practice-timer-flash {
     opacity: 0;
+  }
+
+  /* The shimmer is decorative; the placeholder still holds the space and still announces itself. */
+  .prompt-image-loading {
+    animation: none;
   }
 
   .practice-urgency-glow {
