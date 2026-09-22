@@ -28,6 +28,13 @@ struct MultipleChoiceModeView: View {
     @State private var choices: [String]
     @State private var selected: Int?
     @State private var advanceCancelled = false
+    /// Set once this card's prompt image settles (#458).
+    @State private var imageSettled = false
+
+    /// Whether the prompt is on screen yet — the answering UI waits for it. See `TestModeView` for
+    /// why, and why this is reconciled rather than read straight from the flag.
+    private var promptReady: Bool { !hasImage || imageSettled }
+    private var hasImage: Bool { card.imageUrl.map { !$0.isEmpty } ?? false }
 
     // Derived from the @State `choices` (not recomputed), so it always matches the displayed order.
     // `buildChoices` shuffles non-deterministically, and SwiftUI re-runs `init` on every render — so
@@ -69,12 +76,15 @@ struct MultipleChoiceModeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.md) {
-                CardPrompt(card: card, onImageReadyChanged: onImageReadyChanged)
-                    .padding(.bottom, Spacing.sm)
+                CardPrompt(card: card, onImageReadyChanged: { ready in
+                    imageSettled = ready
+                    onImageReadyChanged(ready)
+                })
+                .padding(.bottom, Spacing.sm)
 
                 // Above the options, never instead of them — a misrecognition, a refused microphone
                 // or an unsupported locale all leave the card answerable by tapping.
-                if voiceInput, selected == nil {
+                if voiceInput, selected == nil, promptReady {
                     VoiceAnswerPanel(
                         onSubmit: { transcript in
                             if let index = matchSpoken(transcript) { pick(index) }
@@ -107,8 +117,12 @@ struct MultipleChoiceModeView: View {
                     .padding(.bottom, Spacing.sm)
                 }
 
-                ForEach(Array(choices.enumerated()), id: \.offset) { index, option in
-                    choiceButton(index: index, option: option)
+                // The options wait for the prompt too (#458): answering before the card is on
+                // screen is guesswork, and it keeps the gate consistent with Test mode and Android.
+                if promptReady {
+                    ForEach(Array(choices.enumerated()), id: \.offset) { index, option in
+                        choiceButton(index: index, option: option)
+                    }
                 }
 
                 if selected != nil {
