@@ -33,6 +33,18 @@ struct TestModeView: View {
 
     @State private var input = ""
     @State private var graded: Graded?
+    /// Set once this card's prompt image settles (#458).
+    @State private var imageSettled = false
+
+    /// Whether the prompt is on screen yet. The answering UI waits for it — the voice panel starts the
+    /// recogniser as soon as it appears, and listening to a question the user can't see is worse than
+    /// looking untidy. Mirrors Android's gate (#302).
+    ///
+    /// Reconciled the same way `CardPrompt` reconciles its own report, rather than read straight from
+    /// the flag: a card with no image is ready immediately, so it never blinks its input away waiting
+    /// for an `onChange` that only confirms what's already known.
+    private var promptReady: Bool { !hasImage || imageSettled }
+    private var hasImage: Bool { card.imageUrl.map { !$0.isEmpty } ?? false }
     /// Guards an accidental empty submit (keyboard Done or Check) from grading it wrong (FLA-190).
     @State private var confirmingBlank = false
     /// Set when the user takes over during the auto-advance dwell, pinning the card until they act.
@@ -46,7 +58,10 @@ struct TestModeView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: Spacing.lg) {
-                CardPrompt(card: card, onImageReadyChanged: onImageReadyChanged)
+                CardPrompt(card: card, onImageReadyChanged: { ready in
+                    imageSettled = ready
+                    onImageReadyChanged(ready)
+                })
 
                 if let graded {
                     verdict(graded)
@@ -81,7 +96,8 @@ struct TestModeView: View {
                     if discussionsEnabled {
                         DiscussButton(action: onDiscuss)
                     }
-                } else {
+                } else if promptReady {
+                    // Nothing to answer with until the prompt is on screen (#458) — see `promptReady`.
                     if voiceInput {
                         VoiceAnswerPanel(
                             onSubmit: { spoken in grade(spoken) },
